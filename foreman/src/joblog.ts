@@ -1,6 +1,6 @@
 // The job log: append-only writer, strict reader, and state derived from the log alone.
 import fs from "node:fs";
-import path from "node:path";
+import path from "node:path"; import { removeWaiting } from "./removewait.js"; // H1g
 import {
   validateEvent,
   EventError,
@@ -593,7 +593,7 @@ export class JobLog {
   close(): void {
     this.closeFd();
     if (this.lockHeld) {
-      fs.rmSync(path.join(this.jobDir, LOCK_FILE), { force: true });
+      removeWaiting(path.join(this.jobDir, LOCK_FILE)); // H1g: a reader may hold it (removewait.ts)
       this.lockHeld = false;
     }
   }

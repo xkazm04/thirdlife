@@ -424,6 +424,9 @@ export function fakeRunner(argv: string[], env: NodeJS.ProcessEnv = {}): FakeRun
       report["metrics"] = { state_hash: stateHash(seed, frames), frame_ms_p50: 0.2, frame_ms_p99: 0.4, entities_max: 12, bodies_max: 3, tick_ms_max: 0.03 };
       const stalls = Number(env["FAKE_RUNNER_STARVED_STALLS"] ?? [...text.values()].map((t) => /FAKE_STARVED_STALLS\((\d+)\)/.exec(t)?.[1]).find((x) => x !== undefined) ?? "0");
       if (stalls > 0) Object.assign(report["metrics"] as Record<string, unknown>, { starved_stalls: stalls, starved_ms: 310.5 * stalls });
+      // H1g: FAKE_CAMERA(<yaw dps>,<move mps>) anywhere in the pack: the runner's camera figures (kernel/runner/camyaw.gd)
+      const cam = [...text.values()].map((t) => /FAKE_CAMERA\(([0-9.]+),([0-9.]+)\)/.exec(t)).find((x) => x !== null);
+      if (cam) Object.assign(report["metrics"] as Record<string, unknown>, { camera_yaw_p90_dps: Number(cam[1]), camera_yaw_max_dps: Number(cam[1]), camera_move_p90_mps: Number(cam[2]), camera_move_max_mps: Number(cam[2]) });
     }
 
     if (verb === "invariants" && !loadProblem && !wd) {

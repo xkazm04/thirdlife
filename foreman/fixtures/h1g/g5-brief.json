@@ -1,0 +1,293 @@
+{
+ "pitch": "I'm the pier's meanest bumper driver: three on three, spinning rivals to hammer the huge ball home.",
+ "aspects": [
+  {
+   "id": "driver",
+   "icon": "vehicle",
+   "title": "Mean Bumper Kart",
+   "line": "Ride the ball, ram hard, whirl attackers away.",
+   "detail": "TLVehicle round tub, spring nose, seated driver bust, 3 m flagpole. Pack script keys these visual parts for bump, ram, whirl and spin-out animations; no biped clips. Boost tank 100, burns 33 a second.",
+   "alternatives": [
+    {
+     "id": "spring_fist",
+     "title": "Spring Glove",
+     "line": "A boxing glove on a spring punches far."
+    },
+    {
+     "id": "drift_tail",
+     "title": "Tail Swinger",
+     "line": "Drift and whip your back end into things."
+    }
+   ]
+  },
+  {
+   "id": "spin_bat",
+   "icon": "twist",
+   "title": "Spinning Bats",
+   "line": "Spin a rival, feed them the ball, watch it rocket.",
+   "detail": "Spin-outs last 75 frames (bump) or 90 (ram). The first ball touch leaves at a fixed 20 m/s along your hit direction, shown by the victim's streaming flag. One bat per spin; own goals count. Pack sets TLBall velocity.",
+   "alternatives": [
+    {
+     "id": "dizzy_swap",
+     "title": "Dizzy Steering",
+     "line": "Spun rivals steer backwards for a moment."
+    },
+    {
+     "id": "hot_ball",
+     "title": "Charging Ball",
+     "line": "Each bump makes the ball faster until goal."
+    }
+   ]
+  },
+  {
+   "id": "ball",
+   "icon": "ball",
+   "title": "Giant Stitched Ball",
+   "line": "Cradle it gently, or whack it flying.",
+   "detail": "TLBall radius 1.2 m, hot seam rim, ground shadow. A front touch under 6 m/s relative pins it to your nose with TLBall.hold; carrier speed times 0.88. Loss only by bump, spin-out, whirl or hard boost turn.",
+   "alternatives": [
+    {
+     "id": "loose_ball",
+     "title": "Never Held",
+     "line": "The ball always rolls free off every touch."
+    },
+    {
+     "id": "beach_float",
+     "title": "Floaty Beach Ball",
+     "line": "A light ball hops high over karts."
+    }
+   ]
+  },
+  {
+   "id": "crew",
+   "icon": "rival",
+   "title": "Ghost Train Crew",
+   "line": "Learn Bertha's bell, Nell's parasol, Vic's horn.",
+   "detail": "Three builds, three defences: Bertha walls head-on, Nell whirls, Vic swerves. Each special shows a 24 to 30 frame tell high above the ball, then a punish window. Tiers sharpen aim and reads, never speed.",
+   "alternatives": [
+    {
+     "id": "mirror_crews",
+     "title": "Ride Crew Ladder",
+     "line": "Beat three crews, each with one shared trick."
+    },
+    {
+     "id": "one_giant",
+     "title": "The Dodgem King",
+     "line": "Three of you topple one enormous kart."
+    }
+   ]
+  },
+  {
+   "id": "camera",
+   "icon": "camera",
+   "title": "High Chase Camera",
+   "line": "Look over the big ball and see attacks coming.",
+   "detail": "ctx.cameras.chase, 8 m back, 7 m up, fov 46; flagpole tells read above the 2.4 m ball. Heading frozen during your spin-out. Ring under your kart. TLHud edge arrows for ball and chargers. Boards 1 m.",
+   "alternatives": [
+    {
+     "id": "high_broadcast",
+     "title": "High Pier View",
+     "line": "Watch from above, your kart always centred."
+    },
+    {
+     "id": "ball_cam",
+     "title": "Ball Watcher",
+     "line": "Camera swings to keep the ball ahead."
+    }
+   ]
+  },
+  {
+   "id": "sunset",
+   "icon": "time",
+   "title": "Beat The Sunset",
+   "line": "The sun sinks, lamps light, next goal wins.",
+   "detail": "First to 3. At 180 seconds the leader wins; level means golden goal. Conceding side restarts with 66 boost against 33, shown by glowing tail lamps. TLRules score and clock.",
+   "alternatives": [
+    {
+     "id": "three_rounds",
+     "title": "Three Short Rides",
+     "line": "Best of three quick rounds with new pads."
+    },
+    {
+     "id": "tide_deck",
+     "title": "Shrinking Deck",
+     "line": "Ropes close in as the evening goes."
+    }
+   ]
+  }
+ ],
+ "rules": "FANTASY: I am the pier's meanest bumper driver, spinning rivals and hammering the huge ball home. Sensation and challenge.\nWORLD: Kart 2 m long, 1.7 tall. Deck 36 by 22 body lengths; ball 1.2 body lengths. Cruise 6 body lengths a second, boost 9. Camera 4.7 body heights back, 4.1 up.\nTEARDOWN: Rocket League kickoff: 3-second countdown, hold boost into the centre ball; tank 100, burns 33 a second, pads give 12 or 100. Copied; the conceding side starts fuller.\nTEARDOWN: NHL '94 body check: drive into the carrier, they go down, puck runs loose. Changed: the victim spins up to 1.5 seconds, a live bat firing the ball along your hit.\nTEARDOWN: Mario Kart 8 Deluxe battle spin-out: struck kart whirls, loses speed and a balloon, drives again within seconds. Spin and recovery copied; balloons dropped; spin immunity added.\n30 SECONDS: 0-5 s countdown, my ringed kart, glowing ball; Shift, flames answer: 'that's me'. 5-15 s Bertha crosses side-on beside the ball; Space spins her, her flag streams goalward: 'got you'. 15-30 s I shove the ball into her spinning tub; it rockets along my hit line: 'I made that!'\nKILL IF: after three goals a newcomer cannot say why they lost the ball.\nKILL IF: a bump reads as two karts sliding apart, with no spin, jolt or clang.\nKILL IF: after two minutes the player only boosts at the ball, never feeding it into a spun rival or guessing where it will fly.\nKILL IF: the ball hides a rival's wind-up and the player says the hit came from nowhere.\n\nMATCH. Three against three, no goalies. One match to 3 goals. At 180 s the leader wins; level means golden goal. Kickoff: 180-frame countdown, mirrored spots, centred ball, reset after every goal; goal hold 90 frames, skippable with Space. Everyone starts with 33 boost; the side that conceded starts with 66 (tail lamps glow).\n\nSPEEDS (all in data/tuning.json). Cruise 12 m/s, boost 18; acceleration 14 m/s2, boosting 22; brake 24; reverse 6. Turn 3.2 rad/s cruising, 2.4 boosting. Carrier speed times 0.88, turn times 0.85. Kart tub 1.5 m wide. Ball radius 1.2 m, mass 0.25 of a kart, restitution 0.7, rolling drag 0.3 per second, cap 30 m/s. Boost tank 100, 33 a second; 10 small pads give 12 (return 4 s), 4 corner pads give 100 (return 10 s).\n\nBALL STATE: loose, carried(owner), struck. Take: front cone 50 degrees, within 0.5 m of the nose, relative speed under 6 m/s; spring k 200 to a nose anchor. Faster touches deflect it along the line from kart centre to ball centre. Loss causes, shown by sound and the victim's motion: bumped off, spun out, whirled off, own boost turn (swing over 0.8 m for 6 frames). No retake for 30 frames by the old owner or rivals within 4 m; a new owner cannot be bumped loose for 12 frames.\n\nVERBS. BUMP 5/7/12 (template poke): spring nose lunge, +4 m/s, contact cone 35 degrees, no auto-aim. On the ball it adds 14 m/s along the contact line; contact in the first three active frames (the sweet spot) adds 20. RAM: hold Shift, 6 frame wind-up, contact at closing speed 14 m/s or more is a ram, 12 frame recovery after release. WHIRL 4/18/24: guard pirouette on the spot, turns away bumps and rams, swats the ball at 14 m/s tangentially. Whirl is the guard; spin-out is what a struck kart suffers.\n\nCONTACT TABLE (both karts, always). Touch under 6 m/s: both rebound, restitution 0.6, soft thud, no hit-stop. Bump on flank: victim spins out 75 frames, speed halved, ball freed; attacker recoils 3 m/s; 4 frames hit-stop both. Bump on rear: victim shoved 7 m/s forward, 24 frame wobble; attacker drops to half speed; 3 frames. Bump on nose: both rebound 5 m/s, drivers snap forward; 3 frames. Bump against bump: clash, both rebound 8 m/s, 5 frames. Ram on flank or rear: victim spins out 90 frames, thrown 6 m/s; attacker keeps 40% speed and jolts; 8 frames, shake. Ram head-on: both rebound 9 m/s, the slower spins out 75 frames; 6 frames. Bump or ram into a whirl: attacker spins out 75 frames, whirler holds ground and gains 10 boost; 6 frames. Whiffed bump: full 12 frame recovery, spring twang. Whiffed whirl: 24 frames no steering, speed times 0.6. Teammates only rebound. During a spin-out and 90 frames after, further hits only jolt both karts.\n\nSPIN BAT (the twist). A spun-out kart brakes at 10 m/s2, so it stays near. The first ball touch on it, at any ball speed, sends the ball at a fixed 20 m/s along the hit direction: the attacker's travel line at contact (against a whirl, from the whirler through the attacker; head-on, the faster kart's line). The victim's flagpole pennant streams that way for the whole spin-out. One bat per spin-out. A 75 frame spin less your 12 frame recovery leaves about 1 s to feed it. Own goals count. Your kart can be used the same way. Rivals answer by blocking the feed line or bumping the feeder.\n\nANIMATION (pack script on visual parts, no biped clips). Bump: driver leans back, spring compresses, both lunge, wobble back. Ram: tub squats, nose lifts, driver hunches over the wheel; tub squashes on contact. Whirl: tub tilts and pirouettes, driver throws arms high. Spin-out: tub rocks, driver's head lolls, hands off the wheel. Rear and nose hits: driver jerks away from the blow. Goal: driver stands in the seat and waves.\n\nREADABILITY. The ball is 2.4 m across, taller than a kart, with a hot-coloured stitched seam rim and ground shadow. Every kart carries a 3 m flagpole, and every rival tell plays on it and the driver, above the ball. A pine-light ring sits under your kart; a wider team-colour ring marks the carrier. An edge arrow shows the ball when off screen.\n\nFEEL. Input answered within 3 frames (driver pose, spring compresses). Hit-stop holds only the two karts, presentation only; every spin-out gets it, beyond the bar's knockdown-only rule, for the owner to judge. No technical markers at impacts. Camera never rotates with your own spin; it sits higher than the bar's 6 m by 3.5 m because the ball is taller than a kart.\n\nFIRST MINUTE. Opens on the countdown. In match one Bertha then crosses side-on 3 m beside the centred ball, across your goalward lane, repeating every 6 s until spun once. For those first 15 s the other four bots loop the far half, driving (a teaching rule, for the owner to judge). Hint line: 'SHIFT boost, SPACE bump her side', then 'now feed her the ball', then 'E whirl' at the first charge bell.\n\nINTENSITY. Calm countdown, kickoff peak, loose-ball scramble, pad-refill lull; after each goal a breath; match point quickens music and big pads return in 7 s; sunset golden goal climaxes.\n\nEND. Card names winner, goals, your spin-outs, spin-bat goals, biggest loss cause with its answer ('Nell whirled you 5 times: wait out the parasol'). R restarts within 2 s. A win unlocks the next night (Rookie, Pro, All-star pennants) and records fastest win.",
+ "arena": "A wooden seaside pier pavilion: oval-cornered deck 72 by 44 m, boards 1 m high with restitution 0.7, rounded 6 m corners so the ball never sticks. Goals at both ends 14 m wide, 4 m tall (kit goal scaled), team bunting. 10 small boost pads in two lanes, 4 big brass lamps in corners (TLTrigger). Roof arch ribs, light masts and flags stand at least 10 m beyond the boards, so the camera never meets them; no pillar on the play surface; sea all round. Camera: chase bound to your kart, 8 m back, 7 m up, look height 1, fov 46 (kart about 0.2 of frame height), about 4-frame lag, avoid_space on, occluder fade for any rib; heading frozen while you spin out. From this height the 1 m boards never hide play and rival flagpoles and drivers show over the 2.4 m ball. Ball has a hot seam rim; pine-light ring under your kart. During play the sky steps from gold to rose, lamps light at 90 s, golden goal turns the deck lanterns on.",
+ "ai": "All bots follow HOCKEY-ARCADE utility: SHOOT = 1.6 shot chance minus 0.3 pressure (veto under 0.08); KNOCK to mate = 1.2 lane safety x openness x (0.5 + gain), veto lane under 0.35; CARRY = 0.9 space x (1 - pressure) + 0.15; FEED = 1.4 x goal chance along a spun kart's flag line, vetoed if the ball cannot arrive before the spin ends or the line threatens own goal; defence PRESSURE, BLOCK lane, GUARD goal. Roles attacker, support, last defender re-sorted by time to ball with 0.3 s hysteresis; 0.15 commitment bonus. Following the owner's bar they decide every frame; tiers are clumsiness. TLSteer pursue, arrive, separate (6 m unless contesting). Every bot bump has a 24-frame tell: driver rears up and the flagpole whips back above the ball. RIVALS, Ghost Train Crew. BERTHA, the Wall: wide iron-green tub with tyre-stack bumper, bowler-hatted driver, brass bell atop the pole, heavier. Parks goal-side nose-on; head-on bumps rebound off her. Habit: bell swings and rings 30 frames, then she charges straight and cannot turn; sidestep and hit the flank; recovery 36 frames. Rings twice on scoring; driver slumps when spun. NELL, the Spinner: small striped teacup tub. Whirls when an attacker closes within 4 m in front; the parasol on her pole snaps open 24 frames before. Feint, then bump during her 24-frame recovery. Twirls parasol on scoring; it droops when beaten. VIC, the Dancer: long narrow coffin-nosed tub, tall black pennant. Swerves off your line and steals from the flank; two toots and the pennant flicks to the swerve side 24 frames before; ram where it points, or whirl. Driver bows on goals; shakes a fist when spun. TEAMMATES Polly (attacks, drives the goal, feeds spins) and Gus (covers): shoot freely, never take the ball off your nose, flash their lamp when open. TIERS Rookie / Pro / All-star: aim error 6 / 3.5 / 1.5 degrees, sweet-spot timing 20 / 50 / 75 percent, whirl read chance 25 / 50 / 70 percent, feed attempts 30 / 60 / 85 percent of openings; All-star feints, passes and blocks feed lines more. Equal speeds and boost. No bot stands still over 1 s.",
+ "controls": "drive: W throttle, S brake and reverse, A and D steer. boost: hold Shift to burn the tank and ram. bump: Space, spring nose lunge along your facing. whirl: E or right mouse, spinning guard that also swats the ball. restart: R after the end card. Your kart wears a pine-light ring; the huge ball has a hot seam rim and an edge arrow when off screen.",
+ "mood": "Golden-to-rose sunset over the sea, painted fairground tubs, brass lamps, flagpoles and bunting in the global inked toon style. Spring twangs, rubber thuds, brass bells, gull cries, crowd cheers (TLAudio), sparks only on rams, confetti on goals.",
+ "design": {
+  "pillars": [
+   {
+    "line": "Sensation: every spin-out is a rubber-and-brass jolt that throws both karts.",
+    "rules_out": "Health bars, damage numbers, silent slides, or contacts that move only one kart."
+   },
+   {
+    "line": "Challenge: your hit direction aims each spun rival as your bat.",
+    "rules_out": "Auto-aim, auto-face, random bounces, random bat direction, and power-up weapons."
+   },
+   {
+    "line": "Every lost ball has a visible cause and a learnable answer.",
+    "rules_out": "Hidden rubber-banding, faster hard bots, untelegraphed rival attacks, and a camera that loses you."
+   }
+  ],
+  "verbs": [
+   {
+    "id": "bump",
+    "move": "poke",
+    "input": "Space; template poke on a spring nose: flank hit spins victim and frees ball, attacker recoils; contact cone 35 degrees.",
+    "anticipation_f": 5,
+    "active_f": 7,
+    "recovery_f": 12,
+    "cancel": "Own bump animation: spring and driver lunge. No cancel before recovery ends; into whirl, attacker spins out; clash rebounds both."
+   },
+   {
+    "id": "ram",
+    "input": "Hold Shift; Rocket League boost, 33 per second; closing 14 m/s on flank spins victim 90 frames, attacker keeps 40% speed.",
+    "anticipation_f": 6,
+    "active_f": 180,
+    "recovery_f": 12,
+    "cancel": "Own ram animation: tub squats, driver hunches; cancels into bump or whirl; head-on rebounds both."
+   },
+   {
+    "id": "whirl",
+    "input": "E or right mouse; spin guard: bumper or rammer spins out instead, you gain 10 boost; swats ball tangentially.",
+    "anticipation_f": 4,
+    "active_f": 18,
+    "recovery_f": 24,
+    "cancel": "Own whirl animation: tub pirouettes, driver's arms high; no cancel; a delayed bump punishes the open recovery.",
+    "defensive": true
+   }
+  ],
+  "playstyles": [
+   {
+    "id": "wrecker",
+    "title": "Wrecker",
+    "line": "Spin defenders goalward, then feed them the ball."
+   },
+   {
+    "id": "striker",
+    "title": "Nose Striker",
+    "line": "Hoard boost, cradle the ball, bump-shoot late."
+   },
+   {
+    "id": "warden",
+    "title": "Goal Warden",
+    "line": "Guard goal, whirl attackers away, counter while they're dizzy."
+   }
+  ],
+  "loops": {
+   "s3": "Read the nearest kart: bump its flank along your goal line, whirl its charge, or boost past; waiting players bait whirls.",
+   "s30": "Cradle, shoot or spin then feed; choose a pad detour or goal-side cover. Players learn tells and hunt spins beside the ball.",
+   "m3": "Score three before sunset; spend fuller kickoff boost when behind, exploit each rival's habit, then chase the next night's pennant."
+  },
+  "context": [
+   "Conceding side kicks off with double boost, tail lamps glowing, so trailing teams strike first.",
+   "Match point: music quickens and corner boost lamps return in seven seconds instead of ten.",
+   "Golden goal at 180 seconds when level: sky darkens, lanterns light, one goal decides.",
+   "Roles swap by time to ball, so Bertha, Nell and Vic take turns guarding and attacking."
+  ],
+  "skill": {
+   "floor": "Drive into the ball and press Space; shoving it goalward and spinning anyone side-on already works.",
+   "ceiling": [
+    "Spin bat: bump a flank while driving goalward, then feed the ball into that spinning tub.",
+    "Sweet-spot shot: touch the ball in bump's first three active frames for a thundering 20 m/s strike.",
+    "Whirl swat: time the whirl beside the ball to redirect it sideways past the last defender."
+   ]
+  },
+  "feel": {
+   "hitstop_f": [
+    3,
+    8
+   ],
+   "knockback": "Impulse along contact line scaled by closing speed: rear shove 7 m/s, ram throw 6; spun karts brake hard; heavy Bertha travels less.",
+   "reaction": "Both karts answer: victim spins or wobbles, driver lolls; attacker recoils; blocked attacker spins out; clashes rebound both; hit-stop vibration decays.",
+   "whiff": "Spring twangs, no burst; bump recovery plays fully. Missed whirl coasts 24 frames without steering, driver wobbling, wide open.",
+   "iframes_f": 18,
+   "telegraph_f": 24,
+   "shake": "Bumps none; rams involving you 0.15 m over 10 frames; goals 0.25 m over 18 frames.",
+   "camera": "Chase 8 m back, 7 m up, fov 46; flagpole tells read above the ball; heading frozen during spin-outs; ring and edge arrows."
+  },
+  "clips": [
+   {
+    "id": "spin_bat_goal",
+    "moment": "Your flank bump spins Bertha; you tap the huge ball into Bertha's tub and it rockets into goal."
+   },
+   {
+    "id": "whirl_turnaround",
+    "moment": "Vic charges, you whirl, Vic spins out and the swatted ball flies up the deck."
+   },
+   {
+    "id": "sunset_ram",
+    "moment": "Golden goal: boost flames, sweet-spot bump against the rose sunset, confetti as lanterns blaze."
+   }
+  ],
+  "first_minute": "Countdown, Shift forward; Bertha crosses side-on beside the ball; Space spins her, you feed the ball, it rockets goalward. First bell teaches whirl.",
+  "fail_state": "End card shows score, what spun or robbed you most, the answer to try, and R for rematch within two seconds.",
+  "out_of_scope": [
+   "Weapons, item boxes and random power-ups",
+   "Jumping, aerial play, goalkeepers and fouls",
+   "Online play, split screen and gamepad support",
+   "Kart upgrades, shops and replays"
+  ]
+ },
+ "concept": {
+  "template": {
+   "id": "arcade_sport",
+   "reference": "Rocket League 3v3 car football, with NHL '94 and Buckland's Simple Soccer team play",
+   "copies": [
+    "Possession as a state with readable loss causes (HOCKEY-ARCADE 5.1): bumped off, spun away, outraced.",
+    "Utility AI scores shoot, pass and carry for every bot kart (HOCKEY-ARCADE 5.3).",
+    "Roles re-sorted by time to the ball: attacker, support, last defender (HOCKEY-ARCADE 5.4).",
+    "Bump copies move \"poke\", 5/7/12 frames, wind-up never faster; contact jolts and recoils both karts.",
+    "Rocket League kickoff: 3-second countdown, mirrored starting spots, centred ball, reset after every goal.",
+    "Rocket League boost: 100 tank, about 33 burned per second, floor pads give 12 or 100."
+   ]
+  },
+  "candidates": [
+   {
+    "pitch": "I'm the pier's meanest bumper driver: three against three, spinning rivals and ramming the huge stitched ball home.",
+    "likelihood": 0.85
+   },
+   {
+    "pitch": "I'm the bodyguard: I spin out defenders so my teammate's ball rolls in, charging our shared boost.",
+    "likelihood": 0.2
+   },
+   {
+    "pitch": "I'm the showman: crowd cheers from big spins wind my spring bumper for one monster shove.",
+    "likelihood": 0.18
+   },
+   {
+    "pitch": "I'm our family stall's champion driver, beating three rival ride crews, each defending differently, before the pier closes.",
+    "likelihood": 0.15
+   },
+   {
+    "pitch": "I'm the daredevil of the collapsing pier: planks drop as the sun sinks, and I score beside open sea.",
+    "likelihood": 0.08
+   }
+  ],
+  "chosen": 0,
+  "why": "\"I'm the pier's meanest bumper driver.\" Within 30 seconds I ram a rival into a spin and shove the huge ball goalward at sunset. Your words name this game, so it stays faithful.",
+  "hook": "fairground bumper karts spin each other to shove a huge stitched ball",
+  "anchor": "arcade car football",
+  "references": [
+   {
+    "game": "Rocket League",
+    "borrow": "Kickoff: after a 3-second countdown, boost into the centre ball; a full 100 tank lasts 3 seconds."
+   },
+   {
+    "game": "NHL '94",
+    "borrow": "Body check: drive into the carrier, the victim goes down, the puck runs loose for first arrival."
+   },
+   {
+    "game": "Mario Kart 8 Deluxe",
+    "borrow": "Battle spin-out: a struck kart whirls, loses speed and a balloon, then drives again within seconds."
+   }
+  ]
+ }
+}

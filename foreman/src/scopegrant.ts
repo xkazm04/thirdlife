@@ -36,7 +36,10 @@ export function grantedScope(events: readonly JobEvent[], id: string): string[] 
     if (e.type === "question" && e.package === id) question = e.text;
     if (e.type !== "answer" || e.package !== id || question === undefined) continue;
     const yes = YES.test(e.text) && !NO.test(e.text.replace(/^\s*\S+/, "").split(/[.;]/)[0] ?? "");
-    if (SCOPE_QUESTION.test(question) && yes) for (const p of pathsIn(e.text)) if (!out.includes(p)) out.push(p);
+    // H1g (the Director's answer): a bare yes ("yes, go ahead") grants the paths the question named; a yes that names
+    // paths grants those
+    const named = pathsIn(e.text);
+    if (SCOPE_QUESTION.test(question) && yes) for (const p of named.length > 0 ? named : pathsIn(question)) if (!out.includes(p)) out.push(p);
     question = undefined;
   }
   return out;
@@ -54,5 +57,6 @@ export function widenedNote(plan: readonly PackageSpec[], events: readonly JobEv
   const outside = files.filter((f) => !matchesAny(own, f));
   if (outside.length === 0) return undefined;
   const granted = grantedScope(events, id);
+  if (granted.length === 0) return undefined; // H1g: files outside the plan scope that no answer granted are not "widened" (another rule put them there)
   return `${FOREMAN_NOTE}scope widened for this change, on the person's answer: ${id} may change ${granted.join(", ")}; merged outside its plan scope: ${outside.join(", ")}`;
 }

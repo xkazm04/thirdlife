@@ -14,6 +14,9 @@ const CHANGE_WORDS: String = "the rallies are too slow: make the court smaller"
 var host: Node = null
 var ok_all: bool = true
 var said: Dictionary = {}
+var sent_frames: int = 6
+var sent_delay_ms: int = 0     # H1g: the proof (not the selftest) lets wall time pass per frame, as a machine under load does
+var _sends: Dictionary = {}    # kind -> the door's started count before the last press (H2c's quality_sent, for both kinds)
 
 
 func say(what: String, ok: bool) -> void:
@@ -35,7 +38,12 @@ func waits() -> String:
 	var p: Control = page()
 	if visible("QuestionCard") != null:
 		return "question"
-	if visible("QualityCard") != null:
+	# H1g: while a revise round runs the card stays up with the critic's reasons and no buttons ("the builders are still
+	# at work on this game"); only a card a person can answer is a quality pause
+	# and (H1g, run 2 of 3) the card's buttons show while the Foreman that wrote the hold is still letting go of the job;
+	# a press then is refused with "the builders are still at work on this game" (the page keeps the card: a person
+	# presses again). The stage presses once the Foreman has let go, as Pass waits for `settling`.
+	if visible("QualityCard") != null and (visible("FixIt") != null or visible("ItsFine") != null) and not _foreman_alive():
 		return "quality"
 	var s: String = str(p.call("shown_screen"))
 	if s == "phase_done" and not bool(p.get("settling")) and str(p.get("busy")).is_empty():
@@ -45,8 +53,66 @@ func waits() -> String:
 	return ""
 
 
+## H1g (reconciled with H2c's door check, one rule for every send): after a send, what the page shows: "not started"
+## (the door started no process for it, or the page says a message), "waiting" (still busy with it), "taken" (the log
+## moved past the pause it answered: the Foreman took it), or "lost" (not busy, and the job still held on the SAME pause
+## it answered, `mark`). A later pause of the same kind (the next revise round's hold, the next question) is "taken".
+func _after(kind: String, mark: Variant) -> String:
+	if _started(kind) <= int(_sends.get(kind, 0)) or str(page().get("message")) != "":
+		return "not started"
+	if str(page().get("busy")) == kind:
+		return "waiting"
+	return "lost" if str(_pause_mark(kind)) == str(mark) else "taken"
+
+
+## Is a Foreman still holding the page's job (the door's process, or the lock's pid)?
+func _foreman_alive() -> bool:
+	var d: Variant = page().get("door")
+	if d == null:
+		return false
+	return bool(d.call("foreman_alive", str(page().get("job_dir")), int((page().get("job") as Dictionary).get("lock_pid", 0))))
+
+
+## H2c: the door processes started for answers ("answer") or quality verdicts ("quality", also Change it) so far.
+func _started(kind: String) -> int:
+	var d: Variant = page().get("door")
+	if d == null:
+		return 0
+	return (d.get("started") as Array).filter(func(st: Dictionary) -> bool: return str(st.get("label", "")) == kind).size()
+
+
+## Before a press: how many processes of this kind the door has started (a send must add one).
+func _before_send(kind: String) -> void:
+	_sends[kind] = _started(kind)
+
+
+## A send held when the door started its process and the page waits for it or the Foreman has taken it.
+func _held(kind: String, mark: Variant) -> bool:
+	return _after(kind, mark) in ["waiting", "taken"]
+
+
+## The pause the page shows now: the open question's seq, or the quality hold; "" when not held on one.
+func _pause_mark(kind: String) -> Variant:
+	var job: Dictionary = page().get("job")
+	if str(job.get("phase", "")) != "paused":
+		return ""
+	if kind == "answer":
+		return int(Model.open_question(job).get("seq", -1))
+	return job.get("quality_hold", {}) if str(job.get("pause_kind", "")) == "quality" else ""
+
+
+## The frames after a send before the page is read again (6 in the selftest; the proof adds wall time per frame).
+func _sent_wait(h: Node) -> void:
+	for i: int in sent_frames:
+		await h.get_tree().process_frame
+		if sent_delay_ms > 0:
+			OS.delay_msec(sent_delay_ms)
+
+
 func drive(h: Node) -> void:
 	host = h
+	sent_frames = int(str((h.get("args") as Dictionary).get("sent-frames", "6")))   # H1g: the proof runs it with a slow page
+	sent_delay_ms = int(str((h.get("args") as Dictionary).get("sent-delay-ms", "0")))
 	await h.call("_frames", 10)
 	var dir: String = str((h.get("args") as Dictionary).get("job", ""))
 	page().call("show_job", dir)
@@ -79,9 +145,14 @@ func drive(h: Node) -> void:
 					say("tapping an option puts it in the answer box", box != null and box.text.contains("wait at the centre"))
 					await h.call("_shot", "pz-02-question-option")
 				said["question"] = true
+				var mark_a: Variant = _pause_mark("answer")
+				_before_send("answer")
 				h.call("_press", "SendAnswer")
-				await h.call("_frames", 6)
-				say("Answer sends foreman answer + resume, and the page says it is sent", str(page().get("busy")) == "answer" and visible("Sent") != null)
+				# H1g (H2 found it: failed 2 of 3 on 25 Nov): the page says "sent" on the press itself; a fast Foreman may
+				# answer within the frames after it, and then the page rightly shows the next state. Read it at the press.
+				var sent_a: bool = str(page().get("busy")) == "answer" and visible("Sent") != null
+				await _sent_wait(h)
+				say("Answer sends foreman answer + resume, and the page says it is sent (then waits, or the Foreman took it: %s)" % _after("answer", mark_a), sent_a and _held("answer", mark_a))
 				await h.call("_shot", "pz-03-answer-sent")
 			"quality":
 				var reasons: String = (visible("Reason0") as Label).text if visible("Reason0") != null else ""
@@ -94,6 +165,8 @@ func drive(h: Node) -> void:
 					var clock: Node = page().find_child("Clock", true, false)
 					var ct: String = (clock as Label).text if clock is Label else ""
 					say("the build clock counts this run (%s), not the job's first event (the fixture's is days old)" % ct, ct.count(":") == 1)   # E4c
+				var mark_q: Variant = _pause_mark("quality")
+				_before_send("quality")
 				match move:
 					"retry":
 						h.call("_press", "FixIt")
@@ -107,8 +180,9 @@ func drive(h: Node) -> void:
 						cb.text_changed.emit(cb.text)
 						await h.call("_shot", "pz-05-quality-change")
 						h.call("_press", "SendQualityChange")
-				await h.call("_frames", 6)
-				say("quality %s is sent (the page waits for the Foreman)" % move, str(page().get("busy")) == "quality")
+				var sent_q: bool = str(page().get("busy")) == "quality"     # H1g: read at the press, not 6 frames later
+				await _sent_wait(h)
+				say("quality %s is sent (the page waits for the Foreman, or the Foreman took it: %s)" % [move, _after("quality", mark_q)], sent_q and _held("quality", mark_q))
 			"phase_done":
 				h.call("_press", "Pass")
 				await h.call("_frames", 10)

@@ -26,8 +26,9 @@ import { revisePair, sameKind } from "./revisepair.js";
 import { killItem, methodBlock } from "./method.js";
 import { templateOf } from "./templates.js";
 import { coreLook, jobCore } from "./coregate.js";
-import { foreignWords, gameHasVerb, gameWords } from "./gamewords.js";
-import { sayLookNotPlay } from "./playsame.js"; // H1e: judged by the game's own design
+import { BODY, foreignWords, gameHasVerb, gameWords } from "./gamewords.js";
+import { sayLookNotPlay } from "./playsame.js";
+import { cameraNotesMissed } from "./camnote.js"; // H1e: judged by the game's own design
 import { HOUSE_CONTACTS, numberLeaves } from "./revisepair.js"; // E3 of 24 Nov: the measured check of a game on a core
 
 /** True when the engine's runner can film a strip in one capture run (`--strip` in its verbs.json). */
@@ -207,7 +208,7 @@ export function claimsLine(built: TofuResult | undefined, film?: FilmCheck): str
 /** N4 loop round 2: the rubric item of a job whose template has a house game: this build against the house game. */
 export function houseItem(pack: string, foreign: string[] = []): RubricItem {
   // H1e (lanes G2, G4): the house game's verbs and rows this game's design does not have are never missing
-  const not = foreign.length > 0 ? ` This game's design does not have the house game's ${foreign.join(", ")}: never call them missing and never ask for them; set beside it only what the two games share (the bodies, how they take contact, the team's play).` : "";
+  const not = foreign.length > 0 ? ` This game's design does not have the house game's ${foreign.join(", ")}: never call them missing and never ask for them; set beside it only what the two games share (${foreign.some((w) => BODY.includes(w)) ? "" : "the bodies, "}how they take contact, the team's play).${foreign.some((w) => BODY.includes(w)) ? " This game has no bodies that stumble or fall (H1g): judge its own contact, the bumps, the pushes and the ball, never a body's stand, brace or stumble." : ""}` : "";
   return { id: "house_game", text: `Against the house game engine/packs/${pack} (a working base of this game's template on this engine, a FLOOR and not the bar: the owner called it slop; its figures in the context above): do the frames show its exchange as clearly (wind-up, hit-stop on both, each body's own reaction, the guard and the roll in the body)? When an image is labelled HOUSE GAME, set this build's strips beside it: the same moment of the exchange, is it as readable in the bodies? Name in \`notes\` each place this build falls short of the house game, by what you see and by the SHORT figures. 1.0 at least as readable as the house game, 0.5 its core with gaps, 0 none of it. Reaching the house game is not reaching the bar: a build that copies one of the teardown's "do not copy" lines (context) is named for it.${not}` };
 }
 
@@ -505,7 +506,10 @@ export async function decideLook(h: GateHost, m: Milestone, members: string[], l
   if (core !== undefined && !core.measured) notes.push(core.line);
   const claims = [claimsLine(built, filmed), core !== undefined ? `The core's measured check of this build's cartridge (lane E2's lab, not the build's own claim): ${core.line}` : undefined].filter((x): x is string => x !== undefined).join("\n") || undefined;
   const judged = withStage(h, withTofu(h, await judge(h, m, film, shots, lastPackage, round, vsHouse !== undefined && base !== undefined ? { line: vsHouse.line, pack: base.pack, strips } : undefined, claims), tofu), core?.measured === true ? core : undefined, "core");
-  const fresh = notesKept(judged.verdict); // H1f: a person's note on a kept card the frames do not keep makes the look NOT ok
+  // H1g: a steady-camera note on a kept card, checked against the runner's camera figures (camnote.ts)
+  const camMissed = cameraNotesMissed(h);
+  if (camMissed.length > 0 && judged.verdict === undefined) notes.push(...camMissed);
+  const fresh = notesKept(judged.verdict !== undefined && camMissed.length > 0 ? { ...judged.verdict, notes: [...camMissed, ...judged.verdict.notes] } : judged.verdict); // H1f: a person's note on a kept card the frames do not keep makes the look NOT ok
   const head = `all ${members.length} package(s) of this milestone are merged and verified: ${members.join(", ")}`;
   const counts = `${film.captures.length} capture(s)${film.strips.length > 0 ? `, ${film.strips.length} strip(s)` : ""}`;
   if (round === 0) {

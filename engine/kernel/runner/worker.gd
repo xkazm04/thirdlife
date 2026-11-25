@@ -13,6 +13,7 @@ const CpuClock: GDScript = preload("res://kernel/host/cpuclock.gd")
 const StateHash: GDScript = preload("res://kernel/host/statehash.gd")
 const Session: GDScript = preload("res://kernel/runner/session.gd")   # P7: the input record (tl.input/1), replay, --devices
 const PackLife = preload("res://kernel/runner/pack_life.gd")   # the lifecycle this worker shares with a world's holder
+const CamYaw: GDScript = preload("res://kernel/runner/camyaw.gd")   # H1g: how much the game camera turns (metrics only)
 const Trace: GDScript = preload("res://kernel/runner/trace.gd")   # the hash trace, and the determinism locator's stops
 
 const TICK_LIMIT_MS: int = 250          # RUNNER.md: one _pack_tick or _bot_tick
@@ -57,6 +58,7 @@ var _wd_phase: String = ""
 var _wd_frame: int = -1
 var _wd_stop: bool = false
 var _wd_tripped: bool = false
+var camyaw: RefCounted = CamYaw.new()   # H1g: runner/camyaw.gd, read only
 var cpu: RefCounted                      # P1: processor time of this process (kernel/host/cpuclock.gd)
 var session: RefCounted                  # P7: this run's input record, kept or fed back (kernel/runner/session.gd)
 var _cut: bool = false                   # the run ended inside its last frame, before the physics step (a bot that was done)
@@ -200,6 +202,8 @@ func _physics_process(_delta: float) -> void:
 			_end_run()
 		return
 	logger.set("frame", frame)
+	if started and ctx != null and ctx.cameras != null:
+		camyaw.call("sample", ctx.cameras.active)      # the camera as the previous frame left it
 	if not life.tick(frame, true, _pre_sample):       # a call over its limit, or a scripted "close" ended the run
 		return
 	if logger.call("total_errors") > MAX_ERRORS:
@@ -466,6 +470,7 @@ func _end_run() -> void:
 	if loaded:
 		metrics = {"state_hash": state_hash, "frame_ms_p50": _percentile(sorted, 0.5), "frame_ms_p99": _percentile(sorted, 0.99),
 			"entities_max": life.entities_max, "bodies_max": life.bodies_max, "tick_ms_max": snappedf(tick_ms_max, 0.001)}
+		metrics.merge(camyaw.call("summary"))      # H1g: absent without an active camera
 	res["metrics"] = metrics
 	var starved: Dictionary = cpu.call("starved_summary")
 	if not starved.is_empty():

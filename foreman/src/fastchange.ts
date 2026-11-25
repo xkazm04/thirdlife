@@ -19,6 +19,7 @@ import { playerChecks } from "./playercheck.js";
 import { FOREMAN_NOTE, clip } from "./conduct.js";
 import { CARTRIDGE_DIFF, FIGURE_MISSED } from "./coregate.js";
 import { REMOVED, entriesText, type Removal } from "./removal.js";
+import { NOT_DONE, noteLines, notMadeSince } from "./halfmade.js";
 
 /** The start of the Foreman's notes about what a data-only change skipped (after FOREMAN_NOTE). */
 export const DATA_ONLY = "data-only change";
@@ -105,7 +106,7 @@ export function whatChangedNote(events: readonly JobEvent[], version: string, fo
   // H1f (G2: "files: data/tuning.json, scripts/sim/sim.gd, ..." named files, not what the person will see; the builder's
   // own note said it in words): after the person's words, what the merged rounds' builders say they changed, then the files.
   const merged = new Set(since.flatMap((e) => (e.type === "merge" ? [e.package] : [])));
-  const said = files.length === 0 ? [] : since.flatMap((e) => (e.type === "note" && merged.has(e.package) && !e.text.startsWith(FOREMAN_NOTE) ? e.text.split(/\r?\n/).map((l) => l.replace(/^\s*[-*]\s*/, "").trim()).filter((l) => l !== "" && !/^DEVIATIONS:?\s*(none)?$/i.test(l)) : []));
+  const said = files.length === 0 ? [] : since.flatMap((e) => (e.type === "note" && merged.has(e.package) && !e.text.startsWith(FOREMAN_NOTE) ? noteLines(e.text).filter((l) => !NOT_DONE.test(l)) : [])); // H1g: what was NOT made is not "what you will see"
   const seen = said.length === 0 ? "" : `what you will see, in the builder's words: ${said.slice(0, 3).map((l) => clip(l, 220)).join(" / ")}${said.length > 3 ? ` (and ${said.length - 3} more in its note)` : ""}; `;
   const made = files.length === 0 ? "nothing was merged: the change was NOT made" : `${seen}${keys.length > 0 ? `${keys.join("; ")}; ` : ""}files: ${files.join(", ")}`;
   // H1 (E5e defect 3): each removal on its own line, "removed: ...; why: ...": the diff's REMOVED notes, then what the
@@ -114,6 +115,8 @@ export function whatChangedNote(events: readonly JobEvent[], version: string, fo
   const unnamed = found.filter((r) => !named.some((n) => n.startsWith(`${REMOVED}: ${entriesText([r])};`))).map((r) => `${REMOVED}: ${entriesText([r])}; why: not said (a builder's round; its DEVIATIONS may say)`);
   // H1d: a figure the person named that the change missed, on its own line too
   const missed = files.length === 0 ? [] : since.flatMap((e) => (e.type === "note" && e.text.startsWith(`${FOREMAN_NOTE}${FIGURE_MISSED}: `) ? [e.text.slice(FOREMAN_NOTE.length)] : []));
-  const lines = [...new Set([...named, ...unnamed, ...missed])].map((l) => `\n${l}`).join("");
+  // H1g: what the builders say they did not make, on its own line (and where it went), so "asked" never reads as all made
+  const notMade = files.length === 0 ? [] : notMadeSince(since);
+  const lines = [...new Set([...notMade, ...named, ...unnamed, ...missed])].map((l) => `\n${l}`).join("");
   return `${`${FOREMAN_NOTE}${WHAT_CHANGED} in v${version}${was !== "" ? ` (since v${was})` : ""}: ${asked.length > 0 ? `asked ${asked.join(", ")}; ` : ""}${made}`.slice(0, 1500)}${lines}`;
 }

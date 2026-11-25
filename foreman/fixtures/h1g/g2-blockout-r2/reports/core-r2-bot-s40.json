@@ -1,0 +1,1 @@
+{"seed":1,"bot":{"test":"tests/bot_player.gd","done":true,"frames":135,"result":{"ok":true,"moments":{"slide_hit":[52],"cartwheel":[74],"clamber":[112],"shot":[117],"goal":[134]},"summary":"player: slide_hit, cartwheel, clamber, shot, goal, top 1.20"}}}

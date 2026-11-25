@@ -13,17 +13,38 @@ export function gameWords(brief: Brief | undefined): Set<string> | undefined {
   const d = brief?.design;
   if (d === undefined) return undefined;
   const names = [...d.verbs.flatMap((v) => [v.id, v.move ?? ""]), ...d.clips.map((c) => c.id), ...(brief?.aspects ?? []).map((a) => a.id)];
-  return new Set(names.flatMap(wordsOf));
+  // H1g: the body rows (stand, brace, stability, stumble, ...) are the game's only when it has bodies that take a hit
+  return new Set([...names.flatMap(wordsOf), ...(hasBodies(brief) ? BODY : [])]);
+}
+
+/**
+ * H1g (lane G5, bumper karts, event 69: the builder was sent 49 house contact rows to add, hits.body_window,
+ * stand_brace, sprint_stability, stumble_ratio ...): the words of rows about a body taking a hit (standing, bracing,
+ * stumbling, falling). They are generic for a game of people, robots or creatures, and foreign to a game of vehicles.
+ */
+export const BODY = ["body", "stability", "stand", "brace", "stumble", "downed", "lying", "down", "loose", "unseen"];
+
+/** Body reactions in a design's words: a game whose bodies stumble, tumble, fall or get up. */
+const REACTS = /\b(stumbl\w*|tumbl\w*|stagger\w*|fall(s|ing|en)?|knock\w* (down|over)|get\w* (back )?up|clamber\w*|ragdoll\w*|flinch\w*|trip(s|ped)?|on foot)\b/i;
+/** Vehicles in a design's words. */
+const VEHICLES = /\b(karts?|cars?|vehicles?|trucks?|buggy|buggies|boats?|ships?|tanks?|planes?|hovercrafts?|motorbikes?|bikes?)\b/i;
+
+/**
+ * Has this game bodies that take a hit? Yes when its design says a body stumbles, tumbles, falls or gets up; no when it
+ * is a game of vehicles that says none of that (a kart spins out, it does not stumble); yes otherwise (as before H1g).
+ */
+export function hasBodies(brief: Brief | undefined): boolean {
+  const text = JSON.stringify(brief ?? {});
+  return REACTS.test(text) || !VEHICLES.test(text);
 }
 
 /** Words of a row's or a verb's name that say nothing about which game it is. */
 const GENERIC = new Set([
   "hits", "fun", "gap", "cone", "deg", "cooldown", "frames", "frame", "window", "min", "max", "speed", "ratio", "share",
   "radius", "length", "bonus", "range", "kept", "live", "recent", "clip", "dot", "arc", "match", "base", "bot", "mult",
-  "scale", "time", "delay", "thrust", "stability", "stand", "brace", "side", "behind", "full", "down", "downed", "lying",
+  "scale", "time", "delay", "thrust", "side", "behind", "full",
   "grace", "give", "restitution", "scatter", "back", "strip", "hold", "turn", "exposed", "margin", "push", "pull", "windup",
-  "stop", "closing", "hard", "shake", "replay", "slow", "card", "tail", "end", "before", "body", "unseen", "sprint", "charge",
-  "stumble", "loose", "hit", "contact",
+  "stop", "closing", "hard", "shake", "replay", "slow", "card", "tail", "end", "before", "sprint", "charge", "hit", "contact",
 ]);
 
 /** The words of a dotted, snake_case name (hits.board_bonus -> board, bonus); numbers and one- or two-letter units go. */
