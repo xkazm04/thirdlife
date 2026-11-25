@@ -1,5 +1,5 @@
 """Pair sheets for the skater's surface: thirdjam's own render (look_reference.py, files <clip>_k<key>_<cam>_t<team>.png)
-above ours (engine/rigs/skater/look/look_gym.tscn --mode=shots, one folder a team: <ours>/t<team>/<clip>_k<key>_<cam>.png).
+above ours (engine/tools/skater/look/look_gym.tscn --mode=shots, one folder a team: <ours>/t<team>/<clip>_k<key>_<cam>.png).
   python look_pairs.py <ref dir> <ours dir> <out prefix> <team> <clip> <key> <cam> [<cam> ...] [--px=N] [--crop=x0,y0,x1,y1]
 --crop is in shares of the frame (0..1), applied to both rows."""
 import sys
