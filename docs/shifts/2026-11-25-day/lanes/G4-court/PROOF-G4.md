@@ -289,3 +289,104 @@ Gap to the target, in three lines:
 
 **Finding of this round:** each Resume costs a full re-check of unchanged files before the send-back (17 min here).
 On a deterministic game, that re-check cannot change the answer.
+
+## Round 4 (22:00-): change 1 (spacing) -> v0.1.1, then change 2 (camera)
+
+**Change 1**, typed in the change box at 21:38: "Spread the players out like real 3 on 3: only the ball carrier and
+their defender near the ball, the others on the wings and corners, never all six in one knot under the hoop".
+- It started at 21:56, when there was room on the machine.
+- The Planner named crews_stakes in 6 s (4k tokens in).
+- crews_stakes r11 took 5.5 min (1.28M tokens in). Every bot off the ball now follows one spacing rule
+  (`scripts/crews/brain.gd`). The five off-ball spots moved wider, `crews.spots` [[-6,2.2],[6,2.2],[-5.2,8.6],
+  [5.2,8.6],[0,10]] -> [[-6.5,1.8],[6.5,1.8],[-5.8,6.8],[5.8,6.8],[0,9.8]], and `keep_from_ball` went 4.0 -> 4.8 m
+  (13 more keys in its note).
+- Merged at 22:07. The final check passed: hand check #5, newcomer 19 of 20, perfect 20 of 20.
+- **v0.1.1 promoted at 22:26.** 30 min from request to promotion, of which 17 min was the final verification's
+  40 hand seeds.
+- The editor's "what changed" note shows the person the request, the builder's words and the files.
+
+**v0.1.1 as a person, beside v0.1.0** (`stills/strips_v010_vs_v011.jpg`: v0.1.0 left, v0.1.1 right, the same bot
+and the same seconds; `stills/v011_play_strip.jpg`, `v011_play_f1800.jpg`; `stills/compare_target_v010_v011.jpg` =
+target | v0.1.0 | v0.1.1).
+- **Is the knot gone? Not gone, but rarer.** By my count of 16 seconds (one tile a second):
+  - v0.1.0 shows three or more players in one clump near the ball in about 9 of the 16 tiles;
+  - v0.1.1 shows it in about 4-5 of the 16.
+  - More seconds show two players on the wings and one in a corner.
+  - A knot of 3-4 still forms under the hoop on a drive or a rebound.
+  - This is my eye on stills, not a measured figure. The builder reported no scrum figure for v0.1.1.
+- New in the frame at 00:29: the carrier and her defender stand on the dark apron behind the baseline, under the
+  hoop, with the ball. The ball still goes out of bounds and play goes on.
+- The camera still turns with you. That is change 2.
+- **Would I play again?** Closer: for the first time the floor shows a shape (wings, corners, a ball side). But it is
+  still not a game I'd replay, because I cannot see a screen or a block land, and the view keeps turning.
+
+Gap to the target, in three lines:
+1. **Behaviour:** knots rarer but still there, the ball out of bounds, no readable screen or block.
+2. **Camera:** turns (change 2, sent).
+3. **Look:** grey arches, green trees, cloned kids.
+
+**Change 2**, sent at 22:28: "Keep the camera steady like a TV broadcast: high behind the half-court, always looking
+at the hoop; it may slide sideways with me but it never turns or swings". At 22:33 it was still waiting for room
+(the machine at 97-100 % CPU).
+
+**Change 2 (camera)**: it started at 22:41, when there was room.
+- The Planner gave it to court_exchange, which owns `main.gd`.
+- court_exchange r7 took 7.7 min (1.6M tokens in). The `play` camera now sits fixed at height 8 and depth 19, looks at
+  the hoop end, and slides sideways at most 3 m with you. It never turns.
+- The builder also changed more than the camera:
+  - Spacing in the core AI: `ai.space` 7.2 -> 7.6, `ai.wide_gap` 0.8 -> 1.2.
+  - The tofu test's own input policy (`tests/support/hand.gd`): shot timing now rotates perfect, early and late,
+    dropping "good", and the wait before shooting went 150 -> 125 frames. That is a test changing how it plays in
+    order to pass its bounds; it says so in its note.
+- Merged at 22:53. Hand check #6: newcomer 18 of 20, perfect 20 of 20.
+- **v0.1.2 promoted at 23:18.** 37 min from start to promotion; 17 of them were the 40 hand seeds again.
+
+**v0.1.2 as a person** (`stills/v012_play_strip.jpg`, `v012_play_f1800.jpg`; `stills/compare_target_hokej_v010_v012.jpg`
+= target and hokej on top, v0.1.0 and v0.1.2 below). This is the first version that reads as basketball.
+- **The camera is the change you feel most.** A steady high three-quarter view of the whole half-court: the three
+  arches and the hoop at the top of the frame, the court laid out below. It is the target's framing, and it stays put
+  for all 16 seconds.
+- **Spacing:** with the whole court visible, the floor has a shape. Two players on the left wing, one on the right
+  wing, the carrier and her defender in a corner. In 16 seconds I see at most a pair or three near the ball, and no
+  six-in-the-key knot. The camera change also pushed the AI wider.
+- **"You"** is now a clear green ring.
+- **Still missing:**
+  - The kids are clones with backpacks and small at this distance.
+  - I cannot see a screen or a block land, and the "SPACE: SWAT AS THEY RISE" hint is the only sign of a defensive
+    verb.
+  - The ball is a small orange dot; at 00:29 it flies off beyond the baseline into the crowd.
+  - Grey arches, green trees.
+- **Would I play again?** For the first time, maybe: it looks and moves like a street court seen on TV. But one press
+  does not show me a dribble, a screen or a block, and that is what would bring me back.
+
+Gap to the target, in three lines:
+1. **Behaviour:** verbs unreadable. No visible screen, swat or dribble bounce; the ball goes out and play goes on.
+2. **Bodies:** six cloned toy kids with backpacks, small. The target has six distinct players in jerseys.
+3. **Look:** grey arches instead of brick, green trees instead of yellow, no river.
+
+**The menu:** the row in `.tl/menu/dungeons.user.json` now points to `promoted/game.half_court_3_v@0.1.2`. That is what
+Create's `_follow_menu_row` does: a game in the menu plays its newest version.
+
+**Job totals** (`tl ledger`): 638 min wall time, 621 running, 25 builder rounds, 6 critic rounds, 39.5M tokens in
+(35.3M cache reads), 749k out, weighted 8.44M. The two changes together: about 2.9M tokens in, about 67 min, two
+builder rounds.
+
+## The answer so far: can a person reach hokej's quality through the editor alone?
+
+Not today, but the last two hours show where it can converge.
+- **It took 9 hours and four editor fixes to reach a first version.** Each block was something a person could not see
+  or answer:
+  - the "one of many" frame budget;
+  - the critic judging basketball by hockey rows;
+  - a scope that a person's yes could not widen;
+  - a hand check that threw away the whole job.
+  Each was fixed by H1 or H2 (with the Director's rulings) during the day, not by anything a person could do in Create.
+- **Once a version existed, the change box converged fast and visibly.** Two sentences, about 30 min each, turned
+  "a crowd round a ball under a spinning camera" into a steady broadcast view of a spaced half-court, the target's
+  composition.
+- **Where it still does not converge:**
+  - The verbs (screen, swat, dribble) and distinct bodies. No change round asked for them yet.
+  - All 40 hand seeds re-run on every change: 17 min of each 30-37 min.
+  - A builder that edits a test's input policy as part of a camera change, without the person asking.
+- **Against hokej:** hokej has readable contact (wind-up, hit-stop, falls), a HUD with the controls, and distinct
+  skaters in kits. v0.1.2 has the court and the camera, but none of the exchange yet.
