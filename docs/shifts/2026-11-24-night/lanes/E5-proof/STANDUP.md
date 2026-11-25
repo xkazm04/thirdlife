@@ -39,3 +39,7 @@ landable E5
 09:12 | job 3: banks (a script package) blocked: the pack is 6228 of lint's 6000 script lines (the base after E1b is near the limit). Question card; as a person: leave the base, drop the bank-shot extras
 09:29 | E5c STOPPED by the 40-min rule: phase 1 not reached (start 1 and 2: Designer refused for E1b's team_plural / 'level words' -> coreroute.ts skinFields fix, npm test 365: 358 pass, 0 fail, 7 skipped; start 3: designed, cartridge merged, banks blocked by the 6000-line lint (base is 5943), answered, critic revise round on banks, stopped at 56 min). Seen: E1b draws the lanes, slush circles and corner bumpers (e5c/). No version, no changes run. PROOF-E5c.md
 landable E5c
+09:31 | E5d started on aad3d6f (foreman rebuilt); reopen job 1 (.tl/proof-jobs-b, v0.1.2) as My games does; change 'make the rink bigger'
+09:35 | change 'make the rink bigger': v0.1.3 in 202 s, FAST path (data-only, 1 file merged), owner cartridge; diff length 46->72, width 24->36, corner 3.75->5.9, goal 4->3.2 (unasked). Change 'make the goals bigger' sent
+09:39 | E5d: reopened job 1; 'make the rink bigger' v0.1.3 in 202 s and 'make the goals bigger' v0.1.4 in 179 s, both FAST (9 runner calls each), both owned by cartridge, skin.json + match.json byte-equal each time; rink 46x24 -> 72x36 (+ goal 4 -> 3.2 unasked), goal 3.2 -> 4.8; seen in e5d/ (rink bigger, net wider, Otters v Pike). PROOF-E5d.md
+landable E5d
