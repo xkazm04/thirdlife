@@ -102,7 +102,8 @@ export function sendBackHands(h: Pick<GateHost, "s" | "events" | "reopen">, rows
   let since = 0;
   for (let i = h.events.length - 1; i >= 0; i--) {
     const e = h.events[i];
-    if (e && (e.type === "promoted" || e.type === "change_requested")) {
+    // H1j (the Director): every Resume of a failed job grants one more send-back ("try again with today's editor")
+    if (e && (e.type === "promoted" || e.type === "change_requested" || (e.type === "job_state" && e.state === "running" && e.reason === "resumed (was failed)"))) {
       since = e.seq;
       break;
     }
