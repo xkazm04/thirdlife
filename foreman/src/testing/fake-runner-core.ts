@@ -255,14 +255,20 @@ export function fakeRunner(argv: string[], env: NodeJS.ProcessEnv = {}): FakeRun
     errors.push(...capErrs);
     checks.push({ id: "lint.capabilities", ok: capErrs.length === 0, detail: capErrs.length === 0 ? "every kernel capability used is declared" : `${capErrs.length} problem(s); first: ${capErrs[0]?.file ?? ""}:${capErrs[0]?.line ?? 0} ${capErrs[0]?.message ?? ""}` });
 
+    // E3e of 25 Nov: counted as the real lint counts (engine/kernel/runner/lint.gd, PACK.md "Size limits"): a final newline
+    // ends the last line, it does not start one; tests/ are counted apart (at most 4,000) from the game's scripts/ and gen/
+    // (at most 6,000). The fake counted a 600-line script as 601 and tests with the game, and refused lane E1's base.
     const sizeErrs: Err[] = [];
     let total = 0;
+    let testLines = 0;
     for (const f of gd) {
-      const n = (text.get(f) ?? "").split(/\r?\n/).length;
+      const src = (text.get(f) ?? "").replace(/\r\n/g, "\n");
+      const n = src === "" ? 0 : src.split("\n").length - (src.endsWith("\n") ? 1 : 0);
       total += n;
+      if (f.startsWith("tests/")) testLines += n;
       if (n > 600) sizeErrs.push({ kind: "size", file: f, line: 601, message: `${n} lines (limit 600)` });
     }
-    if (total > 6000) sizeErrs.push({ kind: "size", message: `pack has ${total} lines of GDScript (limit 6000)` });
+    if (total - testLines > 6000 || testLines > 4000) sizeErrs.push({ kind: "size", file: "scripts/", message: `${total - testLines} lines of game GDScript (scripts/, gen/; at most 6000), ${testLines} lines in tests/ (at most 4000)` });
     errors.push(...sizeErrs);
     checks.push({ id: "lint.size", ok: sizeErrs.length === 0, detail: `${total} lines of GDScript` });
     const count = (prefix: string): number => gd.filter((f) => f.startsWith(prefix)).reduce((a, f) => a + lines(f), 0);

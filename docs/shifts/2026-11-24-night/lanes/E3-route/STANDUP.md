@@ -14,3 +14,6 @@ landable E3c
 04:20 | state: done | did: E3d: gross defects fail a cartridge (goals outside 0-21.8, the band from 13 of thirdjam's cartridges at 1-17.6; no end; idle wins half; skating alone a third, unless clone_mismatch), measured before any verb, in change rounds and at looks; the check runs at every phase pause (note + status); a change naming a team the game lacks is asked back as a question and made as a diff once answered; real check on E5's v0.1.0 pond: GROSS DEFECTS 29/32.9/34.4 goals | gates: npm test 355: 348 pass, 0 fail, 7 skipped; tl check --tier fast PASS 5/5
 
 landable E3d
+04:55 | state: done | did: E3e: the fake runner counts lines as the real lint (tests apart, final newline; it refused E1b's 600-line hud.gd and 6,303 lines with tests), the base list read from the base's pack.json, a diff round runs bot_toys only when it changed game.rink.zones/obstacles; E4b's 7 runner calls hold | gates: npm test 357: 350 pass, 0 fail, 7 skipped; tl check --tier fast PASS 5/5
+
+landable E3e

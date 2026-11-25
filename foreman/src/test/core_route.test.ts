@@ -392,7 +392,8 @@ test("E3 route: the real base (lane E1) starts a plan with the base package fixe
   const p = basePackage(RINK_ROUTE, dir);
   assert.deepEqual(p.scope, ["assets/**", "data/**", "gen/**", "scripts/**", "tests/**"]);
   assert.ok(!baseFiles(dir).some((f) => f.endsWith(".uid") || f === "README.md" || f === "pack.json"), "no uid, README or manifest copied");
-  assert.deepEqual(p.registers?.tests, ["tests/bot_match_hand.gd", "tests/bot_first_match.gd", "tests/bot_skin.gd"]);
+  // E3e: the base's own list (lane E1b added tests/bot_toys.gd): the route reads it from the base, never a list of its own.
+  assert.deepEqual(p.registers?.tests, (JSON.parse(fs.readFileSync(E1_BASE, "utf8")) as { tests: string[] }).tests);
   assert.deepEqual(p.acceptance.map((a) => a.args.join(" ")), ["", "", "--test=tests/bot_first_match.gd"]);
   assert.equal(basePlayerCheck(dir), "PLAYER CHECK: tests/bot_match_hand.gd fails when the human's skater never carried the puck or took no shot", "hokej's match hand needs the human's carry and shot (its ok line)");
   assert.equal(baseCartridges(dir).game, "data/hockey.regular.cartridge.json", "data/match.json names the game's cartridge");
@@ -425,4 +426,14 @@ test("E3b route: a hand-written core plan (`foreman plan --from`) gets its base 
   assert.ok((base?.scope ?? []).includes("data/**") && (base?.scope ?? []).includes("scripts/**"), JSON.stringify(base?.scope));
   assert.ok((base?.registers?.tests ?? []).includes("tests/bot_first_match.gd"));
   assert.match(base?.contract ?? "", /PLAYER CHECK: tests\/bot_match_hand\.gd fails when/);
+});
+
+test("E3e: a diff round runs the base's toy bot only when the diff changed the rink's zones or obstacles", async () => {
+  const { toyBots, roundAcceptance } = await import("../fastchange.js");
+  const plan = [{ id: "base", kind: "base" as const, title: "b", milestone: "greybox" as const, deps: [], scope: ["tests/**"], contract: "c", acceptance: [], registers: { tests: ["tests/bot_match_hand.gd", "tests/bot_first_match.gd", "tests/bot_toys.gd"] } }, { id: "cartridge", title: "c", milestone: "greybox" as const, deps: ["base"], scope: ["data/x.cartridge.json"], contract: "PLAYER CHECK: tests/bot_match_hand.gd fails when the human never shoots", acceptance: [{ level: "V1" as const, verb: "lint" as const, args: [] }, { level: "V4" as const, verb: "bot" as const, args: ["--test=tests/bot_first_match.gd"] }, { level: "V4" as const, verb: "bot" as const, args: ["--test=tests/bot_match_hand.gd"] }] }];
+  const state = (diff: string) => ({ plan, notes: [{ package: "cartridge", round: 3, text: `[foreman] cartridge diff: ${diff} (why); measured before: ok` }], promotions: [{ packId: "g", version: "0.1.0", dest: "x" }], brief: { concept: { template: { id: "rink_sport" } } } }) as unknown as Parameters<typeof toyBots>[0];
+  assert.deepEqual(toyBots(state("game.skater.speed: 11 -> 14"), "cartridge", 3), [], "a speed diff: no toy bot");
+  assert.deepEqual(toyBots(state("game.rink.obstacles: absent -> [{\"kind\":\"bumper\"}]"), "cartridge", 3).map((a) => a.args[0]), ["--test=tests/bot_toys.gd"]);
+  const acc = roundAcceptance(state("game.rink.zones[0].kind: \"slow_ice\" -> \"fast_ice\""), plan[1] as never, 3).map((a) => `${a.verb} ${a.args.join(" ")}`.trim());
+  assert.deepEqual(acc, ["lint", "bot --test=tests/bot_match_hand.gd", "bot --test=tests/bot_toys.gd"], "lint, the player check, the toy bot");
 });
