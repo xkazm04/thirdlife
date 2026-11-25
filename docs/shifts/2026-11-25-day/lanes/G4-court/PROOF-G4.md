@@ -169,3 +169,83 @@ Not yet at the change box. The route stopped converging before a first version, 
 - **The critic:** its reading of what it sees is right (piles, no hit-stop, recoloured kids, a turning camera). But its
   two revise rounds were thrown away by the budget and by the tofu test after the merge, so nothing it said changed
   the game.
+
+## Round 2 (18:22-20:42): with H2c the build goes through, then the hand check throws it away
+
+- **18:23 resume, and a foreign run.** My resume went through a scratchpad `door.sh` that another lane (d25-kart) had
+  overwritten. So d25-kart's foreman (2c2a16f, without H2c) verified crews_stakes r5 on the old 1.0 ms budget, failed
+  it and started r6 (events 264-271). I stopped my process after about 4 min and moved my scripts into
+  `d25-court/.tl/g4/`.
+  - All 44 events from 272 on are in my own door log.
+  - The foreign r6 builder had about 100 s in `ws/crews_stakes` before I stopped it. My r6 builder then worked in the
+    same workspace. Every file merged at event 293 passed my foreman's checks.
+- **18:28 Continue (my foreman).** crews_stakes r6 (the lower-rate pose driver: poses every 2 frames) passed
+  invariants under the solo budget and merged at 18:40. The Foreman noted "scope widened for this change, on the
+  person's answer" (H1f).
+  - Greybox critic NOT ok: "six identical toy figures ... I cannot find the ball ... all six collapse into one knot
+    under the hoop".
+  - Revise round r5 on court_exchange was refused: the Foreman now judges tofu bounds itself (H1e).
+  - Phase 2 paused at 18:55.
+- **Phase 2 as a person** (`stills/p2_*`): 3 v 3, six identical kids in a knot, the ball off the court, the camera
+  turning. I would not play again. I passed it, to reach v0.1.0 and put behaviour in the change box.
+- **Phase 3:**
+  - The greybox critic's revise 2 on crews_stakes merged.
+  - viaduct_art was built in 4.5 min and merged at 19:18.
+  - art_pass critic NOT ok twice. Both revise rounds were again driven partly by "48 house contact row(s) your pack
+    does not have: hits.body_window ..." (hockey rows, after H1e).
+  - Revise 2 merged plum jerseys on the rivals.
+  - Two more quality holds (greybox, then art_pass). I answered both with "play it as it is".
+- **Final verification** (19:52-20:42):
+  - lint, smoke, invariants and 6 bots: ok.
+  - The card's hand checks: 20 seeds of the newcomer hand and 20 of the perfect hand. The perfect hand wins 16 : 7; the
+    newcomer wins **7 of 20**, and the card asks at least 13.
+  - crews_stakes got a round (r9: rivals' tier-1 shot timing error 8 -> 18 frames). Its merge was refused because the
+    pack's tofu failed after it.
+  - The Foreman re-ran the same 40 hand seeds on unchanged files, got the same 7 of 20 (the game is deterministic), and
+    at 20:42 set **job failed: "hand check of card.team_possession failed, nothing promoted"**.
+
+**What a person sees now.** Create's failed screen, "This build stopped", whose one button is **Try again**: the same
+sentence from scratch.
+- No version was promoted, so there is no Play, no Add to menu and no change box.
+- After 8 hours (482 min wall time, 465 running), 22 builder rounds, 6 critic rounds, 34.3M tokens in (30.5M cache
+  reads), 684k out, weighted 7.52M, the person has nothing to play.
+
+**The game that was thrown away** (`stills/v010_*`, the job's last `pack/`, filmed the same way;
+`stills/compare_v010.jpg` = target | hokej | this):
+- **Look: the first real step toward the target.**
+  - Blue court with an orange key and a dashed arc.
+  - Three tall arches behind the hoop, grey stone rather than brick.
+  - A metal fence, orange leaf piles, a row of block-figure onlookers, benches and bins.
+  - Yellow against plum.
+  - Still missing: the brick colour, the autumn-yellow trees (they are green and lime), and the river.
+- **Behaviour: unchanged since phase 1.**
+  - Six identical toy kids with backpacks crowd into one knot in the key (3 of them at 00:29).
+  - The play camera still turns with you, so the arches swing from frame to frame. The side view puts heads in the
+    near foreground.
+  - The ball still leaves the court.
+  - I can read no screen and no block. The HUD says "SPACE: SWAT AS THEY RISE" most of the time.
+  - Score 5 : 1 after 29 s.
+- **Would I play again?** It is the first version I would open twice for the look, but no: there is nothing to do
+  with the ball that I can see working.
+
+Gap to the target, in three lines:
+1. **Behaviour.** No spacing, no readable dribble, shot, screen or block. Six bodies in a knot, and the ball off the
+   court.
+2. **Camera.** It turns with you, against my note on the card (H1f checks camera notes, but no change round reached
+   it).
+3. **Look.** Grey arches instead of brick, green trees instead of yellow, cloned kids instead of six distinct players.
+
+## Where the iterations stop converging (after round 2)
+
+They never reached the change box. After 8 hours, the route ends on a rule a person cannot see or answer.
+- **The card's hand check is a gate on the first promotion.**
+  - When the newcomer hand loses (7 of 20 against 13), nothing is promoted. The job fails and Create offers only "Try
+    again" from scratch.
+  - So a 3 v 3 that is too hard for a newcomer is thrown away whole, instead of reaching the person as v0.1.0 with "too
+    hard for a newcomer" as a note for the first change.
+  - The re-check loop re-ran the same deterministic 40 seeds on unchanged files.
+- **The critic** still sends revise rounds for hockey contact rows at art_pass after H1e (events 412, 443).
+- **The builders.** Each round says honestly what it did not do. They never fixed the core behaviour (spacing, ball
+  bounds, a fixed camera), and no critic round or hold made them try: each revise went to whichever package the critic
+  named, mostly for look items.
+- **The engine:** solved for this job by H2c (the solo budget).
