@@ -274,3 +274,4 @@ remain). Then plan the day: a `/shift` day or a `/spark`.
   (lint_base.gd) that the fast tier then fails on in the main checkout. Run the fast tier in the main checkout after
   the merge, before the slow list.
 - 2026-11-25 (day): another session switched the shared main checkout to its own branch mid-shift; two Director commits landed on that branch unseen. Land from a dedicated worktree on main (`.claude/worktrees/<shift>-main`), never in the shared checkout, and check `git branch --show-current` before every commit.
+- 2026-11-25 (day): a game lane waited 45 min for a fast-forward it asked for only in STANDUP.md (hourly reads). A lane that needs the Director mid-round ends its turn with the ask in its final message, which notifies at once.
