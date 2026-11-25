@@ -7,5 +7,9 @@
     "over_top_decel_mps2": 4,
     "sprint_restart_share": 0.25
   },
-  "levels": {}
+  "levels": {
+    "rookie": "opp.hk_shoot_extra9_m=16;opp.hk_shot_charge9_frames=8;opp.lift=1;opp.lift_cooldown_frames=150",
+    "all_star": "red_skill=0.87",
+    "pro": "opp.hunt_radius_m=16;opp.lift_cooldown_frames=60"
+  }
 }
