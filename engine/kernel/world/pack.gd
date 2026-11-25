@@ -112,6 +112,8 @@ var _kept_data: Variant = null
 var load_ms: Dictionary = {}            # where the loading time went: scripts, setup, laws, bot (milliseconds)
 var ledgered: bool = false              # unloaded: only the plot record is left
 var bot_off: bool = false               # N7: a person plays this pack (its bot waits); never set in a scripted run
+var defer_finish: bool = false          # G1: the world's guard ends a bot's run itself, under the setup limit (host/guard.gd)
+var finish_due: bool = false            # G1: the bot said it is done on this tick; `finish` is the guard's next call
 var manifest: Dictionary = {}           # P5: the pack's manifest; a stub has it before the pack is built
 var _tracker: Node = null               # P5: the pack's contact pass (TLContact.Tracker) as it stood when this tick began
 
@@ -285,7 +287,10 @@ func tick(world_tick: int) -> void:
 	if bot_done:
 		# as the single-pack worker does: a bot run ends on the tick the bot says it is done, before that tick's step
 		bot_info["done"] = true
-		finish(world_tick)
+		if defer_finish:
+			finish_due = true                  # G1: the bot's verdict and teardown are not a frame (host/guard.gd tick)
+		else:
+			finish(world_tick)
 
 
 ## P5. The pack's contact pass of this tick; the closing mark calls it after every node of the pack. A tracker made

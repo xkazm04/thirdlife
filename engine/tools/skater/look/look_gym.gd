@@ -2,7 +2,7 @@ extends Node3D
 ## The look gym (hockey campaign, lane K7): thirdjam's skater under thirdjam's hall light, to judge its SURFACE by eye
 ## against thirdjam's own render (docs/shifts/2026-11-24-night/lanes/K7-look/tools/look_reference.py takes the same
 ## shots in Unreal). Not part of any pack; it counts frames, never a clock. Run windowed (it renders):
-##   godot --path engine --position 0,1440 --resolution 1280x720 res://rigs/skater/look/look_gym.tscn -- \
+##   godot --path engine --position 0,1440 --resolution 1280x720 res://tools/skater/look/look_gym.tscn -- \
 ##         --mode=shots --shots=<file.json> --outdir=<folder> --team=0 --number=7 --look=felt
 ## Args after `--`:
 ##   --mode=shots   every shot of --shots ([{"clip", "key", "cam"}, ...]) as <outdir>/<clip>_k<key>_<cam>.png
@@ -19,7 +19,7 @@ extends Node3D
 ##   --cam_abs=x,y,height,yaw,pitch   the camera of a still of the game itself, for the shot camera "abs"
 ##   --linear=k     review: the felt figure in the source's own units times k, no film curve, grade or ink (to read
 ##                  a surface against thirdjam's HDR scene colour: tools/look_light_probe.py, look_light_read.py)
-##   --rig=0        the installed style's own sun instead of thirdjam's hall rig (look/gym_rig.json)
+##   --rig=0        the installed style's own sun instead of thirdjam's hall rig (tools/skater/look/gym_rig.json)
 ##   --style=<file> the look of the world (default: the engine's chosen style)
 ## Cameras: side | three | front | back (the four of skater_gym.gd, square, 30 degrees), top (from 6 m above) and, in the game's frame
 ## (16:9, 70 degrees across: hockey.regular.cartridge.json:255), game (thirdjam's follow camera at rest: 6.75 m behind,
@@ -98,7 +98,7 @@ func _ready() -> void:
 
 ## thirdjam's rig in the felt materials, and a roof light for the style's own materials (the ice of this gym).
 func _hall() -> void:
-	var d: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://rigs/skater/look/gym_rig.json")) as Dictionary
+	var d: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://tools/skater/look/gym_rig.json")) as Dictionary
 	var lights: Array = []
 	for l: Dictionary in d["lights"] as Array:
 		var c: Array = l["color_srgb8"]

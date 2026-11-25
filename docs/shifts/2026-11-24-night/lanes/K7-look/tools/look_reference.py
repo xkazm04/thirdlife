@@ -6,7 +6,7 @@
 # Environment: TL_REF_OUT = output folder, TL_REF_SHOTS = a JSON file:
 #   [{"clip": "Stride" | "rest", "key": 0, "cam": "side", "team": 0 | 1, "number": 7}, ...]
 # Cameras: the four of skater_gym.gd (720 x 720, 30 degrees) and three in the game's frame (1280 x 720, 70 degrees
-# across): game, gamefront, far (engine/rigs/skater/look/look_gym.gd holds the same numbers).
+# across): game, gamefront, far (engine/tools/skater/look/look_gym.gd holds the same numbers).
 # One PNG a shot (<clip>_k<key>_<cam>_t<team>.png) and reference.json (where the pose stands, and each slot's
 # material instance with its texture parameters). Nothing is saved to the project; the editor quits itself.
 import json

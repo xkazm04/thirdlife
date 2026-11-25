@@ -293,7 +293,7 @@ sk.not_ported                             # interface calls that arrived and are
   Under the felt figure lies thirdjam's contact shade (`TLRigSkaterLook.ContactShade`, a child of the skeleton): standing
   0.5 x 0.7 m under the mesh, Darkest 0.45; lying (the driver's `bShade`, kept by the falls) 2.2 x 0.95 m at the pelvis,
   turned along the body, Darkest 0.75, Flat 0.7. In a hall the figure's cast shadows are the key lights' (STYLE.md).
-  See both: `rigs/skater/look/look_gym.tscn` (its header has the command lines; `--mode=ten` is the ten skaters of a
+  See both: `tools/skater/look/look_gym.tscn` (its header has the command lines; `--mode=ten` is the ten skaters of a
   match). Gate: selftest block 850 (`look.skater.numbers`, `.instances`, `.shader`, `.variants`, `.render`,
   `.shadow`, `.shadow_red`, `.shaders_kept`).
 

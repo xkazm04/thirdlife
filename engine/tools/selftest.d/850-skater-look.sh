@@ -34,7 +34,7 @@ import { spawnSync } from "node:child_process";
 import { withWindowLock } from "./devx/lib/perf/scenarios.mjs";
 const draw = () => spawnSync(process.env.TL_GODOT || "C:/Users/kazda/kiro/gtai-spike/tools/godot/Godot_v4.7.2-stable_win64_console.exe",
   ["--windowed", "--position", process.env.TL_WINDOW_POS || "0,1440", "--resolution", "1280x720", "--fixed-fps", "60",
-   "--audio-driver", "Dummy", "--path", "engine", "res://rigs/skater/look/look_gym.tscn", "--quit-after", "600", "--", "--mode=check", "--look=felt"],
+   "--audio-driver", "Dummy", "--path", "engine", "res://tools/skater/look/look_gym.tscn", "--quit-after", "600", "--", "--mode=check", "--look=felt"],
   { stdio:"inherit", timeout:120000 });
 const result = process.env.TL_WINDOW_LOCK === "off" ? draw() : withWindowLock(draw);
 process.exitCode = result.status ?? 1;
