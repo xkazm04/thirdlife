@@ -12,6 +12,8 @@ import { currentPhase, holdReason, passesItself, phaseIndexOf, waitingPhase, typ
 import { funPromiseItem, DEFAULT_RUBRIC, type GenerateCall, type PackageLine, type RubricItem } from "./designer.js";
 import { CHANGE_ROUND } from "./rounds.js";
 import { NEW_PACKAGE, ownerOrNew } from "./grow.js";
+import { changeCandidates, coreChangeOwner } from "./coreowner.js"; // E3f: a hold on a core game never re-runs the base
+import { coreRouteOf } from "./templates.js";
 import { clip } from "./conduct.js";
 import type { ForemanOptions } from "./options.js";
 
@@ -96,7 +98,7 @@ export async function applyHolds(h: PhaseHost): Promise<number> {
     if (mine.length > 1 || h.grow !== undefined) {
       // E4: with a grow hook the Planner may also answer "new": the note adds something no package of the phase holds
       const model = h.o.plannerModel ?? h.o.model;
-      const res = await ownerOrNew(h.o.builder, { sentence: h.s.sentence ?? "", title: h.s.title ?? "", text: hold.note, packages: packageLinesOf(h.s, mine) }, model ? { model } : {});
+      const res = await ownerOrNew(h.o.builder, { sentence: h.s.sentence ?? "", title: h.s.title ?? "", text: hold.note, packages: changeCandidates(packageLinesOf(h.s, mine), h.s.plan, coreRouteOf(h.s.brief?.concept?.template)) }, model ? { model } : {});
       h.logGenerateCalls(res.calls, model);
       if (res.ok && res.value.package === NEW_PACKAGE && h.grow !== undefined) {
         const g = await h.grow({ seq: hold.seq, text: hold.note }, clip(res.value.reason, 200), `${holdReason(hold.seq)} on phase ${ph.id}`);
@@ -110,6 +112,8 @@ export async function applyHolds(h: PhaseHost): Promise<number> {
         how = `the Planner names the package among the phase's ${mine.join(", ")}: ${clip(res.value.reason, 200)}`;
       } else if (!res.ok) how = `the Planner gave no usable answer (${clip(res.reason, 160)}), so the phase's first package takes it`;
     }
+    const moved = coreChangeOwner(h.s.plan, coreRouteOf(h.s.brief?.concept?.template), owner, hold.note);
+    if (moved.why !== undefined) [owner, how] = [moved.owner, `${how}; ${moved.why}`];
     h.reopen(owner, `${holdReason(hold.seq)} on phase ${ph.id}; ${how}: ${clip(hold.note, 300)}`, `${CHANGE_ROUND}: ${hold.note}`);
     applied += 1;
   }

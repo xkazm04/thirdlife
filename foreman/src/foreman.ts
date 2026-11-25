@@ -20,13 +20,14 @@ import { CARRIED_FIELDS, MANIFEST_FILE, PACK_VERSION, kernelApiFor, acceptedCarr
 import { builderFeelSection, servesLine } from "./roomtext.js"; // JOB.md 2026-11-21: builders read the design
 import { briefText, critic, render, replanPackages, type GenerateCall, type PackageLine, type PlannerInput, type ReplanInput } from "./designer.js";
 import { NEW_PACKAGE, grow, ownerOrNew, wireWaits, type GrowHost } from "./grow.js";
-import { FINAL_NOTE, fastFinal, fastMerge, fastPromotion, mergeNote, roundAcceptance } from "./fastchange.js"; // E4b: a data-only change // E4 (24-25 Nov): a change may add a package
+import { FINAL_NOTE, fastFinal, fastMerge, fastPromotion, mergeNote, roundAcceptance, whatChangedNote } from "./fastchange.js"; // E4b: a data-only change // E4 (24-25 Nov): a change may add a package
 import { criticRubric, inReach, phaseLine, phaseStep, replanPhases, stuckText, waitsForVerdict } from "./phases.js"; // JOB.md 2026-11-20: phases
 import { writeGenerateCalls } from "./transcript.js";
 import { botFinish, botMoments, planShots } from "./shots.js";
 import { coreRouteOf, templateOf } from "./templates.js";
 import { CARTRIDGE_INVALID, startFromBase } from "./coreroute.js"; // E3 of 24 Nov: a game on a core starts from the base
-import { cartridgeChange, coreDataGate, diffRound, phaseCheck } from "./coregate.js";
+import { cartridgeChange, coreDataGate, diffRound, jobCore, phaseCheck } from "./coregate.js";
+import { changeCandidates, coreChangeOwner } from "./coreowner.js"; // E3f: on a core, a change never goes to the base
 import { decideLook, filmLook, sendBack, stripsOn, verdictOfLook } from "./quality.js"; // JOB.md 2026-11-21: the quality loop
 import { QUALITY_PAUSE, qualityNext } from "./quality_state.js"; // L2b: each milestone filmed with its newest packages' own bots
 import { isFakeRunner, verbsFor, type RunnerVerbs } from "./verbs.js";
@@ -791,7 +792,14 @@ export class Foreman {
     const ws = this.wsDir(id);
     const spec = this.spec(id);
     const baseline = JSON.parse(fs.readFileSync(this.baselineFile(id), "utf8")) as Record<string, string>;
-    return listFiles(ws).filter((f) => f !== MANIFEST_FILE && matchesAny(spec.scope, f) && baseline[f] !== hashFile(path.join(ws, f)));
+    const all = listFiles(ws).filter((f) => f !== MANIFEST_FILE && matchesAny(spec.scope, f) && baseline[f] !== hashFile(path.join(ws, f)));
+    // E3f (E5b): the base never merges a file a later package owns, and a re-opened package lists only what differs from pack/
+    // (job 1's diff listed match.json and the drill test, byte-identical, so a data-only change took the full path).
+    const theirs = spec.kind === "base" ? this.s.plan.filter((p) => p.id !== id).flatMap((p) => p.scope) : [];
+    const mine = all.filter((f) => !(theirs.length > 0 && matchesAny(theirs, f) && fs.existsSync(this.dir("pack", f))));
+    const had = new Set(this.pkg(id).mergedFiles ?? []);
+    const changed = mine.filter((f) => !(had.has(f) && fs.existsSync(this.dir("pack", f)) && hashFile(this.dir("pack", f)) === hashFile(path.join(ws, f))));
+    return changed.length > 0 ? changed : mine; // nothing differs (a merge redone after a kill): the same list again
   }
 
   /** In-scope files the package deleted: they were in the workspace when it was cut and are gone now. */
@@ -1270,7 +1278,7 @@ export class Foreman {
         let known = this.askedOwners.get(c.seq);
         if (known === undefined) {
           const model = this.o.plannerModel ?? this.o.model;
-          const res = await ownerOrNew(this.o.builder, { sentence: this.s.sentence ?? "", title: this.s.title ?? "", text: c.text, packages: this.packageLines() }, model ? { model } : {});
+          const res = await ownerOrNew(this.o.builder, { sentence: this.s.sentence ?? "", title: this.s.title ?? "", text: c.text, packages: changeCandidates(this.packageLines(), this.s.plan, jobCore(this.gateHost)) }, model ? { model } : {});
           this.logGenerateCalls(res.calls, model);
           known = res.ok
             ? { owner: res.value.package, how: res.value.package === NEW_PACKAGE ? clip(res.value.reason, 200) : `the Planner names the package: ${clip(res.value.reason, 200)}` }
@@ -1291,8 +1299,10 @@ export class Foreman {
           how = `${g.reason}, so the root package takes it`;
           this.askedOwners.set(c.seq, { owner, how });
         }
+        const moved = coreChangeOwner(this.s.plan, jobCore(this.gateHost), owner, c.text); // E3f (E5b job 2): never the base on a core
+        if (moved.why !== undefined) [owner, how] = [moved.owner, `${how}; ${moved.why}`];
         // Asked while other packages ran: the package it names must be finished and idle as well, or the request waits.
-        if (!this.changeReady(c, running)) continue;
+        if (!this.changeReady({ ...c, package: owner }, running)) continue;
       }
       this.reopen(owner, `${changeReason(c.seq)}; ${how}: ${clip(c.text, 300)}`, `${CHANGE_ROUND}: ${c.text}`);
       await cartridgeChange(this.gateHost, owner, this.pkg(owner).round, c.text); // E3b: on a core, a cartridge diff first (coregate.ts)
@@ -1875,6 +1885,7 @@ export class Foreman {
     if (nth > 1) {
       const owner = this.lastReopened();
       const shots = await this.captureSet(`promotion${nth}`, owner, tests[0], fast);
+      this.append({ type: "note", package: owner, round: this.pkg(owner).round, text: whatChangedNote(this.log.events, this.jobIdentity().version) }); // E3f: one line for Create
       if (shots.length > 0) this.append({ type: "note", package: owner, round: this.pkg(owner).round, text: `${FOREMAN_NOTE}pictures of the pack as it is promoted the ${nth}${nth === 2 ? "nd" : nth === 3 ? "rd" : "th"} time (after the change): ${shots.join(", ")}` });
     }
     if (this.o.promote) {

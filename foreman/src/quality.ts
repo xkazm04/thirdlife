@@ -25,7 +25,7 @@ import { botClaims, crossCheckFilm, filmCheckText, type FilmCheck } from "./film
 import { revisePair, sameKind } from "./revisepair.js";
 import { killItem, methodBlock } from "./method.js";
 import { templateOf } from "./templates.js";
-import { coreLook } from "./coregate.js"; // E3 of 24 Nov: the measured check of a game on a core
+import { coreLook, jobCore } from "./coregate.js"; // E3 of 24 Nov: the measured check of a game on a core
 
 /** True when the engine's runner can film a strip in one capture run (`--strip` in its verbs.json). */
 export function stripsOn(verbs: RunnerVerbs | undefined): boolean {
@@ -349,8 +349,10 @@ export async function compareLooks(h: GateHost, prev: Snapshot, film: Film, fres
 
 /** Sends a NOT ok version back for revise round `round` (snapshot first): the named package, or the milestone's own. */
 export function sendBack(h: GateHost, m: Milestone, members: string[], lastPackage: string, round: number, look: { captures: string[]; strips: Strip[]; verdict?: Verdict; summary: string }, note?: string, pair?: string): void {
-  snapshot(h, m, round, look);
   const v = look.verdict;
+  // E3f: on a core game, what only the base can change goes to the person at once (no revise round; a retry still runs one).
+  if (note === undefined && v !== undefined && baseOwned(h, v.package)) return holdForBase(h, m, lastPackage, round, look, v, v.package as string);
+  snapshot(h, m, round, look);
   const owner = note !== undefined ? ` The owner held the job and asks: ${note}` : "";
   // D3 of 22 Nov: the pair (revisepair.ts) goes first, so the 1500-character clip of the detail never cuts it.
   const detail = `${criticReopenFor(m, round, Math.max(QUALITY_ROUNDS, round))}: ${pair !== undefined ? `${pair} ` : ""}${v ? `${scoresText(v)}. Critic's notes: ${v.notes.join(" | ")} [${v.report}]` : clip(look.summary, 600)}.${owner} The version before this round is kept in ${snapDir(m, round)}/; after the round the critic compares both and keeps the better.`;
@@ -369,6 +371,36 @@ export function sendBack(h: GateHost, m: Milestone, members: string[], lastPacka
   const to = built.length > 0 ? built : members;
   h.append({ type: "note", package: lastPackage, round: h.pkg(lastPackage).round, text: `${FOREMAN_NOTE}${why}; revise round ${round} goes to the package(s) of the ${m} milestone: ${to.join(", ")}` });
   for (const id of to) h.append({ type: "package_state", package: id, state: "queued", round: h.pkg(id).round + 1, detail: clip(detail, 1500) });
+}
+
+// ---------- E3f of 25 Nov: reasons only the base can answer go to the person, not to revise rounds ----------
+
+/** The start of the Foreman's note (after FOREMAN_NOTE) when a look is held at once because the critic names the base. */
+export const BASE_OWNED = "the critic names the base";
+
+/**
+ * On a game on a core, the critic's NOT ok names something no package of the job can change: the base package (the
+ * engine's copy: the core's skating, contact and bots, the base's camera), or the core or the engine by name. Lane E5's
+ * job 1 spent about 89 of 140 min on revise rounds the cartridge, the skin and the trials could not answer.
+ */
+export function baseOwned(h: Pick<GateHost, "s">, named: string | undefined): boolean {
+  const core = jobCore(h);
+  if (core === undefined || named === undefined) return false;
+  const spec = h.s.plan.find((p) => p.id === named);
+  if (spec !== undefined) return spec.kind === "base";
+  return named === core.core || named === core.base || /\b(base|core|engine|camera)\b/i.test(named);
+}
+
+/**
+ * The look is the person's now: a `milestone` event at the hold's round (the job pauses for the quality card), its text
+ * first saying what the base does and that no revise round was spent, then the critic's words. `foreman quality retry`
+ * still sends one round with the person's note (sendBack with a note never comes here).
+ */
+function holdForBase(h: GateHost, m: Milestone, lastPackage: string, round: number, look: { captures: string[]; strips: Strip[] }, v: Verdict, named: string): void {
+  const core = jobCore(h);
+  const what = `this is how the base plays (${named}: engine/templates/${core?.base ?? "?"}/ on the ${core?.core ?? "?"} core: the skating, the contact, the bots, the base's camera); no package of this game can change it, so no revise round was spent. Play it and keep it, or say what to change`;
+  h.append({ type: "note", package: lastPackage, round: h.pkg(lastPackage).round, text: clip(`${FOREMAN_NOTE}${BASE_OWNED} (${named}) on the ${m} look: ${what}. [${v.report}]`, 1000) });
+  h.append({ type: "milestone", milestone: m, captures: look.captures, ...(look.strips.length > 0 ? { strips: look.strips } : {}), round: Math.max(QUALITY_ROUNDS, round), summary: clip(`critic (V5) NOT ok: ${what}. The critic saw: ${clip(v.notes.join(" | "), 700)}; ${scoresText(v)} [${v.report}]`, 1500) });
 }
 
 /** The verdict a look's summary points at (its critic report), for a revise round sent from the log (resume, retry). */

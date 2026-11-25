@@ -72,5 +72,80 @@
    "pro": 1,
    "all_star": 1
   }
+ },
+ "rate": {
+  "min": 1.29,
+  "max": 4.8
+ },
+ "minutes": {
+  "min": 0.4,
+  "max": 6.8
+ },
+ "minutes_from": {
+  "hockey.regular.cartridge.json": {
+   "rookie": 2,
+   "pro": 3.6,
+   "all_star": 3
+  },
+  "hockey.mode.arsenal.cartridge.json": {
+   "rookie": 1.1,
+   "pro": 3,
+   "all_star": 2.3
+  },
+  "hockey.mode.bruisers.cartridge.json": {
+   "rookie": 0.9,
+   "pro": 0.5,
+   "all_star": 0.9
+  },
+  "hockey.mode.cage.cartridge.json": {
+   "rookie": 3.9,
+   "pro": 4.1,
+   "all_star": 3.8
+  },
+  "hockey.mode.fog-of-war.cartridge.json": {
+   "rookie": 1,
+   "pro": 1.4,
+   "all_star": 1.4
+  },
+  "hockey.mode.glass-house.cartridge.json": {
+   "rookie": 2.7,
+   "pro": 4.8,
+   "all_star": 4.2
+  },
+  "hockey.mode.marathon.cartridge.json": {
+   "rookie": 6.8,
+   "pro": 6.8,
+   "all_star": 6.7
+  },
+  "hockey.mode.outnumbered.cartridge.json": {
+   "rookie": 1,
+   "pro": 1.2,
+   "all_star": 1.7
+  },
+  "hockey.mode.pond.cartridge.json": {
+   "rookie": 3.6,
+   "pro": 3.9,
+   "all_star": 3.7
+  },
+  "hockey.mode.power-play.cartridge.json": {
+   "rookie": 4.9,
+   "pro": 4.8,
+   "all_star": 4.7
+  },
+  "hockey.mode.shotgun.cartridge.json": {
+   "rookie": 0.8,
+   "pro": 0.8,
+   "all_star": 1.1
+  },
+  "hockey.mode.sniper.cartridge.json": {
+   "rookie": 0.9,
+   "pro": 2.1,
+   "all_star": 2.3
+  },
+  "hockey.mode.sudden-death.cartridge.json": {
+   "rookie": 0.4,
+   "pro": 0.6,
+   "all_star": 0.5
+  }
  }
 }
