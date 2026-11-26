@@ -104,14 +104,15 @@ func setup(v: Node, opts: Dictionary) -> String:
 ## Above the line: what the mouse did while it was captured (a game on stage reads the pointer through its own input).
 func _input(event: InputEvent) -> void:
 	if devices and int(view.get("stage")) < 0 and event is InputEventMouseMotion:
-		_mouse += (event as InputEventMouseMotion).relative
+		if _looks():
+			_mouse += (event as InputEventMouseMotion).relative
 		get_viewport().set_input_as_handled()
 
 
 func _process(_delta: float) -> void:
 	if not devices or not is_inside_tree():
 		return
-	var want: bool = int(view.get("stage")) < 0 and get_window().has_focus() and _script.is_empty()
+	var want: bool = int(view.get("stage")) < 0 and get_window().has_focus() and _script.is_empty() and _looks()
 	if want != _captured:
 		_captured = want
 		Input.mouse_mode = Input.MOUSE_MODE_CAPTURED if want else Input.MOUSE_MODE_VISIBLE
@@ -174,12 +175,12 @@ func steer(tick: int) -> void:
 		if input.just_pressed(&"quit") or (input.just_pressed(&"leave") and not stage_uses_key(KEY_Q)):
 			sched.call("request", "leave")
 		return
-	if input.just_pressed(&"quit"):
+	if input.just_pressed(&"quit") and _building() == null:     # WP2: Esc in build mode leaves build mode, never the walk
 		# the walk ends at the next tick: every pack still running is finished and hashed (world.gd `_walk_tick`)
 		print("[visit] the visitor quit at tick %d" % tick)
 		world.set("walk_ticks", int(world.get("tick")))
 		return
-	if input.just_pressed(&"enter") and vis.get("flying") != true:
+	if input.just_pressed(&"enter") and vis.get("flying") != true and _building() == null:
 		sched.call("request", "enter")
 	var toggle_fly := input.just_pressed(&"fly")
 	var in_flight: bool = (vis.get("flying") == true) != toggle_fly
@@ -207,6 +208,20 @@ func steer(tick: int) -> void:
 		world.set("player_pos", (world.get("player_pos") as Vector3) + want / 60.0)
 	if tick % PATH_EVERY == 0:
 		print_path(tick)
+
+
+## WP2 (spark world-sandbox): the Home's build mode (kernel/world/build/build_mode.gd, the landscape's meta
+## "tl_build_mode") while it is on, else null. It frees the cursor, and E and Esc are its own then.
+func _building() -> Node:
+	var land: Variant = view.get("landscape")
+	var bm: Variant = (land as Node).get_meta(&"tl_build_mode", null) if land is Node else null
+	return bm if is_instance_valid(bm) and bm is Node and bool((bm as Node).get("active")) else null
+
+
+## The mouse looks (captured): not in build mode, or in build mode while its look is held (MMB or Alt).
+func _looks() -> bool:
+	var bm: Node = _building()
+	return bm == null or bool(bm.get("looking"))
 
 
 ## K8. True while a game is on stage and it declared an action on the physical key `keycode` (its own TLInput's

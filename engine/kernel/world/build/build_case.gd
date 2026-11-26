@@ -3,6 +3,8 @@ extends SceneTree
 ## Home grown by home/hook.gd), as walk_case.gd builds it. Prints `HOME build.<case> ok|fail <detail>`, then
 ## `HOME build ok` (or `HOME build fail`) and `HOME DONE`; engine/tools/selftest.d/752-home-build.sh reads them.
 ##   build.forms   joins and hidden faces on small builds (cube runs, slab against cube, stair corners, fence links)
+##   build.glass   a window between two plank cubes, its pane across the wall (rot 1) and along it (rot 0): the pane's
+##                 plane, and the glass drawn by an instance of its own (WP2 round 2: shared with toon it drew 1 m off)
 ##   build.bulk    20,000 scripted placements (80 houses) across 4 chunks mesh and collide: section and chunk rebuild ms
 ##                 (median, max; wall clock is measured and printed, never decided on), triangles per chunk, rays onto
 ##                 the ridges hit the blocks' bodies; one edit inside a section rebuilds that section and its chunk,
@@ -73,6 +75,7 @@ func run() -> void:
 	valley = Valley.new(int(cfg.seed), node.get_meta(&"tl_terrain"))
 	DirAccess.make_dir_recursive_absolute(TMP)
 	forms()
+	glass()
 	var site := walk_site()
 	ws.call("place", site.feet)                     # the visitor stands at the stair, away from the houses
 	ws.call("drive", site.feet, Vector3.ZERO, false, false)
@@ -98,6 +101,28 @@ func median(xs: Array) -> float:
 
 
 # ------------------------------------------------------------------ forms
+func glass() -> void:
+	var got := []
+	var ok := true
+	for rot: int in [1, 0]:
+		var g: RefCounted = HomeBuild.new(node, null, {})
+		var at := Vector3i(4 + 40 * rot, 40, 4)
+		g.apply([EditLog.op_place(at + Vector3i(-1, 0, 0), Blocks.code(1, 3)), EditLog.op_place(at + Vector3i(1, 0, 0), Blocks.code(1, 3)),
+			EditLog.op_place(at, Blocks.code(Blocks.WINDOW, 3, rot))])
+		g.flush()
+		var mi: MeshInstance3D = g.mesh.meshes.values()[0]
+		var gi: MeshInstance3D = mi.get_node_or_null("Glass")
+		var pv: PackedVector3Array = gi.mesh.surface_get_arrays(0)[Mesh.ARRAY_VERTEX] if gi != null and gi.mesh != null else PackedVector3Array([Vector3.ZERO])
+		var pane := AABB(pv[0], Vector3.ZERO)
+		for q: Vector3 in pv: pane = pane.expand(q)
+		pane.position += mi.position - Vector3(at)
+		var plane := "x = %.2f" % pane.position.x if pane.size.x == 0.0 else "z = %.2f" % pane.position.z
+		ok = ok and mi.mesh.get_surface_count() == 1 and pv.size() == 12 and plane == ("x = 0.50" if rot == 1 else "z = 0.50")
+		got.append("rot %d (%s the wall along x): pane plane %s of its cell, %d glass triangles on an instance of their own" % [rot, "across" if rot == 1 else "along", plane, pv.size() / 3])
+		g.free_all()
+	say("glass", ok, "; ".join(got))
+
+
 func forms() -> void:
 	var bad := []
 	var b: RefCounted = HomeBuild.new(node, null, {})

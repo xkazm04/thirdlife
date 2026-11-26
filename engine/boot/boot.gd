@@ -48,7 +48,7 @@ const WALK_RES: String = "res://boot/village.json"
 const VIEW_SCRIPT: String = "res://kernel/world/draw/view.gd"
 const WORLD_SCRIPT: String = "res://kernel/world/world.gd"
 const PACK_BASES: Array = ["res://seeds", "res://kernel/examples", "res://kernel/world/packs", "res://packs"]
-const KEYS_WALK: String = "W A S D  walk      mouse  look      Shift  run      Space  jump      C  slide (running)      F  fly (Space up, C down)      E  enter the game you stand in      Esc  quit"
+const KEYS_WALK: String = "W A S D  walk      mouse  look      Shift  run      Space  jump      C  slide (running)      F  fly (Space up, C down)      E  enter the game you stand in      B  build      Esc  quit"
 const KEYS_STAGE: String = "Q or Esc  leave the game"
 const Hub: GDScript = preload("res://boot/hub.gd")
 const Frames: GDScript = preload("res://boot/frames.gd")
@@ -522,6 +522,8 @@ func _physics_process(_delta: float) -> void:
 		_trace.flush()
 	if _hint != null:
 		_hint.text = (str(view.get("visit").call("stage_hint")) if view.get("visit") != null else KEYS_STAGE) if stage >= 0 else _keys_walk()   # K8: Esc alone when the game uses Q
+		var bm: Variant = (view.get("landscape") as Node).get_meta(&"tl_build_mode", null) if view.get("landscape") is Node else null
+		_hint.visible = not (is_instance_valid(bm) and bool((bm as Node).get("active")))   # WP2: build mode's hotbar shows its own keys
 		_hint.position.y = get_viewport().get_visible_rect().size.y - 58
 	if not _capture_path.is_empty() and not _capture_done and _frame >= _capture_at:
 		_capture_done = true

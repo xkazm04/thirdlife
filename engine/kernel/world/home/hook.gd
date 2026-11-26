@@ -86,6 +86,10 @@ static func grow(parent: Node3D, cfg: Dictionary, terr: RefCounted, ws: Object) 
 		home.ensure(p))
 	home.ensure(Land.focus(parent, true))     # the ground under the spawn is there before the visitor asks for it
 	parent.set_meta(&"tl_home", home)
+	parent.set_meta(&"tl_valley_sites", valley.sites)     # WP1 P1: the Home's game lots, for build/protect.gd
+	# WP2: the Home's blocks and build mode (B). The builder protects the walk's plots and these sites; a person's walk
+	# loads the saved Home (build/build_mode.gd)
+	(load("res://kernel/world/build/build_mode.gd") as GDScript).call("mount", parent, valley)
 	out["valley"] = valley.summary().extent
 	out["total_ms"] = (Time.get_ticks_usec() - t0) / 1000.0
 	return out

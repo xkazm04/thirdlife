@@ -3,7 +3,7 @@
 # meshes and collides them, undoes and redoes them, saves and loads them byte for byte, refuses protected cells and walks
 # the visitor up a placed stair into a wall (kernel/world/build/build_case.gd). Frames, not wall clock; the final marker is
 # required. Runs on its own too: `bash engine/tools/selftest.d/752-home-build.sh` prints `HOME build ok` when it passes.
-home_build_cases=(home.build.forms home.build.bulk home.build.same home.build.undo home.build.files home.build.refuse home.build.walk)
+home_build_cases=(home.build.forms home.build.glass home.build.bulk home.build.same home.build.undo home.build.files home.build.refuse home.build.walk)
 if ! declare -F verdict >/dev/null; then
   HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
   OUT="${TL_SELFTEST_DIR:-$(mktemp -d)}"

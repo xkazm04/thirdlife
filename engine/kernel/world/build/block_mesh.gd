@@ -1,6 +1,6 @@
 extends RefCounted
 ## WP1: draws and collides the Home's blocks. A section (blocks.gd `sec`, 16 m by default) is meshed on its own: one
-## MeshInstance3D (one toon surface in TLStyle's palette material, one glass surface) and one ConcavePolygonShape3D of
+## MeshInstance3D (one toon surface in TLStyle's palette material; its child "Glass" holds the glass) and one ConcavePolygonShape3D of
 ## the same triangles, so what the visitor stands on is what is drawn. A chunk (96 m) has ONE static body in the
 ## visitor's WorldSpace (tag "home blocks", layer 1), holding the shapes of its non-empty sections; it is made when the
 ## chunk gets its first block and dropped with its last. Never a pack's space, never a state hash.
@@ -174,19 +174,29 @@ func _key(grid: PackedInt32Array, keys: PackedInt32Array, gi: int, off: PackedIn
 	return k
 
 
+## WP2 round 2: the glass is drawn by a MeshInstance3D of its own, a child of the section's ("Glass"). One instance
+## holding a toon surface and a glass surface drew every pane 1 m off along +x: instance uniforms are numbered per
+## shader in declaration order, and toon's slot 0 is `build` (1.0), which glass.gdshader read as its `tl_plot` (slot 0):
+## an offset of (1, 0, 0). Measured in the exe (PATCHES-WP2 B4); a pane on the toon material sat in its frame.
 func _draw(s: Vector2i, arr: Dictionary) -> void:
 	var mesh := ArrayMesh.new()
 	_surface(mesh, arr.v, arr.n, arr.cu, TLStyle.material("white"))
-	_surface(mesh, arr.gv, arr.gn, arr.gcu, TLStyle.material("glass"))
+	var gmesh := ArrayMesh.new()
+	_surface(gmesh, arr.gv, arr.gn, arr.gcu, TLStyle.material("glass"))
 	var mi: MeshInstance3D = meshes.get(s)
 	if mi == null:
 		mi = MeshInstance3D.new()
 		mi.name = "Blocks_%d_%d" % [s.x, s.y]
 		mi.position = Vector3(s.x * store.sec, 0.0, s.y * store.sec)
 		mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_ON
+		var g := MeshInstance3D.new()
+		g.name = "Glass"
+		g.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		mi.add_child(g)
 		holder.add_child(mi)
 		meshes[s] = mi
 	mi.mesh = mesh
+	(mi.get_node("Glass") as MeshInstance3D).mesh = gmesh if gmesh.get_surface_count() > 0 else null
 
 
 static func _surface(mesh: ArrayMesh, v: PackedVector3Array, n: PackedVector3Array, cu: PackedFloat32Array, mat: Material) -> void:

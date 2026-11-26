@@ -122,3 +122,86 @@ Refusal reasons are short and stable, so the hotbar can show them: `occupied`, `
   wedge raised 0.125 m (a 0.125 m riser in front), `drive` at 4.5 m/s stalled at the riser.
 
 `TL_BUILD_TRACE=1` prints the walkers' frames.
+
+## Build mode (WP2)
+
+A person in the Home presses **B** and builds. `build_mode.gd` is the node; `hotbar.gd` (the CanvasLayer) and
+`ghost.gd` (the holo preview) are its parts; `build_mode_case.gd` is the headless case (selftest block 753).
+
+| File | What it is |
+|---|---|
+| `build_mode.gd` | the node: keys and buttons, the cursor ray, drags as batches, autosave, the test hook; `mount` is called by `home/hook.gd` `grow` |
+| `hotbar.gd` | bottom centre while building: 8 shape slots, the material swatch and name, rot and flip, save state, the refusal reason, the keys. Boot's key line names "B  build" while walking and hides itself while building (boot.gd reads the meta `tl_build_mode`) |
+| `ghost.gd` | the next edit as a hologram (`TLStyle.material("holo")`; red: a private copy tinted `hazard_red`), the shape's own triangles (`shapes.gd` `entry`, form 0) |
+| `build_mode_case.gd` | input events as a person makes them, frames counted (`engine/tools/selftest.d/753-home-build-mode.sh`) |
+
+**Mounting.** `home/hook.gd` `grow` sets the landscape's meta `tl_valley_sites` (PATCHES-WP1 P1) and calls
+`BuildMode.mount(landscape, valley)`. The walk (for the game plots) is the landscape's meta `tl_walk` when a test set it,
+else the view's `world.walk` (the way `landscape.gd` reads it). The builder is the meta `tl_build`, the node the meta
+`tl_build_mode`. The node runs at physics priority 150000, after the view (100000: visit `sample`, `steer`, the
+visitor's step) and before boot (200000), and calls `build.step()` there. P3: protection asks the visitor's feet
+(`protect.visitor_at` reads `view.visitor.feet`; `drive` moves no body).
+
+**Loading and saving.** The Home loads its save when a person walks it: the view's visit reads devices (not a replay)
+and runs no device script (not a test). The folder is `user://home` (the exe: `%APPDATA%\ThirdLife\home`), or
+`TL_HOME_BUILD_DIR=<abs dir>`. A case calls `open(dir)`. Saves (`save_now`): on leaving build mode, `autosave_frames`
+(1800) physics frames after the first unsaved change (never in the middle of a drag), and on quit (`tree_exiting` and
+the window's close request). Nothing is saved where nothing was loaded. A build file that cannot be read is never
+written over: the hotbar says so and nothing is saved. A save error is shown in the hotbar ("save failed: ...") and
+printed (`home_build_save` line, `push_error`).
+
+**Keys** (polled from the engine's input state once per physics frame, as TLInput polls; the wheel from its events;
+nothing while a text field has the keyboard; B does nothing while a game is on stage, and a game taking the stage ends
+build mode):
+
+| Key | While building |
+|---|---|
+| B, Esc | leave build mode (autosave if unsaved). Esc never quits from build mode: `visit.gd` does not quit while `active` |
+| LMB | place; held and moved: a line of cells, one batch (one undo step) |
+| RMB | remove; held and moved: one batch |
+| wheel, 1-8 | shape (ids 1-8) |
+| Tab, Shift+Tab | material (ids 1-9; a window's pane is glass by itself) |
+| R | turn: +1 rot on top of `rot_facing(camera forward)` (stair, ramp, roof, window; other shapes keep rot 0) |
+| F2 | flip (stair, ramp, roof). Ctrl+F is not used: F is flight and visit.gd would take it too |
+| Ctrl+Z, Ctrl+Y (or Ctrl+Shift+Z) | undo, redo one batch |
+| hold MMB or Alt | look: the mouse is captured and turns the view while held |
+| W A S D, Shift, Space, C, F | as while walking (the visitor walks, jumps, flies). E does not enter a game while building |
+
+- **The cursor.** Each drawn frame the ray from the camera (its interpolated pose) through the mouse goes to `pick`,
+  reaching **24 m past the visitor** (`REACH` plus the camera's distance to his feet). A reach counted from the camera
+  would be 24 m on foot (the camera is about 5 m behind him) but about 10 m round him in flight (the camera is about
+  14 m behind), so the roof of a house could not be reached from the air.
+- **The ghost** shows the place cell in holo, red with the reason in the hotbar when `can_place` refuses. While RMB is
+  held or Ctrl is down it shows the remove cell (a red cube).
+- **A drag** keeps to the plane of the surface first pressed: the press point's coordinate along the axis of the face
+  normal (the ground's height there, a row's top, a wall's side). Every cell the cursor crosses on that plane is edited
+  (the line between frames is filled in), at most 64 per drag. On the ground the plane is the ground's height, so the
+  cursor sliding over the terrain stays on the cells it shows. An earlier try used the cell's mid-height and moved
+  the first cells by a whole cell when the ground stood near a cell top. A row is built by pressing on the row below
+  and sliding along its tops. Refused cells in a drag are skipped and the last reason shows.
+- **The test hook** `TL_BUILD_DEVICES="<frame>:<kind>[:<args>];..."` counts this node's physics frames, which equal
+  boot.gd's in the exe (both start on the same tick: B at boot frame 150 was seen at 151). Kinds: `px:x,y`,
+  `at:x,y,z` (the pointer on the pixel of a world point, followed every frame), `mouse`, `lmb|rmb|mmb:1|0` (held
+  buttons are pressed again after a focus loss, as boot does for keys), `key:<Key>:1|0`,
+  `fill:x0,y0,z0,x1,y1,z1,shape,mat` (one batch), `state` (prints a `build_state` line). While it runs, each edit prints a
+  `build_edit` line. `TL_EXE_KEYS` cannot click or set an absolute pointer, so this hook does that part.
+
+**Figures** (26 Nov 2026, this machine: RTX 4090, the exported exe, a window, vsync off by `TL_EXE_FRAMES_TIMES=1`, other
+sessions loading the machine). 5,000 blocks (10 walls of 25 x 10 x 2, `fill`) in front of the visitor:
+
+| | frames | p50 ms | p99 ms |
+|---|---|---|---|
+| walking, no blocks | 5857 | 1.36 | 5.26 |
+| walking near 5,000 blocks | 4690 | 1.41 | 6.55 |
+| building near 5,000 blocks, idle (ghost and refusal check every frame) | 456 | 1.42 | 7.15 |
+| building near 5,000 blocks, a click every 60 frames | 5815 | 1.43 | 6.70 |
+
+The frame of a click is at most 18.7 ms (the first one; one section and one chunk body). The frame of a leave-save of
+5,000 blocks is 16.7 ms. The largest frame in the building window, 133 ms, was boot's own capture (TL_EXE_CAPTURE).
+
+**Glass on its own instance (WP2 round 2).** A section's glass is drawn by a child MeshInstance3D "Glass" of the
+section's mesh. With both surfaces on one instance, every pane was drawn 1 m off along world +x, beside its frame,
+seen at any angle (straight along x it hid in its own depth). Instance uniforms are numbered per shader in declaration
+order: toon's slot 0 is `build` (default 1.0), glass.gdshader's slot 0 is `tl_plot`, so the glass read (1, 0, 0, 0)
+as its plot offset. Shown: the same pane on the toon material sat in its frame. The mesh data was right (pane at 0.5 of
+its cell for every rot). Selftest 752 `build.glass` holds the separate instance and the pane planes.
