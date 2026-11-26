@@ -7,12 +7,41 @@
 //   weighted  (in - cacheRead) + 0.1 * cacheRead + out, the JOB.md budget weighting; "-" unless in, out and cacheRead are all known
 //   replans   count of `replan` events                              critic    count of `package_state` queued events whose detail starts "critic"
 //   edit      count of `builder_run` with mode "edit"
+// M4 (spark world-sandbox): the Home's LLM command bar calls the model outside any job; the exe logs each call to
+// <home>/llm_calls.jsonl (engine/kernel/world/build/command_calls.gd: one line per event, the LAST line of an id is
+// the call). `--home <dir>` names the folder; else TL_HOME_BUILD_DIR, then the exported exe's user folder
+// %APPDATA%/ThirdLife/home, then the editor binary's %APPDATA%/Godot/app_userdata/Third Life Engine/home. The calls are
+// listed after the jobs (sentence, model, tokens, duration, ops, kept), with their totals; --json adds "home" and "calls".
 import fs from "node:fs";
 import path from "node:path";
 import { REPO, run } from "../ctx.mjs";
 import { couldNotRun } from "../verdict.mjs";
 
-export const summary = "cost/outcome ledger of Foreman jobs (read-only) [--json]";
+export const summary = "cost/outcome ledger of Foreman jobs and the Home's LLM calls (read-only) [--json] [--home <dir>]";
+
+/** The Home folders whose llm_calls.jsonl the ledger reads, the first that has one (or null). */
+export function findHome(env = process.env, flag = undefined) {
+  const app = env.APPDATA ?? "";
+  const cands = flag ? [flag] : [env.TL_HOME_BUILD_DIR, app && path.join(app, "ThirdLife", "home"), app && path.join(app, "Godot", "app_userdata", "Third Life Engine", "home")];
+  for (const c of cands.filter(Boolean)) if (fs.existsSync(path.join(c, "llm_calls.jsonl"))) return path.resolve(c);
+  return null;
+}
+
+/** The calls of one llm_calls.jsonl: the last line of each id, in the order first seen, and their totals. */
+export function readCalls(file) {
+  const by = new Map();
+  for (const l of fs.readFileSync(file, "utf8").split("\n")) {
+    if (!l.trim()) continue;
+    let c;
+    try { c = JSON.parse(l); } catch { continue; }
+    if (c && typeof c.id === "string") by.set(c.id, c);
+  }
+  const calls = [...by.values()];
+  const sum = (k) => { const xs = calls.filter((c) => Number.isFinite(c[k])); return xs.length ? xs.reduce((a, c) => a + c[k], 0) : null; };
+  return { calls, totals: { calls: calls.length, kept: calls.filter((c) => c.accepted === true).length,
+    reverted: calls.filter((c) => c.accepted === false && c.error === undefined).length, failed: calls.filter((c) => c.error !== undefined).length,
+    pending: calls.filter((c) => c.accepted === "pending").length, tokensIn: sum("tokensIn"), tokensOut: sum("tokensOut"), durationMs: sum("durationMs") } };
+}
 
 export function findSiteRoot(env = process.env, repo = REPO) {
   const cands = [];
@@ -83,9 +112,17 @@ const num = (n) => n.toLocaleString("en-US");
 
 export async function run_(args) {
   const siteRoot = findSiteRoot();
-  if (!siteRoot) return couldNotRun("ledger", "tl ledger: no site directory (set TL_SITE_DIR, or run in a checkout with site/)");
+  const hi = args.indexOf("--home");
+  const home = findHome(process.env, hi >= 0 ? args[hi + 1] : undefined);
+  if (hi >= 0 && !home) return couldNotRun("ledger", `tl ledger: no llm_calls.jsonl in ${args[hi + 1] ?? "(no folder given)"}`);
+  if (!siteRoot && !home) return couldNotRun("ledger", "tl ledger: no site directory (set TL_SITE_DIR, or run in a checkout with site/) and no Home calls log");
+  const calls = home ? readCalls(path.join(home, "llm_calls.jsonl")) : null;
+  if (!siteRoot) return printCalls(home, calls, args.includes("--json"), true);
   const led = readLedger(siteRoot);
-  if (args.includes("--json")) { console.log(JSON.stringify({ schema: "tl.ledger/1", site: siteRoot.split(path.sep).join("/"), ...led })); return 0; }
+  if (args.includes("--json")) {
+    console.log(JSON.stringify({ schema: "tl.ledger/1", site: siteRoot.split(path.sep).join("/"), ...led, ...(home ? { home: home.split(path.sep).join("/"), calls } : {}) }));
+    return 0;
+  }
   const cols = [["job", 36, "l"], ["outcome", 8, "l"], ["wall", 7], ["run", 7], ["pkgs", 4], ["rounds", 6], ["edit", 4], ["in", 11], ["out", 9], ["cacheRd", 11], ["weighted", 9], ["replan", 6], ["critic", 6]];
   const fmt = (cells) => cells.map((c, i) => (cols[i][2] === "l" ? String(c).padEnd(cols[i][1]) : String(c).padStart(cols[i][1]))).join("  ");
   console.log(`site: ${siteRoot.split(path.sep).join("/")}`);
@@ -96,6 +133,24 @@ export async function run_(args) {
   console.log(fmt(["total (" + led.jobs.length + " jobs)", "", dash(t.wallMs, dur), dash(t.runMs, dur), dash(t.packages), dash(t.rounds), dash(t.editRuns), dash(t.tokensIn, num), dash(t.tokensOut, num), dash(t.tokensCacheRead, num), dash(t.weighted, num), dash(t.replans), dash(t.critic)]));
   const partial = Object.keys(t).filter((k) => k.endsWith("_jobs")).map((k) => `${k.replace("_jobs", "")} from ${t[k]} jobs`);
   if (partial.length) console.log(`note: totals use only the jobs that report the field: ${partial.join(", ")}`);
+  if (home) printCalls(home, calls, false, false);
+  return 0;
+}
+
+/** The Home's LLM calls as a table (or the JSON line when there is no site to print it with). */
+function printCalls(home, calls, json, alone) {
+  const where = home.split(path.sep).join("/");
+  if (json) { console.log(JSON.stringify({ schema: "tl.ledger/1", home: where, calls })); return 0; }
+  const cols = [["call", 28, "l"], ["kept", 7, "l"], ["model", 16, "l"], ["dur", 7], ["in", 9], ["out", 8], ["ops", 5], ["refused", 7], ["sentence", 40, "l"]];
+  const fmt = (cells) => cells.map((c, i) => (cols[i][2] === "l" ? String(c).padEnd(cols[i][1]) : String(c).padStart(cols[i][1]))).join("  ");
+  console.log(`${alone ? "" : "\n"}home calls: ${where}/llm_calls.jsonl`);
+  console.log(fmt(cols.map((c) => c[0])));
+  for (const c of calls.calls) {
+    const kept = c.error !== undefined ? "error" : c.accepted === "pending" ? "pending" : c.accepted ? "kept" : "revert";
+    console.log(fmt([c.id, kept, dash(c.model), dash(c.durationMs, dur), dash(c.tokensIn, num), dash(c.tokensOut, num), dash(c.ops), dash(c.refused), String(c.sentence ?? "").slice(0, 40)]) + (c.error ? `   (${String(c.error).slice(0, 80)})` : ""));
+  }
+  const t = calls.totals;
+  console.log(fmt([`total (${t.calls} calls)`, `${t.kept} kept`, `${t.reverted} rev, ${t.failed} err`, dash(t.durationMs, dur), dash(t.tokensIn, num), dash(t.tokensOut, num), "", "", t.pending ? `${t.pending} pending` : ""]));
   return 0;
 }
 export { run_ as run };

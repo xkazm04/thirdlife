@@ -37,7 +37,7 @@ import { appendRoom, designRoom } from "./room.js";
 import { takenFor } from "./concepts.js"; // L1b: crazy reads the standard concepts of the same sentence
 export { statusTable };
 
-import { placeCommand } from "./place.js";
+import { placeCommand } from "./place.js"; import { worldEditCommand } from "./world_edit.js";
 import { UsageError, editorFlag, num, parseArgs, placeCallsFlag, str, type Args } from "./cli_args.js";
 export { UsageError, parseArgs };
 
@@ -45,7 +45,7 @@ const HELP = `foreman <command>
 
   probe [--adapter claude-cli|messages-api|fake] [--api-key-var NAME] [--json]
         adapter, version, authorization and billing mode; spends no tokens
-  place --in ASK.json --out ANSWER.json [--adapter A] [--fake-script FILE] [--model M] [--timeout-ms N]
+  place|world-edit --in ASK.json --out ANSWER.json [--adapter A] [--fake-script FILE] [--model M] [--timeout-ms N]
   new "<sentence>" [--answers JSON] [--lot JSON] [--site DIR] [--adapter A] [--auto-approve] [--model M]
         creates site/<job_id>/ and asks the Designer for a brief
 ${NEW_HELP}
@@ -459,8 +459,8 @@ export async function main(argv: string[], out: (s: string) => void = (s) => pro
       return results.some((p) => p.ok) ? 0 : 1;
     }
 
-    case "place":
-      return placeCommand(str(a, "in"), str(a, "out"), () => makeBuilder(a), { model: str(a, "model"), timeoutMs: num(a, "timeout-ms") });
+    case "place": case "world-edit":
+      return (a.cmd === "place" ? placeCommand : worldEditCommand)(str(a, "in"), str(a, "out"), () => makeBuilder(a), { model: str(a, "model"), timeoutMs: num(a, "timeout-ms") });
 
     case "new": {
       const sentence = a.pos[0];

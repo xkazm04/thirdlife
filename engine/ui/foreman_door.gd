@@ -219,6 +219,14 @@ func place(ask: String, out: String) -> String:
 	return _start(ask, "place", [["place", "--in", ask, "--out", out] + settings])
 
 
+## M4 (spark world-sandbox): the Home's command bar asks for a world edit (`foreman world-edit`, the `place` pattern:
+## an ask file in, an answer file out, atomically). The settings are the flags' "world_edit" entry (a model, a timeout).
+func world_edit(ask: String, out: String) -> String:
+	if not flags.has("world_edit"):
+		return "no \"world_edit\" entry in the Foreman settings%s" % ((" (%s)" % flags_name) if not flags_name.is_empty() else "")
+	return _start(ask, "world-edit", [["world-edit", "--in", ask, "--out", out] + _flags("world_edit")])
+
+
 func approve(job_dir: String) -> String:
 	return _start(job_dir, "approve", [["approve", job_dir], ["plan", job_dir] + _flags("plan"), ["run", job_dir] + _flags("run")])
 
