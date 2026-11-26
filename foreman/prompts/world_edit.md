@@ -27,6 +27,12 @@ ground, never floating). Build a floor at this y or one above it; on sloping gro
 lay a foundation from the lowest column up.
 {{ground}}
 
+# Water (measured)
+{{water}}
+Under water the ground above gives the bed. Water has no collider: a walker wades on the bed. A bridge's deck stands at
+least 1 cell above the higher bank's ground y and 1 above the water's surface y, and rests one cell on each bank; its
+steps start on a dry column at that column's own ground y and climb 1 per cell to the deck's top.
+
 # Columns the Home refuses (measured; ops there are refused, so do not build there)
 {{refused}}
 
@@ -47,7 +53,7 @@ To CHANGE something that is there ("taller", "a slate roof", "wider"), read the 
 remove what goes, then place or fill what comes. Never place into a cell that holds a block: fill replaces, place
 does not.
 
-# Small worked examples (cells near [100, 10, 50] on flat ground at y 10)
+# Small worked examples (cells near [100, 10, 50] on flat ground at y 10 unless they say otherwise)
 A stair of 3 steps going up toward north onto a platform at y 13:
 {"op":"fill","from":[100,10,52],"to":[102,10,52],"shape":3,"mat":1,"rot":0}
 {"op":"fill","from":[100,11,51],"to":[102,11,51],"shape":3,"mat":1,"rot":0}
@@ -70,7 +76,26 @@ A 5 x 5 hut with plank walls, a stone trim, a door at the south, a window each s
 {"op":"fill","from":[100,14,51],"to":[100,14,53],"shape":1,"mat":3,"rot":0}
 {"op":"fill","from":[104,13,50],"to":[104,13,54],"shape":1,"mat":3,"rot":0}
 {"op":"fill","from":[104,14,51],"to":[104,14,53],"shape":1,"mat":3,"rot":0}
-(The roof slopes meet on a ridge row of cubes; the gable ends are filled under the slopes, never over a roof block.)
+(The roof slopes meet on a ridge row of cubes; the gable ends are filled under the slopes in the wall's material, never
+over a roof block. White (9) is a trim: a large white panel reads as a blank sign. A roof over a bridge or a shelter
+stands on posts (shape 5) and leaves its gable ends open.)
+A stone bridge with railings over a stream that runs north-south: west bank ground y 10 (x 99..102), water surface y 9
+at x 103..107 (bed y 8), east bank ground y 11 (x 108..110). Deck at y 12 (1 above the higher bank's 11), x 102..108;
+piers on the bed; steps rise east from the west bank (rot 3) and west from the east bank (rot 1) on filled supports:
+{"op":"fill","from":[102,12,49],"to":[108,12,53],"shape":1,"mat":2,"rot":0}
+{"op":"fill","from":[103,8,49],"to":[103,11,49],"shape":1,"mat":1,"rot":0}
+{"op":"fill","from":[103,8,53],"to":[103,11,53],"shape":1,"mat":1,"rot":0}
+{"op":"fill","from":[107,8,49],"to":[107,11,49],"shape":1,"mat":1,"rot":0}
+{"op":"fill","from":[107,8,53],"to":[107,11,53],"shape":1,"mat":1,"rot":0}
+{"op":"fill","from":[100,10,50],"to":[101,11,52],"shape":1,"mat":1,"rot":0}
+{"op":"fill","from":[99,10,50],"to":[99,10,52],"shape":3,"mat":1,"rot":3}
+{"op":"fill","from":[100,11,50],"to":[100,11,52],"shape":3,"mat":1,"rot":3}
+{"op":"fill","from":[101,12,50],"to":[101,12,52],"shape":3,"mat":1,"rot":3}
+{"op":"fill","from":[109,11,50],"to":[109,11,52],"shape":1,"mat":1,"rot":0}
+{"op":"fill","from":[109,12,50],"to":[109,12,52],"shape":3,"mat":1,"rot":1}
+{"op":"fill","from":[110,11,50],"to":[110,11,52],"shape":3,"mat":1,"rot":1}
+{"op":"fill","from":[102,13,49],"to":[108,13,49],"shape":8,"mat":4,"rot":0}
+{"op":"fill","from":[102,13,53],"to":[108,13,53],"shape":8,"mat":4,"rot":0}
 "Make it one storey taller" for that hut: clear the roof and gables (clear [99,13,49] to [105,15,55]), fill the walls
 from y 13 to 15 (walls:true), then build the same roof 3 higher.
 

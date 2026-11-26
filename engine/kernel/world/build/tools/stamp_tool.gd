@@ -1,7 +1,9 @@
 extends RefCounted
 ## M3 (spark world-sandbox, 26 Nov 2026): build mode's stamp tool (tl.stamp/1, stamp_file.gd; PIECES.md has the keys).
 ##   0            a new selection: LMB the first corner, LMB the opposite corner (the block under the cursor, or the
-##                cell on the ground), wheel the box's top; G saves it as user://home/stamps/<slug>.json ("Stamp N")
+##                cell on the ground), wheel the box's top; G names it in a field (command_bar.gd, "Stamp N" already
+##                in it and selected: type to replace it, at most 60 characters), Enter saves it as
+##                user://home/stamps/<slug>.json, Esc cancels. While the field is open the tool has the keyboard
 ##   1-9          a saved stamp of the shown page (Tab / Shift+Tab page, wheel the next or previous stamp)
 ##   R            turn the stamp (quarter turns)          LMB   place it: ONE batch of place and put ops (one undo)
 ##   X            export the current stamp as a shared item: user://home/stamps/export/<slug>.tlitem (kind stamp)
@@ -18,6 +20,8 @@ const Unlocks := preload("res://kernel/world/build/unlocks.gd")
 const PreviewMesh := preload("res://kernel/world/build/preview_mesh.gd")
 const PieceGhost := preload("res://kernel/world/build/piece_ghost.gd")
 const Catalog := preload("res://kernel/world/build/piece_catalog.gd")
+const Bar := preload("res://kernel/world/build/command_bar.gd")
+const NAME_KEYS := [KEY_ENTER, KEY_KP_ENTER, KEY_ESCAPE]
 const PAGE := 9
 const SCAN_UP := 48                     # cells above the box's floor the automatic top looks for content
 const STEADY := 6                       # frames the aim stays on one cell before the dry run is asked
@@ -42,6 +46,9 @@ var _drawn := ""                        # "<slug>|<turn>" drawn in `preview`
 var _aim_cell: Variant = null
 var _steady := 0
 var _checked := ""
+var name_bar: CanvasLayer = null        # command_bar.gd: the stamp's name, opened by G
+var _latched := false                   # Enter or Esc closed the name field and is still held: build mode must not read
+                                        # it as a new press (Enter would open the command bar, Esc would leave)
 
 
 func setup(h: Node) -> void:
@@ -61,6 +68,8 @@ func stamps_dir() -> String:
 
 func selected(on: bool) -> void:
 	reason = ""
+	if not on and naming():
+		name_bar.close()
 	_checked = ""
 	_hide()
 	if on:
@@ -113,11 +122,16 @@ func status() -> Dictionary:
 
 
 func hint() -> String:
-	return KEY_HELP
+	return "Enter save   Esc cancel" if naming() else KEY_HELP
 
 
+## True while the name field has the keyboard, and until the key that closed it is let go.
 func blocks_input() -> bool:
-	return false
+	return naming() or _latched
+
+
+func naming() -> bool:
+	return name_bar != null and name_bar.is_open()
 
 
 ## The selection box [lo, hi] (inclusive cells), or [] while a corner is missing.
@@ -164,7 +178,7 @@ func key(e: InputEvent) -> bool:
 	elif code == KEY_R:
 		turn = (turn + 1) % 4
 	elif code == KEY_G:
-		save_box()
+		ask_name()
 	elif code == KEY_X:
 		export_current()
 	elif code == KEY_I:
@@ -177,6 +191,32 @@ func key(e: InputEvent) -> bool:
 
 
 # ------------------------------------------------------------------ saving, sharing
+## G: the name field opens with the next free default name ("Stamp N"), or the hotbar says why nothing can be saved.
+func ask_name() -> void:
+	if box().is_empty() or stamps_dir() == "":
+		save_box()                      # says why: no corners, or no Home file here
+		return
+	if name_bar == null or not is_instance_valid(name_bar):
+		name_bar = Bar.new()
+		name_bar.name = "StampName"
+		host.add_child(name_bar)
+		name_bar.submitted.connect(_on_named)
+		name_bar.cancelled.connect(func() -> void:
+			name_bar.close()
+			_latched = true
+			note = "not saved")
+	var s: Vector3i = box()[1] - box()[0] + Vector3i.ONE
+	name_bar.open("Name the stamp (box %d x %d x %d)   Enter save   Esc cancel" % [s.x, s.y, s.z],
+		StampFile.next_name(stamps_dir()), StampFile.NAME_MAX, "a name for this stamp")
+
+
+func _on_named(text: String) -> void:
+	name_bar.close()
+	_latched = true
+	var n := text.replace("\n", " ").strip_edges()
+	save_box(n if n != "" else StampFile.next_name(stamps_dir()))
+
+
 ## Saves the selection box as a new stamp ("Stamp N"). Returns "" or why not.
 func save_box(name := "") -> String:
 	var b := box()
@@ -474,5 +514,9 @@ func dragging() -> bool:
 
 
 func tick(_frame: int) -> void:
+	if naming() and not (name_bar.line as LineEdit).has_focus():
+		(name_bar.line as LineEdit).grab_focus()     # a click in the world took the keyboard from the field: give it back
+	if _latched and NAME_KEYS.all(func(k: int) -> bool: return not Input.is_physical_key_pressed(k)):
+		_latched = false
 	if preview != null and is_instance_valid(preview) and (not bool(host.get("active")) or host.call("tool") != self or bool(host.get("looking"))):
 		_hide()

@@ -512,6 +512,35 @@ func read_region(lo: Vector3i, hi: Vector3i) -> Dictionary:
 	return {} if out.is_empty() else {"pieces": out}
 
 
+## M5 (lane C): this layer's part of a dry run's ghost (home_build.gd `preview_nodes`, BUILD.md "Layers"): the pieces
+## the dry run's scratch copy `s` holds and this layer does not, in holo, and those it would lift, in red (piece_ghost.gd:
+## each prototype's meshes with the holo fill UV (0.5, 2), where the piece would stand); null when it puts and lifts
+## nothing. The caller adds the node to the tree and frees it.
+func preview_node(s: Variant) -> Node3D:
+	if not (s is RefCounted) or not bool((s as RefCounted).get("scratch")):
+		return null
+	var after: Dictionary = (s as RefCounted).get("pieces")
+	var added := []
+	var gone := []
+	for a: Vector3i in after:
+		if not pieces.has(a) or not is_same(pieces[a], after[a]):
+			added.append([after[a].proto, after[a].xf])
+	for a: Vector3i in pieces:
+		if not after.has(a) or not is_same(pieces[a], after[a]):
+			gone.append([pieces[a].proto, pieces[a].xf])
+	if added.is_empty() and gone.is_empty():
+		return null
+	var node := Node3D.new()
+	node.name = "PiecesPreview"
+	for part: Array in [[added, false, "Added"], [gone, true, "Removed"]]:
+		if not (part[0] as Array).is_empty():
+			var g: Node3D = (load("res://kernel/world/build/piece_ghost.gd") as GDScript).new()
+			g.name = str(part[2])
+			node.add_child(g)
+			g.call("show_pieces", part[0], part[1])
+	return node
+
+
 ## The footprint [lo, hi] a put of `op` would have (a tool's ghost, a stamp's box), or [] when it is not well-formed.
 func footprint_of(op: Dictionary) -> Array:
 	var full := op.duplicate()

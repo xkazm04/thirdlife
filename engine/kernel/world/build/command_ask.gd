@@ -5,8 +5,12 @@ extends RefCounted
 ## default), the ground's height per column (the land layer's `height_at` when M2 gives one, else home/hook.gd
 ## `ground_y`), the columns protection refuses (with the reason), the op kinds the Home applies now, the shape,
 ## material, paint and part tables, and the caps. Static, no state; reads the Home, never writes it.
+## M5 (lane C): `water`, the measured water (the valley's river and ponds, home/valley.gd `water`, merged with the water
+## layer's `water_runs`; in a water column `ground` is the bed), and tables of what play has unlocked only (unlocks.gd:
+## materials 11 brick and 12 plaster once granted, the kit parts without the locked kinds).
 
 const Blocks := preload("res://kernel/world/build/blocks.gd")
+const Unlocks := preload("res://kernel/world/build/unlocks.gd")
 const SCHEMA := "tl.world-edit-ask/1"
 const SIZE := Vector3i(32, 24, 32)       # cells read round the cursor: x, y, z
 const BELOW := 4                         # cells of the region below the cursor's cell
@@ -30,15 +34,20 @@ const MAT_NOTES := {
 	6: "blue-grey slate (roofs)",
 	7: "smooth concrete",
 	8: "warm sandstone (walls, steps)",
-	9: "white plaster (walls, trims)",
+	9: "white trim (edges, small surfaces; a large white wall reads as blank)",
+	11: "red brick (walls, chimneys)",
+	12: "warm plaster (house walls)",
 }
 const PAINTS := ["grass", "grass_dark", "grass_dry", "dirt", "sand", "stone", "rock_warm", "cliff", "valley"]
 const NOT_YET := "not built yet"
 
 
 ## The ask for `sentence` at `cursor` facing `facing` (home_build.gd `rot_facing` of the camera's forward). `build`:
-## home_build.gd; `land`: the landscape node (its meta "tl_home": the ground). Returns the ask, or {"error"}.
-static func make(build: RefCounted, land: Node, sentence: String, cursor: Vector3i, facing: int, size := SIZE) -> Dictionary:
+## home_build.gd; `land`: the landscape node (its meta "tl_home": the ground); `unlocks`: unlocks.gd of the Home (null:
+## nothing earned yet, every rule unmet). Returns the ask, or {"error"}.
+static func make(build: RefCounted, land: Node, sentence: String, cursor: Vector3i, facing: int, size := SIZE, unlocks: RefCounted = null) -> Dictionary:
+	if unlocks == null:
+		unlocks = Unlocks.new("")
 	var lo := Vector3i(cursor.x - size.x / 2, clampi(cursor.y - BELOW, Blocks.Y_MIN, Blocks.Y_MAX), cursor.z - size.z / 2)
 	var hi := Vector3i(lo.x + size.x - 1, mini(lo.y + size.y - 1, Blocks.Y_MAX), lo.z + size.z - 1)
 	var read: Dictionary = build.read_region(lo, hi)
@@ -51,21 +60,19 @@ static func make(build: RefCounted, land: Node, sentence: String, cursor: Vector
 		var c := int(b[3])
 		blocks.append([int(b[0]), int(b[1]), int(b[2]), Blocks.shape_of(c), Blocks.mat_of(c), Blocks.rot_of(c), 1 if Blocks.flip_of(c) else 0])
 	ask["blocks"] = blocks
-	var g := ground(build, land, lo, hi)
+	var hs := heights(build, land, lo, hi)
+	var g := cells_of(hs)
 	ask["ground"] = {"min": [lo.x, lo.z], "rows": g}
 	var refused := refused_columns(build, lo, hi, g)
 	if not refused.is_empty():
 		ask["refused"] = refused
 	ask["shapes"] = table(Blocks.SHAPE_NAMES, SHAPE_NOTES)
-	var names := {}
-	for id: int in MAT_NOTES:
-		names[id] = Blocks.MAT_KEYS[id]
-	ask["mats"] = table(names, MAT_NOTES)
+	ask["mats"] = mats(unlocks)
 	if (ask.ops as Array).has("paint"):
 		ask["paints"] = PAINTS.duplicate()
 	if (ask.ops as Array).has("put"):
-		ask["parts"] = parts()
-	var water := water_of(build, lo, hi)
+		ask["parts"] = parts(unlocks)
+	var water := water_of(build, lo, hi, hs)
 	if not water.is_empty():
 		ask["water"] = water
 	var layers := {}
@@ -91,16 +98,83 @@ static func ops_now(build: RefCounted, _at: Vector3i) -> Array:
 	return out
 
 
-## The water in the box (the water layer's `water_runs`: [{"y", "runs": [[z, x0, x1], ...]}]), [] when there is none
-## or no water layer measures it. M5's lanes add the river's water here.
-static func water_of(build: RefCounted, lo: Vector3i, hi: Vector3i) -> Array:
+## The water in the box as the ask's `water` key: [{"y": <cell y of the surface>, "runs": [[z, x0, x1], ...]}, ...],
+## sorted by y, runs by z then x; [] when there is none. Two sources merged per column (the water layer's wins): the
+## valley's own water (home/valley.gd `water(x, z)`: the river and the village ponds, a level in m) where it stands
+## above the ground there (the bed: `heights`, given as `hs` or measured here), and the water layer's
+## `water_runs(lo, hi)`. A surface outside the box's y range is left out. A Home without a valley has only the layer's.
+static func water_of(build: RefCounted, lo: Vector3i, hi: Vector3i, hs: Array = []) -> Array:
+	var col := {}                            # Vector2i(x, z) -> surface cell y
+	var v: Object = valley_of(build)
+	if v != null and v.has_method("water"):
+		if hs.is_empty():
+			hs = heights(build, null, lo, hi)
+		for z in range(lo.z, hi.z + 1):
+			for x in range(lo.x, hi.x + 1):
+				var lv: Variant = v.call("water", x + 0.5, z + 0.5)
+				if lv == null or float(lv) <= float(hs[z - lo.z][x - lo.x]) + 0.01:
+					continue
+				var y := floori(float(lv))
+				if y >= lo.y and y <= hi.y:
+					col[Vector2i(x, z)] = y
 	var w: RefCounted = build.layer("water")
-	return (w.call("water_runs", lo, hi) as Array) if w != null and w.has_method("water_runs") else []
+	if w != null and w.has_method("water_runs"):
+		for e: Dictionary in w.call("water_runs", lo, hi):
+			for r: Array in e.runs:
+				for x in range(int(r[1]), int(r[2]) + 1):
+					col[Vector2i(x, int(r[0]))] = int(e.y)
+	return runs_of(col)
+
+
+## {Vector2i(x, z): y} as [{"y", "runs": [[z, x0, x1], ...]}], sorted by y, runs by z then x.
+static func runs_of(col: Dictionary) -> Array:
+	var by := {}                             # y -> {z: [x, ...]}
+	for c: Vector2i in col:
+		var y: int = col[c]
+		if not by.has(y):
+			by[y] = {}
+		if not (by[y] as Dictionary).has(c.y):
+			by[y][c.y] = []
+		(by[y][c.y] as Array).append(c.x)
+	var ys := by.keys()
+	ys.sort()
+	var out := []
+	for y: int in ys:
+		var runs := []
+		var zs := (by[y] as Dictionary).keys()
+		zs.sort()
+		for z: int in zs:
+			var xs: Array = by[y][z]
+			xs.sort()
+			var x0: int = xs[0]
+			for i: int in range(1, xs.size() + 1):
+				if i == xs.size() or int(xs[i]) != int(xs[i - 1]) + 1:
+					runs.append([z, x0, int(xs[i - 1])])
+					if i < xs.size():
+						x0 = xs[i]
+		out.append({"y": y, "runs": runs})
+	return out
+
+
+## The valley (home/valley.gd) under the Home: the land layer's ground (land_ground.gd `valley`); null on flat ground.
+static func valley_of(build: RefCounted) -> Object:
+	var l: RefCounted = build.layer("land")
+	if l != null and l.has_method("ground"):
+		var g: Variant = l.call("ground")
+		if g is Object and g != null and (g as Object).get("valley") != null:
+			return (g as Object).get("valley")
+	return null
 
 
 ## rows[z - lo.z][x - lo.x]: the y of the cell a block takes standing on the ground at the column (x, z), the cell
 ## holding the point just above the ground (home_build.gd `cell_at_ray_hit`).
 static func ground(build: RefCounted, land: Node, lo: Vector3i, hi: Vector3i) -> Array:
+	return cells_of(heights(build, land, lo, hi))
+
+
+## rows[z - lo.z][x - lo.x]: the ground's height in m at the column's centre (the land layer's `height_at` when M2
+## gives one, else home/hook.gd `ground_y`, else 0). Under water it is the bed.
+static func heights(build: RefCounted, land: Node, lo: Vector3i, hi: Vector3i) -> Array:
 	var land_layer: RefCounted = build.layer("land")
 	var by_land := land_layer != null and land_layer.has_method("height_at")
 	var home: Object = land.get_meta(&"tl_home") if land != null and land.has_meta(&"tl_home") else null
@@ -113,6 +187,17 @@ static func ground(build: RefCounted, land: Node, lo: Vector3i, hi: Vector3i) ->
 				h = float(land_layer.call("height_at", x + 0.5, z + 0.5))
 			elif home != null:
 				h = float(home.call("ground_y", x + 0.5, z + 0.5))
+			row.append(h)
+		rows.append(row)
+	return rows
+
+
+## Heights in m as the cells a block takes standing there.
+static func cells_of(hs: Array) -> Array:
+	var rows := []
+	for r: Array in hs:
+		var row := []
+		for h: float in r:
 			row.append(clampi(int(floorf(h + 0.01)), Blocks.Y_MIN, Blocks.Y_MAX))
 		rows.append(row)
 	return rows
@@ -157,10 +242,24 @@ static func table(names: Dictionary, notes: Dictionary) -> Array:
 	return out
 
 
-## The kit parts a put may name (TLKit), each with the first sentence of its doc.
-static func parts() -> Array:
+## The block materials a place may name: M1's 1-9 and each later one play has unlocked (`unlocks`: unlocks.gd).
+static func mats(unlocks: RefCounted) -> Array:
+	var names := {}
+	var notes := {}
+	for id: int in MAT_NOTES:
+		if str(unlocks.call("locked", "mats", id)) == "":
+			names[id] = Blocks.MAT_KEYS[id]
+			notes[id] = MAT_NOTES[id]
+	return table(names, notes)
+
+
+## The kit parts a put may name (TLKit) that play has unlocked (`unlocks`; null: every part), each with the first
+## sentence of its doc.
+static func parts(unlocks: RefCounted = null) -> Array:
 	var out := []
 	for k: String in TLKit.list():
+		if unlocks != null and str(unlocks.call("locked", "parts", k)) != "":
+			continue
 		var doc := str(TLKit.spec(k).get("doc", k))
 		out.append({"kind": k, "note": doc.get_slice(". ", 0).trim_suffix(".")})
 	return out

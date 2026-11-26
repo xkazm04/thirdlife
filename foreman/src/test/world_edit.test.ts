@@ -8,6 +8,7 @@ import { spawnSync } from "node:child_process";
 import { PKG_ROOT } from "../paths.js";
 import { cleanup, tempDir } from "./helpers.js";
 import { expand } from "../world_edit_check.js";
+import { facts } from "../world_edit.js";
 after(cleanup);
 
 const rows = Array.from({ length: 4 }, () => [10, 10, 10, 10]);
@@ -139,4 +140,70 @@ test("world-edit reads an ask with the water key and the M5 op names, and refuse
   const bad = worldEdit({ ...m5, water: [{ y: 9, runs: [[50, 99]] }] }, []);
   assert.equal(bad.code, 2);
   assert.match(bad.error, /--in.*water/);
+});
+
+// M5 (lane C): the water fact, the M5 ops taught and checked, the ask's unlocked tables held, each fed back and fixed.
+function worldEditSteps(input: unknown, steps: { json: unknown; includes: string }[]) {
+  const root = tempDir("world-edit-m5"), file = path.join(root, "ask.json"), out = path.join(root, "answer.json");
+  fs.writeFileSync(file, JSON.stringify(input));
+  const script = path.join(root, "fake.json");
+  fs.writeFileSync(script, JSON.stringify({ model: "builder-opus", steps: steps.map((s, i) => ({
+    match: { role: "world_edit", attempt: i + 1, promptIncludes: s.includes }, json: s.json, tokensIn: 100, tokensOut: 40 })) }));
+  const run = spawnSync(process.execPath, [path.join(PKG_ROOT, "dist/cli.js"), "world-edit", "--in", file, "--out", out,
+    "--adapter", "fake", "--fake-script", script], { encoding: "utf8" });
+  return { code: run.status, error: run.stderr, result: fs.existsSync(out) ? JSON.parse(fs.readFileSync(out, "utf8")) : undefined };
+}
+const m5ask = { ...ask, region: { min: [96, 6, 46], max: [127, 29, 77] },
+  ground: { min: [96, 46], rows: Array.from({ length: 32 }, () => Array(32).fill(10)) },
+  ops: ["place", "remove", "land", "paint", "put", "lift", "pour", "drain", "path", "unpath", "plant"],
+  mats: [{ id: 1, name: "stone", note: "grey stone" }, { id: 9, name: "white", note: "white trim" }],
+  paints: ["grass", "dirt", "valley"], parts: [{ kind: "tree", note: "a tree" }, { kind: "bench", note: "a bench" }],
+  water: [{ y: 9, runs: [[50, 103, 107], [51, 103, 107], [52, 104, 108]] }, { y: 12, runs: [[60, 120, 121]] }] };
+
+test("world-edit M5: the prompt carries the measured water and teaches pour, drain, path, unpath and plant with a pond, a path and a bridge", () => {
+  const f = facts(m5ask as never);
+  assert.equal(f.water, "surface in cell y 9 (a block at y 9 or lower in these columns stands in the water): x 103..107, z 50..51; x 104..108, z 52\n" +
+    "surface in cell y 12 (a block at y 12 or lower in these columns stands in the water): x 120..121, z 60");
+  for (const k of ['{"op":"pour"', '{"op":"drain"', '{"op":"path"', '{"op":"unpath"', '{"op":"plant"', "A pond", "A dirt path"]) assert.ok(f.more_ops?.includes(k), k);
+  assert.equal(facts(ask as never).water, "none in the region");
+  assert.ok(!(facts(ask as never).more_ops ?? "").includes("pour"));
+  const r = worldEditSteps(m5ask, [{ includes: "x 103..107, z 50..51", json: { note: "A pond.", ops: [{ op: "pour", at: [100, 10, 50] }] } }]);
+  assert.equal(r.code, 0, r.error);
+  const prompt = fs.readFileSync(path.join(PKG_ROOT, "prompts", "world_edit.md"), "utf8");
+  for (const k of ["# Water (measured)", "1 cell above the higher bank's ground y", "A stone bridge with railings", "White (9) is a trim", "open"]) assert.ok(prompt.includes(k), k);
+});
+
+test("world-edit M5: each new op's bad form is fed back and the fixed answer taken on attempt 2", () => {
+  const cases: [Record<string, unknown>, Record<string, unknown>, string][] = [
+    [{ op: "pour", at: [200, 10, 50] }, { op: "pour", at: [105, 8, 51] }, "is outside the region"],
+    [{ op: "drain", cells: [[34, 17]] }, { op: "drain", cells: [[34, 17, 950]] }, "a drain cell is [i, j, level_cm]"],
+    [{ op: "path", id: 2, pts: [[9800, 5000], [9850, 5000]], width_cm: 250, paint: "dirt" }, { op: "path", id: 2, pts: [[9800, 5000], [11000, 5000]], width_cm: 250, paint: "dirt" }, "50 cm apart"],
+    [{ op: "path", id: 2, pts: [[9800, 5000], [11000, 5000]], width_cm: 100, paint: "dirt" }, { op: "path", id: 2, pts: [[9800, 5000], [11000, 5000]], width_cm: 150, paint: "dirt" }, "width_cm 100 is outside 150-800"],
+    [{ op: "path", id: 2, pts: [[9800, 5000], [11000, 5000]], width_cm: 300, paint: "lava" }, { op: "path", id: 2, pts: [[9800, 5000], [11000, 5000]], width_cm: 300, paint: "plank" }, "paint must be a path paint"],
+    [{ op: "unpath", id: 2, pts: [[9800, 5000]], width_cm: 300, paint: "dirt" }, { op: "unpath", id: 2, pts: [[9800, 5000], [11000, 5000]], width_cm: 300, paint: "dirt" }, "pts must hold 2 to 64 points"],
+    [{ op: "plant", cells: [[34, 17, "valley", "roses"]] }, { op: "plant", cells: [[34, 17, "valley", "flowers"]] }, "a plant cell's growths are meadow, flowers, tall_grass, valley"],
+    [{ op: "paint", cells: [[34, 17, "valley", "sand"]] }, { op: "paint", cells: [[34, 17, "valley", "dirt"]] }, "with paints from the table (grass, dirt, valley)"],
+  ];
+  for (const [bad, fixed, why] of cases) {
+    const r = worldEditSteps(m5ask, [{ includes: "Water (measured)", json: { note: "x", ops: [bad] } }, { includes: why, json: { note: "Fixed.", ops: [fixed] } }]);
+    assert.equal(r.code, 0, `${bad.op}: ${r.error} ${JSON.stringify(r.result)}`);
+    assert.deepEqual(r.result.ops, [fixed]);
+    assert.equal(r.result.tokensIn, 200);
+  }
+});
+
+test("world-edit M5: a mat or part not in the ask's tables (locked) is refused, and the answer fixed on attempt 2 is taken", () => {
+  const brick = { note: "A brick wall.", ops: [{ op: "fill", from: [100, 10, 50], to: [103, 11, 50], shape: 1, mat: 11, rot: 0 }] };
+  const stone = { note: "A stone wall.", ops: [{ op: "fill", from: [100, 10, 50], to: [103, 11, 50], shape: 1, mat: 1, rot: 0 }] };
+  const r = worldEditSteps(m5ask, [{ includes: "9 white: white trim", json: brick }, { includes: "mat 11 is not in the material table (unknown, or not unlocked yet): use one of 1, 9", json: stone }]);
+  assert.equal(r.code, 0, r.error);
+  assert.deepEqual(r.result.ops.map((o: { op: string; mat: number }) => `${o.op} ${o.mat}`), ["remove 3", ...Array(8).fill("place 1")]);
+  const house = { note: "A house.", ops: [{ op: "put", at: [110, 10, 60], part: "house", rot: 0 }] };
+  const tree = { note: "A tree.", ops: [{ op: "put", at: [110, 10, 60], part: "tree", rot: 0 }] };
+  const p = worldEditSteps(m5ask, [{ includes: "bench: a bench", json: house }, { includes: 'the part "house" is not in the parts table', json: tree }]);
+  assert.equal(p.code, 0, p.error);
+  assert.deepEqual(p.result.ops, tree.ops);
+  const twice = worldEditSteps(m5ask, [{ includes: "Kit parts", json: house }, { includes: "not unlocked yet", json: house }]);
+  assert.equal(twice.code, 1);
+  assert.match(twice.result.error, /after 2 attempts.*"house" is not in the parts table/);
 });

@@ -9,6 +9,9 @@ extends RefCounted
 ## (ONE batch, author "llm", so one Ctrl+Z takes it all back; the counts are recomputed then, as the world may have
 ## changed), Esc or Backspace reverts it. Without a connected model the bar says why and does nothing. Every call is
 ## logged with the day's cap (command_calls.gd). The test hook TL_COMMAND_DEVICES is command_devices.gd.
+## M5 (lane C): the ask lists only what play has unlocked (unlocks.gd); an answer that still names a locked material,
+## shape or part has those ops refused "locked: <condition>" when it is shown, and again at accept, and the rest is
+## applied. Every layer draws its part of the ghost (home_build.gd `preview_nodes`), and the note counts every kind.
 
 const HomeBuild := preload("res://kernel/world/build/home_build.gd")
 const Ask := preload("res://kernel/world/build/command_ask.gd")
@@ -19,6 +22,8 @@ const Bar := preload("res://kernel/world/build/command_bar.gd")
 const Marker := preload("res://kernel/world/build/command_marker.gd")
 const PreviewMesh := preload("res://kernel/world/build/preview_mesh.gd")
 const Devices := preload("res://kernel/world/build/command_devices.gd")
+const Unlocks := preload("res://kernel/world/build/unlocks.gd")
+const LOCKED_AT := -100000              # refused indices below this are locked ops of the expanded answer
 const KEY_HELP := "T next tool   Shift+T previous tool   Ctrl+Z undo   Ctrl+Y redo   hold MMB or Alt look   B or Esc leave"
 const MAX_PENDING := 2
 const POLL_EVERY := 15                  # physics frames between looks at an answer file
@@ -194,7 +199,7 @@ func send(text: String, cell: Vector3i, facing: int) -> String:
 	if why != "":
 		return why
 	var sentence := text.replace("\n", " ").strip_edges().left(400)
-	var ask: Dictionary = Ask.make(host.get("build"), host.get("land"), sentence, cell, facing)
+	var ask: Dictionary = Ask.make(host.get("build"), host.get("land"), sentence, cell, facing, Ask.SIZE, Unlocks.new(_dir))
 	if ask.has("error"):
 		return str(ask.error)
 	var cid: String = calls.new_id()
@@ -222,7 +227,8 @@ func send(text: String, cell: Vector3i, facing: int) -> String:
 	_say("asked: \"%s\"" % sentence, false)
 	print(JSON.stringify({"schema": "tl.view/1", "kind": "command_ask", "id": cid, "cell": [cell.x, cell.y, cell.z],
 		"facing": facing, "region": ask.region, "blocks": (ask.blocks as Array).size(), "refused": (ask.get("refused", []) as Array).size(),
-		"ops": ask.ops, "bytes": text_ask.length(), "frame": frame}, "", false))
+		"ops": ask.ops, "mats": (ask.mats as Array).size(), "parts": (ask.get("parts", []) as Array).size(),
+		"water": (ask.get("water", []) as Array).size(), "bytes": text_ask.length(), "frame": frame}, "", false))
 	return ""
 
 
@@ -290,14 +296,18 @@ func _fail(p: Dictionary, why: String) -> void:
 
 
 ## The answer as a ghost: its input ops expanded (home_build.gd `expand_input`: a pour becomes a flood op; one that
-## cannot be is counted refused, at index -1 - i), a dry run of the result, the blocks drawn by `preview` and every
-## other layer's part by its own `preview_node` under `layer_ghosts`.
+## cannot be is counted refused, at index -1 - i), the locked ops split out (refused "locked: <condition>", at index
+## LOCKED_AT - i), a dry run of the rest, the blocks drawn by `preview` and every other layer's part by its own
+## `preview_node` under `layer_ghosts`.
 func _show(p: Dictionary) -> void:
 	var build: RefCounted = host.get("build")
 	var ex: Dictionary = build.expand_input(Answer.llm_ops(p.answer.ops))
-	var ops: Array = ex.ops
+	var lk: Dictionary = Answer.split_locked(ex.ops, Unlocks.new(_dir))
+	var ops: Array = lk.ops
 	var r: Dictionary = build.preview(ops)
-	p["expand_refused"] = (ex.refused as Array).map(func(x: Array) -> Array: return [-1 - int(x[0]), x[1]])
+	var early: Array = (ex.refused as Array).map(func(x: Array) -> Array: return [-1 - int(x[0]), x[1]])
+	early.append_array((lk.refused as Array).map(func(x: Array) -> Array: return [LOCKED_AT - int(x[0]), x[1]]))
+	p["expand_refused"] = early
 	(r.refused as Array).append_array(p.expand_refused)
 	p["ops"] = ops
 	p["preview"] = r
@@ -319,7 +329,7 @@ func _show(p: Dictionary) -> void:
 		host.call("switch_tool", 0, "command")
 	print(JSON.stringify({"schema": "tl.view/1", "kind": "command_ghost", "id": p.id, "applied": int(r.applied),
 		"refused": (r.refused as Array).size(), "placed": p.placed, "counts": Answer.counts(r, int(p.placed), ops),
-		"layers": layer_ghosts.get_child_count(), "frame": frame}, "", false))
+		"layers": layer_ghosts.get_children().map(func(n: Node) -> String: return str(n.get_meta(&"tl_layer", ""))), "frame": frame}, "", false))
 
 
 ## Enter on a ghost: its ops applied as ONE batch by "llm" (one undo step), the counts as they are now.
@@ -328,6 +338,10 @@ func accept() -> Dictionary:
 		return {}
 	var p := shown
 	var build: RefCounted = host.get("build")
+	var lk: Dictionary = Answer.split_locked(p.ops, Unlocks.new(_dir))       # the backstop: a lock is asked again now
+	if not (lk.refused as Array).is_empty():
+		p.ops = lk.ops
+		(p.expand_refused as Array).append_array((lk.refused as Array).map(func(x: Array) -> Array: return [LOCKED_AT - 50000 - int(x[0]), x[1]]))
 	build.begin_batch("llm")
 	var r: Dictionary = build.apply(p.ops)
 	build.end_batch()
@@ -335,10 +349,11 @@ func accept() -> Dictionary:
 	var bad := {}
 	for x: Array in r.refused:
 		bad[int(x[0])] = true
-	var placed := 0
+	var last := {}                          # cell -> the kind of the last op applied there: a cell placed twice is one block
 	for i: int in (p.ops as Array).size():
-		if not bad.has(i) and str(p.ops[i].op) == "place":
-			placed += 1
+		if not bad.has(i) and str(p.ops[i].op) in ["place", "remove"]:
+			last[str(p.ops[i].at)] = str(p.ops[i].op)
+	var placed := last.values().count("place")
 	_decided(p, true, r)
 	kept += 1
 	_say("kept: %s. Ctrl+Z takes it all back" % Answer.counts(r, placed, p.ops), false)
