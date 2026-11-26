@@ -446,4 +446,5 @@ on the frame and the figure and Fable on surfaces and nature, looping for 10 hou
 - 00:46 standup: G11 v0.1.0 and G19 v0.1.1 promoted and in the owner menu; finding: the tofu gate bends games to its bounds (thrown-away critic revises, a hidden comeback multiplier).
 - 01:46 standup: G11 done (v0.1.1); G19 v0.1.3 in the menu (paired fighters, quilted look), change 4 (camera, score plate) refused by the tofu bounds and a kit rule.
 - 02:10 close: G19 done (v0.1.4; v0.1.3 in the menu), docs landed 1a451a18; all six games of the plan reached versions on the hardened editor; claims released, standup timer deleted. Next: the tofu gate must stop bending games (four lanes), then the owner asks in VERDICT.md.
+- 26 Nov 11:30 (owner ask): My games and Dungeons now show one row per game (the final version) in pages of 5 (main c7fb0bac; selftest 641; exe c7fb0ba in dist/ThirdLife-next, export.sh check PASS; PLAY-LATEST.cmd starts it).
 
