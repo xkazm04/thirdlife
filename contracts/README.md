@@ -16,6 +16,7 @@ question, with your proposed wording, in your final report.
 | `KIT-RIG-STYLE.md` | what kit parts, rigs and the style layer expose to the kernel and to packs; material ids |
 | `ASSETS.md`, `assets.schema.json` | the asset manifest: what an asset is, its licence, its budget |
 | `CARDS.md` | recipe cards: one kind of game, the seed or house pack that shows it, the advice a Planner and a builder get |
+| `BUILD.md` | the Home sandbox: `tl.edit/1` operations (hand or LLM, one log) and the saved `tl.build/1` blocks |
 
 ## Ownership (disjoint; never write outside your own scope)
 

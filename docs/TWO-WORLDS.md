@@ -190,6 +190,41 @@ The Home is a stack of layers. Each is edited, saved, undone and shared on its o
   the `kernel/proc/` spike is not on the game path). The isolated process comes first, then friends.
 - **Transport:** Steam networking first, matching SHARING.md's Steam Cloud first.
 
+## The sandbox: building by hand and by LLM [owner, 26 Nov]
+
+Decided with the owner on 26 Nov 2026 (spark `world-sandbox`, `.spark/Spark/ideas/world-sandbox.md`). It refines
+"Build layers" above. The owner's direction: "combine LLM building together with extend of voxel/block layer which may
+be more abstract/higher level than roblox or minecraft. Players without investing to LLM would be able still to play
+and build custom creations, players with connected LLM would access the highest potential of this app".
+
+- **One world, four units:**
+  - **land**: the heightfield, sculpted and painted;
+  - **blocks**: 1 m smart blocks, shape x material, that join their neighbours (stairs and roofs form corners, fences
+    connect);
+  - **pieces**: kit parts snapped onto cells;
+  - **stamps**: saved groups, shared as items.
+
+  Blocks sit on the land. There are no caves: "Voxel substrate rejected" (FEASIBILITY.md) still holds for world law,
+  and blocks are a building layer over it.
+- **One edit log, two authors.** Every change is a `tl.edit/1` operation with `author: hand|llm` in a batch
+  (`contracts/BUILD.md`). An LLM job returns a batch shown as a ghost, and the player accepts it, adjusts it by hand or
+  reverts it. Without an LLM, every tool works.
+- **Creative, with unlocks from play.** Building costs nothing. Dungeon results (trophies) unlock materials, shapes and
+  stamps.
+- **One Home, autosaved** in `user://home/`.
+- **Rights.** The player may change land and their own builds. The valley's authored structures and the game lots are
+  protected.
+- **In-world building.** B toggles build mode: the cursor is free, a ghost block follows it, and the hotbar picks the
+  shape and material. Walking and F flight stay.
+
+| Milestone | What | State |
+|---|---|---|
+| M1 | edit log, autosave, build mode, 1 m smart blocks with per-chunk mesh and collider | building (26 Nov) |
+| M2 | land sculpt and paint: the valley onto editable `tl.land/1` (its 12 m mesh and 96 m colliders do not use it yet) | next |
+| M3 | pieces (kit parts on cells) and stamps as items; unlocks from dungeon results | |
+| M4 | the LLM command bar: a sentence at the cursor becomes a Foreman job that returns a `tl.edit/1` batch as a ghost | |
+| M5 | water, paths and plants (layers 1, 2 and 4) | |
+
 ## Order of work [proposal]
 1. **Dungeons v1** (done 21 Nov, L4 d0d0bd9): the menu, the dungeon scene, `--dungeon`, hockey as the first one.
 2. **The `dungeon` block in PACK.md and results back**: the trophy shelf at a portal.

@@ -61,6 +61,7 @@ The checkout is shared with other Claude sessions (a visual-look session and the
 | How to build a kind of game (recipe cards) | `contracts/CARDS.md`, `engine/cards/`, `tl cards brief <id>` |
 | Assets and budgets | `contracts/ASSETS.md`, `assets/` |
 | Many games in one world | `engine/kernel/world/`, `engine/tools/world.sh`, `engine/tools/view.sh` |
+| Building in the Home (blocks, edit log, build mode; roadmap M1-M5) | `contracts/BUILD.md`, `engine/kernel/world/build/BUILD.md`, `docs/TWO-WORLDS.md` "The sandbox" |
 | Designer panel (describe, approve, watch, tune) | `engine/ui/`, `engine/tools/ui.sh` |
 | Shareable items (`item.json`, `.tlitem`) | `docs/SHARING.md`, `engine/kernel/share/`, `engine/tools/item.sh` |
 | Sharing, world layering | `docs/SHARING.md`, `reports/` |
