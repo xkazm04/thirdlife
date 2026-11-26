@@ -173,6 +173,59 @@ omitted, a removal carries what it removed). Each kind is owned by one **layer**
   world's simulation still counts frames.
 - A replay never calls the model: the accepted operations are in the journal.
 
+## Milestone 5: water, paths, plants (added 26 Nov, wave 5)
+
+```
+{"v":1, "op":"flood",  "cells":[[i, j, level_cm], ...], "author":..., "batch":...}
+{"v":1, "op":"drain",  "cells":[[i, j, level_cm], ...], "author":..., "batch":...}
+{"v":1, "op":"path",   "id":<int>, "pts":[[x_cm, z_cm], ...], "width_cm":<int>, "paint":"<path paint>", "author":..., "batch":...}
+{"v":1, "op":"unpath", "id":<int>, "pts":[...], "width_cm":<int>, "paint":"...", "author":..., "batch":...}
+{"v":1, "op":"plant",  "cells":[[i, j, "<from>", "<to>"], ...], "author":..., "batch":...}
+```
+
+- **Water** is still water over 3 m land cells (the paint grid). `flood` sets the surface of cell `[i, j]` to the
+  absolute height `level_cm`; `drain` removes it and names the level it removes (so undo needs no lookup). A cell holds
+  at most one level. The **pour** tool computes the fill: from the clicked cell it floods 4-neighbour cells up to just
+  under the spill level (the lowest rim the water would cross), refused with a reason when the fill reaches 2,048
+  cells, a protected area, or the river band ("spills"). Water has no collider: a walker wades on the bed, as at the
+  river. Water follows no later sculpt by itself: a land op under water leaves the level as it is.
+- **Paths** are splines draped on the ground. `pts` are 2-64 control points in world centimetres, consecutive points
+  100-4,800 cm apart; `width_cm` is 150-800; the path paints are `dirt`, `sand`, `stone`, `rock_warm`, `grass_dry` and
+  `plank`. `id` is a positive integer, unique in the Home (the layer gives the next free one). `unpath` carries the
+  whole path it removes. Grading is not part of the op: the path tool writes a `land` op in the same batch.
+- **Plants** set the growth of 3 m cell `[i, j]`: `meadow`, `flowers`, `tall_grass`, or `valley` for the ground's own
+  growth. Growth is drawn by the ground's shader (no instances). Trees and bushes are `put` ops (the scatter brush
+  writes one seeded `put` per tree).
+- Flood, path and plant are refused in the protected areas, with a reason, like land and paint.
+- **On input only** (an LLM answer), `{"op":"pour", "at":[x,y,z]}` asks the exe to compute a fill from that cell. The
+  exe expands it into one `flood` op when it shows the answer; a `pour` is never journaled or saved.
+
+### `tl.build/3`
+
+```
+{"v": 3, ...every v2 key...,
+ "water":  {"<cx>,<cz>": "<base64 of (cell, level_cm) int32 pairs, sorted by cell>"},
+ "paths":  [{"id":<int>, "pts":[[x_cm, z_cm], ...], "width_cm":<int>, "paint":"..."}, ...],
+ "plants": {"<cx>,<cz>": "<base64 of (cell, id) int32 pairs, sorted by cell>"}}
+```
+
+- Chunks and local cell indices are as for `paint`. Plant ids in the file: 1 meadow, 2 flowers, 3 tall_grass. Paths
+  are sorted by `id`. `water`, `paths` and `plants` are omitted when empty.
+- **Every operation kind names the file version it needs**: place, remove: 1; land, paint, put, lift: 2; flood,
+  drain, path, unpath, plant: 3. An exe writes `build.json` at the needed version before it journals the first
+  operation of a higher one. A reader refuses a version above its own and never overwrites that file.
+
+### The LLM command bar, M5 additions
+
+- The ask gains `water`: `[{"y": <cell y of the surface>, "runs": [[z, x0, x1], ...]}, ...]`, the measured water in
+  the region (the river and the player's water), omitted when there is none. In a water column, `ground` is the bed.
+- The ask's tables list only what the player has unlocked: `mats` adds 11 brick and 12 plaster once granted; `parts`
+  leaves out locked kinds. The Foreman refuses an op that names a mat or part not in the ask's tables. The exe still
+  refuses a locked mat or part at accept ("locked: <the condition>").
+- `ops` may name `pour`, `drain`, `path`, `unpath` and `plant` once their layers are built.
+- Every layer shows its own part of an answer as a ghost before accept (blocks, land, paint, pieces, water, paths,
+  plants).
+
 ## Laws
 
 - Blocks live only in the visitor's physics space (one static body per non-empty chunk, layer 1). They are never in a
