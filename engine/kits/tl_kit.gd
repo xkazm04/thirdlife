@@ -97,6 +97,10 @@ const PARTS: Dictionary = {
 		"length": ["float", 1.6, 0.3, 6.0, "length along X (m)"], "height": ["float", 0.3, 0.1, 2.0, "height (m)"], "depth": ["float", 0.3, 0.1, 2.0, "thickness along Z (m)"], "color": ["key", "car_blue", "", "", "palette key"]}],
 	"crate": ["Wooden crate, pre-fractured (Intact / Pieces).", "wood", true, {
 		"size": ["float", 1.0, 0.3, 3.0, "edge length (m)"], "cells": ["int", 6, 3, 12, "pieces"], "seed": ["int", 3, 0, 1000000, "fracture pattern"]}],
+	"bench": ["Town bench of planks on two end frames, centred on the origin; a person sits facing +Z.", "wood", false, {
+		"length": ["float", 1.8, 1.0, 3.0, "length along X (m)"], "back": ["bool", true, "", "", "a backrest on the -Z side"]}],
+	"street_lamp": ["Street lamp: stone foot, iron post, an arm over +Z with a lantern (its light is skipped in headless).", "steel", false, {
+		"height": ["float", 4.2, 3.0, 6.0, "height of the post (m)"], "light": ["bool", true, "", "", "add the lantern's light"]}],
 }
 
 

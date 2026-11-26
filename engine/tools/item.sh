@@ -2,7 +2,7 @@
 # Third Life item tool (docs/SHARING.md; what was built: kernel/share/SHARE.md). An item is a folder with a card.
 #
 #   item.sh card   <dir> [--lint=<report>] [--bot=<report>] [--smoke=<report>] [--invariants=<report>] [--job=<job dir>]
-#                        [--kind=game|venue|look|tuning|kit|world] [--title=] [--summary=] [--description=] [--tags=a,b]
+#                        [--kind=game|venue|look|tuning|kit|world|stamp] [--title=] [--summary=] [--description=] [--tags=a,b]
 #                        [--handle=] [--name=] [--licence=] [--version=] [--human-code=true|false]
 #                                      writes <dir>/item.json; a second run keeps the uid and the creation time
 #   item.sh pack   <dir> --out=<file.tlitem>      the same folder always gives the same bytes; makes the card if absent

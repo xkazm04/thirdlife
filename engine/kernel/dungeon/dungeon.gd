@@ -39,6 +39,7 @@ const LoggerScript: GDScript = preload("res://kernel/runner/logger.gd")
 const List: GDScript = preload("res://kernel/dungeon/dungeons.gd")
 const UI: GDScript = preload("res://kernel/dungeon/look_ui.gd")
 const Watch: GDScript = preload("res://kernel/dungeon/watch.gd")
+const Trophies: GDScript = preload("res://kernel/world/build/trophies.gd")   # spark world-sandbox M3: the Home's trophies
 
 const CENSUS_EVERY: int = 10            # as the worker (kernel/runner/worker.gd)
 const MAX_ERRORS: int = 20              # RUNNER.md: more than this stops a run
@@ -315,6 +316,7 @@ func close(why: String) -> void:
 		var snap: Dictionary = _logger.call("snapshot")
 		result["script_errors"] = int(snap.get("script_errors", 0))
 		result["engine_errors"] = int(snap.get("engine_errors", 0))
+		Trophies.record(run, result, frames_target)   # M3: a person's play -> trophies.json (TLRules winner, scores)
 		life.teardown()
 	if not problem.is_empty():
 		result["problem"] = problem

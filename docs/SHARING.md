@@ -21,6 +21,7 @@ Everything a player can be proud of is an **item**: one folder with one card, `i
 | `tuning` | a set of values for the declared parameters of one named game | data |
 | `kit` | new kit parts (today these are scripts that build meshes) | code |
 | `world` | the world file: which items stand where | data |
+| `stamp` | a saved Home build, `stamp.json` (`tl.stamp/1`, contracts/BUILD.md): blocks and pieces placed again as one batch | data |
 
 **The tier is computed, never declared.** The packer reads the folder: any script, shader or scene makes the item
 `code`. The installer computes it again and refuses an item whose card disagrees. A tier that only the card states is

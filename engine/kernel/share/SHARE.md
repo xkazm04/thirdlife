@@ -55,7 +55,7 @@ Readings and choices where the spec was silent:
 | Field | Built as |
 |---|---|
 | `uid` | 26 characters from `0123456789ABCDEFGHJKMNPQRSTVWXYZ`, each from the engine's cryptographic random source (130 bits, no time in it). Made when a folder first gets a card; `item.sh card` on a folder that has a valid card keeps `uid` and `created`. |
-| `kind` | `game` when the folder holds `pack.json`; otherwise told from a JSON file's `schema` (`tl.layout/` venue, `tl.world/` world, `tl.style/` look, `tl.tuning/` tuning) or given with `--kind=`. Never guessed further. |
+| `kind` | `game` when the folder holds `pack.json`; otherwise told from a JSON file's `schema` (`tl.layout/` venue, `tl.world/` world, `tl.style/` look, `tl.tuning/` tuning, `tl.stamp/` stamp) or given with `--kind=`. Never guessed further. |
 | `tier` | computed (section 3), never read from the command line |
 | `title`, `version`, `engine.kernelApi`, `capabilities`, `requires`, `footprint` | copied from `pack.json`; `capabilities` sorted, duplicates dropped |
 | `engine.kit`, `engine.style` | `""`: the kit and the style carry no version number today |

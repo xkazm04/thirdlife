@@ -48,7 +48,7 @@ static func check_op(op: Variant, strict := false) -> String:
 			return "%s is missing" % k
 	if d.has("shape") and (int(d.shape) < 1 or int(d.shape) > 8):
 		return "unknown shape %d" % int(d.shape)
-	if d.has("mat") and (int(d.mat) < 1 or int(d.mat) > 10):
+	if d.has("mat") and (int(d.mat) < 1 or int(d.mat) > Blocks.MAT_MAX):
 		return "unknown mat %d" % int(d.mat)
 	if d.has("rot") and (int(d.rot) < 0 or int(d.rot) > 3):
 		return "rot must be 0..3"
@@ -160,7 +160,7 @@ func load_part(doc: Dictionary) -> String:
 				return "chunk %s: cell %d is outside the chunk" % [str(key), local]
 			var cell := Blocks.pair_cell(ch, local)
 			var c := pairs[i + 1]
-			if Blocks.shape_of(c) < 1 or Blocks.shape_of(c) > 8 or Blocks.mat_of(c) < 1 or Blocks.mat_of(c) > 10 or c >> 13 != 0:
+			if Blocks.shape_of(c) < 1 or Blocks.shape_of(c) > 8 or Blocks.mat_of(c) < 1 or Blocks.mat_of(c) > Blocks.MAT_MAX or c >> 13 != 0:
 				return "chunk %s: code %d at %s is not a block" % [str(key), c, str(cell)]
 			if not store.put(cell, c):
 				return "chunk %s: %s at %s" % [str(key), store.refusal(cell), str(cell)]
