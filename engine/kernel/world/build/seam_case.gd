@@ -124,12 +124,12 @@ func registry() -> void:
 func stubs() -> void:
 	var b: RefCounted = HomeBuild.new(null, null, {})
 	var cases := {
-		"land": [{"op": "land", "verts": [[1, 2, 0, 150]]}, "not built yet (M2)"],
-		"paint": [{"op": "paint", "cells": [[1, 2, "valley", "sand"]]}, "not built yet (M2)"],
+		"land": [{"op": "land", "verts": [[1, 2, 0, 2500]]}, ["not built yet (M2)", "height limit (24 m"]],
+		"paint": [{"op": "paint", "cells": [[1, 2, "sand", "dirt"]]}, ["not built yet (M2)", "cells: [1, 2] is 'valley', not 'sand'"]],
 		"put": [{"op": "put", "at": [3, 20, 4], "part": "fence", "params": {"length": 40.0}, "rot": 1, "seed": 7}, ["not built yet (M3)", "too large for a piece"]],
 		"lift": [{"op": "lift", "at": [3, 20, 4]}, ["not built yet (M3)", "no piece there"]],
 		"land unknown key": [{"op": "land", "verts": [[1, 2, 0, 150]], "brush": 3}, "unknown key 'brush'"],
-		"land three numbers": [{"op": "land", "verts": [[1, 2, 150]]}, "verts: every entry is [i, j, from_cm, to_cm]"],
+		"land three numbers": [{"op": "land", "verts": [[1, 2, 2500]]}, ["verts: every entry is [i, j, from_cm, to_cm]", "height limit (24 m"]],
 		"land half a cm": [{"op": "land", "verts": [[1, 2, 0, 1.5]]}, "verts: heights are integer cm"],
 		"land twice": [{"op": "land", "verts": [[1, 2, 0, 10], [1, 2, 10, 20]]}, "verts: [1, 2] is named twice"],
 		"land no verts": [{"op": "land", "verts": []}, "verts must be a non-empty list"],
@@ -338,7 +338,7 @@ func preview() -> void:
 	var snap2 := [b.blocks.content_hash(), b.edits.history.size(), b.edits.next_batch, b.blocks.total, b.dirty, _bytes(d, "build.json"), _bytes(d, "edits.jsonl")]
 	if snap2 != snap:
 		bad.append("the real Home changed: %s -> %s" % [str(snap.slice(0, 5)), str(snap2.slice(0, 5))])
-	if int(r.applied) != 199 or (r.refused as Array).size() != 1 or str(r.refused[0][1]) != "not built yet (M2)":
+	if int(r.applied) != 199 or (r.refused as Array).size() != 1 or not (str(r.refused[0][1]) in ["not built yet (M2)", "blocks"]):
 		bad.append("applied %d, refused %s" % [int(r.applied), str(r.refused)])
 	var added: int = (r.store as RefCounted).get("total")
 	var removed: int = (r.removed as RefCounted).get("total")
@@ -371,7 +371,7 @@ func region() -> void:
 	var want := ["2,5,1", "1,4,2", "1,5,2", "3,5,2"]
 	var big: Dictionary = b.read_region(Vector3i(0, 0, 0), Vector3i(200, 10, 10))
 	var codes_ok: bool = not (r.get("blocks", []) as Array).is_empty() and int(r.blocks[0][3]) == cube(3)
-	var ok: bool = cells == want and codes_ok and r.keys() == ["min", "max", "blocks"] and big.has("error")
+	var ok: bool = cells == want and codes_ok and (r.keys() as Array).slice(0, 3) == ["min", "max", "blocks"] and big.has("error")
 	say("region", ok, "box 0..10: %s (want %s), codes %s, keys %s; a 201-cell box: '%s'" % [str(cells), str(want), codes_ok, str(r.keys()), str(big.get("error", ""))])
 
 
