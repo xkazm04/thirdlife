@@ -183,7 +183,9 @@ A person in the Home presses **B** and builds. `build_mode.gd` is the node; `hot
 |---|---|
 | `build_mode.gd` | the node, host of the tools: keys and buttons, the cursor ray, tool switching, undo and redo, autosave; `mount` is called by `home/hook.gd` `grow` |
 | `tools/blocks_tool.gd` | M1's hand building: shapes, materials, rot, flip, place and remove, drags as batches |
-| `tools/sculpt_tool.gd`, `tools/paint_tool.gd` | stubs (M2); `tools/piece_tool.gd`, `tools/stamp_tool.gd` stubs (M3); `tools/command_tool.gd` stub (M4); all extend `tools/stub_tool.gd` |
+| `tools/sculpt_tool.gd`, `tools/paint_tool.gd` | M2 (`LAND.md`): sculpt 1 raise, 2 lower, 3 flatten, 4 smooth, Shift the other way, wheel or [ ] the brush (1-8 cells); paint 1-8 the ground paints, 0 or Backspace the eraser. F and S are not used: they are flight and walking back in `visit.gd` |
+| `tools/piece_tool.gd`, `tools/stamp_tool.gd` | M3 (`PIECES.md`): pieces wheel or 1-9 a part, Tab a page, [ ] its size, V its kind, R turn, LMB put, RMB lift; stamps 0 a new box, G save, 1-9 a stamp, R turn, LMB place (one undo), X export, I import the inbox |
+| `tools/command_tool.gd` | M4 (`COMMAND.md`): Enter asks, Enter keeps the ghost (one batch by llm), Esc or Backspace reverts |
 | `build_devices.gd` | the test hook `TL_BUILD_DEVICES` |
 | `hotbar.gd` | bottom centre while building: the tool strip, the current tool's slots, its swatch and info line, save state, the refusal reason, its keys. It reads only the tool interface (`state_of`). Boot's key line names "B  build" while walking and hides itself while building (boot.gd reads the meta `tl_build_mode`) |
 | `ghost.gd` | the next edit as a hologram (`TLStyle.material("holo")`; red: a private copy tinted `hazard_red`), the shape's own triangles (`shapes.gd` `entry`, form 0) |

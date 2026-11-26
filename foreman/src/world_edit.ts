@@ -96,7 +96,25 @@ export function facts(ask: Ask): Record<string, string> {
     caps: `at most ${Math.min(MAX_OPS, ask.caps.ops)} operations after boxes are expanded; room for ${ask.caps.blocks_left} more blocks in the Home`,
     tables, ground, refused, blocks,
     layers: ask.layers && Object.keys(ask.layers).length ? "Other layers in the region (as the Home reads them):\n" + JSON.stringify(ask.layers) : "",
+    more_ops: moreOps(ask.ops),
   };
+}
+
+/** How to write the land, paint, put and lift ops, only when the Home offers them (their layers are built). */
+function moreOps(kinds: string[]): string {
+  const out: string[] = [];
+  if (kinds.includes("land")) out.push(
+    `- {"op":"land","verts":[[i,j,to_cm],...]} moves ground vertices on the 3 m lattice: vertex [i, j] is at world (3i, 3j);
+  to_cm is its new absolute height in whole cm (the "ground" layer above gives today's cm). Shape terrain with a few
+  smooth steps (a mound, a terrace, a bank), never one spike; at most 24 m from the ground's own height.`);
+  if (kinds.includes("paint")) out.push(
+    `- {"op":"paint","cells":[[i,j,"<from>","<to>"],...]} paints the 3 m ground cell [i, j] (world 3i..3i+3, 3j..3j+3):
+  from is its paint now (the "paint" layer above; "valley" where it names none), to is a ground paint from the table.`);
+  if (kinds.includes("put")) out.push(
+    `- {"op":"put","at":[x,y,z],"part":"<kit part>","rot":r} stands a kit part from the table on the cell at (its base
+  on the ground y of that column); add "params" only to change a part's size. {"op":"lift","at":[x,y,z]} takes one
+  away (the "pieces" layer above lists them). Parts are the finishing touches: lamps, benches, fences, trees, signs.`);
+  return out.length ? ["More operations the Home takes here:", ...out].join("\n") : "";
 }
 
 export async function worldEditCommand(input: string | undefined, output: string | undefined, builderFor: () => Builder, opts: GenerateOptions): Promise<number> {

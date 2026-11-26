@@ -38,6 +38,8 @@ an operation except the `author` field.
 | 3 | `plank` | | 8 | `rock_warm` |
 | 4 | `wood_dark` | | 9 | `white` |
 | 5 | `roof` | | 10 | `glass` (window panes only) |
+|  |  | | 11 | `brick` (unlockable, M3) |
+|  |  | | 12 | `plaster` (unlockable, M3) |
 
 Joined forms are derived from the neighbours when a section is meshed. They are never stored. A stair is drawn as 4
 steps of 0.25 m and collides as its 45-degree ramp, because the visitor's walkers do not climb a vertical riser
@@ -100,7 +102,9 @@ omitted, a removal carries what it removed). Each kind is owned by one **layer**
 - **Land** (M2) is a height delta over the Home's procedural ground on a world-anchored **3 m lattice**. Vertex
   `[i, j]` is at world `(3i, 3j)`. Heights are integer centimetres: `to_cm` is the new height and `from_cm` the height
   before. A brush stroke is recorded as its result (the vertices it moved), never as the brush, so undo and replay
-  need no brush code. Setting a vertex back to the ground's own height removes its delta. On input (an LLM answer, a
+  need no brush code. Heights are absolute; a vertex is stored only where it differs from the ground's own height,
+  which is the valley's DRAWN surface (its 12 m triangles) at that point, rounded to cm. Setting a vertex back to it
+  removes its entry. On input (an LLM answer, a
   stamp), a vertex may be `[i, j, to_cm]`: the exe fills `from_cm` before it applies and journals the op.
 - **Paint** (M2) sets the ground material of 3 m cell `[i, j]` (spanning `3i..3i+3`, `3j..3j+3`). Values are
   names: `grass`, `grass_dark`, `grass_dry`, `dirt`, `sand`, `stone`, `rock_warm`, `cliff`, and `valley` for the
@@ -108,7 +112,8 @@ omitted, a removal carries what it removed). Each kind is owned by one **layer**
 - **Put / lift** (M3) place and remove a kit part anchored at cell `at`, turned `rot` quarter turns about +y.
   `params` are `TLKit` params checked by `TLKit.validate`, omitted when they are all defaults. `seed` is always written,
   so a part looks the same on every load. The part's footprint (its turned bounds, in whole cells) is occupied: blocks
-  and other pieces may not overlap it.
+  and other pieces may not overlap it. A piece
+  standing on the ground is set to the ground's height in its anchor cell (derived, not saved).
 - Land and paint are refused in the protected areas the land layer names (the village, game sites, lanes, the river
   band, columns that hold blocks or pieces, the visitor), with a reason, like blocks.
 - **A stamp is not an operation.** Placing a stamp expands it into `place` and `put` operations in one batch (one undo).
@@ -149,7 +154,8 @@ omitted, a removal carries what it removed). Each kind is owned by one **layer**
 - `engine/kernel/world/build/unlocks.json`:
   `{"schema":"tl.unlocks/1", "rules":[{"id":"...", "when":{"pack":"...", "plays":n, "wins":n, "best":n},
   "grant":{"mats":[...], "shapes":[...], "parts":[...], "stamps":[...]}}]}`. A rule is met when every number it names
-  is reached. Absent keys are omitted.
+  is reached. Absent keys are omitted. `when.pack` may be `"*"`: every pack together (plays and wins summed, the best of
+  any). `grant.mats` and `grant.shapes` are ids, as in operations; `parts` are kit kinds; `stamps` are stamp names.
 - What M1 shipped (shapes 1-8, materials 1-9) is never locked. Locks apply to what M3 adds.
 
 ### The LLM command bar (M4)

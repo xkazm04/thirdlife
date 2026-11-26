@@ -41,6 +41,7 @@ lay a foundation from the lowest column up.
   (inclusive); a cell holding another block is replaced, one already holding this block is kept. Add "walls":true to
   fill only the box's outer ring on every layer (four walls, no floor or ceiling).
 - {"op":"clear","from":[x,y,z],"to":[x,y,z]} empties every block in the box.
+{{more_ops}}
 Ops apply in order, so a later op may change what an earlier one made (fill walls, then remove the door cells).
 To CHANGE something that is there ("taller", "a slate roof", "wider"), read the blocks above and edit them: clear or
 remove what goes, then place or fill what comes. Never place into a cell that holds a block: fill replaces, place

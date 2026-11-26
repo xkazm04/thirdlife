@@ -219,11 +219,11 @@ and build custom creations, players with connected LLM would access the highest 
 
 | Milestone | What | State |
 |---|---|---|
-| M1 | edit log, autosave, build mode, 1 m smart blocks with per-chunk mesh and collider | building (26 Nov) |
-| M2 | land sculpt and paint: the valley onto editable `tl.land/1` (its 12 m mesh and 96 m colliders do not use it yet) | next |
-| M3 | pieces (kit parts on cells) and stamps as items; unlocks from dungeon results | |
-| M4 | the LLM command bar: a sentence at the cursor becomes a Foreman job that returns a `tl.edit/1` batch as a ghost | |
-| M5 | water, paths and plants (layers 1, 2 and 4) | |
+| M1 | edit log, autosave, build mode, 1 m smart blocks with per-chunk mesh and collider | built 26 Nov |
+| M2 | land sculpt and paint: a sparse 3 m height + paint delta over the valley's drawn ground (not tl.land/1: that would lose the far hills) | built 26 Nov |
+| M3 | pieces (kit parts on cells) and stamps as items; unlocks from dungeon results | built 26 Nov |
+| M4 | the LLM command bar (Opus): a sentence at the cursor returns a `tl.edit/1` batch as a ghost | built 26 Nov |
+| M5 | water, paths and plants (layers 1, 2 and 4) | next |
 
 ## Order of work [proposal]
 1. **Dungeons v1** (done 21 Nov, L4 d0d0bd9): the menu, the dungeon scene, `--dungeon`, hockey as the first one.
