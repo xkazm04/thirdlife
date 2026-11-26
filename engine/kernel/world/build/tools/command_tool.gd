@@ -1,36 +1,409 @@
-extends "res://kernel/world/build/tools/stub_tool.gd"
-## SEAM stub of build mode's command tool (M4 fills this file: the LLM command bar, contracts/BUILD.md "The LLM
-## command bar"). Enter is reserved for it: build mode picks this tool and hands it the Enter key. The stub shows a
-## disabled line in the hotbar and does nothing. M4's bar takes the keyboard while it is open: `blocks_input()` true
-## (build mode then reads no key of its own), Esc and Enter are the bar's. The tool interface is BUILD.md "Tools".
+extends RefCounted
+## M4 (spark world-sandbox): build mode's command tool, the LLM command bar (contracts/BUILD.md "The LLM command bar";
+## kernel/world/build/COMMAND.md). Enter opens a text field (command_bar.gd); the person types a sentence and Enter
+## sends it: the ask (command_ask.gd, tl.world-edit-ask/1) is written beside the Home and `foreman world-edit` is
+## started (command_link.gd). Asking never blocks: a pending marker (command_marker.gd) stands at the spot with
+## "thinking... 0:23", the person keeps building with the other tools, and at most MAX_PENDING asks wait at once. The
+## answer (command_answer.gd, tl.world-edit/1) is shown as a ghost (home_build.gd `preview`, preview_mesh.gd) with its
+## note and its counts ("212 blocks, 6 refused: game lot"); while it is shown the tool has the keyboard: Enter keeps it
+## (ONE batch, author "llm", so one Ctrl+Z takes it all back; the counts are recomputed then, as the world may have
+## changed), Esc or Backspace reverts it. Without a connected model the bar says why and does nothing. Every call is
+## logged with the day's cap (command_calls.gd). The test hook TL_COMMAND_DEVICES is command_devices.gd.
 
-var opened := false                     # Enter was pressed (the stub shows its disabled line)
+const HomeBuild := preload("res://kernel/world/build/home_build.gd")
+const Ask := preload("res://kernel/world/build/command_ask.gd")
+const Answer := preload("res://kernel/world/build/command_answer.gd")
+const Calls := preload("res://kernel/world/build/command_calls.gd")
+const Link := preload("res://kernel/world/build/command_link.gd")
+const Bar := preload("res://kernel/world/build/command_bar.gd")
+const Marker := preload("res://kernel/world/build/command_marker.gd")
+const PreviewMesh := preload("res://kernel/world/build/preview_mesh.gd")
+const Devices := preload("res://kernel/world/build/command_devices.gd")
+const KEY_HELP := "T next tool   Shift+T previous tool   Ctrl+Z undo   Ctrl+Y redo   hold MMB or Alt look   B or Esc leave"
+const MAX_PENDING := 2
+const POLL_EVERY := 15                  # physics frames between looks at an answer file
+const SAY_FRAMES := 600                 # how long a message stays in the info line
+const FACING := ["north", "west", "south", "east"]
+
+var id := "command"
+var title := "Command"
+var host: Node = null                   # build_mode.gd
+var link: RefCounted = null             # command_link.gd (made on the first Enter)
+var calls: RefCounted = null            # command_calls.gd
+var bar: CanvasLayer = null
+var preview: Node3D = null
+var devices: RefCounted = null
+var pending: Array = []                 # asks waiting: {id, sentence, cell, facing, ask, out, frame0, marker, rec}
+var ready: Array = []                   # answers that came, waiting to be shown (the oldest first)
+var shown := {}                         # the answer shown as a ghost (the call plus ops, preview, placed)
+var door: RefCounted = null             # a case's door (dry); null: the flags' door
+var keep_files := OS.get_environment("TL_COMMAND_KEEP") == "1"
+var frame := 0
+var asked := 0                          # asks sent, ghosts shown, answers kept (the test hook's anchors count them)
+var ghosts := 0
+var kept := 0
+var said := ""
+var said_red := false
+var _said_at := -SAY_FRAMES
+var _aim := {}                          # the cursor when the bar was opened: {cell, facing}
+var _down := {}
+var _dir := ""
+var _latched := false                   # a key that closed the bar or decided a ghost is still held: build mode must
+                                        # not read it as a new press (Enter would open the bar again, Esc would leave)
+const KEYS := [KEY_ENTER, KEY_KP_ENTER, KEY_ESCAPE, KEY_BACKSPACE]
 
 
-func _init() -> void:
-	id = "command"
-	title = "Command"
-	milestone = "M4"
+func setup(h: Node) -> void:
+	host = h
+	devices = Devices.new(self, OS.get_environment("TL_COMMAND_DEVICES"))
 
 
 func polled() -> Array:
 	return [KEY_ENTER, KEY_KP_ENTER]
 
 
-func selected(on: bool) -> void:
-	if not on:
-		opened = false
-
-
 func key(e: InputEvent) -> bool:
 	var k := e as InputEventKey
 	if k != null and k.pressed and (k.physical_keycode == KEY_ENTER or k.physical_keycode == KEY_KP_ENTER):
-		opened = true
+		open_bar()
 		return true
 	return false
 
 
+func blocks_input() -> bool:
+	return (bar != null and bar.is_open()) or not shown.is_empty() or _latched
+
+
+func selected(on: bool) -> void:
+	if not on and bar != null and bar.is_open():
+		bar.close()
+
+
+func slots() -> Array:
+	var out := []
+	for p: Dictionary in pending:
+		out.append({"key": "", "label": "thinking %s" % _clock(frame - int(p.frame0)), "lit": false})
+	for p: Dictionary in ready:
+		out.append({"key": "", "label": "answer ready", "lit": true})
+	return out
+
+
 func status() -> Dictionary:
-	if opened:
-		return {"info": "> describe what to build (the command bar is coming in M4)", "dim": true, "reason": ""}
-	return super.status()
+	var why := refusal()
+	var info := ""
+	if not shown.is_empty():
+		info = "\"%s\"  %s" % [shown.answer.note, Answer.counts(shown.preview, int(shown.placed))]
+	elif bar != null and bar.is_open():
+		info = "> type what to build, Enter asks (%s)" % _today()
+	elif frame - _said_at < SAY_FRAMES and not said.is_empty():
+		info = said
+	elif not pending.is_empty():
+		info = "thinking... %s (%d asked); keep building, the answer comes as a ghost" % [_clock(frame - int(pending[0].frame0)), pending.size()]
+	else:
+		info = "Enter: say what to build at the cursor" + ((" (%s)" % _today()) if calls != null else "")
+	var red := ""
+	if shown.is_empty() and (why != "" or (said_red and frame - _said_at < SAY_FRAMES)):
+		red = why if why != "" else said
+	return {"info": info, "reason": red, "dim": link != null and link.refusal() != ""}
+
+
+func hint() -> String:
+	if not shown.is_empty():
+		return "Enter keep it   Esc or Backspace revert   W A S D walk round it"
+	if bar != null and bar.is_open():
+		return "Enter ask   Esc close"
+	return "Enter ask   " + KEY_HELP
+
+
+func aim(_h: Dictionary, _mode: Dictionary) -> void:
+	pass
+
+
+## The spot an ask would build at: the cursor's place cell, in holo.
+func ghost_state() -> Dictionary:
+	var h: Dictionary = host.get("hit") if host != null else {}
+	if h.is_empty() or not shown.is_empty():
+		return {}
+	return {"cell": h.place, "code": HomeBuild.code(1, 1), "mode": "place"}
+
+
+func press(_button: int, _mods: Dictionary) -> bool:
+	return false
+
+
+func drag(_h: Dictionary) -> void:
+	pass
+
+
+func release(_button: int) -> void:
+	pass
+
+
+func dragging() -> bool:
+	return false
+
+
+# ------------------------------------------------------------------ asking
+## "" or why an ask cannot be sent now: the Home's folder, the Foreman (door, probe), the day's cap, the asks pending.
+func refusal() -> String:
+	if host == null or str(host.get("dir")).is_empty():
+		return "the Home is not loaded here: nothing can be asked"
+	if link == null:
+		return ""
+	var why: String = link.refusal()
+	if why == "" and pending.size() >= MAX_PENDING:
+		why = "%d asks are waiting for the model: wait for one" % MAX_PENDING
+	if why == "":
+		why = calls.settings_error if calls.settings_error != "" else calls.refusal()
+	return why
+
+
+## Enter: the bar opens at the cursor, or says why it cannot.
+func open_bar() -> void:
+	_ensure()
+	if not shown.is_empty():
+		return
+	var why := refusal()
+	var h: Dictionary = host.get("hit")
+	if why == "" and h.is_empty():
+		why = "point the cursor at the ground or a block where it should go"
+	if why != "":
+		_say(why, true)
+		return
+	_aim = {"cell": h.place as Vector3i, "facing": HomeBuild.rot_facing(host.call("forward"))}
+	var c: Vector3i = _aim.cell
+	bar.open("Build at (%d, %d, %d), looking %s   %s   Enter ask   Esc close" % [c.x, c.y, c.z, FACING[int(_aim.facing)], _today()])
+
+
+func _on_submitted(text: String) -> void:
+	bar.close()
+	_latched = true
+	if text.strip_edges().is_empty():
+		_say("nothing was asked", false)
+		return
+	var why := send(text, _aim.cell, int(_aim.facing))
+	if why != "":
+		_say(why, true)
+
+
+## Sends `text` as an ask at `cell` facing `facing`. Returns "" or why it was not sent.
+func send(text: String, cell: Vector3i, facing: int) -> String:
+	_ensure()
+	var why := refusal()
+	if why != "":
+		return why
+	var sentence := text.replace("\n", " ").strip_edges().left(400)
+	var ask: Dictionary = Ask.make(host.get("build"), host.get("land"), sentence, cell, facing)
+	if ask.has("error"):
+		return str(ask.error)
+	var cid: String = calls.new_id()
+	var dir := _dir.path_join("llm")
+	DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path(dir))
+	var ask_path := ProjectSettings.globalize_path(dir.path_join(cid + ".ask.json"))
+	var out_path := ProjectSettings.globalize_path(dir.path_join(cid + ".answer.json"))
+	var f := FileAccess.open(ask_path, FileAccess.WRITE)
+	if f == null:
+		return "cannot write the ask (%s)" % ask_path
+	var text_ask := JSON.stringify(ask, "", false)
+	f.store_string(text_ask + "\n")
+	f.close()
+	why = link.ask(ask_path, out_path)
+	if why != "":
+		return "the Foreman could not be asked: " + why
+	var rec: Dictionary = calls.write(cid, {"day": calls.today(), "sentence": sentence, "accepted": "pending"})
+	var m: Node3D = Marker.new()
+	host.add_child(m)
+	m.place_at(cell)
+	m.thinking(0)
+	pending.append({"id": cid, "sentence": sentence, "cell": cell, "facing": facing, "ask": ask_path, "out": out_path,
+		"frame0": frame, "marker": m, "rec": rec})
+	asked += 1
+	_say("asked: \"%s\"" % sentence, false)
+	print(JSON.stringify({"schema": "tl.view/1", "kind": "command_ask", "id": cid, "cell": [cell.x, cell.y, cell.z],
+		"facing": facing, "region": ask.region, "blocks": (ask.blocks as Array).size(), "refused": (ask.get("refused", []) as Array).size(),
+		"ops": ask.ops, "bytes": text_ask.length(), "frame": frame}, "", false))
+	return ""
+
+
+# ------------------------------------------------------------------ per frame
+func tick(f: int) -> void:
+	frame = f
+	if host == null or not host.is_inside_tree():
+		return
+	devices.run(f)
+	if bar != null and bar.is_open() and not (bar.line as LineEdit).has_focus():
+		(bar.line as LineEdit).grab_focus()     # a click in the world took the keyboard from the field: give it back
+	for p: Dictionary in pending.duplicate():
+		(p.marker as Node3D).call("thinking", f - int(p.frame0))
+		if (f - int(p.frame0)) % POLL_EVERY != 0:
+			continue
+		if FileAccess.file_exists(str(p.out)):
+			_arrive(p)
+		elif not link.busy(str(p.ask)):
+			var why: String = link.error_of(str(p.ask))
+			_fail(p, why if why != "" else "the Foreman ended without an answer")
+	if shown.is_empty() and not ready.is_empty() and bool(host.get("active")):
+		_show(ready.pop_front())
+	if not shown.is_empty() and not (bar != null and bar.is_open()):
+		if _edge(KEY_ENTER) or _edge(KEY_KP_ENTER):
+			accept()
+		elif _edge(KEY_ESCAPE) or _edge(KEY_BACKSPACE):
+			revert()
+	else:
+		for k: int in KEYS:
+			_down[k] = Input.is_physical_key_pressed(k)
+	if _latched and KEYS.all(func(k: int) -> bool: return not Input.is_physical_key_pressed(k)):
+		_latched = false
+
+
+func _edge(k: int) -> bool:
+	var now := Input.is_physical_key_pressed(k)
+	var was: bool = _down.get(k, true)
+	_down[k] = now
+	return now and not was
+
+
+func _arrive(p: Dictionary) -> void:
+	var r: Dictionary = Answer.read(str(p.out))
+	if not bool(r.ok):
+		_fail(p, str(r.error))
+		return
+	pending.erase(p)
+	p["answer"] = r
+	ready.append(p)
+	print(JSON.stringify({"schema": "tl.view/1", "kind": "command_answer", "id": p.id, "ops": (r.ops as Array).size(),
+		"model": r.model, "durationMs": r.durationMs, "tokensIn": r.get("tokensIn", -1), "tokensOut": r.get("tokensOut", -1),
+		"frames": frame - int(p.frame0)}, "", false))
+
+
+func _fail(p: Dictionary, why: String) -> void:
+	pending.erase(p)
+	(p.marker as Node).queue_free()
+	var rec: Dictionary = (p.rec as Dictionary).duplicate()
+	rec["accepted"] = false
+	rec["error"] = why
+	calls.write(str(p.id), rec)
+	_tidy(p)
+	_say("the model built nothing for \"%s\": %s" % [str(p.sentence).left(40), why], true)
+	print(JSON.stringify({"schema": "tl.view/1", "kind": "command_error", "id": p.id, "error": why, "frame": frame}, "", false))
+
+
+func _show(p: Dictionary) -> void:
+	var ops := Answer.llm_ops(p.answer.ops)
+	var r: Dictionary = host.get("build").preview(ops)
+	p["ops"] = ops
+	p["preview"] = r
+	p["placed"] = int((r.store as RefCounted).get("total"))
+	preview.call("show_stores", r.store, r.removed)
+	var top := float((p.cell as Vector3i).y)
+	for s: Vector2i in (r.store as RefCounted).get("sections"):
+		for idx: int in (r.store as RefCounted).get("sections")[s]:
+			top = maxf(top, float((r.store as RefCounted).call("cell_of", s, idx).y) + 1.0)
+	(p.marker as Node3D).call("note", str(p.answer.note), top - float((p.cell as Vector3i).y))
+	shown = p
+	ghosts += 1
+	for k: int in KEYS:
+		_down[k] = true                 # a key already held does not decide: only a new press
+	if host.call("tool") != self:
+		host.call("switch_tool", 0, "command")
+	print(JSON.stringify({"schema": "tl.view/1", "kind": "command_ghost", "id": p.id, "applied": int(r.applied),
+		"refused": (r.refused as Array).size(), "placed": p.placed, "counts": Answer.counts(r, int(p.placed)), "frame": frame}, "", false))
+
+
+## Enter on a ghost: its ops applied as ONE batch by "llm" (one undo step), the counts as they are now.
+func accept() -> Dictionary:
+	if shown.is_empty():
+		return {}
+	var p := shown
+	var build: RefCounted = host.get("build")
+	build.begin_batch("llm")
+	var r: Dictionary = build.apply(p.ops)
+	build.end_batch()
+	var bad := {}
+	for x: Array in r.refused:
+		bad[int(x[0])] = true
+	var placed := 0
+	for i: int in (p.ops as Array).size():
+		if not bad.has(i) and str(p.ops[i].op) == "place":
+			placed += 1
+	_decided(p, true, r)
+	kept += 1
+	_say("kept: %s. Ctrl+Z takes it all back" % Answer.counts(r, placed), false)
+	print(JSON.stringify({"schema": "tl.view/1", "kind": "command_kept", "id": p.id, "applied": int(r.applied),
+		"refused": (r.refused as Array).size(), "placed": placed, "batch": int(build.get("edits").get("next_batch")) - 1,
+		"blocks": int(build.get("blocks").get("total")), "frame": frame}, "", false))
+	return r
+
+
+## Esc or Backspace on a ghost: nothing is applied.
+func revert() -> void:
+	if shown.is_empty():
+		return
+	var p := shown
+	_decided(p, false, p.preview)
+	_say("reverted: nothing was built", false)
+	print(JSON.stringify({"schema": "tl.view/1", "kind": "command_reverted", "id": p.id, "frame": frame}, "", false))
+
+
+func _decided(p: Dictionary, keep: bool, r: Dictionary) -> void:
+	preview.call("clear")
+	_latched = true
+	(p.marker as Node).queue_free()
+	shown = {}
+	var rec: Dictionary = (p.rec as Dictionary).duplicate()
+	rec["accepted"] = keep
+	for k: String in ["model", "tokensIn", "tokensOut", "durationMs"]:
+		if p.answer.has(k):
+			rec[k] = p.answer[k]
+	rec["ops"] = (p.ops as Array).size()
+	rec["applied"] = int(r.applied)
+	rec["refused"] = (r.refused as Array).size()
+	calls.write(str(p.id), rec)
+	_tidy(p)
+
+
+func _tidy(p: Dictionary) -> void:
+	if keep_files:
+		return
+	for k: String in ["ask", "out"]:
+		if FileAccess.file_exists(str(p[k])):
+			DirAccess.remove_absolute(str(p[k]))
+
+
+# ------------------------------------------------------------------ parts
+## The link, the calls log, the bar and the ghost, made once the Home's folder is known (build mode's `dir`).
+func _ensure() -> void:
+	var d := str(host.get("dir"))
+	if calls == null or d != _dir:
+		_dir = d
+		calls = Calls.new(d)
+	if link == null and not d.is_empty():
+		link = Link.new()
+		link.setup(ProjectSettings.globalize_path(d.path_join("llm")), {"door": door} if door != null else {})
+	if bar == null and host.is_inside_tree():
+		bar = Bar.new()
+		host.add_child(bar)
+		bar.submitted.connect(_on_submitted)
+		bar.cancelled.connect(func() -> void:
+			bar.close()
+			_latched = true
+			_say("closed: nothing was asked", false))
+		preview = PreviewMesh.new()
+		host.add_child(preview)
+
+
+func _today() -> String:
+	if calls == null:
+		return ""
+	return "%d of %d calls today" % [calls.used_today(), calls.cap]
+
+
+func _say(text: String, red: bool) -> void:
+	said = text
+	said_red = red
+	_said_at = frame
+
+
+static func _clock(frames: int) -> String:
+	var s := frames / 60
+	return "%d:%02d" % [s / 60, s % 60]

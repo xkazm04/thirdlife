@@ -13,7 +13,7 @@ import { words } from "./v2.js";
 
 export const render = (template: string, vars: Record<string, string>): string => template.replace(/\{\{(\w+)\}\}/g, (_m, k: string) => vars[k] ?? "");
 
-export type GenerateRole = "designer" | "concept" | "design_review" | "planner" | "critic" | "placer" | "critic_compare" | "cartridge";
+export type GenerateRole = "designer" | "concept" | "design_review" | "planner" | "critic" | "placer" | "critic_compare" | "cartridge" | "world_edit";
 export interface GenerateCall {
   role: GenerateRole | `${GenerateRole}_repair`;
   attempt: number;

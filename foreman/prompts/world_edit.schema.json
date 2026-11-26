@@ -1,0 +1,39 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["note", "ops"],
+  "properties": {
+    "note": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 119,
+      "pattern": "^(?!.*[\\r\\n\\u2028\\u2029])(?=.*\\S)"
+    },
+    "ops": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 4000,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["op"],
+        "properties": {
+          "op": { "enum": ["place", "remove", "fill", "clear", "land", "paint", "put", "lift"] },
+          "at": { "type": "array", "minItems": 3, "maxItems": 3, "items": { "type": "integer" } },
+          "from": { "type": "array", "minItems": 3, "maxItems": 3, "items": { "type": "integer" } },
+          "to": { "type": "array", "minItems": 3, "maxItems": 3, "items": { "type": "integer" } },
+          "shape": { "type": "integer" },
+          "mat": { "type": "integer" },
+          "rot": { "type": "integer" },
+          "flip": { "const": true },
+          "walls": { "const": true },
+          "verts": { "type": "array", "minItems": 1, "items": { "type": "array" } },
+          "cells": { "type": "array", "minItems": 1, "items": { "type": "array" } },
+          "part": { "type": "string" },
+          "params": { "type": "object" },
+          "seed": { "type": "integer" }
+        }
+      }
+    }
+  }
+}

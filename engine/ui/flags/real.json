@@ -4,6 +4,7 @@
  "flags": {
   "new": ["--adapter", "claude-cli", "--model", "sonnet"],
   "place": ["--adapter", "claude-cli", "--model", "sonnet", "--timeout-ms", "120000"],
+  "world_edit": ["--adapter", "claude-cli", "--model", "opus", "--timeout-ms", "300000"],
   "plan": ["--adapter", "claude-cli", "--model", "sonnet", "--max-packages", "4", "--builder-timeout-ms", "900000"],
   "run": ["--adapter", "claude-cli", "--allow-edit", "--model", "sonnet", "--round-limit", "4", "--timeout-ms", "900000", "--max-replans", "1", "--max-packages", "4", "--parallel", "2", "--budget", "tokens_per_hour:4000000"],
   "resume": ["--adapter", "claude-cli", "--allow-edit", "--model", "sonnet", "--round-limit", "4", "--timeout-ms", "900000", "--max-replans", "1", "--max-packages", "4", "--parallel", "2", "--budget", "tokens_per_hour:4000000"],
