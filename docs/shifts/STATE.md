@@ -448,3 +448,12 @@ on the frame and the figure and Fable on surfaces and nature, looping for 10 hou
 - 02:10 close: G19 done (v0.1.4; v0.1.3 in the menu), docs landed 1a451a18; all six games of the plan reached versions on the hardened editor; claims released, standup timer deleted. Next: the tofu gate must stop bending games (four lanes), then the owner asks in VERDICT.md.
 - 26 Nov 11:30 (owner ask): My games and Dungeons now show one row per game (the final version) in pages of 5 (main c7fb0bac; selftest 641; exe c7fb0ba in dist/ThirdLife-next, export.sh check PASS; PLAY-LATEST.cmd starts it).
 
+
+### 2026-11-27 night: plan (a unique juice for each game, 03:00-08:00)
+- Owner (~00:10): "lets use the night to give each game a unique juice ... carts with ability to jump, Robots with
+  doublesledged hammer allowed to bash oponents, Basketball with crazy high jumps and dunks/blocks". Handshake: all four
+  scopes (tofu-gate fix, the three ideas, Biplane + Shield wall, Arsenal); route editor first, then by hand; 5 Opus,
+  RAM up to 80 %, no CPU cap; land and push by 08:00. Plan: docs/shifts/2026-11-27-night/PLAN.md.
+- Lanes: T tofu gate (d25-hard-a / n27-tofu), J5 karts, J2 robots, J4 court, J11 biplane at 03:00; J19 shield, J1
+  arsenal queued. Trees branched from main e66eb94e, foreman built, cache imported (00:17); fast tier on main PASS 5/5;
+  sleep off; claim night-2026-11-27-juice (exact foreman files; the Home session owns world_edit*, kits, kernel API).
