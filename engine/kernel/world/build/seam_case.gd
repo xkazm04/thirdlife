@@ -267,6 +267,11 @@ func tap(k: Key, shift := false) -> void:
 	await wait(2)
 
 
+func _is_stub(t: RefCounted) -> bool:
+	var sc: Script = t.get_script()
+	return sc != null and (sc as GDScript).get_base_script() == preload("res://kernel/world/build/tools/stub_tool.gd")
+
+
 func tools() -> void:
 	var b: RefCounted = HomeBuild.new(null, null, {})
 	var bm: Node = BuildMode.new()
@@ -282,7 +287,8 @@ func tools() -> void:
 		await tap(KEY_T)
 		var text: String = (hb.get("info") as Label).text
 		seen.append("%s '%s'" % [bm.call("tool").get("id"), text])
-		if text != want[i] or (hb.get("row") as Control).visible:
+		var stub: bool = _is_stub(bm.call("tool"))   # a lane's built tool replaces its stub: then any non-empty line will do
+		if (stub and (text != want[i] or (hb.get("row") as Control).visible)) or (not stub and text.is_empty()):
 			bad.append("T %d: '%s' (slots shown %s)" % [i + 1, text, (hb.get("row") as Control).visible])
 		if i == 0:
 			await tap(KEY_3)                                   # a stub takes no key: the shape stays
@@ -304,7 +310,7 @@ func tools() -> void:
 		if (slots[i][0] as PanelContainer).get_theme_stylebox("panel") == hb.get("_lit"):
 			lit = i + 1
 	var strip: Array = hb.get("tools")
-	if wrapped != "blocks" or back != "command" or cmd != "command" or not line.ends_with("coming in M4)") or int(bm.get("shape")) != 3 or lit != 3 or strip.size() != 6:
+	if wrapped != "blocks" or back != "command" or cmd != "command" or (_is_stub(bm.call("tool")) and not line.ends_with("coming in M4)")) or line.is_empty() or int(bm.get("shape")) != 3 or lit != 3 or strip.size() != 6:
 		bad.append("wrap %s, Shift+T %s, Enter %s '%s', blocks shape %d lit slot %d, strip %d" % [wrapped, back, cmd, line, int(bm.get("shape")), lit, strip.size()])
 	say("tools", bad.is_empty(), "%s; T from command -> %s; Shift+T -> %s; Enter -> %s '%s'; T then 3 -> blocks shape %d (slot %d lit of %d), strip of %d tools%s" % [
 		"; ".join(seen), wrapped, back, cmd, line, int(bm.get("shape")), lit, slots.size(), strip.size(), "" if bad.is_empty() else "; BAD " + "; ".join(bad)])
