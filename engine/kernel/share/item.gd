@@ -10,9 +10,11 @@ const Zip: GDScript = preload("res://kernel/share/tlzip.gd")
 
 const SCHEMA: String = "tl.item/1"
 const CARD: String = "item.json"
-const KINDS: Array = ["game", "venue", "look", "tuning", "kit", "world"]
+const KINDS: Array = ["game", "venue", "look", "tuning", "kit", "world", "stamp"]
 ## The tier each kind must compute to (SHARING.md section 1). A venue that holds a script is not a venue.
-const KIND_TIER: Dictionary = {"game": "code", "kit": "code", "venue": "data", "look": "data", "tuning": "data", "world": "data"}
+const KIND_TIER: Dictionary = {"game": "code", "kit": "code", "venue": "data", "look": "data", "tuning": "data", "world": "data", "stamp": "data"}   # stamp: a Home build (tl.stamp/1, spark world-sandbox M3)
+## The kind a JSON file's schema tells (_guess_kind; M3 added stamp).
+const SCHEMA_KIND: Dictionary = {"tl.layout/": "venue", "tl.world/": "world", "tl.style/": "look", "tl.tuning/": "tuning", "tl.stamp/": "stamp"}
 const UID_ALPHABET: String = "0123456789ABCDEFGHJKMNPQRSTVWXYZ"
 const KEYS: Array = ["schema", "uid", "kind", "tier", "title", "summary", "description", "tags", "version", "created",
 	"updated", "author", "licence", "engine", "capabilities", "footprint", "requires", "provenance", "verify", "content",
@@ -452,14 +454,9 @@ static func _guess_kind(files: Dictionary) -> String:
 		var pj: Dictionary = parse_json(files[p])
 		if pj["ok"] and typeof(pj["data"]) == TYPE_DICTIONARY:
 			var schema: String = str((pj["data"] as Dictionary).get("schema", ""))
-			if schema.begins_with("tl.layout/"):
-				found["venue"] = true
-			elif schema.begins_with("tl.world/"):
-				found["world"] = true
-			elif schema.begins_with("tl.style/"):
-				found["look"] = true
-			elif schema.begins_with("tl.tuning/"):
-				found["tuning"] = true
+			for prefix: String in SCHEMA_KIND:
+				if schema.begins_with(prefix):
+					found[SCHEMA_KIND[prefix]] = true
 	return str(found.keys()[0]) if found.size() == 1 else ""
 
 

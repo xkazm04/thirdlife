@@ -234,7 +234,9 @@
   "pond_ice": "#cfe6f2",
   "neon_pink": "#ff3fa4",
   "neon_lime": "#a3ff3d",
-  "neon_violet": "#9b6bff"
+  "neon_violet": "#9b6bff",
+  "brick": "#b4644c",
+  "plaster": "#e9dcc6"
  },
  "mat": {
   "window": {
@@ -556,7 +558,9 @@
   },
   "neon_pink": {"emit": 2.4, "no_hatch": 1.0, "mottle": 0.0},
   "neon_lime": {"emit": 2.2, "no_hatch": 1.0, "mottle": 0.0},
-  "neon_violet": {"emit": 2.4, "no_hatch": 1.0, "mottle": 0.0}
+  "neon_violet": {"emit": 2.4, "no_hatch": 1.0, "mottle": 0.0},
+  "brick": {"class": "masonry"},
+  "plaster": {"class": "concrete", "dk": 0.3}
  },
  "detail": {
   "k": 1.0,

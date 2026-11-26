@@ -126,7 +126,7 @@ The `auto_box` parts that were not blocks got bodies of their pieces (`kits/part
 
 <!-- generated below: do not edit by hand -->
 
-## Parts (36)
+## Parts (38)
 
 | Kind | Material tag | Fracturable | Triangles (defaults) | Bodies | What it is |
 |---|---|---|---|---|---|
@@ -166,6 +166,8 @@ The `auto_box` parts that were not blocks got bodies of their pieces (`kits/part
 | `ball` | rubber |  | 320 | none: dynamic, `tl_shape` on the part | Ball. Dynamic prop: no body; tl_shape, tl_material and tl_mass_hint are on the part node. |
 | `paddle` | plastic |  | 312 | none: dynamic, `tl_shape` on the part | Paddle (bat) for paddle-and-ball games, long axis X. Dynamic prop: no body; tl_shape, tl_material and tl_mass_hint are on the part node. |
 | `crate` | wood | yes | 320 | Body (wood) | Wooden crate, pre-fractured (Intact / Pieces). |
+| `bench` | wood |  | 340 | Body (wood) | Town bench of planks on two end frames, centred on the origin; a person sits facing +Z. |
+| `street_lamp` | steel |  | 256 | Body (steel) | Street lamp: stone foot, iron post, an arm over +Z with a lantern (its light is skipped in headless). |
 
 ## Params per part
 
@@ -412,3 +414,15 @@ No params.
 | `size` | float | `1.0` | 0.3..3.0 | edge length (m) |
 | `cells` | int | `6` | 3..12 | pieces |
 | `seed` | int | `3` | 0..1000000 | fracture pattern |
+
+### `bench`
+| Param | Type | Default | Range / values | Meaning |
+|---|---|---|---|---|
+| `length` | float | `1.8` | 1.0..3.0 | length along X (m) |
+| `back` | bool | `true` |  | a backrest on the -Z side |
+
+### `street_lamp`
+| Param | Type | Default | Range / values | Meaning |
+|---|---|---|---|---|
+| `height` | float | `4.2` | 3.0..6.0 | height of the post (m) |
+| `light` | bool | `true` |  | add the lantern's light |

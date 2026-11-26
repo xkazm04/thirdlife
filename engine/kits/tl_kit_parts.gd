@@ -7,6 +7,7 @@ extends RefCounted
 
 const SURFACE_KEY: Dictionary = {"grass": "grass", "dirt": "dirt", "concrete": "concrete", "asphalt": "tarmac", "ice": "ice", "snow": "white", "stone": "stone", "wood": "plank"}
 const _Bodies := preload("res://kits/part_bodies.gd")     # 21 Nov L6: bodies that follow a part's solid pieces (internal, not API)
+const _Town := preload("res://kits/part_town.gd")         # 26 Nov M3: bench and street_lamp geometry (internal, not API)
 const DENSITY: Dictionary = {"concrete": 2400.0, "wood": 600.0, "rubber": 1100.0, "plastic": 950.0, "steel": 7800.0, "stone": 2600.0}
 
 
@@ -351,6 +352,31 @@ static func make(kind: String, n: Node3D, p: Dictionary) -> void:
 			var ebody: StaticBody3D = body(n, "concrete")
 			for sx: float in [-1.0, 1.0]:   # two piers: the opening stays walkable
 				box(ebody, Vector3(eb.size.x * 0.18, eb.size.y, eb.size.z), eb.get_center() + Vector3(sx * eb.size.x * 0.41, 0, 0))
+		"bench":     # 26 Nov (spark world-sandbox M3): the town's bench; seat and back solid, open under the seat's ends
+			var bl: float = p["length"]
+			_Town.add_bench(mk, bl, bool(p["back"]))
+			mesh(n, mk)
+			var bb2: StaticBody3D = body(n, "wood")
+			box(bb2, Vector3(bl, 0.47, 0.46), Vector3(0, 0.235, 0))
+			if bool(p["back"]):
+				box(bb2, Vector3(bl, 0.46, 0.08), Vector3(0, 0.69, -0.19))
+		"street_lamp":     # 26 Nov (spark world-sandbox M3): the post, its foot and the lantern are solid
+			var lh: float = p["height"]
+			_Town.add_street_lamp(mk, lh)
+			mesh(n, mk)
+			var lb: StaticBody3D = body(n, "steel")
+			box(lb, Vector3(0.42, 0.3, 0.42), Vector3(0, 0.15, 0))
+			cyl(lb, 0.065, lh - 0.3, Vector3(0, 0.3 + (lh - 0.3) * 0.5, 0))
+			box(lb, Vector3(0.3, 0.52, 0.3), Vector3(0, lh - 0.36, 0.42))
+			if bool(p["light"]) and not TLStyle.headless():
+				var ll: OmniLight3D = OmniLight3D.new()
+				ll.name = "Light"
+				ll.light_color = TLStyle.color("window")
+				ll.light_energy = TLStyle.num("lights", "window", 5.0) * 0.5
+				ll.omni_range = TLStyle.num("lights", "window_range", 7.5) * 1.2
+				ll.omni_attenuation = 1.4
+				ll.position = Vector3(0, lh - 0.45, 0.42)
+				n.add_child(ll)
 		"stones":
 			for i: int in int(p["count"]):
 				mk.box(Vector3(0.5, 0.5, 0.5), "stone", Color(0.9 + 0.05 * (i % 2), 0.9, 0.9), 0.05, Vector3(i * 0.62, 0.25, -0.1 * (i % 2)))

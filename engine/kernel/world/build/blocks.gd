@@ -24,7 +24,8 @@ const FENCE := 8
 const SHAPE_NAMES := {1: "cube", 2: "slab", 3: "stair", 4: "ramp", 5: "post", 6: "window", 7: "roof", 8: "fence"}
 const GLASS := 10
 const MAT_KEYS := {1: "stone", 2: "stone_dark", 3: "plank", 4: "wood_dark", 5: "roof", 6: "roof_slate", 7: "concrete",
-	8: "rock_warm", 9: "white", 10: "glass"}
+	8: "rock_warm", 9: "white", 10: "glass", 11: "brick", 12: "plaster"}
+const MAT_MAX := 12                # M3 (26 Nov): 11 brick and 12 plaster, granted by unlocks (unlocks.json); 1-9 are never locked
 
 var sec := 16                     # section size in metres (divides CHUNK): 16, 32, 48 or 96
 var cap_chunk := CAP_CHUNK

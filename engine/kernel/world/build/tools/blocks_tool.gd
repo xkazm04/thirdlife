@@ -1,7 +1,7 @@
 extends RefCounted
 ## SEAM (spark world-sandbox): build mode's blocks tool, M1's hand building moved out of build_mode.gd unchanged:
 ##   LMB place (a drag places along the cells crossed, ONE batch)    RMB remove (a drag is one batch)
-##   wheel or 1-8 shape   Tab / Shift+Tab material (1-9; a window's pane is glass by itself)   R turn (+1 rot)
+##   wheel or 1-8 shape   Tab / Shift+Tab material (1-9, then M3's 11 brick and 12 plaster, locked until play unlocks them; a window's pane is glass by itself)   R turn (+1 rot)
 ##   F2 flip (stair, ramp, roof)
 ## The ghost shows the remove target (red) while RMB is held or Ctrl is down; otherwise the place target (holo, red
 ## with the reason when `can_place` refuses). A drag keeps to the plane of the surface first pressed: the cursor
@@ -12,7 +12,9 @@ extends RefCounted
 const HomeBuild := preload("res://kernel/world/build/home_build.gd")
 const Blocks := preload("res://kernel/world/build/blocks.gd")
 const DRAG_MAX := 64                    # cells one drag may touch
-const MATS := 9                         # materials a person picks (10, glass, is a window's pane)
+const MATS := [1, 2, 3, 4, 5, 6, 7, 8, 9, 11, 12]   # materials Tab walks (10, glass, is a window's pane; 11 brick and 12 plaster
+                                        # are M3's, locked until play unlocks them: unlocks.gd)
+const Unlocks := preload("res://kernel/world/build/unlocks.gd")
 const TURNS := [Blocks.STAIR, Blocks.RAMP, Blocks.ROOF, Blocks.WINDOW]
 const FLIPS := [Blocks.STAIR, Blocks.RAMP, Blocks.ROOF]
 const KEY_HELP := "LMB place (drag: a line)   RMB remove   wheel or 1-8 shape   Tab / Shift+Tab material   R turn   F2 flip   Ctrl+Z undo   Ctrl+Y redo   hold MMB or Alt look   T tool   B or Esc leave"
@@ -26,11 +28,13 @@ var turn := 0                           # R presses (quarter turns added to the 
 var flip := false
 var reason := ""                        # why the ghost's cell is refused ("" = it is not)
 var _ghost := {}
+var unlocks: RefCounted = null          # M3: what play has unlocked (read again when the tool is picked)
 var _drag := {}                         # {"op": "place"|"remove", "axis", "at", "plane", "last": Vector3i, "done": {cell: true}}
 
 
 func setup(h: Node) -> void:
 	host = h
+	unlocks = Unlocks.new("")
 
 
 func polled() -> Array:
@@ -44,6 +48,7 @@ func selected(on: bool) -> void:
 	_ghost = {}
 	if on:
 		turn = 0
+		unlocks = Unlocks.new(str(host.get("dir")))
 
 
 func slots() -> Array:
@@ -54,7 +59,7 @@ func slots() -> Array:
 
 
 func status() -> Dictionary:
-	var parts := PackedStringArray([Blocks.mat_key(mat).replace("_", " ")])
+	var parts := PackedStringArray([Blocks.mat_key(mat).replace("_", " ") + (" (locked)" if locked_mat() != "" else "")])
 	if shape in TURNS:
 		parts.append("rot %d" % rot_now())
 	if shape in FLIPS:
@@ -80,6 +85,11 @@ func code_now() -> int:
 	return HomeBuild.code(shape, mat, rot_now() if shape in TURNS else 0, flip and shape in FLIPS)
 
 
+## M3: "" or the condition that unlocks the selected material.
+func locked_mat() -> String:
+	return unlocks.locked("mats", mat) if unlocks != null else ""
+
+
 func key(e: InputEvent) -> bool:
 	if e is InputEventMouseButton:
 		var bi: int = (e as InputEventMouseButton).button_index
@@ -94,7 +104,7 @@ func key(e: InputEvent) -> bool:
 	if code >= KEY_1 and code <= KEY_8:
 		shape = code - KEY_1 + 1
 	elif code == KEY_TAB:
-		mat = posmod(mat - 1 + (-1 if k.shift_pressed else 1), MATS) + 1
+		mat = MATS[posmod(MATS.find(mat) + (-1 if k.shift_pressed else 1), MATS.size())]
 	elif code == KEY_R:
 		turn = (turn + 1) % 4
 	elif code == KEY_F2:
@@ -115,7 +125,8 @@ func aim(h: Dictionary, mode: Dictionary) -> void:
 		_ghost = {} if h.remove == HomeBuild.NO_CELL else {"cell": h.remove, "code": 0, "mode": "remove"}
 		return
 	var c := code_now()
-	reason = host.build.can_place(h.place, c)
+	reason = locked_mat()
+	reason = "locked: " + reason if reason != "" else host.build.can_place(h.place, c)
 	_ghost = {"cell": h.place, "code": c, "mode": "place" if reason.is_empty() else "refused"}
 
 
@@ -127,6 +138,9 @@ func ghost_state() -> Dictionary:
 ## A press starts a drag where the cursor is (host.hit). Returns true when it holds the button (a drag started).
 func press(button: int, _mods: Dictionary) -> bool:
 	var h: Dictionary = host.hit
+	if button == MOUSE_BUTTON_LEFT and h.has("place") and locked_mat() != "":
+		reason = "locked: " + locked_mat()
+		return false
 	if button == MOUSE_BUTTON_LEFT and h.has("place"):
 		_start("place", h.place, h)
 		return true
