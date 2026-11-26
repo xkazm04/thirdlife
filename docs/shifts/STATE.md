@@ -444,4 +444,5 @@ on the frame and the figure and Fable on surfaces and nature, looping for 10 hou
 - 22:46 standup: G4 v0.1.1 (spacing: knots rarer, not gone); G5 v0.1.2 (rivals hunt the player); G11 at its first hold (planes tangle after 8 s); G19 finding: Create never shows builder notes.
 - 23:46 standup: G4 (v0.1.2) and G5 (v0.1.3) done and in the menu; G11 and G19 at their look phases (G19's captain's call reads; G11's planes still merge in the tail view).
 - 00:46 standup: G11 v0.1.0 and G19 v0.1.1 promoted and in the owner menu; finding: the tofu gate bends games to its bounds (thrown-away critic revises, a hidden comeback multiplier).
+- 01:46 standup: G11 done (v0.1.1); G19 v0.1.3 in the menu (paired fighters, quilted look), change 4 (camera, score plate) refused by the tofu bounds and a kit rule.
 
