@@ -445,4 +445,5 @@ on the frame and the figure and Fable on surfaces and nature, looping for 10 hou
 - 23:46 standup: G4 (v0.1.2) and G5 (v0.1.3) done and in the menu; G11 and G19 at their look phases (G19's captain's call reads; G11's planes still merge in the tail view).
 - 00:46 standup: G11 v0.1.0 and G19 v0.1.1 promoted and in the owner menu; finding: the tofu gate bends games to its bounds (thrown-away critic revises, a hidden comeback multiplier).
 - 01:46 standup: G11 done (v0.1.1); G19 v0.1.3 in the menu (paired fighters, quilted look), change 4 (camera, score plate) refused by the tofu bounds and a kit rule.
+- 02:10 close: G19 done (v0.1.4; v0.1.3 in the menu), docs landed 1a451a18; all six games of the plan reached versions on the hardened editor; claims released, standup timer deleted. Next: the tofu gate must stop bending games (four lanes), then the owner asks in VERDICT.md.
 
