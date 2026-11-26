@@ -6,6 +6,15 @@ var xs := PackedFloat32Array()
 var zs := PackedFloat32Array()
 var vertices := PackedVector3Array()
 var indices := PackedInt32Array()
+# M2 (spark world-sandbox, build/land_mesh.gd): what an edited chunk's own 3 m mesh interpolates over the valley's, and
+# the valley's cells it hides (hide_cells) where it draws them itself.
+var colors := PackedColorArray()
+var custom := PackedFloat32Array()
+var normals := PackedVector3Array()
+var mesh: ArrayMesh
+var cell_index := PackedInt32Array()     # per cell j * n + i: the first of its 6 indices in `indices`, -1 for a village cell
+var hidden := {}                         # Vector2i(i, j) -> true: a cell an edited chunk draws (degenerate here)
+var index_bytes := 0                     # the GPU's index size, 2 or 4 (0: not asked yet, -1: the renderer keeps none)
 
 func axis(a: float,b: float) -> PackedFloat32Array:
 	var result := PackedFloat32Array()
@@ -19,10 +28,7 @@ func build(parent: Node3D, valley: RefCounted) -> void:
 	land = valley
 	xs = axis(land.border.position.x, land.border.end.x)
 	zs = axis(land.border.position.y, land.border.end.y)
-	var normals := PackedVector3Array()
-	var colors := PackedColorArray()
 	var uvs := PackedVector2Array()
-	var custom := PackedFloat32Array()
 	var pigment := {}
 	for key in land.KEYS+["terrain"]:
 		pigment[key] = TLStyle.color("grass" if key=="terrain" else key).srgb_to_linear()
@@ -77,6 +83,8 @@ func build(parent: Node3D, valley: RefCounted) -> void:
 		custom.append_array(slice[2])
 	uvs.resize(vertices.size())
 	var n := xs.size()
+	cell_index.resize(n*zs.size())
+	cell_index.fill(-1)
 	for j in zs.size():
 		for i in n:
 			var k := j*n+i
@@ -85,6 +93,7 @@ func build(parent: Node3D, valley: RefCounted) -> void:
 			normals.append(dz.cross(dx).normalized())
 			if i+1==n or j+1==zs.size(): continue
 			if land.border.has_point(Vector2((xs[i]+xs[i+1])*0.5,(zs[j]+zs[j+1])*0.5)): continue
+			cell_index[k]=indices.size()
 			indices.append_array([k,k+1,k+n+1,k,k+n+1,k+n])
 	var arr := []
 	arr.resize(Mesh.ARRAY_MAX)
@@ -94,13 +103,57 @@ func build(parent: Node3D, valley: RefCounted) -> void:
 	arr[Mesh.ARRAY_CUSTOM0]=custom
 	arr[Mesh.ARRAY_NORMAL]=normals
 	arr[Mesh.ARRAY_TEX_UV]=uvs
-	var mesh := ArrayMesh.new()
+	mesh = ArrayMesh.new()
 	mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES,arr,[],{},Mesh.ARRAY_CUSTOM_RGBA_FLOAT << Mesh.ARRAY_FORMAT_CUSTOM0_SHIFT)
 	mesh.surface_set_material(0, TLStyle.material("terrain"))
 	var instance := MeshInstance3D.new()
 	instance.mesh=mesh
 	instance.name="WrenValley"
 	parent.add_child(instance)
+
+## M2: hides (on) or shows again the valley cells i in i0..i1, j in j0..j1 (inclusive): their triangles become
+## degenerate in the GPU's index buffer (RenderingServer.mesh_surface_update_index_region, one region per run of cells
+## in a row), so an edited chunk's own mesh stands in for them. `indices` and the vertices never change (colliders and
+## heights read them). Returns how many cells changed.
+func hide_cells(i0: int,i1: int,j0: int,j1: int,on: bool) -> int:
+	var n := xs.size()
+	var changed := 0
+	if index_bytes == 0:
+		# the renderer keeps 16-bit indices for at most 65535 vertices, 32-bit beyond (asking it with mesh_get_surface reads
+		# the whole surface back: a frame of 200 ms in the exe)
+		index_bytes = -1 if mesh == null or DisplayServer.get_name() == "headless" else (2 if vertices.size() <= 65535 else 4)
+	for j in range(j0,j1+1):
+		var first := -1
+		var run := PackedInt32Array()
+		for i in range(i0,i1+2):
+			var k := j*n+i
+			var at := cell_index[k] if i<=i1 else -1
+			if at>=0 and hidden.has(Vector2i(i,j))!=on:
+				if on: hidden[Vector2i(i,j)]=true
+				else: hidden.erase(Vector2i(i,j))
+				changed += 1
+				if first>=0 and first+run.size()!=at:
+					_upload(first,run)
+					first=-1
+					run=PackedInt32Array()
+				if first<0: first=at
+				if on: run.append_array([k,k,k,k,k,k])
+				else: run.append_array(indices.slice(at,at+6))
+				continue
+			if first>=0:
+				_upload(first,run)
+				first=-1
+				run=PackedInt32Array()
+	return changed
+
+func _upload(first: int,run: PackedInt32Array) -> void:
+	if index_bytes<=0: return
+	var data := run.to_byte_array()
+	if index_bytes==2:
+		data=PackedByteArray()
+		data.resize(run.size()*2)
+		for q in run.size(): data.encode_u16(q*2,run[q])
+	RenderingServer.mesh_surface_update_index_region(mesh.get_rid(),0,first*index_bytes,data)
 
 func y(x: float,z: float) -> float:
 	if land.border.has_point(Vector2(x,z)): return land.village.gy(x,z)

@@ -27,6 +27,9 @@ var trees := {}         # chunk -> [[foot, radius], ...]: trunks ride on that ch
 var cylinders := {}     # radius (cm) -> CylinderShape3D, shared
 var centre := Vector2i(1 << 30, 1 << 30)
 var stats := {"made": 0, "dropped": 0, "faces": 0, "trunks": 0, "build_usec": 0}
+var land: WeakRef = null  # M2 (spark world-sandbox): the Home's land layer (build/land_layer.gd). An edited chunk's
+                          # ground triangles are its own 3 m mesh's (`chunk_faces`), and a trunk follows the ground
+                          # it stands on or goes (`trunk_foot`); `refresh` rebuilds a loaded chunk's body after an edit
 
 
 static func wanted(cfg: Dictionary) -> bool:
@@ -133,8 +136,21 @@ func bucket(faces: PackedVector3Array) -> void:
 
 
 ## The rendered triangles of the valley ground whose cell centre lies in chunk `id` (the village's own rectangle is the
-## village terrain's: left out), and the lanes and the deck over them.
+## village terrain's: left out), and the lanes and the deck over them. M2: an edited chunk's ground is its own 3 m
+## mesh's triangles over the same cells (build/land_layer.gd `chunk_faces`), the lanes and the deck as before.
 func faces(id: Vector2i) -> PackedVector3Array:
+	var out := PackedVector3Array()
+	var l: Object = land.get_ref() if land != null else null
+	if l != null:
+		out = l.call("chunk_faces", id)
+	if out.is_empty():
+		out = valley_faces(id)
+	if lanes.has(id):
+		out.append_array(lanes[id])
+	return out
+
+
+func valley_faces(id: Vector2i) -> PackedVector3Array:
 	var out := PackedVector3Array()
 	var xs: PackedFloat32Array = ground.xs
 	var zs: PackedFloat32Array = ground.zs
@@ -158,8 +174,6 @@ func faces(id: Vector2i) -> PackedVector3Array:
 				continue
 			var k := j * n + i
 			out.append_array(PackedVector3Array([v[k], v[k + n + 1], v[k + 1], v[k], v[k + n], v[k + n + 1]]))     # the drawn split, wound up
-	if lanes.has(id):
-		out.append_array(lanes[id])
 	return out
 
 
@@ -184,16 +198,37 @@ func ensure(p: Vector2) -> void:
 			var id := Vector2i(x, z)
 			if bodies.has(id) or x < -limit or z < -limit or x >= limit or z >= limit:
 				continue
-			var tri := faces(id)
-			if tri.is_empty():
-				continue
-			bodies[id] = Collider.build(null, Rect2i(), tri, "faces", ws, "home ground", "home_faces")
-			for t: Array in trees.get(id, []):
-				PhysicsServer3D.body_add_shape(bodies[id].body, cylinder(t[1]).get_rid(), Transform3D(Basis(), t[0] + Vector3.UP * 2.0))
-				stats.trunks += 1
-			stats.made += 1
-			stats.faces += tri.size() / 3
+			_make(id, ws)
 	stats.build_usec += Time.get_ticks_usec() - t0
+
+
+## One chunk's body: its ground and lanes, and the trunks standing in it (M2: where the ground under a trunk moved, the
+## trunk moves with it, or is left out when the land layer hid its tree).
+func _make(id: Vector2i, ws: Object) -> void:
+	var tri := faces(id)
+	if tri.is_empty():
+		return
+	bodies[id] = Collider.build(null, Rect2i(), tri, "faces", ws, "home ground", "home_faces")
+	var l: Object = land.get_ref() if land != null else null
+	for t: Array in trees.get(id, []):
+		var foot: Variant = l.call("trunk_foot", t[0]) if l != null else t[0]
+		if foot == null:
+			continue
+		PhysicsServer3D.body_add_shape(bodies[id].body, cylinder(t[1]).get_rid(), Transform3D(Basis(), (foot as Vector3) + Vector3.UP * 2.0))
+		stats.trunks += 1
+	stats.made += 1
+	stats.faces += tri.size() / 3
+
+
+## M2: chunk `id`'s body again from its faces now (an edit of the land in it), if it is loaded. Returns true if it was.
+func refresh(id: Vector2i) -> bool:
+	var ws: Object = space.get_ref() if space != null else null
+	if ws == null or not bodies.has(id):
+		return false
+	Collider.drop(bodies[id], ws)
+	bodies.erase(id)
+	_make(id, ws)
+	return true
 
 
 ## A trunk 4 m tall (as world_space.gd `add_trunk`), one shape per radius in centimetres.
@@ -207,6 +242,8 @@ func cylinder(radius: float) -> CylinderShape3D:
 	return cylinders[key]
 
 
-## The height of what the visitor stands on at (x, z) outside the village: the rendered ground (lanes and deck aside).
+## The height of what the visitor stands on at (x, z) outside the village: the rendered ground (lanes and deck aside),
+## with the land layer's edits (M2).
 func ground_y(x: float, z: float) -> float:
-	return ground.y(x, z)
+	var l: Object = land.get_ref() if land != null else null
+	return float(l.call("height_at", x, z)) if l != null else ground.y(x, z)
