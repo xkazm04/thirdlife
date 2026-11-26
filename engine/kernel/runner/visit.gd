@@ -214,7 +214,7 @@ func steer(tick: int) -> void:
 ## "tl_build_mode") while it is on, else null. It frees the cursor, and E and Esc are its own then.
 func _building() -> Node:
 	var land: Variant = view.get("landscape")
-	var bm: Variant = (land as Node).get_meta(&"tl_build_mode", null) if land is Node else null
+	var bm: Variant = (land as Node).get_meta(&"tl_build_mode") if land is Node and (land as Node).has_meta(&"tl_build_mode") else null   # get_meta(k, null) still errors when k is absent
 	return bm if is_instance_valid(bm) and bm is Node and bool((bm as Node).get("active")) else null
 
 

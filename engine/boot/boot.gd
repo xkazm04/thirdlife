@@ -522,7 +522,7 @@ func _physics_process(_delta: float) -> void:
 		_trace.flush()
 	if _hint != null:
 		_hint.text = (str(view.get("visit").call("stage_hint")) if view.get("visit") != null else KEYS_STAGE) if stage >= 0 else _keys_walk()   # K8: Esc alone when the game uses Q
-		var bm: Variant = (view.get("landscape") as Node).get_meta(&"tl_build_mode", null) if view.get("landscape") is Node else null
+		var bm: Variant = (view.get("landscape") as Node).get_meta(&"tl_build_mode") if view.get("landscape") is Node and (view.get("landscape") as Node).has_meta(&"tl_build_mode") else null
 		_hint.visible = not (is_instance_valid(bm) and bool((bm as Node).get("active")))   # WP2: build mode's hotbar shows its own keys
 		_hint.position.y = get_viewport().get_visible_rect().size.y - 58
 	if not _capture_path.is_empty() and not _capture_done and _frame >= _capture_at:
