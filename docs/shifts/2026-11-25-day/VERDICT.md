@@ -117,8 +117,11 @@ All on main, the last of them f298936. What a person now gets, each item driven 
 
 ### G11 Biplane duel and G19 Shield wall (Opus): started 20:49 on the fully hardened editor; both in the menu
 - **Biplane duel v0.1.0** (00:14, 3 h 23 min from the sentence): wheels, roundels, black smoke on a hit, a ring wall.
-  The two planes still close into one tangle. The exe run shows 1 engine error (a camera projection). Next: the tail
-  chase.
+  The two planes still close into one tangle. Its exe run showed 1 engine error (a camera projection).
+  - **Done: v0.1.1, the tail chase** (52 min, in the menu; exe 600 frames 0/0, so the error is gone). The rival attacks
+    about twice as often, but by out-turning the player (x1.4), against the brief's own rule. The camera cut and rounds 2-3
+    were left "not done" and the job promoted anyway: one change goes to one package. As a person: "once, to see her
+    come at me".
 - **Shield wall v0.1.1** (00:41): the captain's call bursts a gold ring and floors a rival. "Every hit shows in the
   body" took 25 min: bodies fall with dust, and you can tell who was hit. All six fighters still look alike. Next: the
   fighters' AI.
