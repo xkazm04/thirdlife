@@ -4,8 +4,9 @@ extends RefCounted
 ##   blocks     blocks.gd       the sparse store (cells -> codes), its caps and its dirty sections
 ##   mesh       block_mesh.gd   section meshes under `root` ("HomeBlocks") and one static body per chunk in the
 ##                              visitor's WorldSpace (tag "home blocks", layer 1)
-##   edits      edit_log.gd     tl.edit/1 ops, batches, undo/redo, the journal
-##   protect    protect.gd      where a block may not go
+##   edits      edit_log.gd     tl.edit/1 ops, batches, undo/redo, the journal; each op kind goes to its layer
+##   layers     blocks_layer.gd (place, remove), land_layer.gd (land, paint: M2), pieces_layer.gd (put, lift: M3)
+##   protect    protect.gd      where a block may not go (and the rules the layers add)
 ## Edits change the store at once; meshes and bodies follow in `step(budget)`, which the owner calls once per physics
 ## frame (time is frames). `dirty` is true from the first change after a save or load until the next save
 ## (`dirty_changed` says when it flips).
@@ -18,6 +19,10 @@ const BlockMesh := preload("res://kernel/world/build/block_mesh.gd")
 const EditLog := preload("res://kernel/world/build/edit_log.gd")
 const BuildFile := preload("res://kernel/world/build/build_file.gd")
 const Protect := preload("res://kernel/world/build/protect.gd")
+const BlocksLayer := preload("res://kernel/world/build/blocks_layer.gd")
+const LandLayer := preload("res://kernel/world/build/land_layer.gd")
+const PiecesLayer := preload("res://kernel/world/build/pieces_layer.gd")
+const REGION_MAX := 128                  # cells per axis `read_region` reads at most
 const HOME_DIR := "user://home"
 const NO_CELL := Vector3i(0, -32768, 0)  # cell_at_ray_hit: no block there
 const STEP_BUDGET := 4                   # sections rebuilt per frame by default
@@ -26,6 +31,8 @@ var blocks: RefCounted
 var mesh: RefCounted
 var edits: RefCounted
 var protect: RefCounted
+var layers: Array = []                   # blocks, land, pieces (edit_log.gd `register`): BUILD.md "Layers"
+var ctx := {}                            # what a layer is made with: blocks, mesh, check, protect, space, root, seed, home
 var root: Node3D = null
 var ws: Object = null
 var home_seed := 7
@@ -50,9 +57,31 @@ func _init(parent: Node3D, space: Object, opts := {}) -> void:
 	mesh = BlockMesh.new(blocks, root, space)
 	protect = Protect.new(space)
 	edits = EditLog.new()
-	edits.store = blocks
-	edits.check = Callable(protect, "refusal")      # a bound method, not a lambda: a lambda would hold this object (a cycle)
-	_saved = blocks.content_hash()
+	edits.before_journal = Callable(self, "_mark_v2")   # bound methods, not lambdas: a lambda would hold this object (a cycle)
+	ctx = {"blocks": blocks, "mesh": mesh, "check": Callable(protect, "refusal"), "protect": protect, "space": space,
+		"root": root, "seed": home_seed, "home": weakref(self)}
+	for kind: GDScript in [BlocksLayer, LandLayer, PiecesLayer]:
+		register(kind.new(ctx))
+	_saved = _content()
+
+
+## Adds a layer (BUILD.md "Layers"); one that owns an op another layer has replaces it (a test, a lane over its stub).
+## A layer with `add_rules(protect)` adds its protection rules then (once: a scratch copy is never registered here).
+func register(l: RefCounted) -> void:
+	for gone: RefCounted in edits.register(l):
+		layers.erase(gone)
+	if not layers.has(l):
+		layers.append(l)
+		if l.has_method("add_rules"):
+			l.add_rules(protect)
+
+
+## The layer called `id` ("blocks", "land", "pieces"), or null.
+func layer(id: String) -> RefCounted:
+	for l: RefCounted in layers:
+		if l.get("id") == id:
+			return l
+	return null
 
 
 ## The Home's builder for a landscape built with a Home (home/hook.gd `grow`): the visitor's space from the parent's
@@ -144,15 +173,20 @@ func _mark() -> void:
 
 
 ## Rebuilds at most `budget` dirty sections and their chunks' bodies. Returns how many sections it rebuilt.
+## Every layer gets the budget (its own unit: sections for blocks).
 func step(budget := STEP_BUDGET) -> int:
-	return mesh.step(budget)
+	var n := 0
+	for l: RefCounted in layers:
+		n += int(l.step(budget))
+	return n
 
 
 ## Rebuilds everything pending now (a load, a test).
 func flush() -> int:
 	var n := 0
-	while blocks.dirty.size() > 0:
-		n += mesh.step(1 << 20)
+	for l: RefCounted in layers:
+		while int(l.pending()) > 0:
+			n += int(l.step(1 << 20))
 	return n
 
 
@@ -194,17 +228,80 @@ func pick(from: Vector3, to: Vector3) -> Dictionary:
 		"place": cell_at_ray_hit(p, nrm, true), "remove": cell_at_ray_hit(p, nrm, false)}
 
 
+# ------------------------------------------------------------------ reads and dry runs (M3 stamps, M4 the LLM)
+## What is in the cell box `lo`..`hi` (inclusive; at most REGION_MAX cells per axis): {"min", "max", "blocks":
+## [[x, y, z, code], ...] sorted by z, then x, then y}, plus every other layer's keys (its `read_region`), or
+## {"error"} when the box is too large or upside down.
+func read_region(lo: Vector3i, hi: Vector3i) -> Dictionary:
+	var size := hi - lo + Vector3i.ONE
+	if size.x < 1 or size.y < 1 or size.z < 1:
+		return {"error": "the box's max is below its min"}
+	if size.x > REGION_MAX or size.y > REGION_MAX or size.z > REGION_MAX:
+		return {"error": "the box is larger than %d cells on a side" % REGION_MAX}
+	var out := {"min": [lo.x, lo.y, lo.z], "max": [hi.x, hi.y, hi.z]}
+	for l: RefCounted in layers:
+		if l.has_method("read_region"):
+			var part: Dictionary = l.read_region(lo, hi)
+			for k: Variant in part:
+				out[k] = part[k]
+	return out
+
+
+## A dry run: `ops` (one batch) applied to a scratch copy of every layer, with the same rules and protection, but no
+## mesh, no body, no log and no file. Returns {"ok", "reason", "applied", "refused" (as `apply`), "store" (a blocks.gd
+## store of the cells the ops fill or change, as they would be: what a ghost draws), "removed" (a store of the
+## blocks they would take away), "scratch" ({layer id: its copy after the ops})}. The real Home is untouched.
+func preview(ops: Array) -> Dictionary:
+	var trial: RefCounted = EditLog.new()
+	var scratch := {}
+	for l: RefCounted in layers:
+		var c: RefCounted = l.copy()
+		scratch[str(l.get("id"))] = c
+		trial.register(c)
+	var r: Dictionary = trial.apply(ops)
+	var after: RefCounted = (scratch["blocks"] as RefCounted).get("store")
+	var added: RefCounted = Blocks.new(blocks.sec)
+	var removed: RefCounted = Blocks.new(blocks.sec)
+	added.cap_chunk = 1 << 30
+	added.cap_home = 1 << 30
+	removed.cap_chunk = 1 << 30
+	removed.cap_home = 1 << 30
+	var seen := {}
+	for b: Dictionary in trial.history:
+		for rec: Dictionary in b.ops:
+			if not rec.has("shape") or not rec.has("at"):
+				continue                                   # not a block op
+			var cell := Vector3i(int(rec.at[0]), int(rec.at[1]), int(rec.at[2]))
+			if seen.has(cell):
+				continue
+			seen[cell] = true
+			var was: int = blocks.get_code(cell)
+			var now: int = after.get_code(cell)
+			if now != 0 and now != was:
+				added.put(cell, now)
+			if was != 0 and now != was:
+				removed.put(cell, was)
+	added.dirty.clear()
+	removed.dirty.clear()
+	r["store"] = added
+	r["removed"] = removed
+	r["scratch"] = scratch
+	return r
+
+
 # ------------------------------------------------------------------ files
 ## Compacts the Home into `d`/build.json and empties `d`/edits.jsonl; later edits are journaled there. Returns "" or
 ## what went wrong.
 func save(d := HOME_DIR) -> String:
-	var h: String = blocks.content_hash()
+	var h := _content()
 	var r := rev + (1 if h != _saved else 0)
 	_close_journal()
-	var why: String = BuildFile.save(d, blocks, home_seed, r)
+	var doc: Dictionary = BuildFile.text_of(layers, home_seed, r)
+	var why: String = BuildFile.save(d, doc.text)
 	if why == "":
 		rev = r
 		_saved = h
+		edits.v2_ready = int(doc.v) == 2
 		if dirty:
 			dirty = false
 			dirty_changed.emit(false)
@@ -218,10 +315,11 @@ func load(d := HOME_DIR) -> Dictionary:
 	_close_journal()
 	edits.history.clear()
 	edits.future.clear()
-	var r: Dictionary = BuildFile.load_into(d, blocks, edits, home_seed)
+	var r: Dictionary = BuildFile.load_into(d, layers, edits, home_seed)
 	edits.changes = 0
+	edits.v2_ready = int(r.v) == 2
 	rev = int(r.rev)
-	_saved = "" if int(r.replayed) > 0 or not r.ok else blocks.content_hash()
+	_saved = "" if int(r.replayed) > 0 or not r.ok else _content()
 	var was := dirty
 	dirty = int(r.replayed) > 0
 	if dirty != was:
@@ -238,6 +336,20 @@ func _open_journal(d: String) -> void:
 	if f != null:
 		f.seek_end()
 	edits.journal = f
+
+
+## The identity of what is saved: the blocks' content hash (M1's, so a blocks-only Home keeps its revs), then each
+## other layer's.
+func _content() -> String:
+	var h := ""
+	for l: RefCounted in layers:
+		h += str(l.content_hash())
+	return h
+
+
+## edit_log.gd `before_journal`: build.json becomes tl.build/2 before the first op v1 cannot read is journaled.
+func _mark_v2(_rec: Dictionary) -> String:
+	return BuildFile.mark_v2(dir, home_seed) if dir != "" else ""
 
 
 func _close_journal() -> void:
@@ -259,7 +371,8 @@ func stats() -> Dictionary:
 ## Everything gone from the scene and the space (the store stays): the owner is leaving the Home.
 func free_all() -> void:
 	_close_journal()
-	mesh.free_all()
+	for l: RefCounted in layers:
+		l.free_all()
 	if root != null:
 		root.queue_free()
 		root = null

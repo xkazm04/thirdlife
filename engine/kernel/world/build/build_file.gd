@@ -1,35 +1,61 @@
 extends RefCounted
-## WP1: the saved Home (tl.build/1, contracts/BUILD.md). A directory (the exe's is user://home) holds
+## WP1 + SEAM: the saved Home (tl.build/1 and tl.build/2, contracts/BUILD.md). A directory (the exe's is user://home)
+## holds
 ##   build.json    {"v":1,"seed":<Home seed>,"rev":<int>,"chunks":{"<cx>,<cz>":"<base64>"}}, keys in that order; a
 ##                 chunk's value is the base64 of its little-endian int32 pairs (chunk-local cell, code) sorted by cell,
-##                 the cell lx + 96 * (lz + 96 * (y + 16)) (blocks.gd `chunk_pairs`); empty chunks are left out
+##                 the cell lx + 96 * (lz + 96 * (y + 16)) (blocks.gd `chunk_pairs`); empty chunks are left out.
+##                 tl.build/2 is the same with "v":2 and, after "chunks", the layers' keys "land", "paint", "pieces"
+##                 (each only when not empty), in that order
 ##   edits.jsonl   the tl.edit/1 operations since the last compaction, one per line (edit_log.gd writes them)
+## Every layer (BUILD.md "Layers") saves its own keys (`save_part`) and reads them back (`load_part`). The file is
+## written as v2 when a layer saves a key v1 does not have, else as v1, byte for byte as M1 wrote it. `mark_v2` turns
+## a v1 file into v2 (its content unchanged) before the log journals the first op v1 cannot read.
 ## `save` compacts: build.json is written whole (temporary file, read back and compared, the old one kept as
 ## build.json.prev, rename: PlotFile.save's pattern) and edits.jsonl starts empty. `load` reads build.json, then
 ## replays edits.jsonl. Unknown keys are errors.
 
-const Blocks := preload("res://kernel/world/build/blocks.gd")
 const BUILD := "build.json"
 const EDITS := "edits.jsonl"
-const KEYS := ["v", "seed", "rev", "chunks"]
+const KEYS := ["v", "seed", "rev", "chunks"]                                    # tl.build/1
+const KEYS_V2 := ["v", "seed", "rev", "chunks", "land", "paint", "pieces"]      # tl.build/2
 
 
-static func text_of(store: RefCounted, home_seed: int, rev: int) -> String:
-	var parts := PackedStringArray()
-	for ch: Vector2i in Blocks.sorted_ids(store.counts):
-		var pairs: PackedInt32Array = store.chunk_pairs(ch)
-		parts.append("%s:%s" % [JSON.stringify("%d,%d" % [ch.x, ch.y]), JSON.stringify(Marshalls.raw_to_base64(pairs.to_byte_array()))])
-	return "{\"v\":1,\"seed\":%d,\"rev\":%d,\"chunks\":{%s}}\n" % [home_seed, rev, ",".join(parts)]
+## The build file's text for `layers` and its version: {"text", "v"}.
+static func text_of(layers: Array, home_seed: int, rev: int) -> Dictionary:
+	var parts := {}
+	for l: RefCounted in layers:
+		var p: Dictionary = l.save_part()
+		for k: Variant in p:
+			parts[k] = p[k]
+	var v := 1
+	for k: Variant in parts:
+		if not KEYS.has(k):
+			v = 2
+	var text := "{\"v\":%d,\"seed\":%d,\"rev\":%d" % [v, home_seed, rev]
+	for k: String in KEYS_V2.slice(3):
+		if parts.has(k):
+			text += ",%s:%s" % [JSON.stringify(k), JSON.stringify(parts[k], "", false)]
+	return {"text": text + "}\n", "v": v}
 
 
-## Writes `dir`/build.json and empties `dir`/edits.jsonl. Returns "" or what went wrong (the files there are then
-## untouched).
-static func save(dir: String, store: RefCounted, home_seed: int, rev: int) -> String:
+## Writes `dir`/build.json from `text` and empties `dir`/edits.jsonl. Returns "" or what went wrong (the files there are
+## then untouched).
+static func save(dir: String, text: String) -> String:
 	var err := DirAccess.make_dir_recursive_absolute(dir)
 	if err != OK and not DirAccess.dir_exists_absolute(dir):
 		return "cannot make %s (error %d)" % [dir, err]
 	var path := dir.path_join(BUILD)
-	var text := text_of(store, home_seed, rev)
+	var why := _write_whole(path, text)
+	if why != "":
+		return why
+	var e := FileAccess.open(dir.path_join(EDITS), FileAccess.WRITE)
+	if e == null:
+		return "saved %s, but cannot empty %s (error %d)" % [path, EDITS, FileAccess.get_open_error()]
+	e.close()
+	return ""
+
+
+static func _write_whole(path: String, text: String) -> String:
 	var tmp := path + ".tmp"
 	var f := FileAccess.open(tmp, FileAccess.WRITE)
 	if f == null:
@@ -41,31 +67,49 @@ static func save(dir: String, store: RefCounted, home_seed: int, rev: int) -> St
 		return "the temporary file %s did not read back whole; the build file was not touched" % tmp
 	if FileAccess.file_exists(path):
 		DirAccess.copy_absolute(path, path + ".prev")
-	err = DirAccess.rename_absolute(tmp, path)
+	var err := DirAccess.rename_absolute(tmp, path)
 	if err != OK:
 		return "could not rename %s to %s (error %d); the build file was not touched" % [tmp, path, err]
-	var e := FileAccess.open(dir.path_join(EDITS), FileAccess.WRITE)
-	if e == null:
-		return "saved %s, but cannot empty %s (error %d)" % [path, EDITS, FileAccess.get_open_error()]
-	e.close()
 	return ""
 
 
-## Reads `dir` into `store` (emptied first) and replays the journal through `edits_log` (edit_log.gd). Returns {"ok",
-## "reason", "rev", "blocks", "replayed", "bad": [[line number, why], ...]}. No build.json: an empty Home (ok, rev 0).
-## A build.json that is not well-formed, or whose seed is not `home_seed`, is refused and the store stays empty.
-static func load_into(dir: String, store: RefCounted, edits_log: RefCounted, home_seed: int) -> Dictionary:
-	store.clear()
-	var out := {"ok": true, "reason": "", "rev": 0, "blocks": 0, "replayed": 0, "bad": []}
+## Makes `dir`/build.json tl.build/2 with its content unchanged (its journal stays valid): a v1 file gets "v":2, no
+## file becomes an empty v2 Home of rev 0, a v2 file is left alone. Returns "" or what went wrong.
+static func mark_v2(dir: String, home_seed: int) -> String:
+	var path := dir.path_join(BUILD)
+	if not FileAccess.file_exists(path):
+		var err := DirAccess.make_dir_recursive_absolute(dir)
+		if err != OK and not DirAccess.dir_exists_absolute(dir):
+			return "cannot make %s (error %d)" % [dir, err]
+		return _write_whole(path, "{\"v\":2,\"seed\":%d,\"rev\":0,\"chunks\":{}}\n" % home_seed)
+	var text := FileAccess.get_file_as_string(path)
+	if text.begins_with("{\"v\":2,"):
+		return ""
+	if not text.begins_with("{\"v\":1,"):
+		return "%s is not a build file this exe wrote" % path
+	return _write_whole(path, "{\"v\":2," + text.substr(7))
+
+
+## Reads `dir` into `layers` (each emptied first) and replays the journal through `edits_log` (edit_log.gd). Returns
+## {"ok", "reason", "v", "rev", "blocks", "replayed", "bad": [[line number, why], ...]}. No build.json: an empty Home
+## (ok, v 0, rev 0). A build.json that is not well-formed, or whose seed is not `home_seed`, is refused and every layer
+## stays empty.
+static func load_into(dir: String, layers: Array, edits_log: RefCounted, home_seed: int) -> Dictionary:
+	for l: RefCounted in layers:
+		l.clear()
+	var out := {"ok": true, "reason": "", "v": 0, "rev": 0, "blocks": 0, "replayed": 0, "bad": []}
 	var path := dir.path_join(BUILD)
 	if FileAccess.file_exists(path):
-		var why := _read(FileAccess.get_file_as_string(path), store, home_seed, out)
+		var why := _read(FileAccess.get_file_as_string(path), layers, home_seed, out)
 		if why != "":
-			store.clear()
+			for l: RefCounted in layers:
+				l.clear()
 			out.ok = false
 			out.reason = "%s: %s" % [path, why]
 			return out
-	out.blocks = store.total
+	for l: RefCounted in layers:
+		if l.get("id") == "blocks":
+			out.blocks = l.size()
 	var edits := dir.path_join(EDITS)
 	if FileAccess.file_exists(edits):
 		var n := 0
@@ -82,40 +126,27 @@ static func load_into(dir: String, store: RefCounted, edits_log: RefCounted, hom
 	return out
 
 
-static func _read(text: String, store: RefCounted, home_seed: int, out: Dictionary) -> String:
+static func _read(text: String, layers: Array, home_seed: int, out: Dictionary) -> String:
 	var json := JSON.new()
 	if json.parse(text) != OK or typeof(json.data) != TYPE_DICTIONARY:
 		return "not a JSON object"
 	var d: Dictionary = json.data
+	var v := int(d.v) if typeof(d.get("v")) == TYPE_FLOAT and float(d.v) == floorf(float(d.v)) else 0
+	var keys: Array = KEYS_V2 if v == 2 else KEYS
 	for k: Variant in d:
-		if not KEYS.has(k):
+		if not keys.has(k):
 			return "unknown key '%s'" % str(k)
 	for k: String in KEYS:
 		if not d.has(k):
 			return "%s is missing" % k
-	if typeof(d.v) != TYPE_FLOAT or int(d.v) != 1:
-		return "v must be 1"
+	if v != 1 and v != 2:
+		return "v must be 1 or 2"
 	if int(d.seed) != home_seed:
 		return "seed %d is not this Home's (%d)" % [int(d.seed), home_seed]
+	out.v = v
 	out.rev = int(d.rev)
-	if typeof(d.chunks) != TYPE_DICTIONARY:
-		return "chunks must be an object"
-	for key: Variant in d.chunks:
-		var xy := str(key).split(",")
-		if xy.size() != 2 or not xy[0].is_valid_int() or not xy[1].is_valid_int() or typeof(d.chunks[key]) != TYPE_STRING:
-			return "chunk %s is not \"<cx>,<cz>\": \"<base64>\"" % str(key)
-		var ch := Vector2i(int(xy[0]), int(xy[1]))
-		var pairs := Marshalls.base64_to_raw(str(d.chunks[key])).to_int32_array()
-		if pairs.size() % 2 != 0:
-			return "chunk %s holds an odd number of int32s" % str(key)
-		for i: int in range(0, pairs.size(), 2):
-			var local := pairs[i]
-			if local < 0 or local >= Blocks.CHUNK * Blocks.CHUNK * Blocks.LEVELS:
-				return "chunk %s: cell %d is outside the chunk" % [str(key), local]
-			var cell := Blocks.pair_cell(ch, local)
-			var c := pairs[i + 1]
-			if Blocks.shape_of(c) < 1 or Blocks.shape_of(c) > 8 or Blocks.mat_of(c) < 1 or Blocks.mat_of(c) > 10 or c >> 13 != 0:
-				return "chunk %s: code %d at %s is not a block" % [str(key), c, str(cell)]
-			if not store.put(cell, c):
-				return "chunk %s: %s at %s" % [str(key), store.refusal(cell), str(cell)]
+	for l: RefCounted in layers:
+		var why := str(l.load_part(d))
+		if why != "":
+			return why
 	return ""

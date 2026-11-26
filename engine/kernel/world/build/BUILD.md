@@ -3,7 +3,8 @@
 Players build in the Home (Wren Valley) with 1 m smart blocks. This directory holds the core: the store, the shapes and
 how they join, the mesher and collider, the edit log with undo and redo, save and load, and protection. It has no input.
 Build mode (WP2) and the LLM command bar (M4) call the API below. The file formats are `contracts/BUILD.md`
-(`tl.edit/1`, `tl.build/1`). Selftest block 752 holds this code to both texts.
+(`tl.edit/1`, `tl.build/1`, and since the seam `tl.build/2`). Selftest block 752 holds this code to both texts; 754 holds
+the seam (layers, tools, v1/v2, preview, `read_region`). Which lane owns which file is `LANES.md`.
 
 | File | What it is |
 |---|---|
@@ -11,10 +12,16 @@ Build mode (WP2) and the LLM command bar (M4) call the API below. The file forma
 | `blocks.gd` | sparse store: cells to codes, per 16 m section; chunk counts, caps, dirty sections, chunk records |
 | `shapes.gd` | shape table: canonical geometry, rot and flip, coverage masks, joined forms |
 | `block_mesh.gd` | section mesher (toon palette surface and glass surface) and one static body per chunk |
-| `edit_log.gd` | `tl.edit/1` ops: validation, batches, undo and redo, the journal |
-| `build_file.gd` | `tl.build/1`: save (compaction) and load (build file, then the journal replayed) |
-| `protect.gd` | where a block may not go, with the reason |
+| `edit_log.gd` | `tl.edit/1` ops: the layer registry, batches, undo and redo, the journal (no op kind of its own) |
+| `op_util.gd` | what every layer's validation shares: the common keys `v`, `author`, `batch`, integers from JSON, cells |
+| `blocks_layer.gd` | the `blocks` layer: `place` and `remove` (M1's checks, records and `chunks`) |
+| `land_layer.gd` | the `land` layer: `land` and `paint`. A stub until M2 |
+| `pieces_layer.gd` | the `pieces` layer: `put` and `lift`. A stub until M3 |
+| `build_file.gd` | `tl.build/1` and `/2`: save (compaction), load (build file, then the journal replayed), `mark_v2` |
+| `protect.gd` | where a block may not go, with the reason; the rules layers add (`add_rule`) and ground areas (`refusal_area`) |
+| `preview_mesh.gd` | draws a store as a hologram (a dry run's ghost: M4's answer, M3's stamp) |
 | `build_case.gd` | the headless case (`engine/tools/selftest.d/752-home-build.sh`) |
+| `seam_case.gd`, `case_util.gd` | the seam's headless case (754) and what build cases share (a landscape, a key, removing a folder) |
 
 ## The API
 
@@ -46,6 +53,10 @@ build.step()                                                      # rebuilds at 
 | `stats()` | Dictionary | blocks, chunks, sections, bodies, tris, pending, undo, redo, rev, dirty, rebuilt_sections, rebuilt_chunks |
 | `dirty`, signal `dirty_changed(dirty)` | | true from the first change after a save or load until the next save |
 | `free_all()` | | meshes freed, bodies dropped from the space (the store stays) |
+| `register(layer)` / `layer(id)` | - / the layer or null | adds a layer (one that owns an op another layer has replaces that layer whole); `id` is `blocks`, `land` or `pieces` |
+| `read_region(min, max)` | `{min, max, blocks: [[x, y, z, code], ...], ...}` or `{error}` | a cell box (inclusive, at most 128 per axis): blocks sorted by z, then x, then y, plus each layer's own keys (its `read_region`). M4's ask reads this |
+| `preview(ops)` | `{ok, reason, applied, refused, store, removed, scratch}` | a dry run of one batch on scratch copies of every layer (same rules and protection; no mesh, body, log or file). `store`: a blocks.gd store of the cells it would fill or change, `removed`: those it would empty, `scratch`: `{id: layer copy}`. Draw it with `preview_mesh.gd` `show_stores(r.store, r.removed)` |
+| `protect.add_rule(callable, on = "cell")` | | a layer's refusal provider: `"cell"` rules `(cell, code) -> reason` are asked by `refusal` after the circles, rects and boxes; `"area"` rules `(rect: Rect2, what) -> reason` by `refusal_area(rect, what)` |
 
 Op input rules: `v`, `author` and `batch` may be left out (the log fills them in). A `batch` given on input is checked,
 then ignored, because the log numbers batches itself. A remove may leave out what it removes. If it names `shape`,
@@ -54,6 +65,46 @@ then ignored, because the log numbers batches itself. A remove may leave out wha
 Refusal reasons are short and stable, so the hotbar can show them: `occupied`, `empty`, `out of range (y -16..111)`,
 `chunk full`, `home full`, `game lot`, `authored structure (<tag>)`, `tree`, `too close`, `unknown key '<k>'`,
 `<key> is missing`, `glass is only a window's pane ...`, `flip is for stair, ramp and roof`, `flip is written only when true`.
+
+## Layers (the seam, for M2 and M3)
+
+Each op kind belongs to one layer. `edit_log.gd` validates, applies, inverts and journals an op through its layer; it
+knows nothing of cells or heights. `home_build.gd` makes the three layers with one context `ctx` (`blocks` the
+store, `mesh` its mesher, `check` the protection callable, `protect`, `space` the visitor's WorldSpace or null,
+`root` the node meshes hang under or null, `seed`, `home` a WeakRef of the builder: a layer never holds the builder
+itself, so there is no cycle) and registers them. A layer is a RefCounted script, `_init(ctx)`, duck-typed:
+
+| Member | What it does |
+|---|---|
+| `id` | `"blocks"`, `"land"`, `"pieces"` |
+| `ops() -> PackedStringArray` | the op kinds it owns |
+| `malformed(op, strict) -> String` | "" or why the op is not well-formed (unknown keys first, then its keys, then `author` and `batch`: `op_util.gd` `head` and `tail`). `strict`: a journal line, every required key present |
+| `can_apply(op) -> String` | "" or why the rules refuse a well-formed op now (the store, caps, protection) |
+| `raw(op) -> Dictionary` | the op as it is journaled: complete (a removal names what it removes), keys in the contract's order, `v` first, no `author` or `batch` (the log appends them last) |
+| `fits(rec) -> String` | "" or why a complete record does not fit (undo, redo and a replayed journal apply without the rules) |
+| `apply(rec)` | applies a record that fits |
+| `invert(rec) -> Dictionary` | the record that undoes it (keys in order, no `author` or `batch`) |
+| `dirty_regions(rec) -> Array` | the world AABBs it changes (redraws of other layers, ghosts) |
+| `save_part() -> Dictionary` | its keys of `tl.build/2` (`chunks`; `land`, `paint`; `pieces`), `{}` when it has nothing |
+| `load_part(doc) -> String` | reads its keys from the whole build file (the layer was `clear`ed first); "" or what is wrong. Absent keys are an empty layer |
+| `clear()`, `size() -> int`, `content_hash() -> String` | empty it; what it holds; the identity of what it saves (rev moves only when one changes) |
+| `step(budget) -> int`, `pending() -> int` | redraws at most `budget` units (sections for blocks) per physics frame; work left (`flush` loops on it) |
+| `copy() -> RefCounted` | a scratch copy with the same content and rules and no mesh or body (`preview`) |
+| `read_region(min, max) -> Dictionary` | its keys for `home_build.read_region` (blocks: `blocks`; M2: ground; M3: `pieces`) |
+| `add_rules(protect)` (optional) | called once when `home_build.gd` registers the layer (never for a scratch copy): its `protect.add_rule` calls |
+| `free_all()` | meshes freed, bodies dropped |
+
+The stubs check their ops strictly (keys, types, ranges, paint names, rot 0-3, seed, the part by `TLKit.validate`)
+and refuse to apply them with the reason `not built yet (M2)` / `not built yet (M3)`. They save nothing and load an
+absent or empty key only. M2 and M3 replace the bodies of their stub (and add files of their own); see `LANES.md`.
+
+**tl.build/1 or /2.** `build_file.gd` `text_of(layers)` writes v2 when a layer saves a key v1 does not have, and v1
+otherwise, byte for byte as M1 did (754 `seam.files` holds the bytes to M1's writer). It reads both. The log calls
+`before_journal` (home_build.gd `_mark_v2`, `build_file.gd` `mark_v2`) before it journals the first op that is not a
+place or a remove while build.json is v1: build.json gets `"v":2` with its content unchanged (a missing file becomes an
+empty v2 Home of rev 0), so its journal stays valid and an older exe refuses it instead of compacting the op away. If
+that write fails the op is refused. Undo and redo of such a batch ask the same first. A load or save tells the log
+whether build.json is v2 now.
 
 ## How it works
 
@@ -130,8 +181,11 @@ A person in the Home presses **B** and builds. `build_mode.gd` is the node; `hot
 
 | File | What it is |
 |---|---|
-| `build_mode.gd` | the node: keys and buttons, the cursor ray, drags as batches, autosave, the test hook; `mount` is called by `home/hook.gd` `grow` |
-| `hotbar.gd` | bottom centre while building: 8 shape slots, the material swatch and name, rot and flip, save state, the refusal reason, the keys. Boot's key line names "B  build" while walking and hides itself while building (boot.gd reads the meta `tl_build_mode`) |
+| `build_mode.gd` | the node, host of the tools: keys and buttons, the cursor ray, tool switching, undo and redo, autosave; `mount` is called by `home/hook.gd` `grow` |
+| `tools/blocks_tool.gd` | M1's hand building: shapes, materials, rot, flip, place and remove, drags as batches |
+| `tools/sculpt_tool.gd`, `tools/paint_tool.gd` | stubs (M2); `tools/piece_tool.gd`, `tools/stamp_tool.gd` stubs (M3); `tools/command_tool.gd` stub (M4); all extend `tools/stub_tool.gd` |
+| `build_devices.gd` | the test hook `TL_BUILD_DEVICES` |
+| `hotbar.gd` | bottom centre while building: the tool strip, the current tool's slots, its swatch and info line, save state, the refusal reason, its keys. It reads only the tool interface (`state_of`). Boot's key line names "B  build" while walking and hides itself while building (boot.gd reads the meta `tl_build_mode`) |
 | `ghost.gd` | the next edit as a hologram (`TLStyle.material("holo")`; red: a private copy tinted `hazard_red`), the shape's own triangles (`shapes.gd` `entry`, form 0) |
 | `build_mode_case.gd` | input events as a person makes them, frames counted (`engine/tools/selftest.d/753-home-build-mode.sh`) |
 
@@ -157,6 +211,8 @@ build mode):
 | Key | While building |
 |---|---|
 | B, Esc | leave build mode (autosave if unsaved). Esc never quits from build mode: `visit.gd` does not quit while `active` |
+| T, Shift+T | next, previous tool: blocks, sculpt, paint, pieces, stamps, command (the hotbar's strip lights the current one; a stub says "coming in M2" / "M3" / "M4") |
+| Enter | the command tool (M4's bar; the stub shows a disabled line). Reserved: no other tool takes it |
 | LMB | place; held and moved: a line of cells, one batch (one undo step) |
 | RMB | remove; held and moved: one batch |
 | wheel, 1-8 | shape (ids 1-8) |
@@ -166,6 +222,30 @@ build mode):
 | Ctrl+Z, Ctrl+Y (or Ctrl+Shift+Z) | undo, redo one batch |
 | hold MMB or Alt | look: the mouse is captured and turns the view while held |
 | W A S D, Shift, Space, C, F | as while walking (the visitor walks, jumps, flies). E does not enter a game while building |
+
+LMB, RMB, the wheel, 1-8, Tab, R and F2 are the blocks tool's: another tool gets them (its `press`, `key`) or ignores
+them. Ctrl+Z, Ctrl+Y, B, Esc, T, Enter, MMB and Alt are the host's and mean the same in every tool.
+
+**Tools** (the seam, for M2, M3 and M4). A tool is a RefCounted script in `tools/`, made once by build mode (`TOOLS`,
+in strip order), duck-typed:
+
+| Member | What it does |
+|---|---|
+| `id`, `title` | `"blocks"`, `"Blocks"` ... `"command"`, `"Command"` (the strip shows `title`) |
+| `setup(host)` | `host` is build_mode.gd: `build`, `hit` (the last pick), `ray()`, `reach(from)`, `forward()`, `frames`, `scripted()`, `ghost`; a tool may add nodes of its own under it |
+| `polled() -> Array` | the physical keys it wants; the host polls them once per physics frame with its own and hands their presses to `key` |
+| `key(event) -> bool` | a key press (an InputEventKey with `shift_pressed` and `ctrl_pressed`) or a wheel notch (InputEventMouseButton); true: taken |
+| `slots() -> Array` | hotbar entries `{key, label, lit}` |
+| `status() -> Dictionary` | `info` (the line beside the swatch), `swatch` (a Color, optional), `reason` (red, "" none), `dim` (true: greyed, a stub) |
+| `hint() -> String` | its keys line |
+| `aim(hit, mode)` | every drawn frame while building and not looking: `hit` is `pick`'s result, `mode` the held state `{ctrl, shift, alt, lmb, rmb}` |
+| `ghost_state() -> Dictionary` | what the shared block ghost shows: `{cell, code, mode: "place" / "refused" / "remove"}`, `{}` hidden |
+| `press(button, mods) -> bool` | LMB or RMB went down (`mods` as `mode`); true: the tool holds the button (a drag) |
+| `drag(hit)` | each physics frame while it holds the button |
+| `release(button)` | the button went up, or the hold was cut (undo, look, leave, a tool switch); a drag's batch ends here |
+| `selected(on)` | build mode turned on or off with this tool current, or the tool was picked or left |
+| `blocks_input() -> bool` | true while it has the keyboard (M4's text field, an open panel): the host reads no key and ends any hold |
+| `tick(frame)` | every physics frame for every tool, current or not (M4 polls its answer file here) |
 
 - **The cursor.** Each drawn frame the ray from the camera (its interpolated pose) through the mouse goes to `pick`,
   reaching **24 m past the visitor** (`REACH` plus the camera's distance to his feet). A reach counted from the camera
@@ -179,7 +259,7 @@ build mode):
   cursor sliding over the terrain stays on the cells it shows. An earlier try used the cell's mid-height and moved
   the first cells by a whole cell when the ground stood near a cell top. A row is built by pressing on the row below
   and sliding along its tops. Refused cells in a drag are skipped and the last reason shows.
-- **The test hook** `TL_BUILD_DEVICES="<frame>:<kind>[:<args>];..."` counts this node's physics frames, which equal
+- **The test hook** (`build_devices.gd`) `TL_BUILD_DEVICES="<frame>:<kind>[:<args>];..."` counts this node's physics frames, which equal
   boot.gd's in the exe (both start on the same tick: B at boot frame 150 was seen at 151). Kinds: `px:x,y`,
   `at:x,y,z` (the pointer on the pixel of a world point, followed every frame), `mouse`, `lmb|rmb|mmb:1|0` (held
   buttons are pressed again after a focus loss, as boot does for keys), `key:<Key>:1|0`,

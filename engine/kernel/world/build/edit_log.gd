@@ -1,19 +1,25 @@
 extends RefCounted
-## WP1: the edit log of the Home's blocks (tl.edit/1, contracts/BUILD.md). Every change to the store goes through
-## here as one operation; the hand tools (WP2) and the LLM command bar (M4) write the same ops. Operations group into
-## batches (one click or drag, one LLM job): undo and redo work per batch. A remove records what it removed, so a
+## WP1 + SEAM: the edit log of the Home (tl.edit/1, contracts/BUILD.md). Every change goes through here as one
+## operation; the hand tools (build mode) and the LLM command bar (M4) write the same ops. Operations group into
+## batches (one click or drag, one LLM job): undo and redo work per batch. A removal records what it removed, so a
 ## batch can be undone without reading the world.
+##
+## Each op kind belongs to one LAYER (BUILD.md "Layers"): blocks (place, remove), land (land, paint), pieces (put,
+## lift). The log validates, applies, inverts and journals through the layer that `register` named for the op; it knows
+## nothing of cells or heights itself.
 ##
 ## The journal (`edits.jsonl`, build_file.gd) is the sequence of changes as they happened: an undo appends the
 ## inverse operations as a new batch and a redo appends them again, so replaying the journal in order gives the
 ## store back whatever was undone. Undo and redo stacks live in memory only (a new session starts with none).
+## Before the first op a tl.build/1 reader cannot read (any op but place and remove) is journaled, `before_journal`
+## is called (home_build.gd writes build.json as tl.build/2 then), so an older exe never compacts such an op away.
 
-const Blocks := preload("res://kernel/world/build/blocks.gd")
-const KEYS := ["v", "op", "at", "shape", "mat", "rot", "flip", "author", "batch"]
-const BLOCK_KEYS := ["shape", "mat", "rot", "flip"]
+const BlocksLayer := preload("res://kernel/world/build/blocks_layer.gd")
+const OpUtil := preload("res://kernel/world/build/op_util.gd")
+const V1_OPS := ["place", "remove"]
 
-var store: RefCounted                   # blocks.gd
-var check: Callable                     # (cell: Vector3i, code: int) -> reason ("" = allowed): protect.gd, set by the owner
+var layers: Array = []                  # registered layers, in order
+var by_op := {}                         # op name -> layer
 var history: Array = []                 # done batches, oldest first: {"batch": int, "ops": [op, ...]} as applied
 var future: Array = []                  # undone batches, the next redo last
 var next_batch := 1
@@ -22,14 +28,41 @@ var depth := 0
 var author := "hand"
 var journal: FileAccess = null          # appended to as ops are applied (build_file.gd opens it)
 var changes := 0                        # ops applied, undone or redone since the owner last looked (dirty)
+var before_journal: Callable            # (rec) -> "" or why build.json could not be made tl.build/2
+var v2_ready := false                   # build.json on disk is tl.build/2 (the owner sets it on load and save)
+var last_error := ""                    # why the last undo or redo did nothing although there was a batch
 
 
-# ------------------------------------------------------------------ ops
+## Adds a layer: every op its `ops()` names is its own from now on. A layer that names an op another layer has
+## replaces that one (a test layer, or a lane's layer over its stub). Returns the layers it replaced.
+func register(layer: RefCounted) -> Array:
+	var gone := []
+	for o: String in layer.ops():
+		var was: RefCounted = by_op.get(o)
+		if was != null and was != layer and not gone.has(was):
+			gone.append(was)
+	for g: RefCounted in gone:
+		layers.erase(g)
+		for o: String in by_op.keys():
+			if by_op[o] == g:
+				by_op.erase(o)
+	for o: String in layer.ops():
+		by_op[o] = layer
+	if not layers.has(layer):
+		layers.append(layer)
+	return gone
+
+
+## The layer an op belongs to, or null (no such op, or not an object).
+func layer_of(op: Variant) -> RefCounted:
+	if typeof(op) != TYPE_DICTIONARY or typeof((op as Dictionary).get("op")) != TYPE_STRING:
+		return null
+	return by_op.get((op as Dictionary).op)
+
+
+# ------------------------------------------------------------------ ops (M1 shorthands for blocks)
 static func op_place(cell: Vector3i, c: int, who := "hand") -> Dictionary:
-	var op := {"v": 1, "op": "place", "at": [cell.x, cell.y, cell.z], "shape": Blocks.shape_of(c), "mat": Blocks.mat_of(c),
-		"rot": Blocks.rot_of(c)}
-	if Blocks.flip_of(c):
-		op["flip"] = true
+	var op := BlocksLayer.record("place", cell, c)
 	op["author"] = who
 	return op
 
@@ -38,69 +71,20 @@ static func op_remove(cell: Vector3i, who := "hand") -> Dictionary:
 	return {"v": 1, "op": "remove", "at": [cell.x, cell.y, cell.z], "author": who}
 
 
-static func _int(x: Variant) -> Variant:
-	if typeof(x) == TYPE_INT:
-		return x
-	if typeof(x) == TYPE_FLOAT and is_finite(x) and float(x) == floorf(x) and absf(x) < 1e9:
-		return int(x)
-	return null
-
-
-## Why `op` is not a well-formed tl.edit/1 operation ("" = it is). `strict`: as read from a journal, every required
-## key present (v, op, at, shape, mat, rot, author, batch). Not strict (an op handed to `apply`): v, author and batch may
-## be left out (the log fills them in), and a remove may leave out what it removes.
+## M1's check of a place or remove, without a log (home_build.gd `can_place`). Other ops: `validate`.
 static func malformed(op: Variant, strict := false) -> String:
+	return BlocksLayer.check_op(op, strict)
+
+
+## Why `op` is not a well-formed tl.edit/1 operation of any registered layer ("" = it is). `strict`: as read from a
+## journal (every required key). Not strict: v, author and batch may be left out (the log fills them in).
+func validate(op: Variant, strict := false) -> String:
 	if typeof(op) != TYPE_DICTIONARY:
 		return "an operation is a JSON object"
-	var d: Dictionary = op
-	for k: Variant in d:
-		if not KEYS.has(k):
-			return "unknown key '%s'" % str(k)
-	if d.has("v") and _int(d.v) != 1:
-		return "v must be 1"
-	if not d.has("op") or not (str(d.op) in ["place", "remove"]) or typeof(d.op) != TYPE_STRING:
-		return "op must be \"place\" or \"remove\""
-	if typeof(d.get("at")) != TYPE_ARRAY or (d.at as Array).size() != 3:
-		return "at must be [x, y, z]"
-	for q: Variant in d.at:
-		if _int(q) == null:
-			return "at must hold three integers"
-	var place: bool = d.op == "place"
-	for k: String in ["shape", "mat", "rot"]:
-		if d.has(k) and _int(d[k]) == null:
-			return "%s must be an integer" % k
-		if not d.has(k) and (place or strict):
-			return "%s is missing" % k
-	if d.has("shape") and (int(d.shape) < 1 or int(d.shape) > 8):
-		return "unknown shape %d" % int(d.shape)
-	if d.has("mat") and (int(d.mat) < 1 or int(d.mat) > 10):
-		return "unknown mat %d" % int(d.mat)
-	if d.has("rot") and (int(d.rot) < 0 or int(d.rot) > 3):
-		return "rot must be 0..3"
-	if d.has("flip"):
-		if typeof(d.flip) != TYPE_BOOL or not bool(d.flip):
-			return "flip is written only when true"
-		if d.has("shape") and not (int(d.shape) in [Blocks.STAIR, Blocks.RAMP, Blocks.ROOF]):
-			return "flip is for stair, ramp and roof"
-	if d.has("shape") and d.has("mat") and int(d.mat) == Blocks.GLASS:
-		return "glass is only a window's pane (a window's frame takes another material)"
-	if d.has("author") and not (str(d.author) in ["hand", "llm"]):
-		return "author must be \"hand\" or \"llm\""
-	if d.has("batch") and (_int(d.batch) == null or int(d.batch) < 1):
-		return "batch must be a positive integer"
-	if strict:
-		for k: String in ["v", "author", "batch"]:
-			if not d.has(k):
-				return "%s is missing" % k
-	return ""
-
-
-static func cell_of(op: Dictionary) -> Vector3i:
-	return Vector3i(int(op.at[0]), int(op.at[1]), int(op.at[2]))
-
-
-static func code_of(op: Dictionary) -> int:
-	return Blocks.code(int(op.shape), int(op.mat), int(op.rot), bool(op.get("flip", false)))
+	var l := layer_of(op)
+	if l == null:
+		return "op must be one of %s" % ", ".join(by_op.keys().map(func(k: String) -> String: return "\"%s\"" % k))
+	return str(l.malformed(op, strict))
 
 
 # ------------------------------------------------------------------ batches
@@ -148,38 +132,48 @@ func apply(x: Variant) -> Dictionary:
 
 
 func _one(op: Variant) -> String:
-	var why := malformed(op)
+	var why := validate(op)
 	if why != "":
 		return why
-	var d: Dictionary = op
-	var cell := cell_of(d)
-	var rec: Dictionary
-	if d.op == "place":
-		var c := code_of(d)
-		why = store.refusal(cell)
-		if why == "" and check.is_valid():
-			why = str(check.call(cell, c))
-		if why != "":
-			return why
-		store.put(cell, c)
-		rec = op_place(cell, c, str(d.get("author", author)))
-	else:
-		var was: int = store.get_code(cell)
-		if was == 0:
-			return "empty"
-		for k: String in BLOCK_KEYS:
-			if d.has(k) and op_place(cell, was).get(k, false) != (bool(d[k]) if k == "flip" else int(d[k])):
-				return "the cell holds another block (%s)" % k
-		store.take(cell)
-		rec = op_place(cell, was, str(d.get("author", author)))
-		rec["op"] = "remove"
+	var l := layer_of(op)
+	why = str(l.can_apply(op))
+	if why != "":
+		return why
+	var rec: Dictionary = l.raw(op)
+	why = _ready_for([rec])
+	if why != "":
+		return why
+	l.apply(rec)
+	_finish(rec, str((op as Dictionary).get("author", author)), open)
 	_record(rec)
 	future.clear()
 	return ""
 
 
+## The journal can take `recs`: when one of them is not a tl.build/1 op and build.json is not yet tl.build/2,
+## `before_journal` makes it so first. "" = go on.
+func _ready_for(recs: Array) -> String:
+	if journal == null or v2_ready or not before_journal.is_valid():
+		return ""
+	for r: Dictionary in recs:
+		if not V1_OPS.has(r.op):
+			var why := str(before_journal.call(r))
+			if why != "":
+				return "cannot make build.json tl.build/2 before journaling %s (%s)" % [r.op, why]
+			v2_ready = true
+			return ""
+	return ""
+
+
+## author and batch go last, in that order (the contract's key order for every op).
+static func _finish(rec: Dictionary, who: String, batch: int) -> void:
+	rec.erase("author")
+	rec.erase("batch")
+	rec["author"] = who
+	rec["batch"] = batch
+
+
 func _record(rec: Dictionary) -> void:
-	rec["batch"] = open
 	if history.is_empty() or int((history[history.size() - 1] as Dictionary).batch) != open:
 		history.append({"batch": open, "ops": []})
 	((history[history.size() - 1] as Dictionary).ops as Array).append(rec)
@@ -192,29 +186,29 @@ func _write(rec: Dictionary) -> void:
 		journal.store_string(line(rec) + "\n")
 
 
-## An op as one journal line: keys in the contract's order, flip only when true.
+## A record as one journal line (its keys are already in the contract's order: the layer's `raw`, then `_finish`).
 static func line(rec: Dictionary) -> String:
-	var out := {}
-	for k: String in KEYS:
-		if rec.has(k):
-			out[k] = rec[k]
-	return JSON.stringify(out, "", false)
+	return JSON.stringify(rec, "", false)
 
 
 # ------------------------------------------------------------------ undo / redo
-## Undoes the last batch: its ops in reverse, each inverted. Returns how many ops (0: nothing to undo).
+## Undoes the last batch: its ops in reverse, each inverted by its layer. Returns how many ops (0: nothing to undo).
 func undo() -> int:
+	last_error = ""
 	if depth > 0 or history.is_empty():
 		return 0
-	var b: Dictionary = history.pop_back()
+	var b: Dictionary = history[history.size() - 1]
+	last_error = _ready_for(b.ops)
+	if last_error != "":
+		return 0
+	history.pop_back()
 	var ops: Array = b.ops
 	var id := next_batch
 	next_batch += 1
 	for i: int in range(ops.size() - 1, -1, -1):
 		var o: Dictionary = ops[i]
-		var inv: Dictionary = o.duplicate()
-		inv["op"] = "remove" if o.op == "place" else "place"
-		inv["batch"] = id
+		var inv: Dictionary = (by_op[o.op] as RefCounted).invert(o)
+		_finish(inv, str(o.author), id)
 		_raw(inv)
 	future.append(b)
 	if journal != null:
@@ -224,9 +218,14 @@ func undo() -> int:
 
 ## Redoes the last undone batch. Returns how many ops (0: nothing to redo).
 func redo() -> int:
+	last_error = ""
 	if depth > 0 or future.is_empty():
 		return 0
-	var b: Dictionary = future.pop_back()
+	var b: Dictionary = future[future.size() - 1]
+	last_error = _ready_for(b.ops)
+	if last_error != "":
+		return 0
+	future.pop_back()
 	var id := next_batch
 	next_batch += 1
 	for o: Dictionary in b.ops:
@@ -239,17 +238,14 @@ func redo() -> int:
 	return (b.ops as Array).size()
 
 
-## An op applied without asking the rules (undo, redo, a journal being replayed: the state it was made in is the
-## state it meets). Returns "" or why it does not fit the store (a journal that does not match its build file).
+## A complete record applied without asking the rules (undo, redo, a journal being replayed: the state it was made in
+## is the state it meets). Returns "" or why it does not fit (a journal that does not match its build file).
 func _raw(rec: Dictionary, write := true) -> String:
-	var cell := cell_of(rec)
-	if rec.op == "place":
-		if not store.put(cell, code_of(rec)):
-			return "cannot place at %s: %s" % [str(cell), store.refusal(cell)]
-	else:
-		if store.get_code(cell) != code_of(rec):
-			return "cannot remove at %s: it holds something else" % str(cell)
-		store.take(cell)
+	var l: RefCounted = by_op.get(rec.op)
+	var why := str(l.fits(rec))
+	if why != "":
+		return why
+	l.apply(rec)
 	if write:
 		_write(rec)
 	else:
@@ -259,7 +255,7 @@ func _raw(rec: Dictionary, write := true) -> String:
 
 ## A journal line read back (build_file.gd `load`): strictly checked, applied raw, not written again.
 func replay(rec: Variant) -> String:
-	var why := malformed(rec, true)
+	var why := validate(rec, true)
 	if why != "":
 		return why
 	next_batch = maxi(next_batch, int(rec.batch) + 1)

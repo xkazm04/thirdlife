@@ -100,7 +100,8 @@ omitted, a removal carries what it removed). Each kind is owned by one **layer**
 - **Land** (M2) is a height delta over the Home's procedural ground on a world-anchored **3 m lattice**. Vertex
   `[i, j]` is at world `(3i, 3j)`. Heights are integer centimetres: `to_cm` is the new height and `from_cm` the height
   before. A brush stroke is recorded as its result (the vertices it moved), never as the brush, so undo and replay
-  need no brush code. Setting a vertex back to the ground's own height removes its delta.
+  need no brush code. Setting a vertex back to the ground's own height removes its delta. On input (an LLM answer, a
+  stamp), a vertex may be `[i, j, to_cm]`: the exe fills `from_cm` before it applies and journals the op.
 - **Paint** (M2) sets the ground material of 3 m cell `[i, j]` (spanning `3i..3i+3`, `3j..3j+3`). Values are
   names: `grass`, `grass_dark`, `grass_dry`, `dirt`, `sand`, `stone`, `rock_warm`, `cliff`, and `valley` for the
   ground's own material (no paint).
@@ -122,7 +123,8 @@ omitted, a removal carries what it removed). Each kind is owned by one **layer**
  "pieces": [{"at":[x,y,z], "part":"...", "params":{...}, "rot":0..3, "seed":<int>}, ...]}
 ```
 
-- A land vertex or paint cell belongs to exactly one chunk, `(floor(i / 32), floor(j / 32))`. Its local index is
+- `chunks` is required in v2, as in v1 (`{}` when there are no blocks); `land`, `paint` and `pieces` are omitted when
+  empty. A land vertex or paint cell belongs to exactly one chunk, `(floor(i / 32), floor(j / 32))`. Its local index is
   `(i - 32 cx) + 32 (j - 32 cz)`, in 0..1023. Paint ids in the file: 1 grass, 2 grass_dark, 3 grass_dry, 4 dirt,
   5 sand, 6 stone, 7 rock_warm, 8 cliff. Pieces are sorted by `at` (z, then x, then y). Empty sections are omitted.
 - A v2 reader reads v1. A v1 reader refuses v2 and never overwrites it. An exe writes `build.json` as v2 before it

@@ -1,16 +1,20 @@
 extends CanvasLayer
-## WP2 (spark world-sandbox, M1): build mode's hotbar, bottom centre. While walking nothing shows (boot.gd's key line
-## names "B  build"); while building boot hides its key line and this shows: the 8 shape slots with their keys and names (the selected one lit), the material's swatch and name, rot
-## and flip, the save state, the reason a cell is refused (red), and the keys. English, inline (repo convention).
-## Every Control ignores the mouse: clicks belong to build mode (build_mode.gd polls the buttons).
+## WP2 + SEAM (spark world-sandbox): build mode's hotbar, bottom centre. While walking nothing shows (boot.gd's key line
+## names "B  build"); while building boot hides its key line and this shows, top to bottom: the tool strip (every
+## tool's title, the current one lit; T and Shift+T switch), the current tool's slots (its `slots()`: key and label,
+## the selected one lit; the blocks tool's are the 8 shapes), the swatch and info line (its `status()`) with the save
+## state, the reason a cell is refused (red), and the tool's keys (its `hint()`). English, inline (repo convention).
+## Nothing here knows a tool: build_mode.gd hands `refresh` what the tool says (BUILD.md "Tools"), so a lane adds a
+## tool without editing this file. Every Control ignores the mouse: clicks belong to build mode.
 ## `refresh(state)` redraws only when something shown changed.
 
-const Blocks := preload("res://kernel/world/build/blocks.gd")
-const KEY_HELP := "LMB place (drag: a line)   RMB remove   wheel or 1-8 shape   Tab / Shift+Tab material   R turn   F2 flip   Ctrl+Z undo   Ctrl+Y redo   hold MMB or Alt look   B or Esc leave"
 const LIFT := 40                        # px from the bottom of the window to the hotbar's bottom (boot's key line is hidden)
 
 var box: VBoxContainer
-var slots: Array = []                   # [PanelContainer, Label] per shape id 1..8
+var strip: HBoxContainer
+var row: HBoxContainer
+var tools: Array = []                   # [PanelContainer, Label] per tool in the strip
+var slots: Array = []                   # [PanelContainer, Label] per slot of the current tool
 var swatch: ColorRect
 var info: Label
 var reason: Label
@@ -36,27 +40,9 @@ func _init() -> void:
 	box.grow_vertical = Control.GROW_DIRECTION_BEGIN
 	box.offset_bottom = -LIFT
 	add_child(box)
-	var row := HBoxContainer.new()
-	row.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	row.alignment = BoxContainer.ALIGNMENT_CENTER
-	row.add_theme_constant_override("separation", 6)
-	box.add_child(row)
-	for id: int in range(1, 9):
-		var p := PanelContainer.new()
-		p.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		p.custom_minimum_size = Vector2(84, 0)
-		p.add_theme_stylebox_override("panel", _dim)
-		var l := _label(16, Color(1, 1, 1, 0.95))
-		l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		l.text = "%d\n%s" % [id, Blocks.SHAPE_NAMES[id]]
-		p.add_child(l)
-		row.add_child(p)
-		slots.append([p, l])
-	var line := HBoxContainer.new()
-	line.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	line.alignment = BoxContainer.ALIGNMENT_CENTER
-	line.add_theme_constant_override("separation", 10)
-	box.add_child(line)
+	strip = _row(4)
+	row = _row(6)
+	var line := _row(10)
 	swatch = ColorRect.new()
 	swatch.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	swatch.custom_minimum_size = Vector2(26, 26)
@@ -70,9 +56,17 @@ func _init() -> void:
 	box.add_child(reason)
 	help = _label(15, Color(1, 1, 1, 0.8))
 	help.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	help.text = KEY_HELP
 	box.add_child(help)
 	box.visible = false
+
+
+func _row(sep: int) -> HBoxContainer:
+	var r := HBoxContainer.new()
+	r.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	r.alignment = BoxContainer.ALIGNMENT_CENTER
+	r.add_theme_constant_override("separation", sep)
+	box.add_child(r)
+	return r
 
 
 func _label(px: int, c: Color) -> Label:
@@ -98,24 +92,80 @@ static func _style(bg: Color, border: Color) -> StyleBoxFlat:
 	return s
 
 
-## `s`: "building" (the hotbar shows), "shape", "mat", "rot", "flip" (bool or
-## absent: the shape takes none), "turns" (the shape shows its rot), "reason" ("" none), "save" (text).
+## `n` panels in `into` (`list` holds [PanelContainer, Label] pairs), made or freed to fit.
+func _fit(into: HBoxContainer, list: Array, n: int, px: int, width: float) -> void:
+	while list.size() > n:
+		var gone: Array = list.pop_back()
+		(gone[0] as Node).queue_free()
+		into.remove_child(gone[0])
+	while list.size() < n:
+		var p := PanelContainer.new()
+		p.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		p.custom_minimum_size = Vector2(width, 0)
+		p.add_theme_stylebox_override("panel", _dim)
+		var l := _label(px, Color(1, 1, 1, 0.95))
+		l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		p.add_child(l)
+		into.add_child(p)
+		list.append([p, l])
+
+
+## What build mode `m` (build_mode.gd) shows now: its current tool's slots, status and hint, the tool strip, the save
+## state. Only the tool interface is read (BUILD.md "Tools").
+static func state_of(m: Node) -> Dictionary:
+	var s := {"building": bool(m.get("active"))}
+	if not s.building:
+		return s
+	var t: RefCounted = m.call("tool")
+	var st: Dictionary = t.status()
+	s.tools = (m.get("tools") as Array).map(func(x: RefCounted) -> String: return str(x.get("title")))
+	s.tool = int(m.get("tool_index"))
+	s.slots = t.slots()
+	if st.has("swatch"):
+		s.swatch = st.swatch
+	s.info = str(st.get("info", ""))
+	if bool(st.get("dim", false)):
+		s.dim = true
+	s.reason = str(st.get("reason", ""))
+	s.help = t.hint()
+	var err := str(m.get("save_error"))
+	if not err.is_empty():
+		s.save = "save failed: " + err
+	elif str(m.get("dir")).is_empty():
+		s.save = "not saved (no Home file here)"
+	else:
+		s.save = "unsaved" if bool((m.get("build") as RefCounted).get("dirty")) else "saved"
+	return s
+
+
+## `s`: "building" (the hotbar shows), "tools" (titles), "tool" (the current one's index), "slots" ([{"key", "label",
+## "lit"}]), "swatch" (a Color; absent: none), "info", "dim" (the info line greyed: a tool not built yet), "save",
+## "reason" ("" none), "help".
 func refresh(s: Dictionary) -> void:
 	if s == _last:
 		return
-	_last = s.duplicate()
+	_last = s.duplicate(true)
 	box.visible = bool(s.get("building", false))
 	if not box.visible:
 		return
-	for i: int in slots.size():
-		(slots[i][0] as PanelContainer).add_theme_stylebox_override("panel", _lit if i + 1 == int(s.shape) else _dim)
-	var mat: int = int(s.mat)
-	swatch.color = TLStyle.color(Blocks.mat_key(mat))
-	var parts := PackedStringArray([Blocks.mat_key(mat).replace("_", " ")])
-	if bool(s.get("turns", false)):
-		parts.append("rot %d" % int(s.rot))
-	if s.has("flip"):
-		parts.append("flipped" if bool(s.flip) else "upright")
-	info.text = "   ".join(parts)
+	var names: Array = s.get("tools", [])
+	_fit(strip, tools, names.size(), 14, 0.0)
+	for i: int in names.size():
+		(tools[i][1] as Label).text = str(names[i])
+		(tools[i][0] as PanelContainer).add_theme_stylebox_override("panel", _lit if i == int(s.get("tool", 0)) else _dim)
+	strip.visible = names.size() > 1
+	var list: Array = s.get("slots", [])
+	_fit(row, slots, list.size(), 16, 84.0)
+	for i: int in list.size():
+		var slot: Dictionary = list[i]
+		(slots[i][1] as Label).text = ("%s\n%s" % [slot.key, slot.label]) if str(slot.get("key", "")) != "" else str(slot.label)
+		(slots[i][0] as PanelContainer).add_theme_stylebox_override("panel", _lit if bool(slot.get("lit", false)) else _dim)
+	row.visible = not list.is_empty()
+	swatch.visible = s.has("swatch")
+	if s.has("swatch"):
+		swatch.color = s.swatch
+	info.text = str(s.get("info", ""))
+	info.modulate = Color(1, 1, 1, 0.55) if bool(s.get("dim", false)) else Color.WHITE
 	saved.text = str(s.get("save", ""))
 	reason.text = str(s.get("reason", ""))
+	help.text = str(s.get("help", ""))

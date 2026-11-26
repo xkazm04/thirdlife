@@ -26,6 +26,7 @@ var hashes := {}                        # section -> SHA-1 of its vertex arrays
 var bodies := {}                        # chunk -> {"body": RID, "faces": int, "stat": STAT} (chunk_collider.gd drop)
 var counters := {"sections": 0, "chunks": 0, "section_usec": [], "section_at": [], "chunk_usec": []}
 var keep_times := false                 # record every rebuild's wall-clock usec (measured and reported, never decided on)
+var look: Material = null               # SEAM: drawn in this material instead (preview_mesh.gd: the style's holo)
 
 
 func _init(blocks: RefCounted, parent: Node3D, space: Object) -> void:
@@ -197,6 +198,10 @@ func _draw(s: Vector2i, arr: Dictionary) -> void:
 		meshes[s] = mi
 	mi.mesh = mesh
 	(mi.get_node("Glass") as MeshInstance3D).mesh = gmesh if gmesh.get_surface_count() > 0 else null
+	if look != null:
+		mi.material_override = look
+		(mi.get_node("Glass") as MeshInstance3D).material_override = look
+		mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 
 
 static func _surface(mesh: ArrayMesh, v: PackedVector3Array, n: PackedVector3Array, cu: PackedFloat32Array, mat: Material) -> void:

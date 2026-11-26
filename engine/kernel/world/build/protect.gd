@@ -10,6 +10,9 @@ extends RefCounted
 ##   "tree"                          a valley trunk (they ride on the Home's ground chunks, home/hook.gd)
 ##   "too close"                     the cell overlaps the visitor's capsule
 ##   anything added by add_circle / add_rect / add_box, with its own reason
+##   anything a layer's rule says (add_rule: M2's land areas, M3's piece footprints), from the layer's own file
+## `refusal_area(rect, what)` asks the same of a ground area (a land vertex's cells, a paint cell): the circles, rects
+## and boxes, then the "area" rules.
 ## The space knows only what is loaded round the visitor (KEEP chunks of home/hook.gd): building happens there.
 
 const GROUND_TAGS := ["terrain", "home ground", "home blocks"]
@@ -18,6 +21,8 @@ const MARGIN := 0.05                    # metres round the visitor's capsule
 var circles := []                       # [Vector2 centre, radius, reason]
 var rects := []                         # [Vector2 centre, Vector2 half size, yaw (rad), reason]
 var boxes := []                         # [AABB, reason]
+var rules := []                         # [Callable, on]: on "cell" (cell: Vector3i, code: int) -> reason, called
+                                        # after the boxes; on "area" (rect: Rect2, what: String) -> reason
 var ws: Object = null                   # the visitor's WorldSpace (walker_space.gd): its body is the visitor's capsule
 var visitor_at: Callable                # () -> Vector3, the visitor's feet; the owner sets it (visit.gd holds where he
                                         # is: `drive` moves no body). Unset: the body's transform (`place`, `walk`)
@@ -45,6 +50,40 @@ func add_box(box: AABB, reason: String) -> void:
 	boxes.append([box, reason])
 
 
+## A refusal provider of a layer (SEAM): `rule` returns "" (allowed) or the reason. `on` "cell": asked by `refusal`
+## for every block cell, after the circles, rects and boxes and before the visitor and the space. `on` "area": asked
+## by `refusal_area`. Rules are asked in the order they were added; a rule whose object is gone is skipped. Bind a
+## method, not a lambda (no cycle).
+func add_rule(rule: Callable, on := "cell") -> void:
+	assert(on in ["cell", "area"])
+	rules.append([rule, on])
+
+
+## Why the ground area `rect` (x, z in metres) may not be changed by `what` ("land", "paint"); "" = it may. The
+## circles, rects and boxes that touch it, then the "area" rules. The space is not asked (the layer knows its ground).
+func refusal_area(rect: Rect2, what: String) -> String:
+	for c: Array in circles:
+		var p: Vector2 = (c[0] as Vector2).clamp(rect.position, rect.end)
+		if p.distance_to(c[0]) <= float(c[1]):
+			return c[2]
+	var reach := rect.size.length() * 0.5
+	for r: Array in rects:
+		var local := (rect.get_center() - (r[0] as Vector2)).rotated(float(r[2]))
+		var half: Vector2 = r[1]
+		if absf(local.x) <= half.x + reach and absf(local.y) <= half.y + reach:
+			return r[3]
+	for b: Array in boxes:
+		var a: AABB = b[0]
+		if Rect2(a.position.x, a.position.z, a.size.x, a.size.z).intersects(rect):
+			return b[1]
+	for r: Array in rules:
+		if r[1] == "area" and (r[0] as Callable).is_valid():
+			var why := str((r[0] as Callable).call(rect, what))
+			if why != "":
+				return why
+	return ""
+
+
 ## The walk's game plots and site lots (a boot/village.json document).
 func from_walk(walk: Dictionary) -> void:
 	for p: Variant in walk.get("plots", []):
@@ -69,8 +108,9 @@ func from_sites(sites: Array) -> void:
 		add_rect(Vector2(float(s.centre[0]), float(s.centre[1])), Vector2(float(s.footprint[0]), float(s.footprint[1])), float(s.get("yaw", 0.0)), "game lot")
 
 
-## `_code`: the block that would go there (edit_log.gd `check` passes it; no rule reads it yet).
-func refusal(cell: Vector3i, _code := 0) -> String:
+## `code`: the block that would go there (the blocks layer's `check` passes it; the built-in checks do not read it,
+## the rules get it).
+func refusal(cell: Vector3i, code := 0) -> String:
 	var lo := Vector2(cell.x, cell.z)
 	var hi := lo + Vector2.ONE
 	var mid := lo + Vector2(0.5, 0.5)
@@ -87,6 +127,11 @@ func refusal(cell: Vector3i, _code := 0) -> String:
 	for b: Array in boxes:
 		if (b[0] as AABB).intersects(box):
 			return b[1]
+	for rule: Array in rules:
+		if rule[1] == "cell" and (rule[0] as Callable).is_valid():
+			var why := str((rule[0] as Callable).call(cell, code))
+			if why != "":
+				return why
 	if ws == null:
 		return ""
 	var body: RID = ws.get("body")
