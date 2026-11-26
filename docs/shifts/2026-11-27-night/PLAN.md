@@ -91,3 +91,8 @@ The queued lanes start when a lane finishes (usually T after its fix lands, or a
 - **Push:** origin main by 08:00 (`git rev-list --count origin/main..main` = 0). Main may also carry the Home session's
   merges; they are pushed with ours.
 - Selftest blocks: T owns 790-799. The J lanes add no selftests.
+
+## Timers (session-only; the Director's session stays open)
+- Launch: cron fa89d459, 03:01 (one-shot).
+- Standups: cron 255048ac, at :47 from 03 to 06 (the scheduler's offset puts the first at 03:51).
+- Verdict: cron f0d5cecd, 07:15 (one-shot).
