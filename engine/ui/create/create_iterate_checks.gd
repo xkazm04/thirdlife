@@ -126,17 +126,32 @@ static func run(tree: SceneTree, check: Callable, tmp: String) -> bool:
 	check.call("create.iterate.menu: Add to menu writes the person's list (pack = the newest promotion, title, job); the menu reads the shipped dungeons then it (mine); a listed older version moves to the newest; In the menu takes it out",
 		row_ok and listed and (menu["dungeons"] as Array).size() == shipped + 1 and mine.size() == 1 and followed and gone, "rows %s; menu %d of %d shipped + %d mine; followed %s; gone %s" % [str(rows), (menu["dungeons"] as Array).size(), shipped, mine.size(), str(followed), str(gone)])
 
-	# 5. My games: every job, newest first, in a person's words; one opens where its log stands
+	# 5. My games (26 Nov): one row per game, the builds of one title folded into it (the newest finished one opens); a
+	# row reopens its job at its screen; more games than a page turn with Older / Newer
 	page.call("new_idea")
 	press.call("MyGames")
-	var names: PackedStringArray = []
-	for r: Dictionary in page.get("games_rows"):
-		names.append("%s:%s" % [str(r["dir"]).get_file(), str(r["word"])])
-	var shown_games: bool = page.call("shown_screen") == "games" and has.call("Game0") and has.call("Game2") and not has.call("MyGames")
-	press.call("Game1")
-	check.call("create.iterate.games: My games lists the 3 jobs newest first (e4-made Ready, version 2 / e4-flight Changing / e4-failed Ready); a row reopens its job at its screen",
-		shown_games and ",".join(names) == "e4-made:Ready, version 2,e4-flight:Changing,e4-failed:Ready" and str(page.get("job_dir")) == flight and page.call("shown_screen") == "building",
-		"%s; then job %s screen %s" % [",".join(names), str(page.get("job_dir")), str(page.call("shown_screen"))])
+	var rows5: Array = page.get("games_rows")
+	var one: bool = rows5.size() == 1 and str(rows5[0]["dir"]).get_file() == "e4-made" and int(rows5[0]["builds"]) == 3 and str(rows5[0]["word"]) == "Ready, version 2"
+	var shown_games: bool = page.call("shown_screen") == "games" and has.call("Game0") and not has.call("Game1") and not has.call("GamesOlder") and not has.call("MyGames")
+	var said: String = (page.find_child("Game0", true, false).find_child("GameState", true, false) as Label).text if has.call("Game0") else ""
+	press.call("Game0")
+	var opened: bool = str(page.get("job_dir")) == made and page.call("shown_screen") == "done"
+	var many: Array = []
+	for k: int in 12:
+		many.append({"dir": made, "title": "Game %02d" % k, "word": "Ready", "screen": "done", "sentence": "", "builds": 1})
+	page.set("games_rows", many)
+	page.set("games_page", 0)
+	page.set("showing_games", true)
+	page.call("_rebuild")
+	var name_of: Callable = func() -> String: return (page.find_child("Game0", true, false).find_child("GameName", true, false) as Label).text if has.call("Game0") else ""
+	var p1: bool = has.call("Game4") and not has.call("Game5") and has.call("GamesOlder") and not has.call("GamesNewer") and name_of.call() == "Game 00"
+	press.call("GamesOlder")
+	var p2: bool = has.call("GamesNewer") and has.call("GamesOlder") and name_of.call() == "Game 05" and (page.find_child("GamesPage", true, false) as Label).text.begins_with("Page 2 of 3")
+	press.call("GamesOlder")
+	var p3: bool = not has.call("GamesOlder") and has.call("Game1") and not has.call("Game2") and name_of.call() == "Game 10"
+	check.call("create.iterate.games: My games folds the 3 builds of Penguin Push into one row (e4-made, Ready, version 2, 3 builds) that reopens at its screen; 12 games show 5 a page and Older / Newer turn the pages (5, 5, 2)",
+		one and shown_games and said.contains("3 builds") and opened and p1 and p2 and p3,
+		"rows %s; said '%s'; opened %s; pages %s %s %s" % [str(rows5.map(func(r: Dictionary) -> String: return str(r["dir"]).get_file())), said, str(opened), str(p1), str(p2), str(p3)])
 	page.queue_free()
 
 	# 6. the list's rules: unknown keys and a relative pack are errors (the good row is kept), a missing file is empty

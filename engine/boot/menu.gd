@@ -82,7 +82,7 @@ func open(dungeon_rows: Array, tag: String, create_ok: bool) -> void:
 	for b: Node in _main.get_children():
 		if b.name != "Dungeons":
 			(b as Control).focus_entered.connect(func() -> void: _list.visible = false)
-	var keys: Label = UI.label("arrows or W S  choose      Enter  open      Esc  back", 22, false)
+	var keys: Label = UI.label("arrows or W S  choose      A D  pages      Enter  open      Esc  back", 22, false)
 	keys.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_LEFT)
 	keys.position = Vector2(140, -70)
 	keys.offset_top = -70
@@ -126,6 +126,15 @@ func _add(box: Control, text: String, hint: String, on_press: Callable) -> Butto
 	return b
 
 
+## 26 Nov (the owner: no way "to browse through dozens of games"): the list shows PAGE rows at a time; Previous / Next
+## (and Left / Right, A / D, Page Up / Page Down) turn the pages, and the line between them says which page of how many.
+const PAGE: int = 5
+var page: int = 0
+var _rows_box: VBoxContainer = null
+var _pager: HBoxContainer = null
+var _back: Button = null
+
+
 func _make_list() -> Control:
 	var card: PanelContainer = UI.card()
 	card.name = "Dungeons"
@@ -134,33 +143,84 @@ func _make_list() -> Control:
 	card.add_child(v)
 	v.add_child(UI.label("Dungeons", 48))
 	v.add_child(UI.label("each game alone: its own camera, HUD and look; the world is unloaded", 20))
+	_rows_box = VBoxContainer.new()
+	_rows_box.name = "Rows"
+	_rows_box.add_theme_constant_override("separation", 14)
+	v.add_child(_rows_box)
+	_pager = HBoxContainer.new()
+	_pager.name = "Pager"
+	_pager.add_theme_constant_override("separation", 18)
+	v.add_child(_pager)
+	_back = UI.button("Back", 26)
+	_back.name = "Back"
+	_back.pressed.connect(_show_main)
+	v.add_child(_back)
+	_fill_page()
+	return card
+
+
+func pages() -> int:
+	return maxi(1, ceili(float(rows.size()) / PAGE))
+
+
+## Turns the list a page (-1 back, +1 on) and puts the focus on its first game.
+func turn(by: int) -> void:
+	var to: int = clampi(page + by, 0, pages() - 1)
+	if to == page:
+		return
+	page = to
+	_fill_page()
+	_first_list.grab_focus()
+
+
+func _fill_page() -> void:
+	for c: Node in _rows_box.get_children() + _pager.get_children():
+		c.get_parent().remove_child(c)
+		c.queue_free()
+	_first_list = null
 	if rows.is_empty():
-		v.add_child(UI.label("no dungeon is listed (engine/boot/dungeons.json)", 24))
-	for i: int in rows.size():
+		_rows_box.add_child(UI.label("no dungeon is listed (engine/boot/dungeons.json)", 24))
+	for i: int in range(page * PAGE, mini(rows.size(), (page + 1) * PAGE)):
 		var r: Dictionary = rows[i]
 		var line: HBoxContainer = HBoxContainer.new()
 		line.add_theme_constant_override("separation", 18)
 		line.add_child(_icon(r, i))
-		var b: Button = UI.button("%s\n%s" % [str(r["title"]), "made by you in Create" if r.get("mine", false) == true else "look: " + str(r.get("look", "default"))], 26)   # E4: the person's own
+		var b: Button = UI.button("%s
+%s" % [str(r["title"]), "made by you in Create" if r.get("mine", false) == true else "look: " + str(r.get("look", "default"))], 26)   # E4: the person's own
 		b.name = "Dungeon%d" % i
 		b.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		b.custom_minimum_size = Vector2(0, 108)
+		b.custom_minimum_size = Vector2(0, 96)
+		b.clip_text = true                                   # a long title ends in "..." and never widens the card
+		b.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+		b.tooltip_text = str(r["title"])
 		if str(r.get("dir", "")).is_empty():
-			b.text = "%s\nnot in this build" % str(r["title"])
+			b.text = "%s
+not in this build" % str(r["title"])
 			b.disabled = true
 		else:
 			b.pressed.connect(func() -> void: dungeon.emit(i))
 			if _first_list == null:
 				_first_list = b
 		line.add_child(b)
-		v.add_child(line)
-	var back: Button = UI.button("Back", 26)
-	back.name = "Back"
-	back.pressed.connect(_show_main)
-	v.add_child(back)
+		_rows_box.add_child(line)
+	if pages() > 1:
+		var prev: Button = UI.button("Previous", 24)
+		prev.name = "Previous"
+		prev.disabled = page == 0
+		prev.pressed.connect(turn.bind(-1))
+		_pager.add_child(prev)
+		var at: Label = UI.label("page %d of %d  ·  %d games" % [page + 1, pages(), rows.size()], 22)
+		at.name = "Page"
+		at.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		at.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		_pager.add_child(at)
+		var nxt: Button = UI.button("Next", 24)
+		nxt.name = "Next"
+		nxt.disabled = page == pages() - 1
+		nxt.pressed.connect(turn.bind(1))
+		_pager.add_child(nxt)
 	if _first_list == null:
-		_first_list = back
-	return card
+		_first_list = _back
 
 
 ## The still the person last saw in that dungeon (user://dungeon_stills), else a letter tile.
@@ -171,14 +231,14 @@ func _icon(r: Dictionary, i: int) -> Control:
 		if img != null and not img.is_empty():
 			var tr: TextureRect = TextureRect.new()
 			tr.texture = ImageTexture.create_from_image(img)
-			tr.custom_minimum_size = Vector2(192, 108)
+			tr.custom_minimum_size = Vector2(170, 96)
 			tr.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 			tr.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
 			return tr
 	var words: PackedStringArray = str(r["title"]).split(" ", false)
 	var mono: String = (words[0].left(1) + (words[1].left(1) if words.size() > 1 and words[1].length() > 0 and words[1][0] != "|" and words[1][0] != ":" else "")).to_upper()
-	var tile: PanelContainer = UI.monogram(mono, Color(str(TINTS[i % TINTS.size()])), 108)
-	tile.custom_minimum_size = Vector2(192, 108)
+	var tile: PanelContainer = UI.monogram(mono, Color(str(TINTS[i % TINTS.size()])), 96)
+	tile.custom_minimum_size = Vector2(170, 96)
 	return tile
 
 
@@ -211,4 +271,15 @@ func _unhandled_input(event: InputEvent) -> void:
 		KEY_RIGHT, KEY_D:
 			if f != null and f.get_parent() == _main and f.name == "Dungeons":
 				_show_list()
+				get_viewport().set_input_as_handled()
+			elif f != null and _list.is_ancestor_of(f):
+				turn(1)
+				get_viewport().set_input_as_handled()
+		KEY_LEFT, KEY_A, KEY_PAGEUP:
+			if f != null and _list.is_ancestor_of(f):
+				turn(-1)
+				get_viewport().set_input_as_handled()
+		KEY_PAGEDOWN:
+			if f != null and _list.is_ancestor_of(f):
+				turn(1)
 				get_viewport().set_input_as_handled()
