@@ -19,7 +19,7 @@ if [ "$cel_wanted" = 1 ]; then
   command -v cygpath >/dev/null 2>&1 && cel_engine="$(cygpath -m "$cel_engine")"
   cel_toon="1230e177a4710b974d81dee9696b721ecce61ba810c522a74dd7943b5ff6ea78"
   cel_water="1697d92db4fc42326708e97a88529eaec1d697a2905e48042e9dfcbed1c6ce9b"
-  cel_style="46798e91d44423540900095512cf1d4ca5426cd7c7faccc955b18f7c76f735a2"   # 21 Nov day (L5): neon_pink/lime/violet appended to the palette (unused by classic; celsurf.palette needs them in style.json too)
+  cel_style="facf819eaf703857aad6ffededbc0d5e674258a1cf00166c850482aa101bc6bc"   # 21 Nov day (L5): neon_pink/lime/violet appended to the palette (unused by classic; celsurf.palette needs them in style.json too); 26 Nov (spark world-sandbox M3): brick and plaster appended, the Home's block materials 11 and 12 (classic draws no block)
   cel_out="$(TL_STYLE=crisp MSYS_NO_PATHCONV=1 timeout 120 "$cel_godot" --headless --path "$cel_engine" --script res://kernel/world/draw/cel_case.gd -- "--toon=$cel_toon" "--water=$cel_water" "--style=$cel_style" 2>&1 | tr -d '\015' | grep -a '^CEL \|SCRIPT ERROR')"
   cel_cls="$(TL_STYLE=classic MSYS_NO_PATHCONV=1 timeout 120 "$cel_godot" --headless --path "$cel_engine" --script res://kernel/world/draw/cel_case.gd -- --classic 2>&1 | tr -d '\015' | grep -a '^CEL model \|^CEL pic_key \|SCRIPT ERROR')"
   cel_case() {   # name, the case's word in the CEL line, the output to read
