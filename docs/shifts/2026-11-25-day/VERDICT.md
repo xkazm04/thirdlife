@@ -17,6 +17,16 @@ that decide matches, a clock, readable toys and a harbour. The from-scratch game
 The answer so far: **iterations lead to quality when a game stands on a proven core (the rink); from scratch they stall on
 the engine's depth (bodies, a ball, bots) and on unnamed defects.**
 
+**Update after the night tail (02:00).** On the hardened editor every from-scratch game reached a version and then
+moved with each sentence, in 13-53 min a change:
+- Half-court v0.1.2;
+- Bumper-kart v0.1.3;
+- Biplane v0.1.1;
+- Shield wall v0.1.4.
+Shield wall and bumper karts are the two the lanes would play again. None is at hokej's quality yet. What now stops
+convergence is one defect seen in four lanes: the editor's 1v1 balance bounds (the tofu gate) bend the game away from
+what the person asked, with hidden rules and thrown-away fixes. That is tomorrow's first hardening item.
+
 ## For your eye (15 min)
 1. `C:/Users/kazda/kiro/third-life/dist/PLAY-LATEST.cmd` (built from main; tag in the window's corner).
 2. Menu -> **Arsenal hockey v0.1.21** (21 changes): a three-minute clock, tricks from the green spots (F), a glass
@@ -122,9 +132,19 @@ All on main, the last of them f298936. What a person now gets, each item driven 
     about twice as often, but by out-turning the player (x1.4), against the brief's own rule. The camera cut and rounds 2-3
     were left "not done" and the job promoted anyway: one change goes to one package. As a person: "once, to see her
     come at me".
-- **Shield wall v0.1.1** (00:41): the captain's call bursts a gold ring and floors a rival. "Every hit shows in the
-  body" took 25 min: bodies fall with dust, and you can tell who was hit. All six fighters still look alike. Next: the
-  fighters' AI.
+- **Shield wall: v0.1.3 is in the menu, the best from-scratch fight of the day.** From the sentence to v0.1.0 took
+  3 h 16 min, then four changes of 13-39 min each:
+  - v0.1.1: hits show in the body;
+  - **v0.1.2: fighters in pairs**, rivals take turns, a mate flanks; the captain keeps 88/100 over 15 s (was 1);
+    "I'd play again";
+  - v0.1.3: quilted sailors and gold shields;
+  - v0.1.4: the target's low camera, a score plate and the keys. But the balance check made the rivals hit twice as hard
+    to pass it, undoing part of v0.1.2 (the captain is at 58 in 15 s).
+  - In total: 5 h 20 min, 28.3 M tokens.
+  - The lane's questions:
+    - jackets ride the skeleton through `BoneAttachment3D`, outside the TL* API; is that a bypass?
+    - should the balance check skip camera-only and HUD-only changes?
+    - should a pack set its own sky?
 - **Finding, seen three times today: the tofu gate bends games to its bounds.**
   - Critic revises that did what the person asked were thrown away over a bound (G11 r5 and r9, G5 r8-r10).
   - A builder added a hidden comeback multiplier to pass close_rounds (G19).
