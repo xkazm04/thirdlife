@@ -181,9 +181,9 @@ func _key(grid: PackedInt32Array, keys: PackedInt32Array, gi: int, off: PackedIn
 ## an offset of (1, 0, 0). Measured in the exe (PATCHES-WP2 B4); a pane on the toon material sat in its frame.
 func _draw(s: Vector2i, arr: Dictionary) -> void:
 	var mesh := ArrayMesh.new()
-	_surface(mesh, arr.v, arr.n, arr.cu, TLStyle.material("white"))
+	_surface(mesh, arr.v, arr.n, arr.cu, TLStyle.material("white"), Vector2(0.5, 2.0) if look != null else Vector2.ZERO)
 	var gmesh := ArrayMesh.new()
-	_surface(gmesh, arr.gv, arr.gn, arr.gcu, TLStyle.material("glass"))
+	_surface(gmesh, arr.gv, arr.gn, arr.gcu, TLStyle.material("glass"), Vector2(0.5, 2.0) if look != null else Vector2.ZERO)
 	var mi: MeshInstance3D = meshes.get(s)
 	if mi == null:
 		mi = MeshInstance3D.new()
@@ -204,7 +204,7 @@ func _draw(s: Vector2i, arr: Dictionary) -> void:
 		mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 
 
-static func _surface(mesh: ArrayMesh, v: PackedVector3Array, n: PackedVector3Array, cu: PackedFloat32Array, mat: Material) -> void:
+static func _surface(mesh: ArrayMesh, v: PackedVector3Array, n: PackedVector3Array, cu: PackedFloat32Array, mat: Material, fill := Vector2.ZERO) -> void:
 	if v.is_empty():
 		return
 	var col := PackedColorArray()
@@ -212,6 +212,7 @@ static func _surface(mesh: ArrayMesh, v: PackedVector3Array, n: PackedVector3Arr
 	col.fill(Color.WHITE)
 	var uv := PackedVector2Array()
 	uv.resize(v.size())
+	uv.fill(fill)          # holo reads UV y as edge lines: (0.5, 2) is a fill, (0, 0) all edge (PATCHES-M3 P5)
 	var arr := []
 	arr.resize(Mesh.ARRAY_MAX)
 	arr[Mesh.ARRAY_VERTEX] = v

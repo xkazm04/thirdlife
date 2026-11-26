@@ -126,8 +126,8 @@ func stubs() -> void:
 	var cases := {
 		"land": [{"op": "land", "verts": [[1, 2, 0, 150]]}, "not built yet (M2)"],
 		"paint": [{"op": "paint", "cells": [[1, 2, "valley", "sand"]]}, "not built yet (M2)"],
-		"put": [{"op": "put", "at": [3, 20, 4], "part": "crate", "rot": 1, "seed": 7}, "not built yet (M3)"],
-		"lift": [{"op": "lift", "at": [3, 20, 4]}, "not built yet (M3)"],
+		"put": [{"op": "put", "at": [3, 20, 4], "part": "fence", "params": {"length": 40.0}, "rot": 1, "seed": 7}, ["not built yet (M3)", "too large for a piece"]],
+		"lift": [{"op": "lift", "at": [3, 20, 4]}, ["not built yet (M3)", "no piece there"]],
 		"land unknown key": [{"op": "land", "verts": [[1, 2, 0, 150]], "brush": 3}, "unknown key 'brush'"],
 		"land three numbers": [{"op": "land", "verts": [[1, 2, 150]]}, "verts: every entry is [i, j, from_cm, to_cm]"],
 		"land half a cm": [{"op": "land", "verts": [[1, 2, 0, 1.5]]}, "verts: heights are integer cm"],
@@ -147,7 +147,8 @@ func stubs() -> void:
 	for k: String in cases:
 		var why: String = str(b.edits.validate(cases[k][0], true)) if k.begins_with("journal") else str(b.apply(cases[k][0]).reason)
 		got.append("%s: '%s'" % [k, why])
-		if not why.begins_with(cases[k][1]):
+		var wants: Array = cases[k][1] if cases[k][1] is Array else [cases[k][1]]   # a stub's reason, or the built layer's refusal
+		if not wants.any(func(w: String) -> bool: return why.begins_with(w)):
 			bad.append("%s: '%s', want '%s'" % [k, why, cases[k][1]])
 	if b.edits.history.size() != 0:
 		bad.append("a refused op reached the log")
