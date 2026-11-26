@@ -106,3 +106,37 @@ test("expand: fill replaces another block and keeps the same one, walls fill the
   assert.match(expand(a, [{ op: "remove", at: [99, 10, 49] }]).problems[0] as string, /empty/);
   assert.match(expand(a, [{ op: "put", at: [100, 10, 50], part: "crate", rot: 0 }]).problems[0] as string, /does not take "put" yet/);
 });
+
+test("expand: the M5 ops pass through with shape checks once the ask offers them (pour only with at)", () => {
+  const m5 = { ...ask, ops: ["place", "remove", "pour", "drain", "path", "unpath", "plant"],
+    water: [{ y: 9, runs: [[50, 99, 101]] }] } as never;
+  const good = [
+    { op: "pour", at: [100, 10, 50] },
+    { op: "drain", cells: [[33, 17, 950]] },
+    { op: "path", id: 3, pts: [[9950, 4950], [10150, 5050]], width_cm: 300, paint: "dirt" },
+    { op: "plant", cells: [[33, 17, "valley", "meadow"]] }];
+  const r = expand(m5, good);
+  assert.deepEqual(r.problems, []);
+  assert.deepEqual(r.ops, good);
+  const bad = expand(m5, [
+    { op: "pour", at: [100, 10, 50], cells: [[33, 17, 950]] },
+    { op: "drain", cells: [[33, 17, "high"]] },
+    { op: "path", id: 0, pts: [[9950, 4950], [10150, 5050]], width_cm: 300, paint: "dirt" },
+    { op: "unpath", id: 3, pts: [[9950, 4950], [20000, 5050]], width_cm: 300, paint: "dirt" },
+    { op: "plant", cells: [[33, 17, "meadow"]] },
+    { op: "flood", cells: [[33, 17, 950]] }]);
+  assert.deepEqual(bad.problems.map((p) => p.replace(/^ops\[\d+\] \((\w+)\): /, "$1: ")), [
+    'pour: pour takes no "cells"', "drain: a drain cell is [i, j, level_cm] of integers", "path: id must be a positive integer",
+    "unpath: the point [20000, 5050] (world 200, 50.5) is outside the region", 'plant: a plant cell is [i, j, "<from>", "<to>"]',
+    'flood: the Home does not take "flood" yet: use only place, remove, pour, drain, path, unpath, plant, fill, clear']);
+});
+
+test("world-edit reads an ask with the water key and the M5 op names, and refuses a malformed water key", () => {
+  const m5 = { ...ask, ops: ["place", "remove", "flood", "pour", "drain", "path", "unpath", "plant"], water: [{ y: 9, runs: [[50, 99, 101]] }] };
+  const ok = worldEdit(m5, [{ note: "A pond.", ops: [{ op: "pour", at: [100, 10, 50] }] }]);
+  assert.equal(ok.code, 0, ok.error);
+  assert.deepEqual(ok.result.ops, [{ op: "pour", at: [100, 10, 50] }]);
+  const bad = worldEdit({ ...m5, water: [{ y: 9, runs: [[50, 99]] }] }, []);
+  assert.equal(bad.code, 2);
+  assert.match(bad.error, /--in.*water/);
+});

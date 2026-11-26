@@ -14,7 +14,7 @@ import type { Builder } from "./builder/types.js";
 import { generate, type GenerateOptions } from "./designer.js";
 import { UsageError } from "./cli_args.js";
 import { PKG_ROOT } from "./paths.js";
-import { expand, MAX_OPS, type Ask, type ModelOp } from "./world_edit_check.js";
+import { ASK_OPS, expand, MAX_OPS, type Ask, type ModelOp } from "./world_edit_check.js";
 
 const int = { type: "integer" }, words = { type: "string", pattern: "\\S" };
 const ints = (n: number) => ({ type: "array", minItems: n, maxItems: n, items: int });
@@ -26,7 +26,7 @@ export const askSchema = obj({
   schema: { const: "tl.world-edit-ask/1" }, sentence: { type: "string", pattern: "\\S", maxLength: 400 },
   cursor: ints(3), facing: { type: "integer", minimum: 0, maximum: 3 },
   region: obj({ min: ints(3), max: ints(3) }),
-  ops: { type: "array", minItems: 1, uniqueItems: true, items: { enum: ["place", "remove", "land", "paint", "put", "lift"] } },
+  ops: { type: "array", minItems: 1, uniqueItems: true, items: { enum: ASK_OPS } },
   blocks: { type: "array", items: { type: "array", minItems: 7, maxItems: 7, items: int } },
   ground: obj({ min: ints(2), rows: { type: "array", minItems: 1, items: { type: "array", minItems: 1, items: int } } }),
   refused: { type: "array", items: obj({ reason: words, runs: { type: "array", minItems: 1, items: ints(3) } }) },
@@ -34,8 +34,9 @@ export const askSchema = obj({
   paints: { type: "array", minItems: 1, items: words },
   parts: { type: "array", minItems: 1, items: obj({ kind: words, note: words }) },
   layers: { type: "object" },
+  water: { type: "array", items: obj({ y: int, runs: { type: "array", minItems: 1, items: ints(3) } }) },
   caps: obj({ ops: { type: "integer", minimum: 1 }, blocks_left: { type: "integer", minimum: 0 } }),
-}, ["refused", "paints", "parts", "layers"]);
+}, ["refused", "paints", "parts", "layers", "water"]);
 
 export function readAsk(file: string): Ask {
   let value: unknown;

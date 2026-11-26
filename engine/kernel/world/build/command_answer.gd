@@ -67,9 +67,21 @@ static func llm_ops(ops: Array) -> Array:
 
 
 ## "212 blocks, 6 refused: game lot" from a preview or apply result (its `refused` [[i, reason]] counted by reason).
-static func counts(r: Dictionary, placed: int) -> String:
+## With `ops` (the ops that result is of), the other kinds applied are counted too, by kind in the order they come:
+## "212 blocks, 3 paint, 1 put, 6 refused: game lot" (place and remove are the blocks figure).
+static func counts(r: Dictionary, placed: int, ops: Array = []) -> String:
 	var s := "%d block%s" % [placed, "" if placed == 1 else "s"]
 	var refused: Array = r.get("refused", [])
+	var bad := {}
+	for x: Array in refused:
+		bad[int(x[0])] = true
+	var kinds := {}
+	for i: int in ops.size():
+		var k := str((ops[i] as Dictionary).get("op", "")) if ops[i] is Dictionary else ""
+		if not bad.has(i) and k != "" and k != "place" and k != "remove":
+			kinds[k] = int(kinds.get(k, 0)) + 1
+	for k: String in kinds:
+		s += ", %d %s" % [int(kinds[k]), k]
 	if refused.is_empty():
 		return s
 	var by := {}

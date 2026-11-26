@@ -312,11 +312,10 @@ func paint_case() -> void:
 	var redone: int = land.store.paints.size()
 	b.undo()
 	var batches: int = b.edits.history.size() - n0
-	await tap(KEY_T)
-	await tap(KEY_T)
-	await tap(KEY_T)
-	await tap(KEY_T)
-	await tap(KEY_T)
+	for i in (bm.get("tools") as Array).size():          # T round the strip to sculpt again (the cost case sculpts)
+		if str(bm.call("tool").get("id")) == "sculpt":
+			break
+		await tap(KEY_T)
 	if tool_id != "paint" or painted < 4 or not all_dirt or near > 0.08 or erased != 0 or undone != painted or gone != 0 or redone != painted:
 		bad.append("tool %s, painted %d dirt %s, colour off by %.3f, erased to %d, undo %d, undo %d, redo %d" % [tool_id, painted, all_dirt, near, erased, undone, gone, redone])
 	say("paint", bad.is_empty(), "paint tool, 4 = dirt: a 6-frame stroke painted %d cells, all dirt %s; the mesh's colour in the middle is %.3f from dirt's; eraser (0): %d left; undo -> %d, undo -> %d, redo -> %d; %d batches left%s" % [

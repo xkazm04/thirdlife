@@ -3,8 +3,9 @@
 Players build in the Home (Wren Valley) with 1 m smart blocks. This directory holds the core: the store, the shapes and
 how they join, the mesher and collider, the edit log with undo and redo, save and load, and protection. It has no input.
 Build mode (WP2) and the LLM command bar (M4) call the API below. The file formats are `contracts/BUILD.md`
-(`tl.edit/1`, `tl.build/1`, and since the seam `tl.build/2`). Selftest block 752 holds this code to both texts; 754 holds
-the seam (layers, tools, v1/v2, preview, `read_region`). Which lane owns which file is `LANES.md`.
+(`tl.edit/1`, `tl.build/1`, since the seam `tl.build/2`, since the M5 seam `tl.build/3`). Selftest block 752 holds this
+code to both texts; 754 holds the seam (layers, tools, v1/v2/v3, preview, `read_region`, the M5 layer interface). Which
+lane owns which file is `LANES.md`.
 
 | File | What it is |
 |---|---|
@@ -15,13 +16,17 @@ the seam (layers, tools, v1/v2, preview, `read_region`). Which lane owns which f
 | `edit_log.gd` | `tl.edit/1` ops: the layer registry, batches, undo and redo, the journal (no op kind of its own) |
 | `op_util.gd` | what every layer's validation shares: the common keys `v`, `author`, `batch`, integers from JSON, cells |
 | `blocks_layer.gd` | the `blocks` layer: `place` and `remove` (M1's checks, records and `chunks`) |
-| `land_layer.gd` | the `land` layer: `land` and `paint`. A stub until M2 |
-| `pieces_layer.gd` | the `pieces` layer: `put` and `lift`. A stub until M3 |
-| `build_file.gd` | `tl.build/1` and `/2`: save (compaction), load (build file, then the journal replayed), `mark_v2` |
+| `land_layer.gd` | the `land` layer: `land` and `paint` (M2) |
+| `pieces_layer.gd` | the `pieces` layer: `put` and `lift` (M3) |
+| `water_layer.gd`, `paths_layer.gd`, `plants_layer.gd` | the M5 layers `water` (`flood`, `drain`; the input op `pour`), `paths` (`path`, `unpath`), `plants` (`plant`). Stubs until their lanes land |
+| `stub_layer.gd` | what an M5 stub layer does (refuses every op "not built yet: <what>", offers nothing, saves nothing); the stubs extend it |
+| `plant_scatter.gd` | M5: `scatter(...)`, the seeded tree and bush `put` ops of a scatter stroke (below). A stub until lane P lands |
+| `build_file.gd` | `tl.build/1`, `/2` and `/3`: save (compaction), load (build file, then the journal replayed), `mark_v`, the version tables `KEY_V` and `OP_V` |
 | `protect.gd` | where a block may not go, with the reason; the rules layers add (`add_rule`) and ground areas (`refusal_area`) |
 | `preview_mesh.gd` | draws a store as a hologram (a dry run's ghost: M4's answer, M3's stamp) |
 | `build_case.gd` | the headless case (`engine/tools/selftest.d/752-home-build.sh`) |
-| `seam_case.gd`, `case_util.gd` | the seam's headless case (754) and what build cases share (a landscape, a key, removing a folder) |
+| `seam_case.gd`, `seam_v3.gd`, `case_util.gd` | the seam's headless case (754; `seam_v3.gd`: its tl.build/3 and M5 cases) and what build cases share (a landscape, a key, removing a folder) |
+| `seam_lists.gd` | the layers, op kinds, tools and stub lines the frozen cases (754, 757) are held to, in one place |
 
 ## The API
 
@@ -53,9 +58,11 @@ build.step()                                                      # rebuilds at 
 | `stats()` | Dictionary | blocks, chunks, sections, bodies, tris, pending, undo, redo, rev, dirty, rebuilt_sections, rebuilt_chunks |
 | `dirty`, signal `dirty_changed(dirty)` | | true from the first change after a save or load until the next save |
 | `free_all()` | | meshes freed, bodies dropped from the space (the store stays) |
-| `register(layer)` / `layer(id)` | - / the layer or null | adds a layer (one that owns an op another layer has replaces that layer whole); `id` is `blocks`, `land` or `pieces` |
+| `register(layer)` / `layer(id)` | - / the layer or null | adds a layer (one that owns an op another layer has replaces that layer whole); `id` is `blocks`, `land`, `pieces`, `water`, `paths` or `plants` |
 | `read_region(min, max)` | `{min, max, blocks: [[x, y, z, code], ...], ...}` or `{error}` | a cell box (inclusive, at most 128 per axis): blocks sorted by z, then x, then y, plus each layer's own keys (its `read_region`). M4's ask reads this |
-| `preview(ops)` | `{ok, reason, applied, refused, store, removed, scratch}` | a dry run of one batch on scratch copies of every layer (same rules and protection; no mesh, body, log or file). `store`: a blocks.gd store of the cells it would fill or change, `removed`: those it would empty, `scratch`: `{id: layer copy}`. Draw it with `preview_mesh.gd` `show_stores(r.store, r.removed)` |
+| `preview(ops)` | `{ok, reason, applied, refused, store, removed, scratch}` | a dry run of one batch on scratch copies of every layer (same rules and protection; no mesh, body, log or file). `store`: a blocks.gd store of the cells it would fill or change, `removed`: those it would empty, `scratch`: `{id: layer copy}`. Draw it with `preview_mesh.gd` `show_stores(r.store, r.removed)`, or every layer's part with `preview_nodes(r)` |
+| `preview_nodes(r, skip = [])` | `Array` of Node3D | the ghost of a dry run, one node per layer whose `preview_node(r.scratch[id])` returns one (blocks: added in holo, removed in red), in layer order, each with the meta `tl_layer` = its id; layers in `skip` are left out. The caller adds them to the tree and frees them |
+| `expand_input(ops)` | `{ops, refused: [[i, reason], ...]}` | an LLM answer's input-only ops (`INPUT_OPS`: `pour` -> the water layer's `expand_input(op)`) replaced by the ops they stand for; every other op passes through. An expanded op takes the input op's `author`. The command tool calls it before `preview` |
 | `protect.add_rule(callable, on = "cell")` | | a layer's refusal provider: `"cell"` rules `(cell, code) -> reason` are asked by `refusal` after the circles, rects and boxes; `"area"` rules `(rect: Rect2, what) -> reason` by `refusal_area(rect, what)` |
 
 Op input rules: `v`, `author` and `batch` may be left out (the log fills them in). A `batch` given on input is checked,
@@ -66,17 +73,17 @@ Refusal reasons are short and stable, so the hotbar can show them: `occupied`, `
 `chunk full`, `home full`, `game lot`, `authored structure (<tag>)`, `tree`, `too close`, `unknown key '<k>'`,
 `<key> is missing`, `glass is only a window's pane ...`, `flip is for stair, ramp and roof`, `flip is written only when true`.
 
-## Layers (the seam, for M2 and M3)
+## Layers (the seam, for M2 and M3; M5 additions)
 
 Each op kind belongs to one layer. `edit_log.gd` validates, applies, inverts and journals an op through its layer; it
-knows nothing of cells or heights. `home_build.gd` makes the three layers with one context `ctx` (`blocks` the
+knows nothing of cells or heights. `home_build.gd` makes the six layers (`LAYER_KINDS`) with one context `ctx` (`blocks` the
 store, `mesh` its mesher, `check` the protection callable, `protect`, `space` the visitor's WorldSpace or null,
 `root` the node meshes hang under or null, `seed`, `home` a WeakRef of the builder: a layer never holds the builder
 itself, so there is no cycle) and registers them. A layer is a RefCounted script, `_init(ctx)`, duck-typed:
 
 | Member | What it does |
 |---|---|
-| `id` | `"blocks"`, `"land"`, `"pieces"` |
+| `id` | `"blocks"`, `"land"`, `"pieces"`, `"water"`, `"paths"`, `"plants"` |
 | `ops() -> PackedStringArray` | the op kinds it owns |
 | `malformed(op, strict) -> String` | "" or why the op is not well-formed (unknown keys first, then its keys, then `author` and `batch`: `op_util.gd` `head` and `tail`). `strict`: a journal line, every required key present |
 | `can_apply(op) -> String` | "" or why the rules refuse a well-formed op now (the store, caps, protection) |
@@ -85,7 +92,7 @@ itself, so there is no cycle) and registers them. A layer is a RefCounted script
 | `apply(rec)` | applies a record that fits |
 | `invert(rec) -> Dictionary` | the record that undoes it (keys in order, no `author` or `batch`) |
 | `dirty_regions(rec) -> Array` | the world AABBs it changes (redraws of other layers, ghosts) |
-| `save_part() -> Dictionary` | its keys of `tl.build/2` (`chunks`; `land`, `paint`; `pieces`), `{}` when it has nothing |
+| `save_part() -> Dictionary` | its keys of `tl.build/3` (`chunks`; `land`, `paint`; `pieces`; `water`; `paths`; `plants`), `{}` when it has nothing. The file's version is the highest any saved key needs (`build_file.gd` `KEY_V`); a key no version names is not written |
 | `load_part(doc) -> String` | reads its keys from the whole build file (the layer was `clear`ed first); "" or what is wrong. Absent keys are an empty layer |
 | `clear()`, `size() -> int`, `content_hash() -> String` | empty it; what it holds; the identity of what it saves (rev moves only when one changes) |
 | `step(budget) -> int`, `pending() -> int` | redraws at most `budget` units (sections for blocks) per physics frame; work left (`flush` loops on it) |
@@ -93,18 +100,41 @@ itself, so there is no cycle) and registers them. A layer is a RefCounted script
 | `read_region(min, max) -> Dictionary` | its keys for `home_build.read_region` (blocks: `blocks`; M2: ground; M3: `pieces`) |
 | `add_rules(protect)` (optional) | called once when `home_build.gd` registers the layer (never for a scratch copy): its `protect.add_rule` calls |
 | `free_all()` | meshes freed, bodies dropped |
+| `offers() -> Array` (M5, optional) | the op kinds the LLM may write for this layer now (command_ask.gd `ops_now` is the layers' offers in order): blocks `place`, `remove`; land `land`, `paint`; pieces `put`, `lift`; water `pour`, `drain` (the model pours, the exe floods); paths `path`, `unpath`; plants `plant`. `[]` for a stub: 754 and 757 tell a stub layer from a built one by this |
+| `preview_node(scratch) -> Node3D` (M5, optional) | its part of a dry run's ghost, drawn from its own scratch copy after the ops (`home_build.preview`'s `r.scratch[id]`); null when it has nothing to show. Blocks: `preview_mesh.gd` of the cells added and removed (`diff(scratch)`). Land and pieces have none yet (lanes L and C add it) |
+| `expand_input(op) -> Dictionary` (M5, the water layer) | an input-only op (`pour`) as `{"ops": [...]}` or `{"error"}`; the stub answers `{"error": "not built yet: water"}` |
+| `water_runs(lo, hi) -> Array` (M5, the water layer) | the measured water in a cell box, shaped as the ask's `water` key: `[{"y": <cell y of the surface>, "runs": [[z, x0, x1], ...]}]`; `[]` when there is none (the stub). command_ask.gd `water_of` writes it into the ask; the river's water is merged there |
 
-The stubs check their ops strictly (keys, types, ranges, paint names, rot 0-3, seed, the part by `TLKit.validate`)
-and refuse to apply them with the reason `not built yet (M2)` / `not built yet (M3)`. They save nothing and load an
-absent or empty key only. M2 and M3 replace the bodies of their stub (and add files of their own); see `LANES.md`.
+The stubs check their ops strictly (keys, types, ranges, names, the cells, the points) and refuse to apply them with a
+reason starting `not built yet` (M5: `not built yet: water` / `paths` / `plants`). They offer nothing, save nothing and
+load an absent or empty key only. A lane replaces the file of its stub with the real layer (drop the extends of
+`stub_layer.gd`; add files of its own); see `LANES.md`. Its `malformed` keeps the convention every case relies on:
+`op_util.gd` `head` first (unknown keys), `tail` last (`author`, `batch`; a journal line's missing `batch`).
 
-**tl.build/1 or /2.** `build_file.gd` `text_of(layers)` writes v2 when a layer saves a key v1 does not have, and v1
-otherwise, byte for byte as M1 did (754 `seam.files` holds the bytes to M1's writer). It reads both. The log calls
-`before_journal` (home_build.gd `_mark_v2`, `build_file.gd` `mark_v2`) before it journals the first op that is not a
-place or a remove while build.json is v1: build.json gets `"v":2` with its content unchanged (a missing file becomes an
-empty v2 Home of rev 0), so its journal stays valid and an older exe refuses it instead of compacting the op away. If
-that write fails the op is refused. Undo and redo of such a batch ask the same first. A load or save tells the log
-whether build.json is v2 now.
+**tl.build/1, /2 or /3.** `build_file.gd` `text_of(layers)` writes the lowest version that holds every saved key
+(`KEY_V`: `chunks` 1; `land`, `paint`, `pieces` 2; `water`, `paths`, `plants` 3), so a Home of blocks only is v1 byte
+for byte as M1 wrote it and a Home without M5 content is v2 byte for byte as main wrote it (754 `seam.files`,
+`seam.v3`). It reads 1, 2 and 3 and refuses a higher version (`load_into(..., max_v)`; a case passes 2 to stand for
+an older exe) without writing it. Every op kind names the version it needs (`OP_V`: place, remove 1; land, paint, put,
+lift 2; flood, drain, path, unpath, plant 3; a kind not named needs `MAX_V`). The log calls `before_journal`
+(home_build.gd `_mark_v`, `build_file.gd` `mark_v(dir, seed, n)`) before it journals the first op whose version is
+above build.json's (no file counts as 1): build.json gets `"v":n` with its content unchanged (a missing file becomes
+an empty Home of version n and rev 0), so its journal stays valid and an older exe refuses it instead of compacting the
+op away. If that write fails the op is refused. Undo and redo of such a batch ask the same first. A load or save tells
+the log the version on disk (`edits.file_v`; `v2_ready` is its old name, `mark_v2` a wrapper).
+
+**The plant scatter** (`plant_scatter.gd`, M5: lane P writes it, lane L's plant tool calls it). Static, reads the
+Home, never writes it:
+
+```gdscript
+const PlantScatter := preload("res://kernel/world/build/plant_scatter.gd")
+var ops: Array = PlantScatter.scatter(build, centre, radius_m, "tree", per_100m2, seed)   # kind "tree" or "bush"
+build.apply(ops)                                                                      # one batch, one undo
+```
+
+It returns `put` ops (`{"op": "put", "at", "part": "tree" | "bush", "params"?, "rot", "seed"}`, no v, author or batch)
+the pieces layer would take, for a disc of `radius_m` m round `centre` at `per_100m2` plants per 100 m2; the same
+arguments give the same ops (the seed, never the clock). The stub returns `[]`.
 
 ## How it works
 
@@ -185,7 +215,8 @@ A person in the Home presses **B** and builds. `build_mode.gd` is the node; `hot
 | `tools/blocks_tool.gd` | M1's hand building: shapes, materials, rot, flip, place and remove, drags as batches |
 | `tools/sculpt_tool.gd`, `tools/paint_tool.gd` | M2 (`LAND.md`): sculpt 1 raise, 2 lower, 3 flatten, 4 smooth, Shift the other way, wheel or [ ] the brush (1-8 cells); paint 1-8 the ground paints, 0 or Backspace the eraser. F and S are not used: they are flight and walking back in `visit.gd` |
 | `tools/piece_tool.gd`, `tools/stamp_tool.gd` | M3 (`PIECES.md`): pieces wheel or 1-9 a part, Tab a page, [ ] its size, V its kind, R turn, LMB put, RMB lift; stamps 0 a new box, G save, 1-9 a stamp, R turn, LMB place (one undo), X export, I import the inbox |
-| `tools/command_tool.gd` | M4 (`COMMAND.md`): Enter asks, Enter keeps the ghost (one batch by llm), Esc or Backspace reverts |
+| `tools/command_tool.gd` | M4 (`COMMAND.md`): Enter asks, Enter keeps the ghost (one batch by llm), Esc or Backspace reverts. M5 seam: the answer's input ops are expanded (`expand_input`) before the dry run, blocks are drawn as before and every other layer's part under `layer_ghosts` (`preview_nodes(r, ["blocks"])`); the counts name the other kinds applied ("24 blocks, 3 paint, 1 refused: occupied") |
+| `tools/water_tool.gd`, `tools/path_tool.gd`, `tools/plant_tool.gd` | M5 stubs ("Water: coming in M5" ...); lanes W, P and L replace them |
 | `build_devices.gd` | the test hook `TL_BUILD_DEVICES` |
 | `hotbar.gd` | bottom centre while building: the tool strip, the current tool's slots, its swatch and info line, save state, the refusal reason, its keys. It reads only the tool interface (`state_of`). Boot's key line names "B  build" while walking and hides itself while building (boot.gd reads the meta `tl_build_mode`) |
 | `ghost.gd` | the next edit as a hologram (`TLStyle.material("holo")`; red: a private copy tinted `hazard_red`), the shape's own triangles (`shapes.gd` `entry`, form 0) |
@@ -213,7 +244,7 @@ build mode):
 | Key | While building |
 |---|---|
 | B, Esc | leave build mode (autosave if unsaved). Esc never quits from build mode: `visit.gd` does not quit while `active` |
-| T, Shift+T | next, previous tool: blocks, sculpt, paint, pieces, stamps, command (the hotbar's strip lights the current one; a stub says "coming in M2" / "M3" / "M4") |
+| T, Shift+T | next, previous tool: blocks, sculpt, paint, pieces, stamps, water, paths, plants, command (the hotbar's strip lights the current one; a stub says "coming in M<n>", seam_lists.gd `STUB_LINES`) |
 | Enter | the command tool (M4's bar; the stub shows a disabled line). Reserved: no other tool takes it |
 | LMB | place; held and moved: a line of cells, one batch (one undo step) |
 | RMB | remove; held and moved: one batch |
@@ -228,8 +259,9 @@ build mode):
 LMB, RMB, the wheel, 1-8, Tab, R and F2 are the blocks tool's: another tool gets them (its `press`, `key`) or ignores
 them. Ctrl+Z, Ctrl+Y, B, Esc, T, Enter, MMB and Alt are the host's and mean the same in every tool.
 
-**Tools** (the seam, for M2, M3 and M4). A tool is a RefCounted script in `tools/`, made once by build mode (`TOOLS`,
-in strip order), duck-typed:
+**Tools** (the seam, for M2, M3, M4 and M5). A tool is a RefCounted script in `tools/`, made once by build mode (`TOOLS`,
+in strip order: blocks, sculpt, paint, piece, stamp, water, path, plant, command), duck-typed. The M5 stubs
+(`tools/water_tool.gd`, `path_tool.gd`, `plant_tool.gd`) extend `tools/stub_tool.gd`; a lane replaces its file:
 
 | Member | What it does |
 |---|---|

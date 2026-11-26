@@ -51,6 +51,11 @@ func ops() -> PackedStringArray:
 	return PackedStringArray(["land", "paint"])
 
 
+## The op kinds the LLM may write for this layer (command_ask.gd `ops_now`, BUILD.md "Layers"): land, paint.
+func offers() -> Array:
+	return ["land", "paint"]
+
+
 ## The Home's ground under this layer: the valley of the landscape `root` hangs under (its meta "tl_home"), else flat.
 func ground() -> RefCounted:
 	if g != null:

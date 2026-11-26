@@ -24,6 +24,7 @@ extends SceneTree
 const CaseUtil := preload("res://kernel/world/build/case_util.gd")
 const Door := preload("res://ui/foreman_door.gd")
 const Calls := preload("res://kernel/world/build/command_calls.gd")
+const Lists := preload("res://kernel/world/build/seam_lists.gd")    # the op kinds an ask may name (M5: the stubs offer none)
 const TMP := "user://tl_command_case"
 const NEAR := Vector2i(700, -60)
 const PRIOR := 26                       # calls logged today before the case starts
@@ -266,7 +267,7 @@ func ask_case() -> void:
 	var ok: bool = a.get("schema") == "tl.world-edit-ask/1" and a.get("sentence") == "a little stone tower here" and \
 		ints(a.get("cursor", [])) == [aimed.x, aimed.y, aimed.z] and size == [32, 24, 32] and rows.size() == 32 and (rows[0] as Array).size() == 32 and \
 		(a.get("blocks", []) as Array).size() == 2 and (a.get("shapes", []) as Array).size() == 8 and (a.get("mats", []) as Array).size() == 9 and \
-		(a.get("ops") as Array).slice(0, 2) == ["place", "remove"] and (a.get("ops") as Array).all(func(o: String) -> bool: return o in ["place", "remove", "land", "paint", "put", "lift"]) and step == want_step and label.begins_with("thinking... 0:01") and last_call().get("accepted") == "pending"
+		(a.get("ops") as Array).slice(0, 2) == ["place", "remove"] and (a.get("ops") as Array).all(func(o: String) -> bool: return Lists.ask_ops().has(o)) and step == want_step and label.begins_with("thinking... 0:01") and last_call().get("accepted") == "pending"
 	say("ask", ok, "ask %s: cursor %s (aimed %s), region %s, ground %dx%d, blocks %d, shapes %d, mats %d, ops %s; door asked %s; marker '%s'; log '%s'" % [
 		str(p.ask).get_file(), str(a.get("cursor")), str(aimed), str(size), rows.size(), (rows[0] as Array).size() if not rows.is_empty() else 0,
 		(a.get("blocks", []) as Array).size(), (a.get("shapes", []) as Array).size(), (a.get("mats", []) as Array).size(), str(a.get("ops")),

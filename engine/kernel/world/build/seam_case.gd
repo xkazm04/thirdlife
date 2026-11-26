@@ -1,21 +1,28 @@
 extends SceneTree
-## SEAM (spark world-sandbox, M2-M4): the shared seam, headless, without a landscape (build mode is mounted on a bare
-## builder). Prints `HOME seam.<case> ok|fail <detail>`, then `HOME seam ok` (or fail) and `HOME DONE`;
-## engine/tools/selftest.d/754-home-build-seam.sh reads them. Frames, not wall clock.
-##   seam.registry  the three layers and the six ops they own; an unknown op names the known ones; a layer that owns
-##                  an op replaces the one that had it
-##   seam.stubs     well-formed land, paint, put and lift ops are refused "not built yet (M2)" / "(M3)"; malformed ones
-##                  with the contract's reason (unknown key, entries, types, paint names, rot, seed, part); none logged
+## SEAM (spark world-sandbox, M2-M4, M5): the shared seam, headless, without a landscape (build mode is mounted on a
+## bare builder). Prints `HOME seam.<case> ok|fail <detail>`, then `HOME seam ok` (or fail) and `HOME DONE`;
+## engine/tools/selftest.d/754-home-build-seam.sh reads them. Frames, not wall clock. The layers, ops and tools it holds
+## the Home to are seam_lists.gd's; a stub (layer or tool) is held to its stub behaviour, a built one to its own.
+##   seam.registry  the layers and the ops they own (seam_lists.gd); an unknown op names the known ones; a layer that
+##                  owns an op replaces the one that had it
+##   seam.stubs     well-formed ops of a stub layer are refused "not built yet"; a built layer's own refusals (or its
+##                  applying them) are accepted; malformed ones with the contract's reason (unknown key, entries, types,
+##                  names, rot, seed, part, a journal line's batch); no refused op logged
 ##   seam.files     a blocks-only Home is written as tl.build/1 byte for byte as M1's writer did; a layer with content
 ##                  makes it tl.build/2 (keys in order), which loads back; a v1 file with a v2 key is refused
 ##   seam.mark      build.json becomes tl.build/2 BEFORE the first op v1 cannot read is journaled (once), its content
 ##                  unchanged; the journal replays over it; a save with no v2 content writes v1 again
-##   seam.tools     T / Shift+T walk the six tools, the hotbar shows each stub's "coming in M2/M3/M4" line, a stub takes
-##                  no key, Enter picks the command tool (its disabled line), the blocks tool's keys still work
+##   seam.tools     T / Shift+T walk the tools in strip order, the hotbar shows each stub's "coming in M<n>" line (a
+##                  built tool any line), a stub takes no key, Enter picks the command tool, the blocks tool's keys work
 ##   seam.preview   a dry run of 200 ops (and a land op) returns what it would add and remove and leaves the store,
 ##                  the log, the journal and build.json as they were; the preview mesh draws it
 ##   seam.region    read_region gives the blocks in a box sorted by z, x, y, and refuses a box too large
 ##   seam.protect   a layer's cell rule and area rule refuse with their reasons (add_rule, refusal_area)
+##   seam.v3        (seam_v3.gd) tl.build/3: v1 and v2 Homes load and re-save byte for byte as before; water content
+##                  writes v3 in key order and loads back; build.json is raised to v3 before the first flood op is
+##                  journaled (from v1 or v2, once); a reader whose max is 2 refuses v3 and leaves the file
+##   seam.m5        (seam_v3.gd) the M5 interface: offers and ops_now, expand_input (pour), preview_nodes, water_runs,
+##                  plant_scatter, the stub layers' files
 
 const HomeBuild := preload("res://kernel/world/build/home_build.gd")
 const BuildFile := preload("res://kernel/world/build/build_file.gd")
@@ -24,6 +31,8 @@ const PreviewMesh := preload("res://kernel/world/build/preview_mesh.gd")
 const Blocks := preload("res://kernel/world/build/blocks.gd")
 const EditLog := preload("res://kernel/world/build/edit_log.gd")
 const CaseUtil := preload("res://kernel/world/build/case_util.gd")
+const Lists := preload("res://kernel/world/build/seam_lists.gd")
+const SeamV3 := preload("res://kernel/world/build/seam_v3.gd")
 const TMP := "user://tl_build_seam_case"
 
 var ok_all := true
@@ -95,6 +104,9 @@ func run() -> void:
 	preview()
 	region()
 	protect()
+	var v3: RefCounted = SeamV3.new(TMP)
+	for r: Array in [v3.call("v3"), v3.call("m5")]:
+		say(str(r[0]), bool(r[1]), str(r[2]))
 	CaseUtil.remove_dir(ProjectSettings.globalize_path(TMP))
 	print("HOME seam %s" % ("ok" if ok_all else "fail"))
 	print("HOME DONE")
@@ -114,9 +126,10 @@ func registry() -> void:
 	var t := TestLand.new()
 	b.register(t)
 	var after: Array = b.layers.map(func(l: RefCounted) -> String: return str(l.get("id")))
-	var paint_gone: bool = not b.edits.by_op.has("paint")       # the land stub owned paint too: replaced whole
-	var ok: bool = ids == ["blocks", "land", "pieces"] and op_names == ["place", "remove", "land", "paint", "put", "lift"] \
-		and unknown.begins_with("op must be one of \"place\"") and b.layer("land") == t and after == ["blocks", "pieces", "land"] and paint_gone
+	var paint_gone: bool = not b.edits.by_op.has("paint")       # the land layer owned paint too: replaced whole
+	var want_after: Array = Lists.LAYERS.filter(func(x: String) -> bool: return x != "land") + ["land"]
+	var ok: bool = ids == Lists.LAYERS and op_names == Lists.all_ops() \
+		and unknown.begins_with("op must be one of \"place\"") and b.layer("land") == t and after == want_after and paint_gone
 	say("registry", ok, "layers %s owning %s; unknown op: '%s'; a test layer owning land replaced the stub: layers %s, paint unowned %s" % [
 		str(ids), str(op_names), unknown, str(after), paint_gone])
 
@@ -142,17 +155,56 @@ func stubs() -> void:
 		"put empty params": [{"op": "put", "at": [3, 20, 4], "part": "crate", "params": {}, "rot": 0}, "params are written only when not all defaults"],
 		"put y 200": [{"op": "put", "at": [3, 200, 4], "part": "crate", "rot": 0}, "out of range"],
 		"journal land without batch": [{"v": 1, "op": "land", "verts": [[1, 2, 0, 150]], "author": "hand"}, "batch is missing"]}
+	_m5_rows(b, cases)
 	var got := []
 	var bad := []
 	for k: String in cases:
+		var n0: int = b.edits.history.size()
 		var why: String = str(b.edits.validate(cases[k][0], true)) if k.begins_with("journal") else str(b.apply(cases[k][0]).reason)
 		got.append("%s: '%s'" % [k, why])
-		var wants: Array = cases[k][1] if cases[k][1] is Array else [cases[k][1]]   # a stub's reason, or the built layer's refusal
-		if not wants.any(func(w: String) -> bool: return why.begins_with(w)):
-			bad.append("%s: '%s', want '%s'" % [k, why, cases[k][1]])
-	if b.edits.history.size() != 0:
-		bad.append("a refused op reached the log")
+		var want: Variant = cases[k][1]                      # a stub's reason, or the built layer's refusal
+		if want == null:                                     # a built layer: applied, or its own refusal
+			if why.begins_with("not built yet"):
+				bad.append("%s: '%s' from a layer that offers ops" % [k, why])
+		elif not (want if want is Array else [want]).any(func(w: String) -> bool: return why.begins_with(w)):
+			bad.append("%s: '%s', want '%s'" % [k, why, want])
+		if why != "" and b.edits.history.size() != n0:
+			bad.append("%s: a refused op reached the log" % k)
 	say("stubs", bad.is_empty(), "; ".join(got) + ("" if bad.is_empty() else "; BAD " + "; ".join(bad)))
+
+
+## The M5 rows: each kind's well-formed example (seam_lists.gd M5_EXAMPLES) refused "not built yet" while its layer is
+## a stub (want null once it is built: applied or refused by the layer's own rules), an unknown key and a journal line
+## without batch for every kind (op_util.gd `head`, `tail`), and the stubs' own malformed reasons while they are stubs.
+func _m5_rows(b: RefCounted, cases: Dictionary) -> void:
+	for kind: String in Lists.M5_EXAMPLES:
+		var stub := Lists.is_stub_layer(b.layer(Lists.layer_of(kind)))
+		var op: Dictionary = (Lists.M5_EXAMPLES[kind] as Dictionary).duplicate(true)
+		cases[kind] = [op, "not built yet" if stub else null]
+		cases["%s unknown key" % kind] = [_with(op, "brush", 3), "unknown key 'brush'"]
+		var line := {"v": 1}
+		line.merge(op)
+		line["author"] = "hand"
+		cases["journal %s without batch" % kind] = [line, "batch is missing"]
+	if Lists.is_stub_layer(b.layer("water")):
+		cases["flood no cells"] = [{"op": "flood", "cells": []}, "cells must be a non-empty list"]
+		cases["flood half a cm"] = [{"op": "flood", "cells": [[1, 2, 1.5]]}, "cells: a level is integer cm"]
+		cases["drain twice"] = [{"op": "drain", "cells": [[1, 2, 5], [1, 2, 6]]}, "cells: [1, 2] is named twice"]
+	if Lists.is_stub_layer(b.layer("paths")):
+		var p: Dictionary = Lists.M5_EXAMPLES.path
+		cases["path one point"] = [_with(p, "pts", [[0, 0]]), "pts must be 2-64 points"]
+		cases["path too close"] = [_with(p, "pts", [[0, 0], [50, 0]]), "pts: consecutive points are 100-4800 cm apart (50)"]
+		cases["path wide"] = [_with(p, "width_cm", 900), "width_cm must be an integer 150..800"]
+		cases["path lava"] = [_with(p, "paint", "lava"), "paint must be one of"]
+		cases["path no id"] = [_with(p, "id", 0), "id must be a positive integer"]
+	if Lists.is_stub_layer(b.layer("plants")):
+		cases["plant lava"] = [{"op": "plant", "cells": [[0, 0, "valley", "lava"]]}, "cells: 'lava' is not a growth"]
+
+
+static func _with(op: Dictionary, k: String, v: Variant) -> Dictionary:
+	var o := op.duplicate(true)
+	o[k] = v
+	return o
 
 
 ## M1's writer of tl.build/1 (build_file.gd `text_of` as committed in dbf5ce2b), to hold the bytes to it.
@@ -269,8 +321,7 @@ func tap(k: Key, shift := false) -> void:
 
 
 func _is_stub(t: RefCounted) -> bool:
-	var sc: Script = t.get_script()
-	return sc != null and (sc as GDScript).get_base_script() == preload("res://kernel/world/build/tools/stub_tool.gd")
+	return Lists.is_stub_tool(t)
 
 
 func tools() -> void:
@@ -282,16 +333,18 @@ func tools() -> void:
 	await tap(KEY_B)
 	var hb: CanvasLayer = bm.get("hotbar")
 	var seen := []
-	var want := ["Sculpt: coming in M2", "Paint: coming in M2", "Pieces: coming in M3", "Stamps: coming in M3", "Command: coming in M4"]
+	var names: Array = Lists.TOOLS
 	var bad := []
-	for i in 5:
+	for i in range(1, names.size()):
 		await tap(KEY_T)
 		var text: String = (hb.get("info") as Label).text
-		seen.append("%s '%s'" % [bm.call("tool").get("id"), text])
+		var tid := str(bm.call("tool").get("id"))
+		seen.append("%s '%s'" % [tid, text])
 		var stub: bool = _is_stub(bm.call("tool"))   # a lane's built tool replaces its stub: then any non-empty line will do
-		if (stub and (text != want[i] or (hb.get("row") as Control).visible)) or (not stub and text.is_empty()):
-			bad.append("T %d: '%s' (slots shown %s)" % [i + 1, text, (hb.get("row") as Control).visible])
-		if i == 0:
+		var want := str(Lists.STUB_LINES.get(tid, ""))
+		if tid != names[i] or (stub and (text != want or (hb.get("row") as Control).visible)) or (not stub and text.is_empty()):
+			bad.append("T %d: %s '%s' (want %s; slots shown %s)" % [i, tid, text, names[i], (hb.get("row") as Control).visible])
+		if i == 1:
 			await tap(KEY_3)                                   # a stub takes no key: the shape stays
 			if int(bm.get("shape")) != 1:
 				bad.append("3 on the sculpt tool changed the shape to %d" % int(bm.get("shape")))
@@ -311,7 +364,7 @@ func tools() -> void:
 		if (slots[i][0] as PanelContainer).get_theme_stylebox("panel") == hb.get("_lit"):
 			lit = i + 1
 	var strip: Array = hb.get("tools")
-	if wrapped != "blocks" or back != "command" or cmd != "command" or (_is_stub(bm.call("tool")) and not line.ends_with("coming in M4)")) or line.is_empty() or int(bm.get("shape")) != 3 or lit != 3 or strip.size() != 6:
+	if wrapped != "blocks" or back != "command" or cmd != "command" or (_is_stub(bm.call("tool")) and not line.ends_with("coming in M4)")) or line.is_empty() or int(bm.get("shape")) != 3 or lit != 3 or strip.size() != names.size():
 		bad.append("wrap %s, Shift+T %s, Enter %s '%s', blocks shape %d lit slot %d, strip %d" % [wrapped, back, cmd, line, int(bm.get("shape")), lit, strip.size()])
 	say("tools", bad.is_empty(), "%s; T from command -> %s; Shift+T -> %s; Enter -> %s '%s'; T then 3 -> blocks shape %d (slot %d lit of %d), strip of %d tools%s" % [
 		"; ".join(seen), wrapped, back, cmd, line, int(bm.get("shape")), lit, slots.size(), strip.size(), "" if bad.is_empty() else "; BAD " + "; ".join(bad)])

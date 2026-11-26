@@ -31,7 +31,8 @@ var host: Node = null                   # build_mode.gd
 var link: RefCounted = null             # command_link.gd (made on the first Enter)
 var calls: RefCounted = null            # command_calls.gd
 var bar: CanvasLayer = null
-var preview: Node3D = null
+var preview: Node3D = null              # the blocks' ghost (preview_mesh.gd)
+var layer_ghosts: Node3D = null         # every other layer's ghost (home_build.gd `preview_nodes`), under one node
 var devices: RefCounted = null
 var pending: Array = []                 # asks waiting: {id, sentence, cell, facing, ask, out, frame0, marker, rec}
 var ready: Array = []                   # answers that came, waiting to be shown (the oldest first)
@@ -92,7 +93,7 @@ func status() -> Dictionary:
 	var why := refusal()
 	var info := ""
 	if not shown.is_empty():
-		info = "\"%s\"  %s" % [shown.answer.note, Answer.counts(shown.preview, int(shown.placed))]
+		info = "\"%s\"  %s" % [shown.answer.note, Answer.counts(shown.preview, int(shown.placed), shown.ops)]
 	elif bar != null and bar.is_open():
 		info = "> type what to build, Enter asks (%s)" % _today()
 	elif frame - _said_at < SAY_FRAMES and not said.is_empty():
@@ -288,13 +289,23 @@ func _fail(p: Dictionary, why: String) -> void:
 	print(JSON.stringify({"schema": "tl.view/1", "kind": "command_error", "id": p.id, "error": why, "frame": frame}, "", false))
 
 
+## The answer as a ghost: its input ops expanded (home_build.gd `expand_input`: a pour becomes a flood op; one that
+## cannot be is counted refused, at index -1 - i), a dry run of the result, the blocks drawn by `preview` and every
+## other layer's part by its own `preview_node` under `layer_ghosts`.
 func _show(p: Dictionary) -> void:
-	var ops := Answer.llm_ops(p.answer.ops)
-	var r: Dictionary = host.get("build").preview(ops)
+	var build: RefCounted = host.get("build")
+	var ex: Dictionary = build.expand_input(Answer.llm_ops(p.answer.ops))
+	var ops: Array = ex.ops
+	var r: Dictionary = build.preview(ops)
+	p["expand_refused"] = (ex.refused as Array).map(func(x: Array) -> Array: return [-1 - int(x[0]), x[1]])
+	(r.refused as Array).append_array(p.expand_refused)
 	p["ops"] = ops
 	p["preview"] = r
 	p["placed"] = int((r.store as RefCounted).get("total"))
 	preview.call("show_stores", r.store, r.removed)
+	_clear_layer_ghosts()
+	for n: Node3D in build.preview_nodes(r, ["blocks"]):
+		layer_ghosts.add_child(n)
 	var top := float((p.cell as Vector3i).y)
 	for s: Vector2i in (r.store as RefCounted).get("sections"):
 		for idx: int in (r.store as RefCounted).get("sections")[s]:
@@ -307,7 +318,8 @@ func _show(p: Dictionary) -> void:
 	if host.call("tool") != self:
 		host.call("switch_tool", 0, "command")
 	print(JSON.stringify({"schema": "tl.view/1", "kind": "command_ghost", "id": p.id, "applied": int(r.applied),
-		"refused": (r.refused as Array).size(), "placed": p.placed, "counts": Answer.counts(r, int(p.placed)), "frame": frame}, "", false))
+		"refused": (r.refused as Array).size(), "placed": p.placed, "counts": Answer.counts(r, int(p.placed), ops),
+		"layers": layer_ghosts.get_child_count(), "frame": frame}, "", false))
 
 
 ## Enter on a ghost: its ops applied as ONE batch by "llm" (one undo step), the counts as they are now.
@@ -319,6 +331,7 @@ func accept() -> Dictionary:
 	build.begin_batch("llm")
 	var r: Dictionary = build.apply(p.ops)
 	build.end_batch()
+	(r.refused as Array).append_array(p.get("expand_refused", []))
 	var bad := {}
 	for x: Array in r.refused:
 		bad[int(x[0])] = true
@@ -328,7 +341,7 @@ func accept() -> Dictionary:
 			placed += 1
 	_decided(p, true, r)
 	kept += 1
-	_say("kept: %s. Ctrl+Z takes it all back" % Answer.counts(r, placed), false)
+	_say("kept: %s. Ctrl+Z takes it all back" % Answer.counts(r, placed, p.ops), false)
 	print(JSON.stringify({"schema": "tl.view/1", "kind": "command_kept", "id": p.id, "applied": int(r.applied),
 		"refused": (r.refused as Array).size(), "placed": placed, "batch": int(build.get("edits").get("next_batch")) - 1,
 		"blocks": int(build.get("blocks").get("total")), "frame": frame}, "", false))
@@ -347,6 +360,7 @@ func revert() -> void:
 
 func _decided(p: Dictionary, keep: bool, r: Dictionary) -> void:
 	preview.call("clear")
+	_clear_layer_ghosts()
 	_latched = true
 	(p.marker as Node).queue_free()
 	shown = {}
@@ -390,6 +404,17 @@ func _ensure() -> void:
 			_say("closed: nothing was asked", false))
 		preview = PreviewMesh.new()
 		host.add_child(preview)
+		layer_ghosts = Node3D.new()
+		layer_ghosts.name = "CommandLayerGhosts"
+		host.add_child(layer_ghosts)
+
+
+func _clear_layer_ghosts() -> void:
+	if layer_ghosts == null:
+		return
+	for n: Node in layer_ghosts.get_children():
+		layer_ghosts.remove_child(n)
+		n.queue_free()
 
 
 func _today() -> String:

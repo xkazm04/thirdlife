@@ -65,6 +65,9 @@ static func make(build: RefCounted, land: Node, sentence: String, cursor: Vector
 		ask["paints"] = PAINTS.duplicate()
 	if (ask.ops as Array).has("put"):
 		ask["parts"] = parts()
+	var water := water_of(build, lo, hi)
+	if not water.is_empty():
+		ask["water"] = water
 	var layers := {}
 	for k: String in read:
 		if not (k in ["min", "max", "blocks"]):
@@ -75,17 +78,24 @@ static func make(build: RefCounted, land: Node, sentence: String, cursor: Vector
 	return ask
 
 
-## The op kinds the Home applies now: place and remove, and land, paint, put, lift once their layer is built (a stub
-## layer refuses every op as "not built yet").
-static func ops_now(build: RefCounted, at: Vector3i) -> Array:
-	var out := ["place", "remove"]
-	var land: RefCounted = build.layer("land")
-	if land != null and not str(land.can_apply({"op": "paint", "cells": [[floori(at.x / 3.0), floori(at.z / 3.0), "valley", "grass"]]})).begins_with(NOT_YET):
-		out.append_array(["land", "paint"])
-	var pieces: RefCounted = build.layer("pieces")
-	if pieces != null and not str(pieces.can_apply({"op": "put", "at": [at.x, at.y, at.z], "part": "crate", "rot": 0, "seed": 1})).begins_with(NOT_YET):
-		out.append_array(["put", "lift"])
+## The op kinds the Home applies now: every layer's `offers()` in the layers' order (blocks: place, remove; land: land,
+## paint; pieces: put, lift; M5 water: pour, drain; paths: path, unpath; plants: plant), a stub layer offering none.
+## The model's boxes (`fill`, `clear`) are the Foreman's (world_edit_check.ts expands them into place and remove).
+static func ops_now(build: RefCounted, _at: Vector3i) -> Array:
+	var out := []
+	for l: RefCounted in build.get("layers"):
+		if l.has_method("offers"):
+			for o: Variant in l.call("offers"):
+				if not out.has(str(o)):
+					out.append(str(o))
 	return out
+
+
+## The water in the box (the water layer's `water_runs`: [{"y", "runs": [[z, x0, x1], ...]}]), [] when there is none
+## or no water layer measures it. M5's lanes add the river's water here.
+static func water_of(build: RefCounted, lo: Vector3i, hi: Vector3i) -> Array:
+	var w: RefCounted = build.layer("water")
+	return (w.call("water_runs", lo, hi) as Array) if w != null and w.has_method("water_runs") else []
 
 
 ## rows[z - lo.z][x - lo.x]: the y of the cell a block takes standing on the ground at the column (x, z), the cell

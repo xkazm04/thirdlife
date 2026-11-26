@@ -5,18 +5,20 @@ extends RefCounted
 ## batch can be undone without reading the world.
 ##
 ## Each op kind belongs to one LAYER (BUILD.md "Layers"): blocks (place, remove), land (land, paint), pieces (put,
-## lift). The log validates, applies, inverts and journals through the layer that `register` named for the op; it knows
+## lift), water (flood, drain), paths (path, unpath), plants (plant). The log validates, applies, inverts and journals through the layer that `register` named for the op; it knows
 ## nothing of cells or heights itself.
 ##
 ## The journal (`edits.jsonl`, build_file.gd) is the sequence of changes as they happened: an undo appends the
 ## inverse operations as a new batch and a redo appends them again, so replaying the journal in order gives the
 ## store back whatever was undone. Undo and redo stacks live in memory only (a new session starts with none).
-## Before the first op a tl.build/1 reader cannot read (any op but place and remove) is journaled, `before_journal`
-## is called (home_build.gd writes build.json as tl.build/2 then), so an older exe never compacts such an op away.
+## Every op kind needs a version of build.json (build_file.gd OP_V: place, remove 1; land, paint, put, lift 2; flood,
+## drain, path, unpath, plant 3). Before the first op of a version above build.json's is journaled, `before_journal`
+## is called (home_build.gd raises build.json to that version then), so an older exe refuses the Home instead of
+## compacting such an op away.
 
 const BlocksLayer := preload("res://kernel/world/build/blocks_layer.gd")
 const OpUtil := preload("res://kernel/world/build/op_util.gd")
-const V1_OPS := ["place", "remove"]
+const BuildFile := preload("res://kernel/world/build/build_file.gd")
 
 var layers: Array = []                  # registered layers, in order
 var by_op := {}                         # op name -> layer
@@ -28,8 +30,11 @@ var depth := 0
 var author := "hand"
 var journal: FileAccess = null          # appended to as ops are applied (build_file.gd opens it)
 var changes := 0                        # ops applied, undone or redone since the owner last looked (dirty)
-var before_journal: Callable            # (rec) -> "" or why build.json could not be made tl.build/2
-var v2_ready := false                   # build.json on disk is tl.build/2 (the owner sets it on load and save)
+var before_journal: Callable            # (rec) -> "" or why build.json could not be raised to the version rec.op needs
+var file_v := 0                         # build.json's version on disk (0: none; the owner sets it on load and save)
+var v2_ready: bool:                     # M2-M4's name: build.json reads as tl.build/2 or later
+	get: return file_v >= 2
+	set(on): file_v = maxi(file_v, 2) if on else mini(file_v, 1)
 var last_error := ""                    # why the last undo or redo did nothing although there was a batch
 
 
@@ -150,18 +155,25 @@ func _one(op: Variant) -> String:
 	return ""
 
 
-## The journal can take `recs`: when one of them is not a tl.build/1 op and build.json is not yet tl.build/2,
-## `before_journal` makes it so first. "" = go on.
+## The journal can take `recs`: when one of them needs a version of build.json above the one on disk (no file reads
+## as version 1: a v1 reader takes a journal of blocks with no file), `before_journal` raises it first, once, to the
+## highest version the records need. "" = go on.
 func _ready_for(recs: Array) -> String:
-	if journal == null or v2_ready or not before_journal.is_valid():
+	if journal == null or not before_journal.is_valid():
 		return ""
+	var need := maxi(file_v, 1)
+	var first: Dictionary = {}
 	for r: Dictionary in recs:
-		if not V1_OPS.has(r.op):
-			var why := str(before_journal.call(r))
-			if why != "":
-				return "cannot make build.json tl.build/2 before journaling %s (%s)" % [r.op, why]
-			v2_ready = true
-			return ""
+		var n := BuildFile.version_of(str(r.op))
+		if n > need:
+			need = n
+			first = r
+	if first.is_empty():
+		return ""
+	var why := str(before_journal.call(first))
+	if why != "":
+		return "cannot make build.json tl.build/%d before journaling %s (%s)" % [need, first.op, why]
+	file_v = need
 	return ""
 
 

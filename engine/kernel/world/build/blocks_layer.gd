@@ -14,6 +14,8 @@ var id := "blocks"
 var store: RefCounted                   # blocks.gd
 var mesh: RefCounted = null             # block_mesh.gd (null: a scratch copy, nothing drawn)
 var check: Callable                     # (cell, code) -> reason: protect.gd `refusal`, set by the owner
+var scratch := false                    # a preview's copy (`copy`): it remembers the cells its ops changed
+var touched := {}                       # Vector3i -> true: those cells, in the order they were first changed
 
 
 ## `ctx`: "blocks" (the store), "mesh" (its mesher, optional), "check" (the protection callable, optional).
@@ -25,6 +27,11 @@ func _init(ctx: Dictionary) -> void:
 
 func ops() -> PackedStringArray:
 	return PackedStringArray(["place", "remove"])
+
+
+## The op kinds the LLM may write for this layer (command_ask.gd `ops_now`): always both.
+func offers() -> Array:
+	return ["place", "remove"]
 
 
 # ------------------------------------------------------------------ ops
@@ -117,6 +124,8 @@ func fits(rec: Dictionary) -> String:
 
 func apply(rec: Dictionary) -> void:
 	var cell := OpUtil.cell(rec.at)
+	if scratch and not touched.has(cell):
+		touched[cell] = true
 	if rec.op == "place":
 		store.put(cell, code_of(rec))
 	else:
@@ -197,7 +206,43 @@ func copy() -> RefCounted:
 	s.total = store.total
 	s.cap_chunk = store.cap_chunk
 	s.cap_home = store.cap_home
-	return (get_script() as GDScript).new({"blocks": s, "check": check})
+	var c: RefCounted = (get_script() as GDScript).new({"blocks": s, "check": check})
+	c.scratch = true
+	return c
+
+
+## What a scratch copy `s` (after a dry run's ops) would change in this store: {"store": the blocks it would fill or
+## change, as they would be, "removed": the blocks it would take away}, both blocks.gd stores (home_build.gd `preview`).
+func diff(s: RefCounted) -> Dictionary:
+	var added: RefCounted = Blocks.new(store.sec)
+	var removed: RefCounted = Blocks.new(store.sec)
+	for b: RefCounted in [added, removed]:
+		b.cap_chunk = 1 << 30
+		b.cap_home = 1 << 30
+	var after: RefCounted = s.get("store")
+	for cell: Vector3i in (s.get("touched") as Dictionary):
+		var was: int = store.get_code(cell)
+		var now: int = after.get_code(cell)
+		if now != 0 and now != was:
+			added.put(cell, now)
+		if was != 0 and now != was:
+			removed.put(cell, was)
+	added.dirty.clear()
+	removed.dirty.clear()
+	return {"store": added, "removed": removed}
+
+
+## The ghost of this layer's part of a dry run (home_build.gd `preview_nodes`): the blocks it would add in holo and
+## those it would take away in red (preview_mesh.gd), or null when it changes no block. The caller adds it to the tree.
+func preview_node(s: Variant) -> Node3D:
+	if not (s is RefCounted) or not (s as RefCounted).get("scratch"):
+		return null
+	var d := diff(s)
+	if int((d.store as RefCounted).get("total")) == 0 and int((d.removed as RefCounted).get("total")) == 0:
+		return null
+	var pm: Node3D = (load("res://kernel/world/build/preview_mesh.gd") as GDScript).new()
+	pm.call("show_stores", d.store, d.removed)
+	return pm
 
 
 ## The blocks inside the cell box `lo`..`hi` (inclusive) as [[x, y, z, code], ...] sorted by z, then x, then y.

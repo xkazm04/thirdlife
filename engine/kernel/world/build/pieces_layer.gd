@@ -52,6 +52,11 @@ func ops() -> PackedStringArray:
 	return PackedStringArray(["put", "lift"])
 
 
+## The op kinds the LLM may write for this layer (command_ask.gd `ops_now`, BUILD.md "Layers"): put, lift.
+func offers() -> Array:
+	return ["put", "lift"]
+
+
 func add_rules(protect: RefCounted) -> void:
 	protect.add_rule(Callable(self, "_cell_rule"), "cell")
 	protect.add_rule(Callable(self, "_area_rule"), "area")

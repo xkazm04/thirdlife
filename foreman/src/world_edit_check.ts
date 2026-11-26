@@ -12,6 +12,14 @@ export const MATS = 9;                   // 10 (glass) is a window's pane only: 
 export const FLIPPABLE = [3, 4, 7];      // stair, ramp, roof
 export const PAINTS = ["grass", "grass_dark", "grass_dry", "dirt", "sand", "stone", "rock_warm", "cliff", "valley"];
 const LATTICE = 3;
+/** Every op kind an ask's `ops` may name (tl.world-edit-ask/1): the layers' kinds and `pour`, which the exe expands. */
+export const ASK_OPS = ["place", "remove", "land", "paint", "put", "lift", "flood", "pour", "drain", "path", "unpath", "plant"];
+/** The kinds besides blocks that pass through with shape checks only (their rules are the exe's layers'), and their keys. */
+const OTHER: Record<string, string[]> = {
+  land: ["verts"], paint: ["cells"], put: ["at", "part", "params", "rot", "seed"], lift: ["at", "part", "params", "rot", "seed"],
+  flood: ["cells"], drain: ["cells"], plant: ["cells"], pour: ["at"],
+  path: ["id", "pts", "width_cm", "paint"], unpath: ["id", "pts", "width_cm", "paint"],
+};
 
 export type Cell = [number, number, number];
 export interface AskTables { id: number; name: string; note: string }
@@ -30,6 +38,7 @@ export interface Ask {
   paints?: string[];
   parts?: { kind: string; note: string }[];
   layers?: Record<string, unknown>;
+  water?: { y: number; runs: [number, number, number][] }[];
   caps: { ops: number; blocks_left: number };
 }
 
@@ -39,6 +48,7 @@ export interface ModelOp {
   at?: number[]; from?: number[]; to?: number[];
   shape?: number; mat?: number; rot?: number; flip?: boolean; walls?: boolean;
   verts?: unknown[]; cells?: unknown[]; part?: string; params?: Record<string, unknown>; seed?: number;
+  id?: number; pts?: unknown[]; width_cm?: number; paint?: string;
 }
 export type EditOp = Record<string, unknown>;
 type Block = [number, number, number, boolean];   // shape, mat, rot, flip
@@ -127,7 +137,7 @@ export function expand(ask: Ask, given: ModelOp[]): { ops: EditOp[]; problems: s
       }
       return;
     }
-    if (o.op === "land" || o.op === "paint" || o.op === "put" || o.op === "lift") {
+    if (Object.hasOwn(OTHER, o.op)) {
       if (!kinds.has(o.op)) { say(i, `the Home does not take "${o.op}" yet: use only ${[...kinds].join(", ")}${blockOps ? ", fill, clear" : ""}`); return; }
       const why = otherOp(o, inside, lo, hi);
       if (why) { say(i, why); return; }
@@ -143,18 +153,31 @@ export function expand(ask: Ask, given: ModelOp[]): { ops: EditOp[]; problems: s
   return { ops, problems: cut(problems), placed, removed };
 }
 
-/** The land, paint, put and lift ops (M2, M3) checked against the region; their own rules are the exe's. */
+/** The land, paint, put, lift (M2, M3), flood, drain, pour, path, unpath and plant ops (M5) checked against the region
+ *  and for the types of their fields; their own rules are the exe's layers'. */
 function otherOp(o: ModelOp, inside: (c: number[]) => boolean, lo: Cell, hi: Cell): string {
-  const allowed: Record<string, string[]> = { land: ["verts"], paint: ["cells"], put: ["at", "part", "params", "rot", "seed"], lift: ["at", "part", "params", "rot", "seed"] };
-  const extra = Object.keys(o).filter((k) => k !== "op" && !(allowed[o.op] as string[]).includes(k));
+  const extra = Object.keys(o).filter((k) => k !== "op" && !(OTHER[o.op] as string[]).includes(k));
   if (extra.length) return `${o.op} takes no ${extra.map((k) => `"${k}"`).join(", ")}`;
-  if (o.op === "put" || o.op === "lift") {
+  if (o.op === "put" || o.op === "lift" || o.op === "pour") {
     if (!isCell(o.at)) return "at must be a cell [x, y, z] of integers";
     if (!inside(o.at)) return `at ${JSON.stringify(o.at)} is outside the region`;
     if (o.op === "put" && (typeof o.part !== "string" || !isInt(o.rot))) return "put needs part and rot";
     return "";
   }
-  const list = o.op === "land" ? o.verts : o.cells;
+  if (o.op === "path" || o.op === "unpath") {
+    for (const k of ["id", "pts", "width_cm", "paint"] as const) if (o[k] === undefined) return `${o.op} needs id, pts, width_cm and paint`;
+    if (!isInt(o.id) || o.id < 1) return "id must be a positive integer";
+    if (!isInt(o.width_cm)) return "width_cm must be an integer (cm)";
+    if (typeof o.paint !== "string") return "paint must be a path paint's name";
+    if (!Array.isArray(o.pts) || o.pts.length < 2) return "pts must hold at least 2 points [x_cm, z_cm]";
+    for (const p of o.pts) {
+      if (!Array.isArray(p) || p.length !== 2 || !p.every(isInt)) return "every point is [x_cm, z_cm] of integers";
+      const x = (p[0] as number) / 100, z = (p[1] as number) / 100;
+      if (x < lo[0] || x > hi[0] + 1 || z < lo[2] || z > hi[2] + 1) return `the point [${p[0]}, ${p[1]}] (world ${x}, ${z}) is outside the region`;
+    }
+    return "";
+  }
+  const list = o.op === "land" ? o.verts : o.cells;   // land, paint, flood, drain, plant: 3 m lattice entries [i, j, ...]
   if (!Array.isArray(list) || list.length === 0) return `${o.op === "land" ? "verts" : "cells"} must be a non-empty list`;
   for (const e of list) {
     if (!Array.isArray(e) || !isInt(e[0]) || !isInt(e[1])) return "every entry starts with integers i, j";
@@ -162,6 +185,8 @@ function otherOp(o: ModelOp, inside: (c: number[]) => boolean, lo: Cell, hi: Cel
     if (x < lo[0] || x > hi[0] + 1 || z < lo[2] || z > hi[2] + 1) return `[${e[0]}, ${e[1]}] (world ${x}, ${z}) is outside the region`;
     if (o.op === "land" && !((e.length === 3 || e.length === 4) && e.slice(2).every(isInt))) return "a land vertex is [i, j, to_cm] (the exe fills from_cm) or [i, j, from_cm, to_cm]";
     if (o.op === "paint" && !(e.length === 4 && PAINTS.includes(e[2] as string) && PAINTS.includes(e[3] as string))) return `a paint cell is [i, j, "<from>", "<to>"] with paints from the table`;
+    if ((o.op === "flood" || o.op === "drain") && !(e.length === 3 && isInt(e[2]))) return `a ${o.op} cell is [i, j, level_cm] of integers`;
+    if (o.op === "plant" && !(e.length === 4 && typeof e[2] === "string" && typeof e[3] === "string")) return `a plant cell is [i, j, "<from>", "<to>"]`;
   }
   return "";
 }

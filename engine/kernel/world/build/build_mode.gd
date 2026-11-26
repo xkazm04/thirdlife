@@ -5,7 +5,8 @@ extends Node
 ## (home_build.gd `pick`, reaching 24 m past the visitor: `reach`). This node polls keys and buttons once per physics
 ## frame (as TLInput polls; the wheel from its events), owns the cursor, the ghost, the hotbar, undo and redo, saving
 ## and the test hook (build_devices.gd), and hands the rest to the tool: tools/blocks_tool.gd is M1's hand building;
-## sculpt, paint, piece, stamp and command are stubs M2, M3 and M4 fill. Host keys: B or Esc leave (Esc never quits
+## sculpt, paint, piece, stamp and command are M2, M3 and M4's; water, path and plant are M5's (stubs until their
+## lanes land). Host keys: B or Esc leave (Esc never quits
 ## from build mode), T / Shift+T next / previous tool, Enter the command tool, Ctrl+Z undo, Ctrl+Y (Ctrl+Shift+Z)
 ## redo, hold MMB or Alt look. A tool whose `blocks_input()` is true has the keyboard: the host reads no key then.
 ## Saving (user://home or TL_HOME_BUILD_DIR): on leaving, `autosave_frames` after the first unsaved change (never in a
@@ -19,7 +20,9 @@ const Hotbar := preload("res://kernel/world/build/hotbar.gd")
 const Devices := preload("res://kernel/world/build/build_devices.gd")
 const TOOLS := [preload("res://kernel/world/build/tools/blocks_tool.gd"), preload("res://kernel/world/build/tools/sculpt_tool.gd"),
 	preload("res://kernel/world/build/tools/paint_tool.gd"), preload("res://kernel/world/build/tools/piece_tool.gd"),
-	preload("res://kernel/world/build/tools/stamp_tool.gd"), preload("res://kernel/world/build/tools/command_tool.gd")]
+	preload("res://kernel/world/build/tools/stamp_tool.gd"), preload("res://kernel/world/build/tools/water_tool.gd"),
+	preload("res://kernel/world/build/tools/path_tool.gd"), preload("res://kernel/world/build/tools/plant_tool.gd"),
+	preload("res://kernel/world/build/tools/command_tool.gd")]   # strip order; seam_lists.gd TOOLS holds the cases to it
 const SELF := "res://kernel/world/build/build_mode.gd"
 const REACH := 24.0                     # metres the cursor reaches past the camera's distance to the visitor
 const AUTOSAVE_FRAMES := 1800

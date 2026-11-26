@@ -18,7 +18,7 @@
         "additionalProperties": false,
         "required": ["op"],
         "properties": {
-          "op": { "enum": ["place", "remove", "fill", "clear", "land", "paint", "put", "lift"] },
+          "op": { "enum": ["place", "remove", "fill", "clear", "land", "paint", "put", "lift", "pour", "flood", "drain", "path", "unpath", "plant"] },
           "at": { "type": "array", "minItems": 3, "maxItems": 3, "items": { "type": "integer" } },
           "from": { "type": "array", "minItems": 3, "maxItems": 3, "items": { "type": "integer" } },
           "to": { "type": "array", "minItems": 3, "maxItems": 3, "items": { "type": "integer" } },
@@ -31,7 +31,11 @@
           "cells": { "type": "array", "minItems": 1, "items": { "type": "array" } },
           "part": { "type": "string" },
           "params": { "type": "object" },
-          "seed": { "type": "integer" }
+          "seed": { "type": "integer" },
+          "id": { "type": "integer" },
+          "pts": { "type": "array", "minItems": 1, "items": { "type": "array" } },
+          "width_cm": { "type": "integer" },
+          "paint": { "type": "string" }
         }
       }
     }

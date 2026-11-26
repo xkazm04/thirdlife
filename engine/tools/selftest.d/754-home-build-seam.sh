@@ -2,9 +2,11 @@
 # (kernel/world/build/, LANES.md). Headless, no landscape: the layer registry of the edit log and its stub layers'
 # refusals, tl.build/1 bytes as M1 wrote them and tl.build/2, build.json made v2 before the first op v1 cannot read is
 # journaled, the build-mode tools (T, Shift+T, Enter) and their hotbar lines, a dry run that leaves the Home untouched,
-# read_region, and protection rules (kernel/world/build/seam_case.gd). Frames, not wall clock; the final marker is
-# required. Runs on its own too: `bash engine/tools/selftest.d/754-home-build-seam.sh` prints `HOME seam ok`.
-home_seam_cases=(home.seam.registry home.seam.stubs home.seam.files home.seam.mark home.seam.tools home.seam.preview home.seam.region home.seam.protect)
+# read_region, protection rules, and since M5 tl.build/3 with per-op-kind versions and the M5 layer interface
+# (offers, expand_input, preview_nodes, water_runs, the plant scatter: kernel/world/build/seam_case.gd, seam_v3.gd).
+# Frames, not wall clock; the final marker is required.
+# Runs on its own too: `bash engine/tools/selftest.d/754-home-build-seam.sh` prints `HOME seam ok`.
+home_seam_cases=(home.seam.registry home.seam.stubs home.seam.files home.seam.mark home.seam.tools home.seam.preview home.seam.region home.seam.protect home.seam.v3 home.seam.m5)
 if ! declare -F verdict >/dev/null; then
   HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
   OUT="${TL_SELFTEST_DIR:-$(mktemp -d)}"

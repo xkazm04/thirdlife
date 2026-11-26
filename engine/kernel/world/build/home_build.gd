@@ -5,7 +5,9 @@ extends RefCounted
 ##   mesh       block_mesh.gd   section meshes under `root` ("HomeBlocks") and one static body per chunk in the
 ##                              visitor's WorldSpace (tag "home blocks", layer 1)
 ##   edits      edit_log.gd     tl.edit/1 ops, batches, undo/redo, the journal; each op kind goes to its layer
-##   layers     blocks_layer.gd (place, remove), land_layer.gd (land, paint: M2), pieces_layer.gd (put, lift: M3)
+##   layers     blocks_layer.gd (place, remove), land_layer.gd (land, paint: M2), pieces_layer.gd (put, lift: M3),
+##              water_layer.gd (flood, drain; the input op pour), paths_layer.gd (path, unpath), plants_layer.gd
+##              (plant): M5, stubs until their lanes land
 ##   protect    protect.gd      where a block may not go (and the rules the layers add)
 ## Edits change the store at once; meshes and bodies follow in `step(budget)`, which the owner calls once per physics
 ## frame (time is frames). `dirty` is true from the first change after a save or load until the next save
@@ -22,6 +24,11 @@ const Protect := preload("res://kernel/world/build/protect.gd")
 const BlocksLayer := preload("res://kernel/world/build/blocks_layer.gd")
 const LandLayer := preload("res://kernel/world/build/land_layer.gd")
 const PiecesLayer := preload("res://kernel/world/build/pieces_layer.gd")
+const WaterLayer := preload("res://kernel/world/build/water_layer.gd")
+const PathsLayer := preload("res://kernel/world/build/paths_layer.gd")
+const PlantsLayer := preload("res://kernel/world/build/plants_layer.gd")
+const LAYER_KINDS := [BlocksLayer, LandLayer, PiecesLayer, WaterLayer, PathsLayer, PlantsLayer]   # seam_lists.gd LAYERS
+const INPUT_OPS := {"pour": "water"}     # ops an LLM answer may carry that a layer's `expand_input` turns into ops
 const REGION_MAX := 128                  # cells per axis `read_region` reads at most
 const HOME_DIR := "user://home"
 const NO_CELL := Vector3i(0, -32768, 0)  # cell_at_ray_hit: no block there
@@ -31,7 +38,7 @@ var blocks: RefCounted
 var mesh: RefCounted
 var edits: RefCounted
 var protect: RefCounted
-var layers: Array = []                   # blocks, land, pieces (edit_log.gd `register`): BUILD.md "Layers"
+var layers: Array = []                   # blocks, land, pieces, water, paths, plants (edit_log.gd `register`): BUILD.md "Layers"
 var ctx := {}                            # what a layer is made with: blocks, mesh, check, protect, space, root, seed, home
 var root: Node3D = null
 var ws: Object = null
@@ -57,10 +64,10 @@ func _init(parent: Node3D, space: Object, opts := {}) -> void:
 	mesh = BlockMesh.new(blocks, root, space)
 	protect = Protect.new(space)
 	edits = EditLog.new()
-	edits.before_journal = Callable(self, "_mark_v2")   # bound methods, not lambdas: a lambda would hold this object (a cycle)
+	edits.before_journal = Callable(self, "_mark_v")    # bound methods, not lambdas: a lambda would hold this object (a cycle)
 	ctx = {"blocks": blocks, "mesh": mesh, "check": Callable(protect, "refusal"), "protect": protect, "space": space,
 		"root": root, "seed": home_seed, "home": weakref(self)}
-	for kind: GDScript in [BlocksLayer, LandLayer, PiecesLayer]:
+	for kind: GDScript in LAYER_KINDS:
 		register(kind.new(ctx))
 	_saved = _content()
 
@@ -76,7 +83,7 @@ func register(l: RefCounted) -> void:
 			l.add_rules(protect)
 
 
-## The layer called `id` ("blocks", "land", "pieces"), or null.
+## The layer called `id` ("blocks", "land", "pieces", "water", "paths", "plants"), or null.
 func layer(id: String) -> RefCounted:
 	for l: RefCounted in layers:
 		if l.get("id") == id:
@@ -259,34 +266,55 @@ func preview(ops: Array) -> Dictionary:
 		scratch[str(l.get("id"))] = c
 		trial.register(c)
 	var r: Dictionary = trial.apply(ops)
-	var after: RefCounted = (scratch["blocks"] as RefCounted).get("store")
-	var added: RefCounted = Blocks.new(blocks.sec)
-	var removed: RefCounted = Blocks.new(blocks.sec)
-	added.cap_chunk = 1 << 30
-	added.cap_home = 1 << 30
-	removed.cap_chunk = 1 << 30
-	removed.cap_home = 1 << 30
-	var seen := {}
-	for b: Dictionary in trial.history:
-		for rec: Dictionary in b.ops:
-			if not rec.has("shape") or not rec.has("at"):
-				continue                                   # not a block op
-			var cell := Vector3i(int(rec.at[0]), int(rec.at[1]), int(rec.at[2]))
-			if seen.has(cell):
-				continue
-			seen[cell] = true
-			var was: int = blocks.get_code(cell)
-			var now: int = after.get_code(cell)
-			if now != 0 and now != was:
-				added.put(cell, now)
-			if was != 0 and now != was:
-				removed.put(cell, was)
-	added.dirty.clear()
-	removed.dirty.clear()
-	r["store"] = added
-	r["removed"] = removed
+	var d: Dictionary = layer("blocks").diff(scratch["blocks"])
+	r["store"] = d.store
+	r["removed"] = d.removed
 	r["scratch"] = scratch
 	return r
+
+
+## The ghost of a dry run (`preview`'s result `r`), one Node3D per layer that has something to show (its
+## `preview_node(r.scratch[id])`; blocks: the cells added in holo and removed in red), in the layers' order, each with
+## the meta "tl_layer" = its layer's id. Layers named in `skip` are left out (a caller that draws them itself). The
+## caller adds the nodes to the tree and frees them.
+func preview_nodes(r: Dictionary, skip: Array = []) -> Array:
+	var out := []
+	var scratch: Dictionary = r.get("scratch", {})
+	for l: RefCounted in layers:
+		var lid := str(l.get("id"))
+		if skip.has(lid) or not l.has_method("preview_node") or not scratch.has(lid):
+			continue
+		var n: Variant = l.call("preview_node", scratch[lid])
+		if n is Node3D:
+			(n as Node3D).set_meta(&"tl_layer", lid)
+			out.append(n)
+	return out
+
+
+## An LLM answer's ops with every input-only op (INPUT_OPS: `pour`) expanded by its layer's `expand_input(op)`
+## (which answers {"ops": [...]} or {"error"}); every other op passes through unchanged. Returns {"ops": the ops to
+## preview and apply, "refused": [[index in `ops`, reason], ...] for the input ops that could not be expanded}. An
+## expanded op takes the input op's `author` when it names none.
+func expand_input(ops: Array) -> Dictionary:
+	var out := []
+	var refused := []
+	for i: int in ops.size():
+		var op: Variant = ops[i]
+		var kind := str((op as Dictionary).get("op", "")) if op is Dictionary else ""
+		if not INPUT_OPS.has(kind):
+			out.append(op)
+			continue
+		var l := layer(str(INPUT_OPS[kind]))
+		var e: Dictionary = l.call("expand_input", op) if l != null and l.has_method("expand_input") else {"error": "nothing expands %s" % kind}
+		if e.has("error") or typeof(e.get("ops")) != TYPE_ARRAY:
+			refused.append([i, str(e.get("error", "%s gave no ops" % kind))])
+			continue
+		for x: Variant in e.ops:
+			var o: Dictionary = (x as Dictionary).duplicate(true)
+			if (op as Dictionary).has("author") and not o.has("author"):
+				o["author"] = op.author
+			out.append(o)
+	return {"ops": out, "refused": refused}
 
 
 # ------------------------------------------------------------------ files
@@ -301,7 +329,7 @@ func save(d := HOME_DIR) -> String:
 	if why == "":
 		rev = r
 		_saved = h
-		edits.v2_ready = int(doc.v) == 2
+		edits.file_v = int(doc.v)
 		if dirty:
 			dirty = false
 			dirty_changed.emit(false)
@@ -317,7 +345,7 @@ func load(d := HOME_DIR) -> Dictionary:
 	edits.future.clear()
 	var r: Dictionary = BuildFile.load_into(d, layers, edits, home_seed)
 	edits.changes = 0
-	edits.v2_ready = int(r.v) == 2
+	edits.file_v = int(r.v)
 	rev = int(r.rev)
 	_saved = "" if int(r.replayed) > 0 or not r.ok else _content()
 	var was := dirty
@@ -347,9 +375,10 @@ func _content() -> String:
 	return h
 
 
-## edit_log.gd `before_journal`: build.json becomes tl.build/2 before the first op v1 cannot read is journaled.
-func _mark_v2(_rec: Dictionary) -> String:
-	return BuildFile.mark_v2(dir, home_seed) if dir != "" else ""
+## edit_log.gd `before_journal`: build.json is raised to the version `rec`'s op kind needs (build_file.gd OP_V) before
+## the first op of that version is journaled.
+func _mark_v(rec: Dictionary) -> String:
+	return BuildFile.mark_v(dir, home_seed, BuildFile.version_of(str(rec.get("op", "")))) if dir != "" else ""
 
 
 func _close_journal() -> void:
