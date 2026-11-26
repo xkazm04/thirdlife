@@ -57,6 +57,7 @@ var last_launch: PackedStringArray = []
 var cards: Dictionary = {}                # recipe card id -> title (the expert's hint)
 var showing_games: bool = false           # E4: My games is open (the page's own screen, not one of the log's)
 var games_rows: Array = []                # E4: create_model.gd games(), read when My games opens
+var games_page: int = 0                   # 26 Nov: the page of My games shown (GAMES_PAGE rows a page)
 var menu_list: String = ""                # E4: the person's dungeon list ("" = kernel/dungeon/dungeons.gd user_path())
 var _change_box: LineEdit = null
 var _change_draft: String = ""            # E4: what is typed in the change box (kept over a rebuild)

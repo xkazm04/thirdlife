@@ -321,7 +321,12 @@ func _toast(text: String) -> void:
 func _unhandled_input(event: InputEvent) -> void:
 	if not visible or not (event is InputEventKey) or not (event as InputEventKey).pressed or (event as InputEventKey).echo:
 		return
-	if (event as InputEventKey).keycode != KEY_ESCAPE:
+	var key: Key = (event as InputEventKey).keycode
+	if showing_games and key in [KEY_PAGEUP, KEY_PAGEDOWN]:          # 26 Nov: My games turns its pages by keys too
+		get_viewport().set_input_as_handled()
+		call("games_turn", -1 if key == KEY_PAGEUP else 1)
+		return
+	if key != KEY_ESCAPE:
 		return
 	get_viewport().set_input_as_handled()
 	if not expanded.is_empty():

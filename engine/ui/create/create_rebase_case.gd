@@ -43,7 +43,8 @@ static func _copy(from: String, to: String) -> void:
 
 ## A copy of the done fixture's log (extra events after its last), and a pack/ beside it.
 static func _job(dir: String, extra: Array) -> void:
-	var text: String = FileAccess.get_file_as_string("res://ui/fixtures/create/c9-done/job.jsonl").strip_edges()
+	# four different games (My games folds builds of one title into one row): each job's game title is its folder's name
+	var text: String = FileAccess.get_file_as_string("res://ui/fixtures/create/c9-done/job.jsonl").strip_edges().replace("\"title\":\"Penguin Push\"", "\"title\":\"%s\"" % dir.get_file())
 	var lines: PackedStringArray = text.split("\n")
 	var last: Dictionary = JSON.parse_string(lines[lines.size() - 1])
 	for i: int in extra.size():

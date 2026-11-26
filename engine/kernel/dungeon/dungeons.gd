@@ -265,15 +265,39 @@ static func remove_user(job_or_pack: String, path: String = "") -> String:
 	return _write_user(rows, path)
 
 
-## What the menu lists: the shipped dungeons, then the person's own (marked `mine: true`).
+## What the menu lists: the shipped dungeons, then the person's own (marked `mine: true`), newest first and one row per
+## game: 26 Nov (the owner: one final version, not every version): rows whose packs share a pack id keep only the highest
+## version (pack.json `version`; the later row on a tie).
 static func read_menu(path: String = LIST_RES) -> Dictionary:
 	var r: Dictionary = read(path)
 	var u: Dictionary = read_user()
 	var rows: Array = (r["dungeons"] as Array).duplicate()
+	var best: Dictionary = {}                  # pack id (or the folder when unreadable) -> [version parts, row]
+	var order: Array = []
 	for row: Dictionary in u["dungeons"]:
 		var m: Dictionary = row.duplicate()
 		m.erase("job")
 		m["mine"] = true
-		rows.append(m)
+		var meta: Variant = JSON.parse_string(FileAccess.get_file_as_string(str(m["pack"]) + "/pack.json")) if FileAccess.file_exists(str(m["pack"]) + "/pack.json") else null
+		var id: String = str((meta as Dictionary).get("id", m["pack"])) if meta is Dictionary else str(m["pack"])
+		var v: Array = Array(str((meta as Dictionary).get("version", "0")).split(".")).map(func(x: String) -> int: return x.to_int()) if meta is Dictionary else [0]
+		if not best.has(id):
+			order.append(id)
+		elif _older(v, best[id][0]):
+			continue
+		best[id] = [v, m]
+	order.reverse()                            # the person's newest game first
+	for id: String in order:
+		rows.append(best[id][1])
 	var errors: Array = (r["errors"] as Array) + (u["errors"] as Array)
 	return {"ok": errors.is_empty(), "dungeons": rows, "errors": errors}
+
+
+## Is version a older than version b (lists of numbers, "0.1.12" -> [0, 1, 12])?
+static func _older(a: Array, b: Array) -> bool:
+	for i: int in maxi(a.size(), b.size()):
+		var x: int = int(a[i]) if i < a.size() else 0
+		var y: int = int(b[i]) if i < b.size() else 0
+		if x != y:
+			return x < y
+	return false

@@ -462,8 +462,14 @@ func continue_build() -> void:
 
 # ---- E4: My games
 
+## 26 Nov (the owner: "Create has no pagination, so I cannot access the games"): My games shows GAMES_PAGE games a page;
+## Newer and Older (and Page Up / Page Down) turn the pages, and the line between them says which page of how many.
+const GAMES_PAGE: int = 5
+
+
 func open_games() -> void:
 	showing_games = true
+	games_page = 0
 	games_rows = Model.games(jobs_root) if not jobs_root.is_empty() else []
 	_rebuild()
 
@@ -477,9 +483,12 @@ func _games() -> void:
 		none.name = "NoGames"
 		_place(none, Vector2(0, 300))
 		return
-	var n: int = mini(6, games_rows.size())
+	var pages: int = ceili(float(games_rows.size()) / GAMES_PAGE)
+	games_page = clampi(games_page, 0, pages - 1)
+	var first: int = games_page * GAMES_PAGE
+	var n: int = mini(GAMES_PAGE, games_rows.size() - first)
 	for i: int in n:
-		var g: Dictionary = games_rows[i]
+		var g: Dictionary = games_rows[first + i]
 		var in_menu: bool = not Dungeons.user_row(str(g["dir"]), menu_list).is_empty()
 		var row: Button = _button("Game%d" % i, "", "", PAPER, Vector2(140, 168 + float(i) * 88), Vector2(1000, 76), 24)
 		row.tooltip_text = str(g["sentence"])
@@ -497,7 +506,8 @@ func _games() -> void:
 		tl.position = Vector2(84, 18)
 		row.add_child(tl)
 		var behind: bool = str(g["screen"]) == "done" and int(g.get("behind", 0)) > 0
-		var wl: Label = _label(str(g["word"]) + ("  ·  in the menu" if in_menu else ""), 21, 700, Color(INK, 0.7), 420 - (210 if behind else 0), HORIZONTAL_ALIGNMENT_RIGHT)
+		var builds: String = "  ·  %d builds" % int(g["builds"]) if int(g.get("builds", 1)) > 1 else ""
+		var wl: Label = _label(str(g["word"]) + builds + ("  ·  in the menu" if in_menu else ""), 21, 700, Color(INK, 0.7), 420 - (210 if behind else 0), HORIZONTAL_ALIGNMENT_RIGHT)
 		wl.name = "GameState"
 		wl.position = Vector2(560, 24)
 		row.add_child(wl)
@@ -507,9 +517,25 @@ func _games() -> void:
 			nb.tooltip_text = "Move this game to the newest base: its cartridge, rules, skin and match stay; it plays as it is until the new version has passed its checks."
 			nb.pressed.connect(move_to_base.bind(str(g["dir"]), str(g["title"])))
 			row.add_child(nb)
-	if games_rows.size() > n:
-		var more: Label = _label("and %d older" % (games_rows.size() - n), 20, 700, MUTED, W, HORIZONTAL_ALIGNMENT_CENTER)
-		_place(more, Vector2(0, 168 + float(n) * 88))
+	if pages > 1:
+		var at: float = 168 + GAMES_PAGE * 88 + 14
+		var pl: Label = _label("Page %d of %d  ·  %d games" % [games_page + 1, pages, games_rows.size()], 22, 700, MUTED, W, HORIZONTAL_ALIGNMENT_CENTER)
+		pl.name = "GamesPage"
+		_place(pl, Vector2(0, at + 14))
+		if games_page > 0:
+			var nb: Button = _button("GamesNewer", "Newer", "back", CREAM, Vector2(140, at), Vector2(200, 56), 22)
+			nb.pressed.connect(games_turn.bind(-1))
+			_body.add_child(nb)
+		if games_page < pages - 1:
+			var ob: Button = _button("GamesOlder", "Older", "arrow", CREAM, Vector2(940, at), Vector2(200, 56), 22)
+			ob.pressed.connect(games_turn.bind(1))
+			_body.add_child(ob)
+
+
+## Turns My games a page (-1 newer, +1 older).
+func games_turn(by: int) -> void:
+	games_page += by
+	_rebuild()
 
 
 ## H2 (25 Nov): a finished game moves to the newest base (foreman_door.gd rebase). My games stays open; its row says

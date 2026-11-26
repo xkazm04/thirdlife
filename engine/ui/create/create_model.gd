@@ -301,9 +301,10 @@ static func state_word(job: Dictionary) -> String:
 	return "Changing" if not changing(job).is_empty() else "Building"
 
 
-## My games: every job under the jobs root, newest first (by its first event): [{dir, title, word, screen, version, ts}].
+## My games: the jobs under the jobs root, newest first (by its first event), one row per game (one_per_game):
+## [{dir, title, word, screen, version, ts, sentence, behind, builds}].
 ## `limit` caps how many logs are read (a jobs root of a long night holds hundreds).
-static func games(root: String, limit: int = 40) -> Array:
+static func games(root: String, limit: int = 400) -> Array:
 	var dirs: PackedStringArray = JobModel.list_job_dirs(root)
 	var named: Array = []
 	for d: String in dirs:
@@ -319,6 +320,30 @@ static func games(root: String, limit: int = 40) -> Array:
 		out.append({"dir": d, "title": title, "word": state_word(j), "screen": screen_of(j), "version": version_n(j), "ts": float(j.get("first_ts", 0.0)), "sentence": str(j.get("sentence", "")),
 			"behind": base_behind(d) if screen_of(j) == "done" else 0})
 	out.sort_custom(func(a: Dictionary, b: Dictionary) -> bool: return float(a["ts"]) > float(b["ts"]) or (float(a["ts"]) == float(b["ts"]) and str(a["dir"]) > str(b["dir"])))
+	return one_per_game(out)
+
+
+## 26 Nov (the owner: "Colosseum is there multiple times across versions"): jobs with the same title are builds of one
+## game and get one row: the final version, i.e. the newest finished build (Ready), else the newest build; "builds" counts
+## them. Rows come newest first and keep that order.
+static func one_per_game(rows: Array) -> Array:
+	var by: Dictionary = {}
+	for g: Dictionary in rows:
+		var k: String = str(g["title"]).strip_edges().to_lower()
+		if not by.has(k):
+			by[k] = []
+		(by[k] as Array).append(g)
+	var out: Array = []
+	for k: String in by.keys():                     # a Dictionary keeps the order keys were added: newest first
+		var all: Array = by[k]
+		var pick: Dictionary = all[0]
+		for g: Dictionary in all:
+			if str(g["screen"]) == "done":
+				pick = g
+				break
+		pick = pick.duplicate()
+		pick["builds"] = all.size()
+		out.append(pick)
 	return out
 
 
