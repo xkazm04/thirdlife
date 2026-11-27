@@ -93,6 +93,8 @@ static func grow(parent: Node3D, cfg: Dictionary, terr: RefCounted, ws: Object) 
 	# WP2: the Home's blocks and build mode (B). The builder protects the walk's plots and these sites; a person's walk
 	# loads the saved Home (build/build_mode.gd)
 	(load("res://kernel/world/build/build_mode.gd") as GDScript).call("mount", parent, valley)
+	# DN (27 Nov): day and night in the Home (home/day_cycle.gd): the clock, N and H in build mode, the lamps
+	(load("res://kernel/world/home/day_cycle.gd") as GDScript).call("mount", parent)
 	out["valley"] = valley.summary().extent
 	out["total_ms"] = (Time.get_ticks_usec() - t0) / 1000.0
 	return out

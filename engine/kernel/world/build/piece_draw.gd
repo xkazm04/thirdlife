@@ -1,10 +1,13 @@
 extends RefCounted
 ## M3 (spark world-sandbox, 26 Nov 2026): draws and collides the Home's pieces, per 16 m section (the blocks' sections).
 ##   drawing    one MultiMeshInstance3D per prototype mesh per section (piece_catalog.gd `proto`: kind and params built
-##              once): 500 fences of one length are one draw per section, not 500 nodes. A part with a light (house,
-##              light_mast, street_lamp) or a breakable one (crate) is built as its own node instead, up to NODE_CAP in
-##              the Home (lights cost per pixel); past the cap it is drawn instanced, without its light. A node's own
-##              static bodies are freed: its shapes are in the visitor's space, below.
+##              once): 500 fences of one length are one draw per section, not 500 nodes. A breakable part (crate) is
+##              built as its own node instead, up to NODE_CAP in the Home; past the cap it is drawn instanced. A node's
+##              own static bodies are freed: its shapes are in the visitor's space, below.
+##   lamps      (lane DN, 27 Nov) a part with a light (house, light_mast, street_lamp) is drawn instanced too; its kit
+##              lights become sockets of home/day_lamps.gd (`lamps`), which lights the CAP (48) nearest the camera when
+##              the day's lamps are on (home/day_cycle.gd). Until 27 Nov such a part was a node with its own lights, the
+##              first 48 placed, burning day and night.
 ##   bodies     one static body per section in the visitor's WorldSpace (tag "home pieces", layer 1) holding every
 ##              collision shape of its pieces (the prototype's shapes, shared), made with the section's first piece
 ##              and dropped with its last. Never a pack's space, never a state hash.
@@ -12,6 +15,7 @@ extends RefCounted
 
 const Catalog := preload("res://kernel/world/build/piece_catalog.gd")
 const Collider := preload("res://kernel/world/land/chunk_collider.gd")
+const Lamps := preload("res://kernel/world/home/day_lamps.gd")
 const TAG := "home pieces"
 const STAT := "piece_shapes"
 const NODE_CAP := 48
@@ -20,7 +24,9 @@ var holder: Node3D = null               # "HomePieces" (null: nothing drawn)
 var ws: Object = null                   # the visitor's WorldSpace (null: no bodies)
 var sections := {}                      # section -> Node3D holding its draws
 var bodies := {}                        # section -> {"body": RID, "faces": 0, "stat": STAT, "shapes": int}
-var nodes := 0                          # pieces drawn as nodes now (lights, breakables)
+var nodes := 0                          # pieces drawn as nodes now (breakables)
+var lamps: RefCounted = null            # home/day_lamps.gd: the lit pieces' light sockets
+static var _lights := {}                # proto key -> day_lamps.gd `lights_of` the part built once (window only)
 var counters := {"sections": 0, "multimeshes": 0, "instances": 0, "nodes": 0}
 
 
@@ -30,6 +36,7 @@ func _init(parent: Node3D, space: Object) -> void:
 		holder = Node3D.new()
 		holder.name = "HomePieces"
 		parent.add_child(holder)
+	lamps = Lamps.new(holder)
 
 
 ## Redraws section `s` from `recs` (its pieces, sorted) and refreshes its body.
@@ -49,15 +56,21 @@ func _draw(s: Vector2i, recs: Array) -> void:
 		holder.remove_child(old)
 		sections.erase(s)
 	if recs.is_empty():
+		lamps.set_section(s, [])
 		return
 	var h := Node3D.new()
 	h.name = "Pieces_%d_%d" % [s.x, s.y]
 	var groups := {}                                       # proto key -> [proto, [xf, ...]]
 	var keys := []
 	var own := 0
+	var sockets := []
 	for r: Dictionary in recs:
 		var pr: Dictionary = r.proto
-		if (bool(pr.lights) or bool(pr.breakable)) and nodes < NODE_CAP:
+		if bool(pr.lights):
+			for lt: Array in _lights_of(pr):
+				lamps.add_template(lt[0], lt[1])
+				sockets.append([lt[0], (r.xf as Transform3D) * (lt[2] as Transform3D)])
+		if bool(pr.breakable) and nodes < NODE_CAP:
 			var n: Node3D = TLKit.build(str(r.part), r.bp)
 			if n != null:
 				_strip_bodies(n)
@@ -92,6 +105,17 @@ func _draw(s: Vector2i, recs: Array) -> void:
 	h.set_meta(&"tl_nodes", own)
 	holder.add_child(h)
 	sections[s] = h
+	lamps.set_section(s, sockets)
+
+
+## The kit lights of a lit prototype, built once per prototype ([[template key, template (data), local Transform3D], ...]).
+static func _lights_of(pr: Dictionary) -> Array:
+	if not _lights.has(pr.key):
+		var n: Node3D = TLKit.build(str(pr.part), pr.params)
+		_lights[pr.key] = Lamps.lights_of(n, str(pr.key)) if n != null else []
+		if n != null:
+			n.free()
+	return _lights[pr.key]
 
 
 static func _strip_bodies(n: Node) -> void:
@@ -150,6 +174,8 @@ func free_all() -> void:
 		(sections[s] as Node).queue_free()
 	sections.clear()
 	nodes = 0
+	if lamps != null:
+		lamps.free_all()
 	if ws != null:
 		for s: Vector2i in bodies:
 			Collider.drop(bodies[s], ws)
