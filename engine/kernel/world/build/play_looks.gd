@@ -12,7 +12,8 @@ extends RefCounted
 ## names (`checkpoint`, cyan), the zone whose trigger finishes a run (`finish`, amber); any other pad is violet.
 
 const Check := preload("res://kernel/world/build/rules_check.gd")
-const ROLE_KEYS := {"": "neon_violet", "start": "neon_lime", "checkpoint": "cyan", "finish": "beacon"}
+const ROLE_KEYS := {"": "neon_violet", "start": "neon_lime", "checkpoint": "cyan", "finish": "beacon", "launch": "neon_pink"}
+const KICK_FRAMES := 14                  # round 2: a jump pad's kick (the disc swells, its glow flares) when it launches
 const SPIN := 0.055                      # radians per frame a coin turns
 const TAKE_FRAMES := 14                  # a taken coin flies up and shrinks away over these frames
 const BACK_FRAMES := 10                  # a coin that comes back grows in over these
@@ -26,6 +27,7 @@ var looks := {}                          # zone id -> look
 var base_y := {}                         # zone id -> the coin's resting height
 var gone := {}                           # zone id -> [frame taken, hidden at the end] / back: [frame back, false]
 var fx := []                             # [node, frame to free]
+var kicks := {}                          # zone id -> the frame its pad kicked (a launch from it)
 var revision := -1                       # the rules layer's revision the looks were made for
 var frame := 0
 
@@ -49,6 +51,12 @@ static func look_of(zone: Dictionary, role := "") -> Node3D:
 			n = Node3D.new()
 			n.name = "Pad_%d" % int(zone.get("id", 0))
 			n.add_child(_mi(_pad_mesh(r, role), "Disc"))
+			var glow: MeshInstance3D = TLStyleFx.glow(str(ROLE_KEYS.get(role, "neon_violet")), 0.0)   # round 2: the pad glows
+			glow.name = "Glow"
+			glow.position = Vector3(0, 0.3, 0)
+			glow.scale = Vector3.ONE * r * 2.4
+			n.add_child(glow)
+			n.set_meta(&"tl_r", r)
 			n.position = Check.floor_centre(box)
 		"coin":
 			n = Node3D.new()
@@ -77,7 +85,7 @@ static func look_of(zone: Dictionary, role := "") -> Node3D:
 ## over checkpoint, when one zone has two.
 static func roles(rules: Dictionary) -> Dictionary:
 	var out := {}
-	var rank := {"checkpoint": 1, "start": 2, "finish": 3}
+	var rank := {"launch": 1, "checkpoint": 2, "start": 3, "finish": 4}
 	var put := func(z: int, role: String) -> void:
 		if z > 0 and int(rank.get(str(out.get(z, "")), 0)) < int(rank[role]):
 			out[z] = role
@@ -92,6 +100,8 @@ static func roles(rules: Dictionary) -> Dictionary:
 					put.call(tz, "finish")
 				"checkpoint":
 					put.call(int(e.get("zone", 0)), "checkpoint")
+				"launch":
+					put.call(tz, "launch")
 	return out
 
 
@@ -203,7 +213,17 @@ func tick(at_frame: int) -> void:
 					n.scale = Vector3.ONE * maxf(s, 0.001)
 			"pad":
 				var disc: Node3D = n.get_child(0)
-				disc.scale = Vector3(1.0, 1.0, 1.0) * (1.0 + 0.035 * sin(at_frame * 0.08))
+				var kick := 0.0
+				if kicks.has(z):
+					var kt := float(at_frame - int(kicks[z])) / KICK_FRAMES
+					kick = 1.0 - kt if kt < 1.0 else 0.0
+					if kt >= 1.0:
+						kicks.erase(z)
+				var breathe := 0.035 * sin(at_frame * 0.08)
+				disc.scale = Vector3(1.0 + breathe + 0.35 * kick, 1.0 + 2.5 * kick, 1.0 + breathe + 0.35 * kick)
+				if n.get_child_count() > 1:
+					var glow: Node3D = n.get_child(1)
+					glow.scale = Vector3.ONE * float(n.get_meta(&"tl_r", 1.0)) * 2.4 * (1.0 + 0.12 * sin(at_frame * 0.08 + 1.0) + 1.2 * kick)
 	var keep := []
 	for e: Array in fx:
 		if at_frame >= int(e[1]):
@@ -212,6 +232,13 @@ func tick(at_frame: int) -> void:
 		else:
 			keep.append(e)
 	fx = keep
+
+
+## The pads of zones `ids` kick (a launch went off from them).
+func kick(ids: Array, at_frame: int) -> void:
+	for z: int in ids:
+		if nodes.has(z) and str(looks.get(z, "")) == "pad":
+			kicks[z] = at_frame
 
 
 func set_visible(on: bool) -> void:
@@ -231,6 +258,7 @@ func clear() -> void:
 	looks.clear()
 	base_y.clear()
 	gone.clear()
+	kicks.clear()
 	fx.clear()
 	revision = -1
 

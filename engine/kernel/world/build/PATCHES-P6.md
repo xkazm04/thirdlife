@@ -55,3 +55,14 @@ File length: visitor.gd is 599 lines with both (the law: 600).
 - A2 (records' place): the contract names `user://home/records.json`; rules_play.gd writes `records.json` into build
   mode's `dir` (the Home's folder: `user://home`, or TL_HOME_BUILD_DIR). Same file for a person; a fixture Home keeps
   its own records.
+
+## Round 2 (27 Nov, day): no new edit outside P's files; one more private reach, named
+
+- E3 (asks for a hook, nothing edited): during a run rules_play.gd eases the visitor's camera arm back and up by
+  writing `visitor.gd` `_cam_dist` and `_cam_look_h` through `set` (its `_place_cam` reads them each tick; restored
+  when the run ends or build mode comes on), and scales the visitor node for 14 frames on a launch (a stretch).
+  visitor.gd is at 599 lines; a public `cam_scale(arm_k: float, lift_m: float)` there would be cleaner.
+- The ghost key is G, read from the keyboard (`Input.is_physical_key_pressed`), not the visit's TLInput: it changes
+  only what is drawn (no rule, no hash), and visit.gd's ACTIONS is not P's file. G is also a build tool key (rules and
+  stamp tools); in build mode the rules are off, so the two never meet.
+- Selftest 791-home-run-ghost.sh (the Director's new range 791-793).

@@ -60,7 +60,8 @@ static func ops() -> Array:
 
 
 ## The world: the floor, the wall and the platform, the zones and rules; build mode mounted (off: the rules run).
-func make(root: Node, dir: String) -> String:
+## `course_ops` / `course_cells` (round 2, 791's straight track): other zones and rules / blocks; none: the tower walk.
+func make(root: Node, dir: String, course_ops: Array = [], course_cells: Array = []) -> String:
 	land = Node3D.new()
 	land.name = "Land"
 	root.add_child(land)
@@ -70,11 +71,11 @@ func make(root: Node, dir: String) -> String:
 	sp.call("finish")
 	land.set_meta(&"tl_space", sp)
 	b = HomeBuild.new(land, sp, {"seed": 11})
-	var cells := []
-	for y: int in 3:
+	var cells := course_cells.duplicate()
+	for y: int in (3 if course_ops.is_empty() else 0):
 		for x: int in range(-4, 5):
 			cells.append(Vector3i(x, y, 2))
-	for y: int in 2:
+	for y: int in (2 if course_ops.is_empty() else 0):
 		for z: int in range(-9, -2):
 			for x: int in range(-2, 3):
 				cells.append(Vector3i(x, y, z))
@@ -85,7 +86,7 @@ func make(root: Node, dir: String) -> String:
 			b.end_batch()
 			return "block %s refused: %s" % [str(c), str(r)]
 	b.end_batch()
-	var r2: Dictionary = b.apply(ops())
+	var r2: Dictionary = b.apply(ops() if course_ops.is_empty() else course_ops)
 	if not bool(r2.get("ok", false)):
 		return "zones/rules refused: %s" % str(r2)
 	b.flush()
