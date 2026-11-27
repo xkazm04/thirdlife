@@ -12,6 +12,11 @@ extends RefCounted
 ## (preview_mesh.gd) and pieces (piece_ghost.gd) where they would go, red when `build.preview(ops)` refuses any of them
 ## (the reason in the hotbar); a refused stamp is not placed at all. A stamp holding a locked part or material
 ## (unlocks.gd) refuses with the condition. The tool interface is BUILD.md "Tools".
+## M6 round 2, lane T (contracts/BUILD.md "Courses travel"): a box takes the zones wholly inside it and their rules
+## (tl.stamp/2, stamp_file.gd), its automatic top reaches the zones' tops too; placing writes the blocks, pieces, zones
+## and rules as ONE batch with the Home's next free ids, and the ghost shows the zones (rules_layer.gd `preview_node`).
+##   Ctrl+C / Ctrl+V   the current stamp's share code ("TL1-...", its length in the info line) to the clipboard / a code
+##                     from it, checked as a stamp file, added like an import (headless: `fake_clip`, a case's hook)
 
 const HomeBuild := preload("res://kernel/world/build/home_build.gd")
 const Blocks := preload("res://kernel/world/build/blocks.gd")
@@ -25,7 +30,7 @@ const NAME_KEYS := [KEY_ENTER, KEY_KP_ENTER, KEY_ESCAPE]
 const PAGE := 9
 const SCAN_UP := 48                     # cells above the box's floor the automatic top looks for content
 const STEADY := 6                       # frames the aim stays on one cell before the dry run is asked
-const KEY_HELP := "0 new box: LMB corner, LMB corner, wheel top, G save   1-9 stamp   Tab page   R turn   LMB place   X export   I import   Ctrl+Z undo   T tool   B or Esc leave"
+const KEY_HELP := "0 new box: LMB corner, LMB corner, wheel top, G save   1-9 stamp   Tab page   R turn   LMB place   Ctrl+C copy code   Ctrl+V paste code   X export   I import   T tool   B leave"
 
 var id := "stamp"
 var title := "Stamps"
@@ -49,6 +54,9 @@ var _checked := ""
 var name_bar: CanvasLayer = null        # command_bar.gd: the stamp's name, opened by G
 var _latched := false                   # Enter or Esc closed the name field and is still held: build mode must not read
                                         # it as a new press (Enter would open the command bar, Esc would leave)
+var zghost: Node3D = null               # M6: the stamp's zones where they would go (the rules layer's ghost)
+var fake_clip := ""                     # the clipboard where there is none (headless: a case's test hook)
+var copied := ""                        # the last share code copied
 
 
 func setup(h: Node) -> void:
@@ -57,7 +65,7 @@ func setup(h: Node) -> void:
 
 
 func polled() -> Array:
-	return [KEY_0, KEY_1, KEY_2, KEY_3, KEY_4, KEY_5, KEY_6, KEY_7, KEY_8, KEY_9, KEY_TAB, KEY_R, KEY_G, KEY_X, KEY_I]
+	return [KEY_0, KEY_1, KEY_2, KEY_3, KEY_4, KEY_5, KEY_6, KEY_7, KEY_8, KEY_9, KEY_TAB, KEY_R, KEY_G, KEY_X, KEY_I, KEY_C, KEY_V]
 
 
 ## The Home's folders: <dir>/stamps, <dir>/stamps/inbox, <dir>/stamps/export ("" when nothing is saved here).
@@ -116,6 +124,8 @@ func status() -> Dictionary:
 	else:
 		var d := stamp()
 		info = "%s   %d blocks   %d pieces   rot %d" % [str(d.name), (d.get("blocks", []) as Array).size(), (d.get("pieces", []) as Array).size(), turn]
+		if d.has("zones") or d.has("rules"):
+			info += "   %d zones   %d rules" % [(d.get("zones", []) as Array).size(), (d.get("rules", []) as Array).size()]
 	if note != "":
 		info += "   (%s)" % note
 	return {"info": info, "reason": reason}
@@ -184,6 +194,10 @@ func key(e: InputEvent) -> bool:
 	elif code == KEY_I:
 		import_inbox()
 		refresh()
+	elif code == KEY_C and k.ctrl_pressed:
+		copy_code()
+	elif code == KEY_V and k.ctrl_pressed:
+		paste_code()
 	else:
 		return false
 	_checked = ""
@@ -290,6 +304,43 @@ func import_inbox() -> int:
 	return n
 
 
+## Ctrl+C: the current stamp's share code to the clipboard. Returns the code, or "" (the reason in the hotbar).
+func copy_code() -> String:
+	if current < 0 or stamp().is_empty():
+		reason = "choose a stamp to copy"
+		return ""
+	copied = StampFile.code_of(stamp())
+	if DisplayServer.get_name() == "headless":
+		fake_clip = copied
+	else:
+		DisplayServer.clipboard_set(copied)
+	note = "copied: a code of %d characters" % copied.length()
+	print(JSON.stringify({"schema": "tl.view/1", "kind": "build_stamp", "copied": str(stamp().name), "chars": copied.length(), "code": copied if host.scripted() else ""}, "", false))
+	return copied
+
+
+## Ctrl+V: a share code from the clipboard, read as a stamp file is, saved with the stamps and made current. Returns ""
+## or why it was refused.
+func paste_code() -> String:
+	var text := fake_clip if DisplayServer.get_name() == "headless" else DisplayServer.clipboard_get()
+	var r: Dictionary = StampFile.from_code(text)
+	if not bool(r.ok):
+		reason = "paste refused: %s" % str(r.reason)
+		return reason
+	var w: Dictionary = StampFile.save(stamps_dir(), r.stamp) if stamps_dir() != "" else {"ok": false, "reason": "no Home file here"}
+	if not bool(w.ok):
+		reason = "paste refused: %s" % str(w.reason)
+		return reason
+	refresh()
+	for i: int in stamps.size():
+		if str(stamps[i].path) == str(w.path):
+			current = i
+	reason = ""
+	note = "pasted %s (%d zones, %d rules)" % [str(r.stamp.name), (r.stamp.get("zones", []) as Array).size(), (r.stamp.get("rules", []) as Array).size()]
+	print(JSON.stringify({"schema": "tl.view/1", "kind": "build_stamp", "pasted": str(w.path), "chars": text.strip_edges().length(), "frame": host.frames}, "", false))
+	return ""
+
+
 ## "" or the condition of the first locked part or material stamp `d` holds.
 func locked_in(d: Dictionary) -> String:
 	for p: Dictionary in d.get("pieces", []):
@@ -314,8 +365,9 @@ func anchor_for(cell: Vector3i) -> Vector3i:
 	return cell - Vector3i(s.x / 2, 0, s.z / 2)
 
 
+## M6: blocks, pieces, zones and rules, the zones and rules with the Home's next free ids.
 func ops_at(cell: Vector3i) -> Array:
-	return StampFile.ops(stamp(), anchor_for(cell), turn)
+	return StampFile.placed_ops(host.build, stamp(), anchor_for(cell), turn).ops
 
 
 func _corner_of(h: Dictionary) -> Vector3i:
@@ -325,6 +377,9 @@ func _corner_of(h: Dictionary) -> Vector3i:
 func aim(h: Dictionary, _mode: Dictionary) -> void:
 	if h.is_empty():
 		_hide()
+		if current >= 0:
+			reason = ""                 # M6: an aim's refusal is not kept once the cursor leaves the ground
+			_checked = ""
 		return
 	if current < 0:
 		_show_box(h)
@@ -359,7 +414,25 @@ func check_at(cell: Vector3i) -> String:
 	if why != "":
 		return why
 	var r: Dictionary = host.build.preview(ops_at(cell))
+	_zone_ghost(r)
 	return "" if bool(r.ok) else "%d of %d refused: %s" % [(r.refused as Array).size(), (r.refused as Array).size() + int(r.applied), str(r.reason)]
+
+
+## M6: the stamp's zones from dry run `r` (none when the stamp has none).
+func _zone_ghost(r: Dictionary) -> void:
+	if zghost == null or not is_instance_valid(zghost):
+		zghost = Node3D.new()
+		zghost.name = "StampZones"
+		host.add_child(zghost)
+	for c: Node in zghost.get_children():
+		zghost.remove_child(c)
+		c.queue_free()
+	var rl: RefCounted = host.build.layer("rules")
+	if rl != null and (stamp().has("zones")) and (r.get("scratch", {}) as Dictionary).has("rules"):
+		var n: Node3D = rl.preview_node(r.scratch.rules)
+		if n != null:
+			zghost.add_child(n)
+	zghost.visible = true
 
 
 func _draw_stamp() -> void:
@@ -449,6 +522,8 @@ func _hide() -> void:
 		preview.visible = false
 		pghost.hide_ghost()
 		box_ghost.visible = false
+	if zghost != null and is_instance_valid(zghost):
+		zghost.visible = false
 
 
 func ghost_state() -> Dictionary:
@@ -498,6 +573,9 @@ func _auto_top(a: Vector3i, b: Vector3i) -> int:
 	var layer: RefCounted = host.build.layer("pieces")
 	for p: Dictionary in reg.get("pieces", []):
 		t = maxi(t, int((layer.pieces[Vector3i(int(p.at[0]), int(p.at[1]), int(p.at[2]))] as Dictionary).hi.y))
+	for z: Dictionary in reg.get("zones", []):        # M6: a zone (a finish flag on a tower) raises the top too
+		if int(z.box[0][1]) >= lo.y:
+			t = maxi(t, mini(int(z.box[1][1]), hi.y))
 	return t
 
 
