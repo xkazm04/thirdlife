@@ -312,3 +312,59 @@ NEXT THREE
 2. Arsenal: decide with the owner whether the glass should always stand there (wobbling after a meteor goal) or only
    appear for it.
 3. Robots and Arsenal: a person's own play of the newest rows, as the owner would meet them in the exe.
+
+======================================================================================================================
+ROUND 5 AND FINAL (15:50-16:15)
+
+OUTCOME
+- Shield: one sentence (454 chars, sent 15:50:38) -> v0.1.13, promoted 16:11:43 (21.1 min, 0.90M in, 6k out).
+- Sent on v0.1.12, not v0.1.11. The job cannot go back honestly: the Foreman has no revert command, and copying
+  v0.1.11's files into the job by hand would fake its history. So the sentence asks, as a person would after playing
+  v0.1.12, for the old charge rate back while keeping the rest.
+- What the editor did:
+  - core r22: Bram's rush_lane_n 2 -> 1;
+  - crew r16: the same in crew.json. ONE crew round for the rivals' part and core's NOT DONE; r15 never ran. T's join
+    worked a second time.
+- Counted with bot_braced_count over 6 seeds, 0 script errors, seed 1 76c7e2e87a65c87d twice. A minute:
+
+    BRACED!       2.7  (hand 4.8; v0.1.11 1.8; v0.1.12 1.0)
+    BOWLED!       4.8  (hand 7.0; v0.1.11 4.5; v0.1.12 4.8)
+    bots' charges 11.0 (hand 10.3; v0.1.11 9.5; v0.1.12 5.0)
+
+  The best shield version of the day. Neither target is met: braces at 56 % of the hand's, bowling at 69 %.
+- Window take, seed 4, 25 s: BOWLED! x4, SLAM! x4, BRACED! x1.
+
+MENU ROW (new)
+- C:/Users/kazda/kiro/third-life/.claude/worktrees/d25-shield/.tl/jobs/shield-wall-3-v-20261125-1-jb/promoted/game.shield_wall_3_v@0.1.13
+  "Shield wall: charge and slam v0.1.13 (made in Create from juice sentences)". It replaces v0.1.11 as the one to play.
+
+DISK
+- Deleted my own raw film under .tl/jb (full-size window takes, side-by-sides, the raw folder): 561 MB at 15:51 and 72 MB
+  at 16:13, 633 MB in all.
+- Kept:
+  - the job folders;
+  - the small film copies of the packs (.tl/jb/robot, shield, arsenal, with their measuring tests and the counting
+    test; 57 MB in all with the stills);
+  - the lane folder's clips and stills.
+- C: was at 19 GB free after the deletion; other processes on the machine are writing.
+
+GATES (final, 16:13)
+- tl check --tier fast: PASS 5/5. arch 12/12, assets 4/4, cards 3/3, devx.test 230/230, foreman.typecheck clean.
+- No code changed by this lane all day: docs and .tl/ only.
+
+THE DAY IN SHORT
+- 13 sentences sent through Create, all through the real adapter (claude-cli, Sonnet builders):
+  - robots 3;
+  - shield wall 6;
+  - Arsenal 4.
+- All promoted; none refused or held; no question asked.
+- Robots v0.1.9: on a par with the hand version by eye.
+- Arsenal v0.1.27: every named juice part. The bots' meteor and the dive need the C++ core.
+- Shield wall v0.1.13: the words and moves are there and the charge rate matches the hand version. Braces and bowling
+  are at about half and two thirds of the hand version.
+- The editor's findings went to lane T over the day:
+  - duplicate hand-offs, now fixed and seen fixed twice;
+  - the wrong-owner hop;
+  - the dropped sentence in the rivals' copy;
+  - the misleading merge count;
+  - a builder retuning its own test's hand.

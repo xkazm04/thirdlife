@@ -519,3 +519,4 @@ on the frame and the figure and Fable on surfaces and nature, looping for 10 hou
 - 15:31 standup: 5 lanes on track (T r5, S1 r2, JB r4, J2nd r2, S4 r2); disk 25 GB and falling (not this shift's trees; Home session told).
 - 15:43 standup: F2 landed + feet reach; F1 status asked; disk 26 GB after freeing three trees (the growth is another project's session).
 - ~16:10: S4 round 2: Create still cannot drive arm A's switches (a fast cartridge edit promoted without a builder; T item 29). JB round 4: Arsenal glass met v0.1.27; queued-round join seen live.
+- ~16:20: JB-back done (13 sentences, all promoted: robots v0.1.9 on a par with the hand version by eye; Arsenal v0.1.27; shield v0.1.13 braces 2.7 vs 4.8, bowled 4.8 vs 7.0, charges 11.0 vs 10.3). Menu 63.

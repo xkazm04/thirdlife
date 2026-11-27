@@ -768,3 +768,65 @@ braced) is not reached by four sentences. My last sentence cost charges by askin
 - Shield wall: `C:/Users/kazda/kiro/third-life/.claude/worktrees/d25-shield/.tl/jobs/shield-wall-3-v-20261125-1-jb/promoted/game.shield_wall_3_v@0.1.12`,
   "Shield wall: charge and slam v0.1.12 (made in Create from juice sentences)". It is a step back from v0.1.11 in
   braces and charges, so a menu row is optional; v0.1.11 remains the better shield version.
+
+---
+
+# Round 5 (27 Nov, 15:50-16:2x): the charge rate back, with whole-lane bowling and per-man braces
+
+## 11. Shield wall v0.1.13
+**Sent on v0.1.12, not v0.1.11.** The job cannot go back honestly:
+- the Foreman has no command that returns a job to an earlier promotion (`foreman --help`: run, resume, change ...,
+  no revert);
+- copying v0.1.11's files into the job's `pack/` by hand would fake the job's own history.
+
+So the sentence goes on v0.1.12, as a person would type it after playing v0.1.12, asking for v0.1.11's charge rate
+back.
+
+### The sentence (454 characters, sent 15:50:38, event 1252)
+> Since the last change the bots charge only half as often, so I see fewer charges, fewer men bowled and fewer braces.
+> Let every bot charge again whenever a rival stands anywhere in the lane, as before, not only when two or three do,
+> and keep everything else: the charge throws every open man within a step of its line, and each man braces by
+> character as now. I want to see a charge bowl a line or stop dead on a raised shield several times every minute.
+
+### What happened
+- The rivals' part went to crew (event 1255), and crew was queued as r15.
+- **core r22** (1.7 min, 0.53M in): `rush_lane_n` 2 -> 1 for Bram, and nothing else ("the bowling width ... stay").
+  Its NOT DONE (the same for crew's `data/crew.json`) went to crew while r15 was still queued.
+- **crew r16** (1.0 min, 0.37M in) ran once with both requests in its prompt (checked: the rivals' part of 1252 and
+  "the rest of your change"). It set `rush_lane_n` 2 -> 1 and changed nothing else. r15 never ran. **T's join works a
+  second time.**
+- **v0.1.13 promoted 16:11:43**, 21.1 min from the sentence; 0.90M tokens in, 6k out. The promoted pack is file for file
+  the one measured and filmed.
+
+### Measured with the counting test (six seeds, 3600 frames each, 0 script errors; seed 1 `76c7e2e87a65c87d` twice)
+
+| a minute, seeds 1-6 | hand | v0.1.11 | v0.1.12 | **v0.1.13** |
+|---|---|---|---|---|
+| BRACED! | 5 / 6 / 3 / 4 / 7 / 4 (mean **4.8**) | mean 1.8 | mean 1.0 | 3 / 3 / 3 / 4 / 0 / 3 (mean **2.7**) |
+| BOWLED! | 10 / 9 / 8 / 5 / 4 / 6 (mean **7.0**) | mean 4.5 | mean 4.8 | 1 / 3 / 6 / 10 / 4 / 5 (mean **4.8**) |
+| bots' charges | mean 10.3 | mean 9.5 | mean 5.0 | 9 / 11 / 10 / 13 / 12 / 11 (mean **11.0**) |
+
+**As a person:** v0.1.13 is the best shield version of the day by the counts. The bots charge as often as in the hand
+version (11.0 a minute, against 10.3). BRACED! comes up 2.7 times a minute, the most yet, though still about half the
+hand's 4.8. BOWLED! holds at 4.8 against the hand's 7.0.
+- Not met: neither target is reached. Five sentences (rounds 1-5) took braces from 0.0 to 2.7 and bowling from 1-3 to
+  4.8.
+- What is left: the hand version's bowling comes from a bigger throw over a wider lane, with every man in it going
+  down. The editor bowls the open men within the lane, but its men brace (Bram 92 %), so a crowded lane often ends in a
+  brace instead of a line of pins.
+
+Window take (seed 4, 25 s; `clips/shield_v0113_vs_hand.mp4`, 640 wide; `stills/shield_ed0113_s4_overview.jpg`, a
+frame every 48, looked at): BOWLED! four times, SLAM! four times, and one BRACED!, as the Gulls and our crew charge
+into each other's lines.
+
+**Pack path and menu title (round 5):**
+`C:/Users/kazda/kiro/third-life/.claude/worktrees/d25-shield/.tl/jobs/shield-wall-3-v-20261125-1-jb/promoted/game.shield_wall_3_v@0.1.13`,
+"Shield wall: charge and slam v0.1.13 (made in Create from juice sentences)". It is the best editor shield version of
+the day, and replaces v0.1.11 as the one to play.
+
+## The whole day in one table (editor versions the owner can play)
+| Game | sentences sent | newest version | against the hand version |
+|---|---|---|---|
+| Robot soccer | 3 (768 + 443 + 439 chars) | v0.1.9 | on a par by eye: glow, thick rings, launches 3.5-5.0 m, BONK!/KA-BONK!! by charge in comic letters, bots 10-11 swings a minute |
+| Shield wall | 6 (798 + 426 + 446 + 476 + 495 + 454) | v0.1.13 | words, lanes, leap, F/C buttons; bots charge as often (11.0 a minute); BRACED! 2.7 against 4.8, BOWLED! 4.8 against 7.0 |
+| Arsenal hockey | 4 (743 + 392 + 456 + 325) | v0.1.27 | METEOR everywhere, fire, fireball, words, no faceoff meteor, a cord net, glass that wobbles from the follow camera; the bots still cannot use or block the meteor (C++) |
