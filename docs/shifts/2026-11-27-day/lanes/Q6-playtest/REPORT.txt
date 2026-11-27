@@ -1,0 +1,225 @@
+Q6 PLAYTEST: a newcomer plays the Home sandbox (M6 merged), 27 Nov 2026 day shift, 13:23 - 14:15.
+Worktree .claude/worktrees/d27-play, detached at a8a98d50. Fable. Read-only: no code edit, no git that writes.
+Files written: this lane folder (16 stills, 10 extras, 3 clips, STANDUP.md, REPORT.txt) and .tl/q6 (scratch Homes, logs).
+
+HOW I PLAYED (read this before trusting anything below)
+- The editor binary (Godot 4.7.2 console exe, not --headless) in a 1920x1080 window on res://boot/boot.tscn, TL_STYLE=crisp,
+  each run on a scratch Home (TL_HOME_BUILD_DIR). Not the exported exe.
+- I have no hands. Input went through the lanes' hooks: TL_EXE_KEYS (keys held and let go at physics frames),
+  TL_BUILD_DEVICES (the pointer at a pixel or a world point, LMB, RMB, keys), TL_COMMAND_DEVICES (the sentence, Enter,
+  the captures). They make the same Input events a keyboard and a mouse make. I never turned the camera with the mouse
+  in play, so every walk is W A S D against a fixed camera. A person steers better than my scripts; a person also
+  meets everything below sooner.
+- Not done: typing into a text field (run name and message kept their defaults), the mouse wheel (the hook has none),
+  a stamp of my own course (the box needs the wheel), X export / I import, sound (I cannot hear; the files under
+  kernel/world/build and kernel/world/home hold no audio call, though the kernel has TLAudio for games, so I expect
+  the build tools and the rules to be silent).
+- Step 1 was done blind: all ten tools once from the hotbar and its hint line only, then BUILD.md. BUILD.md is a
+  developer file (API tables, file lists); the keys table in it is the only part a player could use. There is no
+  player page.
+- ONE real LLM call (claude-opus-5-5 through foreman world-edit). No fix call (R) was sent.
+- Side effect on the machine: the system clipboard now holds a TL1 share code (Ctrl+C in the stamp tool).
+
+STORYBOARD (in the order a person meets it)
+01 q6-01-menu.jpg                    works     Menu: World, Dungeons, Create, Quit; keys named at the bottom. Enter on World.
+02 q6-02-arrival.jpg                 works     He stands on the village road. A key bar names walk, run, jump, fly, B build.
+                                               Nothing is called "Home"; B simply works where he stands.
+03 q6-03-build-hotbar.jpg            works     B: ten tool tabs, the tool's slots, a hint line, a clock (N next, H hold).
+                                               The hint line is about 15 px high at 1080p.
+04 q6-04-hotbar-click-through.jpg    bug       I clicked the "Rules" tab with the mouse: the tool did not change and a plank
+                                               cube appeared by his feet, behind the bar.
+05 q6-05-game-lot-refusal.jpg        friction  Stamps, Pad hop, aimed at empty meadow: "224 of 275 refused: game lot". The
+                                               ghost stays cyan, the lot is not drawn, the click does nothing.
+06 q6-06-garden-gate-no-prompt.jpg   friction  Garden gate, run going, at the gate: nothing says "E". (The stamp also sits a
+                                               0.7 m curb above the grass: walking into it stops him, he must jump on.)
+07 q6-07-finish-card.jpg             works     E opened the gate, he walked to the flag: confetti, "New best! 00:03.15".
+                                               0 of 3 coins taken; the card does not mention coins.
+08 q6-08-ghost-second-run.jpg        works     A new session, second run: the cyan ghost of the best run runs ahead.
+09 q6-09-padhop-falls-short.jpg      bug       Pad hop, holding W: the pad throws him 4.0 m, the gap needs more. He drops on
+                                               the hazard, respawns, is thrown again. For ever. (q6-padhop-loop.mp4)
+10 q6-10-tower-first-pillar.jpg      bug       Tower climb: the first pillar is one block high and the walking jump tops out
+                                               at 0.87 m. Coin 1 hangs over his head. Not climbed.
+11 q6-11-rules-tool-card.jpg         works     Rules tool: presets placed with clicks and drags; the card reads them as sentences;
+                                               the Start asks for the run's name. Labels pile up from this camera.
+12 q6-12-own-door-ignores-E.jpg      bug       My own course: the coin is taken, then the Door I made on the wall does not
+                                               open on E. In play the door looks like the rest of the wall.
+13 q6-13-llm-ghost.jpg               works     The one ask: 77 s later a ghost and a note: "I built your garden maze in front
+                                               of you. The gate is at the south end and opens on E. The coin is in the centre."
+14 q6-14-llm-gate-open-but-blocked.jpg bug     Kept. E opens the gate (the hole is open behind his head) and he still cannot
+                                               walk in: the 2-block doorway stops him at the lintel.
+15 q6-15-maze-coin.jpg               works     After I removed the lintel by hand: the maze has a real route, the coin is in
+                                               the middle, "You found the coin in the heart of the maze!" (q6-llm-maze.mp4)
+16 q6-16-night-run-lamps.jpg         works     N twice: night. Two street lamps by the Garden gate, a run at night
+                                               (q6-night-run.mp4). The best-looking minute of the playtest.
+Extras: q6-x1 (lamps at night in build mode), x2 (spawn at night: moon, stars, one mast, one window), x3 (street lamp
+"locked: play any dungeon 3 times"), x4 (flowers and a stone path, 390 m from the spawn), x5 (a pasted share code),
+x6 (the Door's card), x7 (a 2-high doorway on a flat block floor stops him), x8 (flight over the courses), x9 (my door
+open after E in mid-jump), x10 (spawned inside my own blocks).
+
+THE TEN BIGGEST FRICTIONS AND BUGS (ranked by how much a newcomer would mind)
+
+1. The walker cannot pass a doorway two blocks high. BUG.
+   Measured twice. (a) The LLM's maze gate: two wood blocks, a stone lintel above; E opens it (still 14) and he stays
+   at z 46.35 with `visitor_blocked ... at (-66.5, 4.0, 46.0)` (the lintel's lower edge); the ground there is y 2.03,
+   so the hole is 1.97 m. (b) A flat block floor (top y 3.0), a wall 3 high with a hole 1 wide and 2 high: he stops at
+   z 69.65, `visitor_blocked ... at (-71.5, 5.0, 70.0)`, for the whole run. walker_space.gd says HEIGHT 1.8; I did not
+   find why 2.0 m is not enough (my guess, unverified: the step-up test lifts the capsule).
+   Why it ranks first: the Foreman's prompt tells the model "a door a walker can pass (2 cells high)", the space check
+   said "nothing found" for this maze, and every person who has played Minecraft builds a 2-high door first.
+   Repro (b): .tl/q6/run.sh door2 environment: TL_EXE_START=-71.5,64,-71.5,90,
+   TL_BUILD_DEVICES="20:fill:-74,2,66,-70,2,76,1,1;22:fill:-74,3,70,-73,5,70,1,3;24:fill:-71,3,70,-70,5,70,1,3;26:fill:-72,5,70,-72,5,70,1,3",
+   TL_EXE_KEYS="100:+W;300:-W". Repro (a): Home .tl/q6/runs/llm1/home, TL_EXE_START=-66.5,50,-66.5,30, W, E at the gate.
+
+2. Pad hop (starter 2 of 3) traps a walking player in a loop. BUG.
+   Stamps, 2, place, leave build mode, get on the start platform, hold W. The pad (10 m/s up, 3 m/s forward) launches at
+   z 55.97 and he lands at z 51.96: 4.0 m, on the hazard under the gap. Respawn at the start, the run starts again,
+   the same again: four identical cycles of 86 frames in the 374 I watched, with no way out shown. With Shift held the
+   same course is done in 205 frames (3.4 s; the launches carry 6.9 m). Nothing says "run". The recipe expected "about
+   6 m" (lane T's own note: the feet paths were cells, not physics, and were not measured).
+   Repro: Home .tl/q6/runs/place4/home, TL_EXE_START=-77.5,64,-77.5,30,
+   TL_EXE_KEYS="100:+W;150:+Space;154:-Space;175:+Space;179:-Space" (ph2); add "205:+Shift" for the pass (ph3).
+   Also: on my slope the start platform was a 2.03 m wall that he climbed by a ledge grab; on flat ground the stamp
+   sits 0.7 m proud and the wall is 2.7 m. Not tested there.
+
+3. Four of the ten tools do nothing for 350 m round the spawn. FRICTION (by design, unexplained).
+   B at the spawn, T to Sculpt, click: the red word "village". The same for Paint, Paths and Plants; Water says "no
+   hollow here: dig one first" and you cannot dig. Still "village" at z 216 and at z 293, south of the spawn. The first
+   place where they worked was (-72, 390). The village's border is x -393..453, z -330..282 (day_shots.gd --probe) and
+   land_protect.gd refuses 72 m round it: from the spawn at (-60, 2) the nearest free ground is 352 m south, 78 s on
+   foot. No sign, no line on the ground, no arrow. The LLM's maze lost its stone path to the same word.
+
+4. The hotbar looks like buttons and is not. BUG / FRICTION.
+   B, then click the "Rules" tab (1149, 880): the tool stays Blocks and a cube is placed at the cell behind the bar,
+   (-74, 3, 64) from TL_EXE_START=-72,64,-72,90. Click the "2 slab" slot (734, 924): another cube. Every newcomer
+   clicks the tabs first. (T, Shift+T and the digits work.) Run ux1.
+
+5. He cannot reliably jump onto one block, the unit everything is built from. BUG, and Tower climb with it.
+   Walking jump: apex 0.87 m (the camera rises 8.26 -> 9.13; `visitor_blocked` feet 4.86 against a top at 5.0). Space
+   held longer: the same. Sprint jump: about 1.4 m at 9 m/s, he lands about 6 m past the pillar. Tower climb's first pillar
+   (1 block, 1 x 1): 0 of 3 walking tries; the next three pillars each step 1 m up over a 1-cell gap from a standing
+   start. A 3-wide row one block high: 1 of 2 (the first try scraped over the lip, the second stopped). I did not
+   finish Tower climb and I do not think a newcomer will. Runs tw1-tw4, jump1.
+
+6. Presets made on real ground fail for a reason nobody can see. BUG.
+   My course (Home .tl/q6/runs/course4/home, TL_EXE_START=-71.5,64,-71.5,90, W, E at the wall): the Door did nothing.
+   Feet at y 2.90, so rules_run.gd `feet_cell` = floor(2.90 + 0.05) = cell 2; the wall's blocks, and so the Door's
+   zone, are cells y 3..4. E pressed in mid-jump (feet y 3.69) opened it at once (run mine2, x9). The Jump pad
+   (1 cell high, the cell under the cursor, y 2) was walked over without a launch on the first pass (feet y 2.95 ->
+   cell 3) and fired on the second (feet y 2.9366 -> cell 2). The starters do not show this because they bring their
+   own block floor. A band of ground heights a few cm under a whole metre does it; a person sees "my door is broken".
+
+7. Refusals that cannot be seen coming, and one that says nothing. FRICTION.
+   - Game lots are 80 x 80 m squares of plain meadow (the kit plot: x -60..20, z 17..97; the paddle plot: x -165..-85).
+     Between them the free strip is 25 m wide. Two of my first three stamps were refused; the refused ghost is cyan.
+   - The cursor reaches 24 m. Beyond it there is no ghost, no reason, and a click does nothing (run place1).
+   - The words: "village", "game lot", "authored structure (rail)", "field", "too close". Short, and not a sentence a
+     newcomer can act on ("this land belongs to the village: build 350 m south" would be).
+
+8. In play nothing says what E does, where a door is, or where a hazard is. FRICTION.
+   The walking key bar says "E  enter the game you stand in". A Door has look "none": in my course it is two planks
+   among fourteen. A Hazard has look "none": an invisible box that sends you back. No "E" over a door, no colour on a
+   hazard. The person who built it knows; a visitor (or the same person next week) does not.
+
+9. Aiming and the camera. FRICTION.
+   - From the walker's camera anything one block high hides 6 m of ground behind it. My Finish aimed at z 84.5 landed
+     at z 79, on the near side of a row of blocks (run course2). I built the course far-to-near in three passes. F
+     (fly) is the answer and the build hint line does not name it.
+   - Zone labels and boxes overlap into one unreadable pile when the zones stand in a line away from you (still 11).
+   - After a stamp is placed it stays armed and its ghost lies over the copy just placed (run place1, s440).
+   - In the maze's 1 m corridors with 4 m walls the camera goes into the wall whenever he walks toward it (the last
+     three seconds of q6-llm-maze.mp4 show his hair and stone).
+
+10. Night asks for lamps and a newcomer has none. FRICTION.
+   Pieces, Tab, 3 street lamp: "locked: play any dungeon 3 times". Light mast: locked (paddle, best 5). The reason is
+   shown, which is good, but only after he picks the slot. I unlocked the lamp with a trophies.json fixture
+   ({"game.parkour":{"plays":3}}) to see it: see the night verdict.
+
+SMALLER THINGS (each seen once, with its run)
+- Blocks built on the spawn point bury him on the next visit: he is put at ground level inside them and cannot walk
+  out (runs spawnA/spawnB: a 4 x 4 x 4 stone lump at (-62..-59, 0..3, 0..3); feet y 0.47, stopped at the inner faces;
+  x10). A newcomer's first blocks go down exactly there. B and RMB get him out.
+- Stepping back on the Start pad starts the run again and counts a play (run g3: plays 4, finishes 1).
+- Garden gate's finish does not need the coins: straight through in 3.15 s. The message says "Three coins hide in the
+  beds" and they hover in plain sight. The HUD shows "0 coins" on Pad hop, which has none, and "1 coins" for one.
+- A checkpoint respawn puts him at the zone's floor y (2.0) where the ground is 2.94 (run mine2: "to (-71.5, 2.0,
+  76.5)"). He came out standing; I saw no harm.
+- The finish card stands at the flag and the flag and pole cover him (stills 07, 16).
+- The LLM's maze was built from x -71 to -63 with the cursor at x -72: beside the cursor, not round it.
+- While the model thought (77 s) the Home's clock went from 12:04 to 13:26 (a day is 24 minutes).
+- Path tool: its hint says "RMB or Enter lay it"; with no point laid, Enter opens the Command tool's bar (run land1).
+- The clock's text overlaps the "dev" tag in the top right corner (dev builds only).
+- My own run through the Garden gate's coins failed on my script's timing, not on the game. Coins were taken in my
+  own course and in the maze.
+
+WHAT WORKED WELL (so it is not lost under the list)
+The look: plank and stone blocks, the fenced Garden gate, coins, pads, the flag, flowers, the stone path, the pine,
+and above all the street lamps at night, all read as one hand with no effort from me. The Rules tool's presets and
+the card's sentences ("when you press E in Door 1: open Door 1 / when you leave Door 1: close Door 1 / [ ] closes
+after ...") are the clearest thing in the build. The run pill, the coin chip, the say line, the finish card and the
+ghost (which survives a restart) make a course feel like a game. Ctrl+Z took a whole stamp back (129 blocks -> 2) and
+Ctrl+Y brought it back. The share code: Ctrl+C on Garden gate gave "copied: a code of 1311 characters"; in a second,
+empty Home Ctrl+V gave "pasted Garden gate (7 zones, 8 rules)" and one click placed 243 ops. Saved / unsaved is shown.
+
+THE ONE LLM ASK
+"a garden maze with a gate that opens when I press E and a coin in the middle", cursor on the grass at (-72, 3, 46),
+looking north, a fresh Home. Model time 76.5 s (4,665 frames from Enter to the ghost: 77.8 s), 41,137 tokens in,
+8,460 out, claude-opus-5-5. 274 ops: 268 blocks (199 stone cubes, 67 dark stone slabs as a cap, 2 wood for the
+gate), 3 zones, 2 rules, 1 path. The hotbar said "268 blocks, 3 zones, 2 rules; 1 refused: village" (the path) and
+the space check found nothing (547 nodes, 29.3 ms). Kept with Enter: "Ctrl+Z takes it all back".
+What it is: a 9 x 13 box of stone walls 4 high with corridors 1 wide, a 3 x 3 room in the middle, two routes that
+join (a loop), the gate in the south wall, a 3 x 2 x 3 "Gate Switch" zone round it (use: toggle the gate), the coin
+at (-67, 39) (enter, if coins is 0: take, add 1, say). Played after the lintel came off: E at the gate, east, north,
+west, south into the middle, the coin and its line, 8.3 s of walking.
+Against the sentence: maze yes, gate on E yes, coin in the middle yes. "Garden" no: it is a grey bunker, no hedge,
+no plant, and a plant or path op would have been refused there anyway. Playable as delivered: no (item 1).
+The ask, the answer and the Foreman's log are kept in .tl/q6/runs/llm1/home/llm/.
+
+VERDICTS, ONE PER THESIS CLAIM
+- Does building look good without effort?  YES. Every tool I got to work made something that belongs in the picture.
+  The exceptions are small: a stamp sits a curb above the grass, and what the model called a garden is a stone box.
+- Does a build do something without code?  YES ON A BLOCK FLOOR, NOT RELIABLY ON GROUND. Seven presets: seven digits,
+  seven clicks or drags, one Enter, and I had start, coin, door, checkpoint, pad, hazard and finish. Two of the seven then misfired for a
+  reason that is invisible in the tool (item 6), and two of them (door, hazard) are invisible in play (item 8).
+- Does the LLM build what was asked?  THE PARTS YES, THE PLAY NO. In 77 s it placed what the sentence named and wired
+  it correctly. It could not be entered without a hand edit, and the check that exists to catch that passed it.
+- Is playing it fun for a minute?  NOT YET. Garden gate is 3 seconds and asks nothing. Pad hop is a loop or 3.4
+  seconds. Tower climb I could not climb. My own course was 6 seconds. The dressing (clock, card, confetti, ghost) is
+  ahead of the courses. The minute I enjoyed was building the course, not running it. No audio call in the rules' code.
+- Does night make you want to build lamps?  YES, AND YOU CANNOT. Night itself is pretty (moon with a halo, stars,
+  long shadows) and bright enough that nothing needs a lamp. Two street lamps by the gate changed the scene more than
+  anything else I placed all day: a warm pool on the stone, the fence lit from one side, coins and pads glowing.
+  The lamp is locked behind three dungeon plays and N works only in build mode, so a newcomer may never see it.
+
+AGAINST THE RESEARCH: three things Minecraft, Roblox and Fortnite Creative do that a newcomer here misses first
+1. The body fits the build (Minecraft; R1 section 2). Steve jumps 1.25 blocks and walks through a 2-high door, so
+   everything anyone builds can be walked. Here the jump is 0.87 of a block, a 2-high door stops him, a stamp makes a
+   curb, and two of three starters cannot be finished by walking. The thesis line "play it at once" rests on this.
+2. You can build where you stand, with everything, and the screen answers a click (Minecraft's hotbar, Roblox
+   Studio's toolbar, Fortnite Creative's device gallery; R2 finding 2: the skill floor kills building games). Here
+   the tabs are not clickable, four tools are dead for 350 m, lots are unmarked, and the reach limit is silent.
+3. Devices show themselves and say their key (Fortnite Creative: a visible device, "E" over it, a hazard that looks
+   like one; Hytale's trigger volumes are edited as shapes but played as things; R1 finding 7). Here a door is two
+   planks in a wall, a hazard is nothing, and the only E on the screen is about entering a game.
+   A fourth, sooner than all three but I could only read it in the code: sound. I found no audio call for a placed
+   block, a coin, a door or a finish.
+
+IF ONLY THREE THINGS ARE DONE NEXT
+1. Make the walker fit the grid: a 2-high doorway passes, one block is a sure jump (or a step), and replay the three
+   starters with the real walker at walking speed in a gate (774's walker, not the cell replay).
+2. Make the first two minutes answer: clickable tabs and slots, the lots and the village band drawn while building,
+   a sentence where a word is now, a ghost that turns red when any part is refused, a line when the cursor is too far.
+3. Make zones forgiving and visible: a zone tested against the feet with a margin below its floor, a door and a
+   hazard with a look, "E" over a use zone in play.
+
+GATES
+None required (read-only lane), none run. `tl doctor` PASS at start. One helper was run headless to read the village
+border (day_shots.gd --probe; it writes nothing).
+
+WHERE THINGS ARE
+- Stills, clips, standups: docs/shifts/2026-11-27-day/lanes/Q6-playtest/ (6 MB; every JPG under 200 KB, clips 5.5 s,
+  9.5 s and 6.7 s).
+- Scratch: .tl/q6/run.sh and play.sh (the exact environment of a run), mk_course*.sh and mk_land.sh (the pointer
+  scripts), .tl/q6/runs/<name>/ (home, log.txt, trace.jsonl, captures). Raw frames were deleted after the clips were
+  made (the disk went from 53.7 to 46 GB free during the shift, other lanes included).
+- Homes worth keeping for a fix: runs/place4/home (the three starters), runs/course4/home (my course: the door and
+  the pad), runs/llm1/home (the maze as the model made it), runs/door2 (the doorway), runs/spawnA/home (the lump).
