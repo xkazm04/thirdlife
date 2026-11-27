@@ -42,7 +42,8 @@ const FULL_TOP := [Blocks.CUBE, Blocks.WINDOW]
 ## "clipped": bool, "grid": the Grid searched (null when nothing was)}. `all`: every zone and rule of `r`'s scratch is
 ## checked as if new (a kept course read back: `r` = {"scratch": {"blocks": the live layer, "rules": the live layer}}).
 static func check(build: RefCounted, land: Node, r: Dictionary, all := false) -> Dictionary:
-	var out := {"floating": [], "no_floor": [], "coin_in_block": [], "runs": [], "marks": [], "line": "", "nodes": 0, "clipped": false, "grid": null}
+	var out := {"floating": [], "no_floor": [], "coin_in_block": [], "runs": [], "marks": [], "line": "", "nodes": 0, "clipped": false, "grid": null,
+		"findings": []}
 	var sc: Dictionary = r.get("scratch", {})
 	var bl: RefCounted = sc.get("blocks")
 	if bl == null:
@@ -107,6 +108,7 @@ static func check(build: RefCounted, land: Node, r: Dictionary, all := false) ->
 			for f: int in run.finish:
 				out.marks.append(Vector3i(zones[f].box[0][0], zones[f].box[0][1], zones[f].box[0][2]))
 	out.line = line(out, zones)
+	out["findings"] = findings(out, zones)
 	return out
 
 
@@ -247,10 +249,80 @@ static func _runs(g: Grid, zones: Dictionary, rules: Dictionary, new_rules: Arra
 							best = int(walk[c][1])
 							run.path = path_to(walk, c)
 				run.reachable = best >= 0
+				run["coins_away"] = []
 				for z: Dictionary in coins:
 					if g.nodes_in(z.box).any(func(c: Vector3i) -> bool: return walk.has(c)):
 						run.coins_reached = int(run.coins_reached) + 1
+					else:
+						(run.coins_away as Array).append(int(z.id))
+				if not run.reachable:
+					run["gap"] = _gap(g, walk, zones, run.finish)
 			out.append(run)
+	return out
+
+
+## Where a walk stops short of the finish, from the reached feet cells to the finish zones' feet cells: "gap", the
+## shortest jump across among those low enough to climb (up <= JUMP_UP), and "wall", the lowest climb among those near
+## enough (across <= JUMP_ACROSS), each {"from", "to", "across" m, "up" m} or absent; "to_floor" false when no finish zone
+## has a feet cell at all.
+static func _gap(g: Grid, walk: Dictionary, zones: Dictionary, finish: Array) -> Dictionary:
+	var ends := []
+	for f: int in finish:
+		ends.append_array(g.nodes_in(zones[f].box))
+	if ends.is_empty():
+		return {"to_floor": false}
+	var out := {"to_floor": true}
+	for c: Vector3i in walk:
+		for e: Vector3i in ends:
+			var across := Vector2(e.x - c.x, e.z - c.z).length()
+			var up := float(g.nodes[e]) - float(g.nodes[c])
+			var j := {"from": c, "to": e, "across": across, "up": up}
+			if up <= JUMP_UP and (not out.has("gap") or across < float(out.gap.across) - 0.001):
+				out["gap"] = j
+			if across <= JUMP_ACROSS + 0.001 and (not out.has("wall") or up < float(out.wall.up) - 0.001):
+				out["wall"] = j
+	return out
+
+
+## The findings in words a model can act on, one line each, with cells: "2 blocks float: (3, 12, 5), (4, 12, 5)";
+## "the pad Start (zone 1, box ...) has no floor: nothing to stand on at (x, y, z)"; "finish of Hop not reachable:
+## the walk from the start gets as close as feet cell (..), 6.0 m across and 1.0 m up from the finish's (..); a jump
+## crosses at most 4 m (3 empty cells) and climbs 1.2 m". Empty when nothing was found (command_tool.gd's fix ask).
+static func findings(s: Dictionary, zones: Dictionary) -> Array:
+	var out := []
+	var cell := func(c: Vector3i) -> String: return "(%d, %d, %d)" % [c.x, c.y, c.z]
+	var fl: Array = s.floating
+	if not fl.is_empty():
+		out.append("%s (joined to no block and no ground): %s%s" % ["1 block floats" if fl.size() == 1 else "%d blocks float" % fl.size(),
+			", ".join(PackedStringArray(fl.slice(0, 12).map(cell))), "" if fl.size() <= 12 else ", ..."])
+	var zname := func(id: int) -> String:
+		var z: Dictionary = zones.get(id, {})
+		return "the %s %s(zone %d, box %s)" % [str(z.get("look", "zone")), (str(z.name) + " ") if z.has("name") else "", id, JSON.stringify(z.get("box", []))]
+	for id: int in s.no_floor:
+		var fc := Check.floor_centre(zones[id].box)
+		out.append("%s has no floor: its bottom row is not a feet cell over a block or the ground at (%d, %d, %d)" % [zname.call(id), floori(fc.x), int(zones[id].box[0][1]), floori(fc.z)])
+	for id: int in s.coin_in_block:
+		out.append("%s has its token inside a solid block: move it up so its bottom cell is a feet cell" % zname.call(id))
+	for run: Dictionary in s.runs:
+		if (run.finish as Array).is_empty():
+			out.append("run %s has no finish: no rule with a zone trigger does finish" % run.run)
+		elif not bool(run.reachable):
+			var gp: Dictionary = run.get("gap", {})
+			if not bool(gp.get("to_floor", true)):
+				out.append("finish of %s not reachable: no finish zone has a feet cell (a cell over a block or the ground with 1.8 m of headroom)" % run.run)
+			elif gp.has("gap") or gp.has("wall"):
+				var why := PackedStringArray()
+				if gp.has("gap"):
+					why.append("a gap too wide: from feet cell %s to the finish's %s is %.1f m across (%d empty cells)" % [cell.call(gp.gap.from),
+						cell.call(gp.gap.to), float(gp.gap.across), maxi(0, roundi(float(gp.gap.across)) - 1)])
+				if gp.has("wall"):
+					why.append("a climb too high: from feet cell %s to the finish's %s is %.1f m up" % [cell.call(gp.wall.from), cell.call(gp.wall.to), float(gp.wall.up)])
+				out.append("finish of %s not reachable from its start; the nearest the walk gets: %s. A step climbs 0.55 m (stairs, slabs), a jump at most 1.2 m up and 4 m across (3 empty cells)" % [
+					run.run, "; ".join(why)])
+			else:
+				out.append("finish of %s not reachable: the walk from the start (if its zone has a feet cell at all) reaches nothing within 1.2 m below the finish or 4 m across from it" % run.run)
+		for id: int in run.get("coins_away", []):
+			out.append("%s is out of reach of the walk from the start" % zname.call(id))
 	return out
 
 

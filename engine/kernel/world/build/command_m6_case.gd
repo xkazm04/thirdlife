@@ -35,7 +35,8 @@ var b: RefCounted
 var t: RefCounted
 var ok_all := true
 var site := {}                            # x, z: the platform's north-west cell; y: its blocks' y; top: the feet cell on it
-var ask_out := ""
+var ask_out := ""                         # the first user argument: where the ask case copies its ask (a subclass: its file)
+var prefix := "command-m6"                # the verdict lines' name
 
 
 func _initialize() -> void:
@@ -44,7 +45,7 @@ func _initialize() -> void:
 
 func say(n: String, ok: bool, detail: String) -> void:
 	ok_all = ok_all and ok
-	print("HOME command-m6.%s %s %s" % [n, "ok" if ok else "fail", detail])
+	print("HOME %s.%s %s %s" % [prefix, n, "ok" if ok else "fail", detail])
 
 
 func wait(n: int) -> void:
@@ -95,16 +96,21 @@ func run() -> void:
 	await wait(3)
 	await tap(KEY_B)
 	platform()
+	await cases()
+	finish()
+
+
+## The cases on the platform (round 2: command_fix_case.gd extends this file and runs its own).
+func cases() -> void:
 	await ask_case()
 	await floating_case()
 	await reach_case()
 	await course_case()
-	finish()
 
 
 func finish() -> void:
 	CaseUtil.remove_dir(ProjectSettings.globalize_path(TMP))
-	print("HOME command-m6 %s" % ("ok" if ok_all else "fail"))
+	print("HOME %s %s" % [prefix, "ok" if ok_all else "fail"])
 	print("HOME DONE")
 	quit(0)
 

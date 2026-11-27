@@ -41,4 +41,8 @@ A short run: start pad, a stair onto a ledge (top 11, a checkpoint) with a coin,
 {"op":"rule","id":2,"when":{"on":"enter","zone":2},"if":[{"running":true}],"do":[{"do":"take","zone":2},{"do":"add","counter":"coins","by":1}]}
 {"op":"rule","id":3,"when":{"on":"enter","zone":3},"if":[{"running":true}],"do":[{"do":"checkpoint","zone":3}]}
 {"op":"rule","id":4,"when":{"on":"enter","zone":4},"if":[{"running":true}],"do":[{"do":"finish"}]}
-A tall course gets a zone of look none on the ground round it: enter, if running, respawn. Name the run in the note.
+{"op":"zone","id":5,"box":[[100,10,44],[101,10,45]],"look":"none","name":"Fall"}
+{"op":"rule","id":5,"when":{"on":"enter","zone":5},"if":[{"running":true}],"do":[{"do":"respawn"}]}
+A fall: under EACH jump gap a zone of look none on the floor the walker lands on if he misses (the ground, or a lower
+landing), just the gap's cells: enter, if running, respawn (at the last checkpoint). Never one zone round the whole
+course (it is refused next to a lot, and it catches the start and the stairs). Name the run in the note.

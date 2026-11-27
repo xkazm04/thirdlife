@@ -62,7 +62,7 @@ if [ -z "$FILTER" ] || [[ "${home_command_m6_cases[*]}" == *"$FILTER"* ]]; then
       const tpl = fs.readFileSync(path.join(path.dirname(js), '..', 'prompts', 'world_edit.md'), 'utf8');
       const schema = JSON.stringify(JSON.parse(fs.readFileSync(path.join(path.dirname(js), '..', 'prompts', 'world_edit.schema.json'), 'utf8')), null, 1);
       const full = g.render(tpl, { ...f, schema, feedback: '' }).length, bare = g.render(tpl, { ...f, rules: '', schema, feedback: '' }).length;
-      if (full - bare > 4096) throw new Error('the zones-and-rules section adds ' + (full - bare) + ' bytes (at most 4096)');
+      if (full - bare > 5120) throw new Error('the zones-and-rules section adds ' + (full - bare) + ' bytes (at most 5120: 4 KB, and 1 KB more for the fall pattern)');
       console.log('read: ' + a.zones.length + ' zone, ' + a.rules.length + ' rule, room ' + JSON.stringify(a.rules_room) + '; prompt ' + full + ' bytes, ' + (full - bare) + ' of them the zones-and-rules section');
     " "$home_cm6_js" "$home_cm6_ask" 2>&1)" || why="the Foreman refused the ask: $home_cm6_said"
   fi

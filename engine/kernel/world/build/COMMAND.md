@@ -224,3 +224,30 @@ replayed headless (`command_m6_case.gd -- replay`): the walk reaches all 3 coins
 2 m across and 1.2 m up (13 feet cells, the run recorded in 96 frames of scripted walk, both says shown); walking
 alone (steps of 0.55 m, no jump) reaches no coin and no finish: it is a jumping course. Captures:
 `docs/shifts/2026-11-27-day/lanes/C6-llm/c6-ghost.jpg`, `c6-built.jpg`.
+
+## Round 2 (lane C, 27 Nov 2026): fix it, findings, the bridge's clearance, the fall pattern
+
+- **Fix it (R).** When the space check finds anything, the hotbar note ends "R: fix it", the hint names "R fix it (asks
+  the model again)" and the label over the ghost adds "R: fix it". R (not E, not a host key: blocks, pieces and stamps
+  use R to rotate, but while a ghost is shown the command tool has the keyboard and the host reads none) sends ONE
+  follow-up ask: the same sentence at the same spot, measured again, with `fix: {ops: the answer's ops as shown,
+  findings: [the check's findings]}` (`foreman world-edit` reads it, `world_edit.ts` `fixFacts` puts the earlier ops
+  and the findings in the prompt and asks for the whole corrected answer). The ghost stays while the fix is asked
+  ("fixing... 0:12"; a second R sends nothing more); the corrected answer replaces it (the earlier call is logged
+  reverted) and, like every ghost, is kept only by Enter. A fix is a call: the day's cap, `llm_calls.jsonl` with the
+  sentence "fix: <sentence>", `tl ledger`. Without findings R does nothing. Test hook kinds `fix` and `settle` (Enter
+  on the last ghost once no ask is pending). Case: `command_fix_case.gd -- fix`, selftest 786 (`HOME command-fix ok`).
+- **Findings** (`command_space.gd` `findings`): one line per problem with its cells, the words the fix ask carries:
+  "1 block floats (joined to no block and no ground): (706, 38, -56)"; "the pad Sky (zone 1, box [...]) has no floor:
+  ... at (x, y, z)"; "the coin (zone 2, box [...]) has its token inside a solid block"; "finish of Hop not reachable
+  from its start; the nearest the walk gets: a gap too wide: from feet cell (..) to the finish's (..) is 6.0 m across
+  (5 empty cells); a climb too high: from feet cell (..) to the finish's (..) is 2.0 m up. A step climbs 0.55 m ...";
+  "the coin ... is out of reach of the walk from the start". Case: `command_fix_case.gd -- findings`, selftest 787.
+- **The bridge rule** (from lane LP's patch): the deck stands at least 1 cell above the higher bank's ground y AND at
+  least 2 above the water's surface y (the water's top is somewhere inside its surface cell, so the deck's underside
+  clears it by 1 m or more); the steps start on a dry column (in none of the water's runs) at its own ground y, and
+  there are (deck y + 1) - (that ground y) of them, the first on the ground, the last meeting the deck.
+- **The fall pattern**: a zone of look none under EACH jump gap, on the floor the walker lands on if he misses, just
+  the gap's cells (enter, if running, respawn at the last checkpoint), never one zone round the whole course (the
+  real tower's 11 x 9 "Fall" zone was refused next to a lot and would have caught the start and the stairs). The
+  worked course has one under its 2-cell gap. The zones-and-rules section is 4.26 KB (4.40 KB with one listed zone).

@@ -42,8 +42,11 @@ export const askSchema = obj({
   rules: { type: "array", items: obj({ id: { type: "integer", minimum: 1 }, when: { type: "object" }, if: { type: "array", minItems: 1, items: { type: "object" } },
     do: { type: "array", minItems: 1, items: { type: "object" } } }, ["if"]) },
   rules_room: obj({ zones_left: { type: "integer", minimum: 0 }, rules_left: { type: "integer", minimum: 0 }, counters: { type: "array", items: words } }),
+  // round 2 (lane C): a fix ask (the person pressed R on a ghost the exe's space check found problems in): the answer's
+  // ops as shown and the check's findings (command_space.gd `findings`)
+  fix: obj({ ops: { type: "array", minItems: 1, items: { type: "object" } }, findings: { type: "array", minItems: 1, items: words } }),
   caps: obj({ ops: { type: "integer", minimum: 1 }, blocks_left: { type: "integer", minimum: 0 } }),
-}, ["refused", "paints", "parts", "layers", "water", "zones", "rules", "rules_room"]);
+}, ["refused", "paints", "parts", "layers", "water", "zones", "rules", "rules_room", "fix"]);
 
 export function readAsk(file: string): Ask {
   let value: unknown;
@@ -113,7 +116,20 @@ export function facts(ask: Ask): Record<string, string> {
     layers: ask.layers && Object.keys(ask.layers).length ? "Other layers in the region (as the Home reads them):\n" + JSON.stringify(ask.layers) : "",
     more_ops: moreOps(ask.ops),
     rules: rulesFacts(ask),
+    fix: fixFacts(ask),
   };
+}
+
+/** Round 2 (lane C): a fix ask's section: the earlier answer's ops (as the exe showed them) and what the exe's space check
+ *  found, with the instruction to answer again whole. "" for a first ask. */
+export function fixFacts(ask: Ask): string {
+  if (!ask.fix) return "";
+  return ["", "# Fix your earlier answer to this sentence",
+    "You answered with the ops below; the player saw the ghost and pressed R because the exe's space check found:",
+    ...ask.fix.findings.map((f) => "- " + f),
+    "Answer again with the WHOLE corrected answer (it replaces the earlier one; nothing of it was built): keep what was",
+    "right, fix every finding (move, support or remove the blocks; put zones on feet cells; close gaps a walker cannot",
+    "cross). Your earlier ops, in order:", ...ask.fix.ops.map((o) => JSON.stringify(o)), ""].join("\n");
 }
 
 /** M6 (lane C): the zones and rules section (prompts/world_edit_rules.md) with the ask's measured `zones`, `rules` and
