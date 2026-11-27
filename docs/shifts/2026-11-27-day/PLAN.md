@@ -24,5 +24,9 @@ No handshake (owner away): the scope is the owner's sentence; the Director decid
 | R4 our engine scout | - (read-only, Director saves) | Opus Explore | 08:05 | R4 |
 | LP look polish | d27-look / d27-look | Opus | 08:05 | LP |
 
-Selftest blocks: LP 768-772; build lanes get 773-799 by range.
+| S6 M6 seam (rules and runs) | d27-m6 / d27-m6 | Opus | 08:40 | S6 |
+| DN day and night | d27-night / d27-night | Opus | 08:40 | DN |
+
+Research landed 08:30 (e3b1ccc8): R1-R4 + THESIS.md ("build it, say what it does, play it"), contract BUILD.md M6. After S6: lanes P (play), T (tool), C (LLM) from the seam's LANES.md.
+Selftest blocks: LP 768-772; S6 773-775; DN 776-778; P 779-781; T 782-784; C 785-787.
 Landing: the overlay's pre-merge list on the merged tree in a dedicated worktree; timing reds by A/B under the same load; uncapped `selftest.sh` by count.
