@@ -1,0 +1,85 @@
+{
+ "source": "d25-kart .tl/jobs/j2nd3/half-court-3-v-20261125-1 (lane J2nd round 2): the change with a fairness ask that ended NOT made (1858), then the cue-only change",
+ "events": [
+  {
+   "v": 1,
+   "seq": 1629,
+   "ts": "2026-11-27T14:08:13.894Z",
+   "job": "half-court-3-v-20261125-1",
+   "type": "promoted",
+   "packId": "game.half_court_3_v",
+   "version": "0.1.8",
+   "dest": "promoted/game.half_court_3_v@0.1.8"
+  },
+  {
+   "v": 1,
+   "seq": 1630,
+   "ts": "2026-11-27T14:08:13.901Z",
+   "job": "half-court-3-v-20261125-1",
+   "type": "job_state",
+   "state": "done",
+   "reason": "pack verified V0 to V4 and promoted under the job directory (promoted/game.half_court_3_v@0.1.8) (promotion 9 of this job; the earlier one is kept)"
+  },
+  {
+   "v": 1,
+   "seq": 1631,
+   "ts": "2026-11-27T14:42:09.895Z",
+   "job": "half-court-3-v-20261125-1",
+   "type": "change_requested",
+   "text": "As a newcomer I never found out the alley-oop exists: in my first minute the hint line only said HOLD E ON THE CHALK and SPACE: SWAT AS THEY RISE, never C, and my open teammate's glowing hand is a tiny dot I could not see. When I have the ball and a teammate is open near the rim, show C: ALLEY-OOP over him in big letters with a bright ring under his feet, and make the glowing hand a big pulsing ball of light over his head. When the rivals throw one, tell me in the hint line SPACE: JUMP TO STEAL IT."
+  },
+  {
+   "v": 1,
+   "seq": 1643,
+   "ts": "2026-11-27T14:42:42.553Z",
+   "job": "half-court-3-v-20261125-1",
+   "type": "change_requested",
+   "text": "Make it fairer: a newcomer now wins only 11 of 20 matches. Bring it back to about 13 or 14 of 20 without taking away the alley-oops, the steals or the dunks.",
+   "inbox": "e7b42a81-e873-4b92-b484-72419ce1d7da"
+  },
+  {
+   "v": 1,
+   "seq": 1858,
+   "ts": "2026-11-27T16:39:30.764Z",
+   "job": "half-court-3-v-20261125-1",
+   "type": "job_state",
+   "state": "failed",
+   "reason": "hand check of card.team_possession failed, nothing promoted: newcomer: 11 of 20 won (Wilson 95 % 34..74); the card asks at least 13 The change was NOT made. pack/ was put back to the last promotion game.half_court_3_v 0.1.8 (promoted/game.half_court_3_v@0.1.8); the unpromoted files of the change are kept only in reports/change-not-made-s1858/pack/."
+  },
+  {
+   "v": 1,
+   "seq": 1859,
+   "ts": "2026-11-27T16:43:45.398Z",
+   "job": "half-court-3-v-20261125-1",
+   "type": "change_requested",
+   "text": "As a newcomer I never found out the alley-oop exists: in my first minute the hint line only said HOLD E ON THE CHALK and SPACE: SWAT AS THEY RISE, never C, and my open teammate's glowing hand is a tiny dot I could not see. When I have the ball and a teammate is open near the rim, show C: ALLEY-OOP over him in big letters with a bright ring under his feet, and make the glowing hand a big pulsing ball of light over his head. When the rivals throw one, tell me in the hint line SPACE: JUMP TO STEAL IT."
+  },
+  {
+   "v": 1,
+   "seq": 1860,
+   "ts": "2026-11-27T16:43:45.866Z",
+   "job": "half-court-3-v-20261125-1",
+   "type": "job_state",
+   "state": "running",
+   "reason": "resumed (was failed)"
+  },
+  {
+   "v": 1,
+   "seq": 1862,
+   "ts": "2026-11-27T16:43:53.951Z",
+   "job": "half-court-3-v-20261125-1",
+   "type": "change_requested",
+   "package": "court_exchange",
+   "text": "[foreman] the rivals' part of change request 1859, for the bots your files drive (scripts/core/ai.gd): \"When the rivals throw one, tell me in the hint line SPACE: JUMP TO STEAL IT.\". \"bodies_first_minute\" builds the rest of the change (the moves and rules it names) in the same change, make the bots you drive do what these words say. The whole change, for what the words refer to: \"As a newcomer I never found out the alley-oop exists: in my first minute the hint line only said HOLD E ON THE CHALK and SPACE: SWAT AS THEY RISE, never C, and my open teammate's glowing hand is a tiny dot I could not see. When I have the ball and a teammate is open near the rim, show C: ALLEY-OOP over him in big letters with a bright ring under his feet, and make the glowing hand a big pulsing ball of light over his head. When the rivals throw one, tell me in the hint line SPACE: JUMP TO STEAL IT.\""
+  },
+  {
+   "v": 1,
+   "seq": 1863,
+   "ts": "2026-11-27T16:43:53.953Z",
+   "job": "half-court-3-v-20261125-1",
+   "type": "change_requested",
+   "package": "crews_stakes",
+   "text": "[foreman] the rivals' part of change request 1859, for the bots your files drive (scripts/crews/brain.gd): \"When the rivals throw one, tell me in the hint line SPACE: JUMP TO STEAL IT.\". \"bodies_first_minute\" builds the rest of the change (the moves and rules it names) in the same change, and your package runs after its merge: make the bots you drive do what these words say with what it merged. The whole change, for what the words refer to: \"As a newcomer I never found out the alley-oop exists: in my first minute the hint line only said HOLD E ON THE CHALK and SPACE: SWAT AS THEY RISE, never C, and my open teammate's glowing hand is a tiny dot I could not see. When I have the ball and a teammate is open near the rim, show C: ALLEY-OOP over him in big letters with a bright ring under his feet, and make the glowing hand a big pulsing ball of light over his head. When the rivals throw one, tell me in the hint line SPACE: JUMP TO STEAL IT.\""
+  }
+ ]
+}

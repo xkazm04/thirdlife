@@ -50,6 +50,12 @@ export function restoreLastPromotion(h: UnmadeHost): string {
   copyDir(src, tmp);
   fs.rmSync(packDir, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
   fs.renameSync(tmp, packDir);
+  // D27 (J2nd finding 11): the workspaces still held the unmade change's edits, and the next change merged them back
+  // without a word: every workspace is cut again from the restored pack/ at its next round
+  for (const id of h.s.order) {
+    fs.rmSync(h.dir("ws", id), { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
+    fs.rmSync(h.dir("ws", `${id}.baseline.json`), { force: true });
+  }
   // The merged files of every package as they were when that promotion was written.
   let at = -1;
   for (let i = h.events.length - 1; i >= 0; i--) {

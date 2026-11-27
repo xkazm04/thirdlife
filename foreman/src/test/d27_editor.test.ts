@@ -16,9 +16,12 @@ import { NOT_DONE, NOT_MADE, OWN_FILES, REST_OF, afterMerge, coreHintOf } from "
 import { catalogRows, keyHint, keysFor } from "../keyfind.js";
 import { coreExcerpt, RINK_ROUTE } from "../coreroute.js";
 import { longerMatch, onlyOutOfFrames, tofuTooShort } from "../tofugate.js";
+import { runHandChecks } from "../handcheck.js";
 import type { VerifyResult } from "../verifier.js";
 import { MOVES_LAND, finalLandNotes, judgeLanding, landGate, newMovesOf } from "../landcheck.js";
-import { BALANCE_MOVED, balanceLines, changeKind } from "../boundlift.js";
+import { BALANCE_MOVED, askedChange, balanceLines, changeKind } from "../boundlift.js";
+import { restoreLastPromotion } from "../unmade.js";
+import { diffLeavesUnmade } from "../coregate.js";
 import { testsChanged } from "../fastchange.js";
 import { NOT_ASKED, UNASKED_RULE, changedFiles, measureKeptWords, removedInRound, whatChangedNote } from "../fastchange.js";
 
@@ -543,3 +546,5 @@ test("D27 R4 22 (S1's half-court copy, change-not-made-s1679: \"After a shove yo
   for (const play of ["After a shove you stand off balance for a moment.", "He loses his balance and falls.", "The skater lost his balance on the ice.", "Add a balance beam over the moat.", "Keep his balance on one skate."]) assert.equal(changeKind(play), "play", play);
   for (const fair of ["Balance the teams.", "Make it more balanced.", "Rebalance it so a newcomer can win."]) assert.equal(changeKind(fair), "fair", fair);
 });
+
+// ---------------------------------------------------------------- round 5

@@ -7,7 +7,7 @@ import type { Acceptance, BudgetPolicy, Cause, JobEvent, Milestone, PackageSpec 
 import { JobLog, changeReason, type JobState, type PackageView } from "./joblog.js";
 import type { RunResult } from "./builder/types.js";
 import { deriveBashAllowlist } from "./builder/allowlist.js";
-import type { VerifyResult } from "./verifier.js";
+import { NEVER_STARTED, type VerifyResult } from "./verifier.js"; // D27 item 25
 import { BudgetGate, budgetVerdict } from "./budget.js";
 import { copyDir, hashFile, listFiles, matchesAny, pruneEmptyDirs, snapshot } from "./scope.js";
 import { engineWritable, promotePack, readManifest } from "./promoter.js";
@@ -929,7 +929,7 @@ export class Foreman {
     const vr = await this.verifyTwice(a, packDir, stem, where);
     const longer = await longerMatch(this.gateHost, a, vr, where, (args) => this.verifyTwice({ ...a, args }, packDir, `${stem}-longer`, where)); // N27 T2: a person's longer matches get the frames
     if (longer !== undefined) return longer;
-    if (!vr.ok && isStarved(vr)) return this.starvedVerdict(a, packDir, stem, where, vr);
+    if (!vr.ok && vr.flags.includes("never_started")) return { ...vr, inconclusive: NEVER_STARTED }; if (!vr.ok && isStarved(vr)) return this.starvedVerdict(a, packDir, stem, where, vr);
     if (vr.ok || !restsOnAClock(vr)) return vr;
     // The same check failed on a clock twice. Before a builder hears of it, the Foreman asks whether it was the
     // machine (N3b, N3c; the real hockey job of 2026-11-11):
