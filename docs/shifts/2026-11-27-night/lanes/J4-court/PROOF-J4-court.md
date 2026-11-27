@@ -225,3 +225,69 @@ editor borrowed `layup` and `swat`).
 **Editor pack:** `.tl/jobs/half-court-3-v-20261125-1/promoted/game.half_court_3_v@0.1.5`, if the Director wants an
 editor row too: "Half-court 3 v 3: Sky Jam (editor)".
 landable J4-court
+
+## J4b (05:21-06:50): the hand layer sent back through the editor
+
+- 05:21: the tree was fast-forwarded to main 56544287 (it includes T2 bd5d4b06, and the change box takes 800 characters).
+  My lane folder was moved to `.tl/j4/lane_backup` first; it was the same as main's copy. Then I rebuilt foreman and
+  re-imported the class cache (exit 0).
+- **05:22:33: ONE change sentence** (656 characters, as a person would type it; log
+  `.tl/jobs/_ui_logs/1795753353-j4-j4b-layer.log`):
+  > Make the dunks and blocks feel like NBA Jam: at the top of every dunk slow the whole court down for a beat, not
+  > just the dunker, and let the camera close in on the rim, then snap back on the slam. Put SLAM!, REJECTED! and ON
+  > FIRE in big letters in the middle of the screen, not in the score line, and stop them covering the clock. Shake
+  > the rim and backboard hard on a dunk. A rejected dunker should drop out of the air and the ball fly over the fence
+  > into the crowd. Bots should dunk from anywhere inside the free-throw line whenever they beat their man, and
+  > defenders should go up to contest dunks from the free-throw line too, not only close to the rim.
+- The Planner (3 s) named court_exchange. **r12** took 4.4 min, 2.53M tokens in and 22k out. Merged at 04:31:20Z, on
+  its first round. Its note:
+  - the whole court (players, ball, shot clock) runs at 0.3 speed for the dunk's slow window (about 46 real frames);
+  - the camera moves in on the rim along its own line (to 7 m) and snaps back on the slam or a rejection;
+  - SLAM!, REJECTED! and ON FIRE go in a new centre `banner` label: big, pulsing, coloured, on a backing;
+  - the rim shakes 0.09 m for 32 frames and the backboard rattles;
+  - a rejected dunker drops under gravity and tumbles, and the ball flies at 20 m/s, 9 m/s up, toward the crowd;
+  - bots dunk whenever they have beaten their man inside the line (no coin flip), and they contest out to 4.3 m.
+- **Headless**, on the merged pack (`.tl/j4/v016_film`, my filming hand dunking from the free-throw line):
+  - seed 1, 150 s, run twice: the same hash both times (6533f3dab802e347), 0 script errors;
+  - bots: 2 dunks and 2 contests (seed 1), 5 dunks and 3 contests (seed 3);
+  - fires: Dex and Moss (seed 3), the hand twice (seed 1).
+- **Knock-on:** court_exchange's change made crews_stakes's own bot check (bot_crews) fail on the merged pack, so the
+  Foreman reopened crews_stakes. r12 there took 4 min and 0.90M tokens in. Its note: "The match length now follows the
+  contract's 5-minute cap (300 s) instead of this package's old 150 s override", and bot_crews scrum_share is 0.32
+  against 0.3. A person did not ask for a longer match. That rule came in with the change, and the Foreman says so
+  in the note.
+- **In a window** (`clips/j4b_editor_v016.mp4`, 7.7 s; beside my hand clip in `clips/j4b_editor_vs_hand.mp4`, 7.7 s,
+  editor left and hand right; stills `j4b_editor_v016_closeup_quad.jpg`, `j4b_editor_v016_hand_dunk_sheet.jpg`,
+  `j4b_editor_v016_dex_dunk_moss_contest.jpg`). I filmed the merged pack after court_exchange r12 and before
+  crews_stakes r12, which changes only crews data and the match length.
+  - The hand dunks from the free-throw line. Crane goes up to contest it from the line and whiffs, so the line dunk
+    is contested now. At the top the court slows and the camera pushes in until the dunker fills the frame over the
+    rim, with the crowd's arms up behind him. Then it snaps back to SLAM! in the middle of the screen and the rim
+    shakes. ON FIRE follows in the same place.
+  - Dex, a bot, dunks from the line after beating his man, and Moss contests and whiffs.
+  - Defects:
+    - the centre banner sits on a tall black slab, about a third of the screen high, that covers the key for about
+      a second;
+    - the close-up is tighter than mine: the rim and ball go half out of frame, and you lose the court for that beat;
+    - the "ON FIRE: NAME" text no longer stays on screen: after the flash, only the glow and the ball's flame show
+      who is on fire.
+- **How close did the editor get?** Close.
+  - One sentence (656 characters, one round of 4.4 min, about 3.4M tokens in with the knock-on round) brought every
+    part of my hand layer into the editor's version: the court-wide beat, the camera move, mid-screen banners, the
+    rim and board shake, the drop and tumble, bots dunking after beating their man, and line dunks contested.
+  - Its camera move is more dramatic than mine.
+  - It is less clean than mine: the slab behind the banner, a close-up that crops the action, and no lasting
+    on-fire marker.
+  - By eye I would now call the two versions equal in juice. Mine is cleaner to read; the editor's has the bigger
+    moment.
+- **v0.1.6 promoted at 06:19:55** (event 1321): 57.4 min from the sentence. The extra time went to the knock-on
+  crews_stakes round and to longer matches in the 40 hand seeds.
+- **Promoted v0.1.6, headless** (`.tl/j4/v016_film`, now a copy of the promoted pack plus my filming hand):
+  - seed 1 run twice for 3590 frames: the same hash both times (b4d6d61959ae67a8), 0 script errors;
+  - the same moments at the same frames as the filmed pack: Crane contests at the line and whiffs (2817), then the
+    hand dunks (2860) and catches fire (2865).
+  - Against the filmed pack, the promoted one differs only in `data/crews.json`, `scripts/crews/mod.gd` and
+    `pack.json` (crews_stakes r12: the match length).
+  - I did not film it again: C: was at 12 GB free and room.sh holds heavy steps below that.
+
+landable J4b: `.tl/jobs/half-court-3-v-20261125-1/promoted/game.half_court_3_v@0.1.6`
