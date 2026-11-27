@@ -162,23 +162,23 @@ test("D27 4 (J19: the charge's reach 1.15 m against a 1.4 m pushbox gap, 0 knock
   assert.deepEqual(newMovesOf(J19_NOTE), ["rush", "slam"], "the clip names in brackets are not moves");
   assert.deepEqual(newMovesOf("Done.\nDEVIATIONS:\n- NEW MOVE: meteor (F, a shotgun shot)\n- NEW MOVE: `dive`"), ["meteor", "dive"]);
   // J19's case: the charge is used and never lands
-  const never = landHost(J19_SENTENCE, { rush: { started: 15, landed: 0 }, slam: { started: 4, landed: 3 } });
+  const never = landHost(J19_SENTENCE, { rush: { started: 15, landed: 0, last_f: 8900 }, slam: { started: 4, landed: 3, last_f: 8800 } });
   const r = landGate(never.h, "core", 14);
   assert.equal(r?.ok, false);
-  assert.match(r?.summary ?? "", /rush landed 0 of 15: a move that never lands is not made\. Find why it misses in the game \(its reach against how close the bodies can get/);
+  assert.match(r?.summary ?? "", /rush landed 0 of 15 \(0 %\): a move that never lands is not made\. Find why it misses in the game \(its reach against how close the bodies can get/);
   assert.doesNotMatch(r?.summary ?? "", /slam landed/, "the slam lands: only the charge is sent back");
   assert.ok(never.appended.some((e) => e["type"] === "verify" && e["ok"] === false && String(e["report"]).includes("core-r14-move-lands")), "a failed check of its own: the next round's feedback reads it");
   // not counted at all: the builder is told how to count it, in a test its acceptance runs (not the tofu bot)
   const none = landGate(landHost(J19_SENTENCE, undefined).h, "core", 14);
   assert.match(none?.summary ?? "", /no bot test of your package reports moves\.rush, moves\.slam: add `"moves": \{"rush": \{"started": <n>, "landed": <n>\}\}` to the metrics of a bot test your acceptance runs \(tests\/bot_player\.gd\)/);
   // it lands: the round goes on, and the person's note has the figures
-  const lands = landHost(J19_SENTENCE, { rush: { started: 9, landed: 4 }, slam: { started: 5, landed: 3 } });
+  const lands = landHost(J19_SENTENCE, { rush: { started: 9, landed: 4, last_f: 8900 }, slam: { started: 5, landed: 3, last_f: 8700 } });
   assert.equal(landGate(lands.h, "core", 14), undefined);
-  assert.equal(lands.appended[0]?.["text"], `${MOVES_LAND}: rush landed 4 of 9, slam landed 3 of 5 (tests/bot_tofu.gd, tests/bot_player.gd)`);
+  assert.equal(lands.appended[0]?.["text"], `${MOVES_LAND}: rush landed 4 of 9 (44 %), slam landed 3 of 5 (60 %) (tests/bot_tofu.gd, tests/bot_player.gd)`);
   // after the revise budget the round merges and the person is told it was not made
-  const spent = landHost(J19_SENTENCE, { rush: { started: 15, landed: 0 }, slam: { started: 4, landed: 5 } }, 16, 14);
+  const spent = landHost(J19_SENTENCE, { rush: { started: 15, landed: 0, last_f: 8900 }, slam: { started: 4, landed: 5, last_f: 8800 } }, 16, 14);
   assert.equal(landGate(spent.h, "core", 16), undefined);
-  assert.match(String(spent.appended[0]?.["text"]), new RegExp(`^\\[foreman\\] ${NOT_MADE} by core: the new move rush does not land in the Foreman's bot run \\(rush landed 0 of 15, slam landed 5 of 4\\) after 3 rounds`));
+  assert.match(String(spent.appended[0]?.["text"]), new RegExp(`^\\[foreman\\] ${NOT_MADE} by core: the new move rush does not land in the Foreman's bot run \\(rush landed 0 of 15 \\(0 %\\), slam landed 4 of 4 \\(100 %\\)\\) after 3 rounds`));
   // nothing asked of a change that names no attack, or of a look change
   assert.equal(landGate(landHost("Quilted jackets for the sailors and gold shields.", undefined).h, "core", 14), undefined);
   // a move counted without `landed` is a move that does not hit (a brace): used, not judged on landing
@@ -237,12 +237,12 @@ test("D27 4b (the d27 copy of J1, harbour r15: \"NEW MOVE: cannon_shot\" beside 
   assert.equal(landGate(h, "harbour", 15), undefined, "not sent back: the cartridge makes the meteor");
   assert.match(String(appended[0]?.["text"]), /^\[foreman\] new move judged at the end: cannon_shot of harbour waits for the part of the change harbour handed on/);
   // the final verification's bot run, after the cartridge made it
-  events.push({ seq: 1060, type: "verify", round: 1, level: "V4", verb: "bot", ok: true, report: report("final-bot_harbour.json", { cannon_shot: { started: 4, landed: 0 } }) } as unknown as JobEvent);
+  events.push({ seq: 1060, type: "verify", round: 1, level: "V4", verb: "bot", ok: true, report: report("final-bot_harbour.json", { cannon_shot: { started: 4, landed: 0, last_f: 5000 } }) } as unknown as JobEvent);
   const never = finalLandNotes(h);
   assert.equal(never.length, 1);
-  assert.ok((never[0]?.text ?? "").startsWith(`[foreman] ${NOT_MADE} by harbour: the new move cannon_shot never landed in the Foreman's final bot run (cannon_shot landed 0 of 4)`), never[0]?.text);
-  events.push({ seq: 1061, type: "verify", round: 2, level: "V4", verb: "bot", ok: true, report: report("final2-bot_harbour.json", { cannon_shot: { started: 4, landed: 2 } }) } as unknown as JobEvent);
-  assert.match(finalLandNotes(h)[0]?.text ?? "", /^\[foreman\] new move lands in the Foreman's bot run: cannon_shot landed 2 of 4 \(the final run/, "the newest final round decides");
+  assert.ok((never[0]?.text ?? "").startsWith(`[foreman] ${NOT_MADE} by harbour: the new move cannon_shot never landed in the Foreman's final bot run (cannon_shot landed 0 of 4 (0 %))`), never[0]?.text);
+  events.push({ seq: 1061, type: "verify", round: 2, level: "V4", verb: "bot", ok: true, report: report("final2-bot_harbour.json", { cannon_shot: { started: 4, landed: 2, last_f: 5000 } }) } as unknown as JobEvent);
+  assert.match(finalLandNotes(h)[0]?.text ?? "", /^\[foreman\] new move lands in the Foreman's bot run: cannon_shot landed 2 of 4 \(50 %\) \(the final run/, "the newest final round decides");
   // a move its own round saw land is not judged again
   events.push({ seq: 1062, type: "note", package: "harbour", round: 16, text: `${MOVES_LAND}: cannon_shot landed 1 of 2 (tests/bot_harbour.gd)` } as unknown as JobEvent);
   assert.deepEqual(finalLandNotes(h), []);
@@ -260,9 +260,13 @@ test("D27 2c (the d27 copy of J1, events 1044-1108: the cartridge's meteor diff 
 test("D27 2d (the d27 copy of J1, events 1029-1078: the skin, handed only the tagline, said the meteor needs the cartridge, and the request went back to the cartridge, which had made it already): a round that was itself handed the rest of a change sends nothing on; the person is told", () => {
   const hop = `[foreman] ${REST_OF}, which harbour did not make ("NOT DONE: the tagline ..."): "${J1_REQUEST}"`;
   const events = [J1.events[0], { ...(J1.events[1] as object), package: "skin", reason: `change request (event 1032); the request names the package: ${hop.slice(0, 200)}` }, { seq: 1059, type: "note", package: "skin", round: 3, text: "- Tagline is now \"F: METEOR.\"\n- NOT DONE: the meteor itself needs the cartridge (`data/harbour.cartridge.json`), which is outside my scope." }] as unknown as JobEvent[];
+  events.splice(2, 0, { seq: 1049, type: "merge", package: "cartridge", files: ["data/harbour.cartridge.json"] } as unknown as JobEvent); // the cartridge made its part first (live event 1049)
   const out = afterMerge(J1.plan, events, "skin", 3, ["data/skin.json"], hop);
   assert.equal(out.filter((e) => e["type"] === "change_requested").length, 0, "one hop: not sent back to the cartridge");
   assert.match(String(out[0]?.["text"]), /^\[foreman\] part of your change was NOT made: skin made the part handed to it and says: NOT DONE: the meteor itself needs the cartridge .* It was already handed on once, so the Foreman does not send it to cartridge again$/);
+  // D27 item 14: a package that has not merged in this change is still sent the line (it has not made its part yet)
+  const fresh = afterMerge(J1.plan, events.filter((e) => e.type !== "merge"), "skin", 3, ["data/skin.json"], hop);
+  assert.deepEqual(fresh.filter((e) => e["type"] === "change_requested").map((e) => e["package"]), ["cartridge"]);
   // the person's own change still goes on (D27 2): one hop is allowed
   assert.equal(afterMerge(J1.plan, J1.events, "harbour", 15, ["data/tuning.json"], J1_REQUEST).filter((e) => e["type"] === "change_requested").length, 1);
 });
@@ -270,7 +274,7 @@ test("D27 2d (the d27 copy of J1, events 1029-1078: the skin, handed only the ta
 test("D27 4c (the d27 copy of J1, event 1163: harbour named \"NEW MOVE: shotgun\" in r15 and \"NEW MOVE: meteor\" in r16, and the card said the shotgun was not made while the meteor landed 2 of 3): the newest note that names moves is the builder's word on them", () => {
   const dir = tempDir("d27-alias");
   fs.mkdirSync(path.join(dir, "reports"), { recursive: true });
-  fs.writeFileSync(path.join(dir, "reports", "final-bot_harbour.json"), JSON.stringify({ bot: { test: "tests/bot_harbour.gd", done: true, result: { ok: true, metrics: { moves: { meteor: { started: 3, landed: 2 } } } } } }));
+  fs.writeFileSync(path.join(dir, "reports", "final-bot_harbour.json"), JSON.stringify({ bot: { test: "tests/bot_harbour.gd", done: true, result: { ok: true, metrics: { moves: { meteor: { started: 3, landed: 2, last_f: 5000 } } } } } }));
   const events = [
     { seq: 1003, type: "promoted", packId: "game.x", version: "0.1.21", dest: "x" },
     J1.events[0],
@@ -281,7 +285,7 @@ test("D27 4c (the d27 copy of J1, event 1163: harbour named \"NEW MOVE: shotgun\
   const h = { s: { plan: J1.plan }, events, dir: (...p: string[]) => path.join(dir, ...p) } as unknown as GateHost;
   const notes = finalLandNotes(h);
   assert.equal(notes.length, 1);
-  assert.equal(notes[0]?.text, `${MOVES_LAND}: meteor landed 2 of 3 (the final run: tests/bot_harbour.gd)`);
+  assert.equal(notes[0]?.text, `${MOVES_LAND}: meteor landed 2 of 3 (67 %) (the final run: tests/bot_harbour.gd)`);
 });
 
 // ---------------------------------------------------------------- 7. the rules sidecar in a person's change
@@ -344,4 +348,76 @@ test("D27 11b (S35's biplane copy, events 750-787: the freeze undid the person's
   fs.writeFileSync(path.join(dir, "b", "data", "new.json"), "x");
   assert.deepEqual(changedFiles(path.join(dir, "a"), path.join(dir, "b"))?.sort(), ["data/moved.json", "data/new.json"]);
   assert.match(measureKeptWords("[foreman] measure kept: tests/bot_tofu.gd, tests/support/pilot.gd are measures the Foreman judges by (merged before this round)"), /kept tests\/bot_tofu\.gd, tests\/support\/pilot\.gd as merged: it judges the game by them/);
+});
+
+test("D27 12 (J19's d27 copy, event 611: \"rush landed 1 of 13\" passed, because core's tests/bot_player.gd pressed the rush only until it had landed once; a hand that kept charging saw 0 of 11): the land count is judged only when its bot kept using the move into the last third of its run, and the share is told", () => {
+  const run = (rush: Record<string, unknown>, frames = 9001) => judgeLanding(["rush"], [{ test: "tests/bot_player.gd", report: { bot: { test: "tests/bot_player.gd", frames, result: { ok: true, metrics: { moves: { rush } } } } } }]);
+  // the round-1 test: it stopped pressing at its first landing, early in the run
+  const early = run({ started: 13, landed: 1, last_f: 2100 });
+  assert.deepEqual(early.stopped, ["rush"]);
+  assert.equal(early.ok, false);
+  // no last_f at all: not a measure either
+  assert.deepEqual(run({ started: 13, landed: 1 }).stopped, ["rush"]);
+  // a bot that keeps charging to the end: "at least once" still passes (the share is the owner's question), and is told
+  const kept = run({ started: 31, landed: 2, last_f: 8890 });
+  assert.equal(kept.ok, true);
+  assert.equal(kept.counts["rush"]?.landed, 2);
+  // through the gate: the builder is told to keep using it and report last_f
+  const stopped = landHost(J19_SENTENCE, { rush: { started: 13, landed: 1 }, slam: { started: 4, landed: 3, last_f: 8800 } });
+  const r = landGate(stopped.h, "core", 14);
+  assert.match(r?.summary ?? "", /rush's last use was not reported \(no last_f\): the count must come from a bot that keeps using the move to the end of its run, wherever it can land, and never stops once it has landed/);
+  const told = landHost(J19_SENTENCE, { rush: { started: 31, landed: 2, last_f: 8890 }, slam: { started: 4, landed: 3, last_f: 8800 } });
+  assert.equal(landGate(told.h, "core", 14), undefined);
+  assert.match(String(told.appended[0]?.["text"]), /rush landed 2 of 31 \(6 %\)/);
+  // builders are asked for it
+  assert.match(fs.readFileSync(path.join(REPO_ROOT, "foreman", "prompts", "builder.md"), "utf8"), /"last_f": <the frame of its last use>/);
+});
+
+test("D27 15 (J4's d27 copy, v0.1.5: the banner read \"YOU IS ON FIRE!\", the player's id pasted into a third-person line): every builder is told that words read as a person says them, and every card's juice says it", () => {
+  const prompt = fs.readFileSync(path.join(REPO_ROOT, "foreman", "prompts", "builder.md"), "utf8");
+  assert.match(prompt, /\*\*Words read as a person says them:\*\* the player is YOU, with "are" and "your" \("YOU ARE ON FIRE!",/);
+  assert.match(prompt, /never put an internal id\s+\(`you`, `bot_2`, `crew_a`\) into a sentence \(no "YOU IS"\)/);
+  const cards = path.join(REPO_ROOT, "engine", "cards");
+  for (const f of fs.readdirSync(cards).filter((x) => x.endsWith(".json"))) {
+    const juice = (JSON.parse(fs.readFileSync(path.join(cards, f), "utf8")) as { fun?: { juice?: string[] } }).fun?.juice ?? [];
+    assert.ok(juice.some((l) => /YOU ARE \(never YOU IS\)/.test(l)), f);
+  }
+});
+
+test("D27 12b (J19's round-3 copy, core r14, event 603: \"Fighter: new `cd` dictionary and `ready(m)` method. The 8-frame buffer takes the new moves ...\" made the Foreman judge moves cd and ready): explicit NEW MOVE lines win over loose backticks", () => {
+  const note = fixture<{ event: { text: string } }>("j19-d27r3-core-r14-note.json").event.text;
+  assert.deepEqual(newMovesOf(note), ["rush", "slam"]);
+  assert.deepEqual(newMovesOf("- New moves `rush` (F, `body_check` clip) and `slam`.\n- Fighter: new `cd` dictionary; the new moves use it."), ["rush", "slam"], "without NEW MOVE lines, only a line that starts with New moves");
+});
+
+test("D27 14b (JB-back's shield copy, events 869-960: crew, queued for the rivals' part, was handed core's NOT DONE lines too, built the rivals' part in r8, and was re-opened for a duplicate r9): a hand-off to a package that has not built its queued round yet joins that round", async () => {
+  const job = tempJob("d27-fold");
+  assert.equal((await foremanFor(job, { promoteTo: "job" }).foreman.run()).jobState?.state, "done");
+  const log = JobLog.open(job.jobDir);
+  log.append({ type: "change_requested", text: "Make the ball fly twice as fast off a paddle. The rival paddle charges the ball and slams it back at my goal." });
+  log.close();
+  const from = readEvents(job.jobDir).at(-1)?.seq ?? 0;
+  const steps: FakeStep[] = [
+    { match: { role: "planner", promptIncludes: "Decide which ONE package owns" }, json: { package: "core", reason: "the ball's speed off a paddle is the core's" } },
+    { match: { role: "builder", package: "core" }, write: { "scripts/main.gd": "extends Node\n# ball x2\n" }, text: "Done.\nDEVIATIONS:\n- NOT DONE: the rival's slam back needs `data/ai.json`, which is outside my scope: set slam 1." },
+    { match: { role: "builder", package: "paddle_ai" }, write: { "data/ai.json": "{\"speed\": 1.0, \"charge\": true, \"slam\": 1}\n" }, text: "Done.\nDEVIATIONS: none" },
+  ];
+  const s = await foremanFor(job, { promoteTo: "job", script: scriptWith(steps) }).foreman.run();
+  assert.equal(s.jobState?.state, "done", JSON.stringify(s.jobState));
+  const later = readEvents(job.jobDir).filter((e) => e.seq > from);
+  assert.ok(later.some((e) => e.type === "change_requested" && e.package === "paddle_ai" && e.text.startsWith(`[foreman] ${REST_OF}`)), "core's hand-off was written");
+  assert.equal(later.filter((e) => e.type === "reopened" && e.package === "paddle_ai").length, 2, "the rivals' part and the hand-off both re-opened it");
+  assert.equal(later.filter((e) => e.type === "builder_run" && e.package === "paddle_ai").length, 1, "one round built both: no duplicate round");
+  assert.equal(s.packages["paddle_ai"]?.changes?.length, 2);
+});
+
+test("D27 12c (J19's round-3 copy, event 659: \"rush landed 9 of 8 (113 %)\": tests/bot_crew.gd counts victims, not uses): a landing is a use that hit somebody, so each test's landings are held to its uses", () => {
+  // the two final runs of that promotion, as their reports say (events 651, 652)
+  const v = judgeLanding(["rush"], [
+    { test: "tests/bot_player.gd", report: { bot: { test: "tests/bot_player.gd", frames: 6000, result: { ok: true, metrics: { moves: { rush: { started: 2, landed: 1, last_f: 4653 } } } } } } },
+    { test: "tests/bot_crew.gd", report: { bot: { test: "tests/bot_crew.gd", frames: 6399, result: { ok: true, metrics: { moves: { rush: { started: 6, landed: 8, last_f: 4063 } } } } } } },
+  ]);
+  assert.equal(v.counts["rush"]?.started, 8);
+  assert.equal(v.counts["rush"]?.landed, 7, "1 + min(8, 6)");
+  assert.equal(v.ok, true, "the player's run used it at frame 4653 of 6000: kept to the end");
 });

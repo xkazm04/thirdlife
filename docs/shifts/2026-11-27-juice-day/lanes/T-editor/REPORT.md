@@ -432,3 +432,157 @@ NEXT
 2. Freeze the card's hand tests (T1's open ask 3), now that the card names measure kept.
 3. Make the one-hop rule smarter: a handed-on round may still send a line to a package that has not merged in this
    change.
+
+==========================================================================================================================
+ROUND 3: items 12-15, plus the Director's findings (a) and (b), 12:40-13:55
+Tree d25-hard-a (my files equal main bd7c07a5; the contract commit 2706f2e6 is not fast-forwarded here). Not committed:
+the Director lands it.
+
+OUTCOME AGAINST EACH ITEM
+
+12. The land check measures honestly: MET. The bar stays "at least once".
+   - landcheck.ts: a count is judged only when its bot kept using the move into the last third of its run.
+     - The count reports moves.<id>.last_f, the frame of its last use. The runner's bot.frames is the run's length.
+     - A count without last_f, or whose last use falls before 2/3 of the run, sends the round back: "the count must come
+       from a bot that keeps using the move to the end of its run ... and never stops once it has landed".
+     - A test's landings are held to its uses (J19 round 3: bot_crew counted 8 victims from 6 rushes, which summed to
+       "9 of 8 (113 %)").
+     - Every figure now carries the share: "rush landed 7 of 8 (88 %)".
+   - builder.md "A new attack must land": the bot uses the move for the WHOLE run, never stops once it has landed, and
+     reports last_f.
+   - Tests:
+     - D27 12: the round-1 bot_player pattern (stopped at its first landing) is refused, and so is a count without
+       last_f; a bot that keeps charging passes;
+     - D27 12c: the two real final reports of J19's round-3 promotion give 7 of 8;
+     - D27 4, 4b, 4c expectations moved on purpose: their counts carry last_f now, and the figures carry the share.
+   - Live: a fresh J19 copy at v0.1.4, J19's sentence 1 sent once.
+     - core r14 set the rush's reach to 1.9 m. The pushbox rule the builder now reads did that; round 1's builder set
+       1.25 m and the night's 1.15 m.
+     - core r14 wrote a tests/bot_player.gd that presses the rush whenever lined up, for the whole run, and reports
+       last_f.
+     - v0.1.5 was promoted 33.6 min after the sentence (3.39M in).
+     - The honest share it measured: bot_player rush 1 of 2 (last use at frame 4653 of 6000), bot_crew 6 started.
+       Clamped, that gives 7 of 8 (88 %). The card note at event 659 was written before the clamp and reads "9 of 8".
+     - My own measure, J19's hand (bot_juice_d27.gd) on the promoted v0.1.5, seeds 1-3, 3600 frames, 0 script errors:
+       - 14 rush starts gave 4 / 3 / 2 rush knockdowns (9) and 4 rushes braced;
+       - the slam floored 5 / 5 / 6;
+       - bots rushed 1-2 a minute and slammed 3-4 a minute;
+       - against that: round 1's v0.1.5 had 0 knockdowns from 11 rushes, and the night's had 0 of 15.
+     - The bot_player sample is small (2 rushes in 6000 frames). The share is the owner's question, as ruled.
+   - Two Foreman defects the live run showed, both fixed in this round:
+     - core's note "Fighter: new `cd` dictionary and `ready(m)` method. The 8-frame buffer takes the new moves ..." made
+       the gate judge moves cd and ready. Now explicit NEW MOVE lines win, and the loose form applies only to a line
+       that starts with "New moves" (D27 12b, on the real note).
+     - I stopped my own run at 12:05, after core's merge (crew r4's claude.exe was already gone). I cut its 4 events
+       619-621 and kept them in .tl/d27/r3_j19-cut-events.jsonl, then fixed the parser and resumed.
+
+13. Create screen stills in a window: MET, and the window showed a layout bug, now fixed.
+   - .tl/d27/create_still.gd mounts Create (create.tscn), opens the real job's done screen, and saves the window at
+     1280x720 under the window lock. Stills at 960 px, looked at:
+     - stills/i9_create_not_applied.jpg: the S35 biplane copy. "Your game is ready / Biplane duel · version 6", then in
+       orange "Not applied: a change to tests/support/pilot.gd was undone. The Foreman judges the game by it, so a change
+       may not rewrite it."
+     - stills/i6_create_balance_lines.jpg: T2's robot job, with four lines (a measure kept, and three balance lines).
+       The first window showed the lines running UNDER the Play and Add to menu buttons, so you could not read them.
+   - Fix (create_build.gd _done): a longer note takes smaller letters (17 px, or 15 above 6 lines) and pushes Play,
+     Add to menu and the change box down. One line keeps the old places, so the other screens are unchanged. The
+     re-filmed still reads cleanly.
+   - create.iterate.change now also checks that a 2-line note ends above Play (count unchanged; CRLF kept). It fails
+     on the old layout (note at 380 plus 2 lines of 20 px, against Play at 414).
+
+14. The one-hop rule, refined: MET.
+   - halfmade.ts: a round that was itself handed the rest of a change may still send a line to a package that has not
+     merged in this change (it has not made its part yet). It never sends back to one that has.
+   - D27 2d extended: with the cartridge's merge it sends nothing; without it, the line goes to cartridge.
+
+(a) = item 16, JB-back's duplicate crew rounds: same cause family, folded in: MET.
+   - Cause (d25-shield .tl/jobs/shield-wall-3-v-20261125-1-jb, events 869-960):
+     - crew was queued for the rivals' part, waiting for core (its dependency);
+     - core's merge handed crew its NOT DONE lines (888);
+     - crew r8 built the rivals' part (merge 915), and only then did the hand-off re-open crew for r9, which found "All
+       three were already in place".
+   - Fix (halfmade.ts foldable, through changeReady): a Foreman request (a hand-off, the rivals' part) for a package
+     that is queued and has not built its round yet is applied at once. The package's builder reads every change of
+     the package in one prompt (the prompt lists p.changes).
+   - Test D27 14b, through the Foreman on the paddle fixture:
+     - the rival paddle gets both the rivals' part and core's hand-off and builds ONE round;
+     - with foldable switched off in the built code, the same test fails (2 builder runs).
+   - Live:
+     - the J4 round-3 copy ran on the process from before the fold. It showed the duplicate: crews_stakes r12 built the
+       double team, and the hand-off then re-opened it for r13.
+     - The resumed J19 run folded at its start: crew built both in one round, r5.
+
+15. Skin words in a person's grammar: MET, where builders get the words.
+   - builder.md has a new rule, "Words read as a person says them": the player is YOU, with "are" and "your"; everyone
+     else goes by the name the game shows; never an internal id inside a sentence (no "YOU IS"); one template per case.
+   - Every card's mid-screen juice line adds "a word about the player says YOU ARE (never YOU IS)".
+   - Test D27 15.
+   - Live: a fresh J4 copy at v0.1.4, the A3 sentence sent once.
+     - court_exchange r11 wrote "YOU ARE ON FIRE!" if a.id == &"you" else "%s IS ON FIRE!" % the name (fire.gd:28).
+     - v0.1.5 PROMOTED at event 1252, 65.6 min after the sentence, 3.06M in. The filmed pack equals the promoted one
+       (pack.json and my test aside).
+     - Film: clips/j4_r3_you_are_on_fire.mp4 (960 px, crf 30, seed 1, frames 1860-2160). Still:
+       stills/j4_r3_you_are_on_fire.jpg (looked at). "YOU ARE ON FIRE!" in big outlined orange letters mid-court, an
+       ON FIRE tag over the player, and the clock clear.
+     - The night's v0.1.5 said "YOU IS ON FIRE!".
+     - Still there, not asked: the old "DUNK!" in the score line. The film run printed the kernel worker's exit-time
+       "lock on null" script error at worker.gd:387, as in round 1. It is not the pack's; the headless run had 0
+       errors.
+
+(b) J2nd's kart copy, core r31 "REFUSED on the pack's tofu bot": a degenerate tofu run, NOT a T1 hole. Round-4 candidate.
+   - What happened (d25-kart .tl/jobs/j2nd/bumper-kart-football-3-20261125-1, events 1503-1514):
+     - core r31's own acceptance passed, the tofu bot included;
+     - then the merge gate's PACK TEST of tests/bot_tofu.gd failed on the bot's OWN ok: "2 matches; {...}", because it
+       wants 3 matches in its 36,000 frames (it ended at frame 35,401, completed). Shells and golden goals make matches
+       longer;
+     - skill_spread 0 is a figure in that summary, not the reason;
+     - the tofu bounds gate (T1's balance-as-notes) never ran on it.
+   - Why T2's longerMatch did not catch it: longerMatch reruns only a run that did not complete (bot.completed false).
+     This one completed, by its own done at its budget, with ok false.
+   - Round-4 candidate: in a person's play change, a run of the plan's tofu bot that completed with its own ok false,
+     and no script or engine error, runs once more with 3x frames (at most 108,000), as longerMatch does. If it passes,
+     the person gets "matches now run longer".
+   - Then core r32 edited the tofu bot to accept 2 matches, the freeze undid that ("measure kept", event 1526), and the
+     job paused on a question.
+
+GATES ON d25-hard-a (round 3, final source)
+- foreman npm test: 481 tests, 474 pass, 0 fail, 7 skipped (main 476/469/0/7; +5: D27 12, 12b, 12c, 14b, 15).
+- node devx/bin/tl.mjs check --tier fast: PASS 5/5 (arch 12/12, assets 4/4, cards 3/3, devx.test 230/230,
+  foreman.typecheck).
+- selftest create.: 29 passed, 0 failed (after the layout fix and its check).
+- Full tier: NOT RUN. The kernel, kits, rigs, style and seeds are untouched.
+
+CHANGED FILES (round 3)
+- foreman/src/landcheck.ts: last_f, the share, landings held to uses, the newMovesOf fix.
+- foreman/src/halfmade.ts: hop to a package that has not merged; foldable.
+- foreman/src/foreman.ts: changeReady folds (+1 line, 2005).
+- foreman/prompts/builder.md: the whole-run count, and "Words read as a person says them".
+- foreman/src/test/d27_editor.test.ts: +5 tests; expectations moved in D27 2d, 4, 4b, 4c, as named above.
+- foreman/fixtures/d27/j19-d27r3-core-r14-note.json.
+- engine/cards/*.json: "YOU ARE (never YOU IS)".
+- engine/ui/create: create_build.gd (the note pushes the buttons down) and create_iterate_checks.gd (the note-clear
+  check).
+- Lane folder: clips/j4_r3_you_are_on_fire.mp4; stills/i9_create_not_applied.jpg, i6_create_balance_lines.jpg,
+  j4_r3_you_are_on_fire.jpg.
+
+BEHAVIOUR CHANGES (named)
+- A new attack's count must come from a bot that keeps using it into the last third of its run (last_f), or the round
+  goes back.
+- A Foreman request for a queued package that has not built yet joins that round, instead of re-opening it afterwards.
+- A handed-on round may still hand a line to a package that has not merged in this change.
+- Create's done screen moves its buttons down for a note of more than one line.
+
+QUESTIONS FOR THE DIRECTOR
+1. Item 12 measured 7 of 8 (88 %) through the Foreman's runs, but only 2 player rushes in 6000 frames. Should the count
+   need a minimum number of uses (for example 5) before it is believed? That is part of the owner's share question.
+
+ROUND 4 (queued, from the Director's messages)
+- (b): rerun the plan's tofu bot with 3x frames when its own ok fails in a person's play change.
+- 17: a hand-off can reach the wrong owner (Arsenal's faceoff lock went to the cartridge; the drawing package's own
+  main.gd could do it).
+- 18: a NOT DONE with no owner goes back to its builder, or to the person as "not made".
+- 19: the rivals' copy dropped a sentence (event 869: "... before he lands. : a rival ...").
+- 20: "merge crew 7 files" when nothing changed: the merge must count real changes.
+- 21: a builder that edits its own acceptance test to pass is listed on the card ("a test was changed to pass: <why>"),
+  with no freeze.
+- 16: done in round 3 (fold).

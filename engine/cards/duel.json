@@ -98,7 +98,7 @@
     "juice": [
       "Hit-stop on both fighters on every contact, 3 to 14 frames by weight; sparks (TLVfx.burst) and a steel sound (TLAudio.play) on a hit, a gold flash and the word PARRY! on a parry, dust and debris with a 0.26 m shake (TLCameras.shake) on a wall splat.",
       "The charged heavy's red flash and flame at frame 20 of its wind-up: the one unblockable attack reads at once.",
-      "Banners for the big moments: PARRY!, CLASH!, GUARD BREAK!, WALL SPLAT!, COUNTER!, FINISHER!, K.O., each in big letters in the middle of the screen, apart from the score and the clock (a TLHudLayer text with an outline, or a center label of its own), gone when the moment ends: never added to the score line, never padded with blank lines into a tall slab."
+      "Banners for the big moments: PARRY!, CLASH!, GUARD BREAK!, WALL SPLAT!, COUNTER!, FINISHER!, K.O., each in big letters in the middle of the screen, apart from the score and the clock (a TLHudLayer text with an outline, or a center label of its own), gone when the moment ends: never added to the score line, never padded with blank lines into a tall slab; a word about the player says YOU ARE (never YOU IS), anyone else goes by the name the game shows."
     ],
     "rivals": [
       "Three archetypes defined by their defence, each with a name, a one-line weakness shown at the match start, and a tell (the Wall's shoulder dip before a bash, the Duelist's blade tap before his string, the Dancer's long spin coil).",

@@ -21,7 +21,7 @@ import { builderFeelSection, servesLine } from "./roomtext.js"; // JOB.md 2026-1
 import { briefText, critic, render, replanPackages, type GenerateCall, type PackageLine, type PlannerInput, type ReplanInput } from "./designer.js";
 import { NEW_PACKAGE, grow, ownerOrNew, wireWaits, type GrowHost } from "./grow.js";
 import { FINAL_NOTE, changedFiles, fastFinal, fastMerge, fastPromotion, mergeNote, removedInRound, roundAcceptance, whatChangedNote } from "./fastchange.js"; // E4b: a data-only change // E4 (24-25 Nov): a change may add a package
-import { removedSince } from "./removal.js"; import { promotionErrors } from "./promogate.js"; import { answeredThisChange, askedAgain, plainQuestion } from "./asktwice.js"; import { longerMatch, tofuGate } from "./tofugate.js"; import { withGrants } from "./scopegrant.js"; import { afterMerge, coreHintOf } from "./halfmade.js"; import { rivalSplit } from "./rivals.js"; import { finalLandNotes, landGate } from "./landcheck.js"; // D27 items 1 and 4 // H1 (E5e): what a change removed, named; H1d: promotion pictures with script errors refuse
+import { removedSince } from "./removal.js"; import { promotionErrors } from "./promogate.js"; import { answeredThisChange, askedAgain, plainQuestion } from "./asktwice.js"; import { longerMatch, tofuGate } from "./tofugate.js"; import { withGrants } from "./scopegrant.js"; import { afterMerge, coreHintOf, foldable } from "./halfmade.js"; import { rivalSplit } from "./rivals.js"; import { finalLandNotes, landGate } from "./landcheck.js"; // D27 items 1 and 4 // H1 (E5e): what a change removed, named; H1d: promotion pictures with script errors refuse
 import { criticRubric, inReach, phaseLine, phaseStep, replanPhases, stuckText, waitsForVerdict } from "./phases.js"; // JOB.md 2026-11-20: phases
 import { writeGenerateCalls } from "./transcript.js";
 import { botFinish, botMoments, planShots } from "./shots.js";
@@ -177,6 +177,7 @@ export class Foreman {
     const id = c.package ?? (c.seq !== undefined ? this.askedOwners.get(c.seq)?.owner : undefined);
     if (id === undefined) return true;
     const p = this.s.packages[id];
+    if (p !== undefined && foldable(p, c.text, running.has(id), this.log.events)) return true; // D27 round 3: a hand-off joins a round not yet built
     return p !== undefined && p.state === "promoted" && (p.mergedFiles ?? []).length > 0 && !(running?.has(id) ?? false);
   }
 

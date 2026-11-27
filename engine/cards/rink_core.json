@@ -93,7 +93,7 @@
    "The core's camera bound to your skater (data: game.camera): behind and above, a short lag, the aim anchor; keep it, change only distance and height with the rink size."
   ],
   "juice": [
-   "Words for the big moments go in big letters in the middle of the screen, apart from the score and the clock (a TLHudLayer text with an outline, or a center label of its own), and are gone when the moment ends: never added to the score line or the clock, never padded with blank lines into a tall slab.",
+   "Words for the big moments go in big letters in the middle of the screen, apart from the score and the clock (a TLHudLayer text with an outline, or a center label of its own), and are gone when the moment ends: never added to the score line or the clock, never padded with blank lines into a tall slab; a word about the player says YOU ARE (never YOU IS), anyone else goes by the name the game shows.",
    "The core's hit-stop and contact reads drive the figures (presentation only); a goal gets the base's horn, crowd and banner from the skin's words."
   ],
   "rivals": [
