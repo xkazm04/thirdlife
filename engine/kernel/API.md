@@ -1375,7 +1375,7 @@ core's part (`ctx.cores.part("rink", "audio")`, section 24).
   on the origin, a person sits facing +Z; wood) and `TLKit.build("street_lamp", {height = 4.2 (3.0..6.0 m), light =
   true})` (stone foot, iron post, an arm over +Z with a lantern; steel; its light is skipped headless). Both are in
   `TLKit.PARTS` and `res://kits/KIT.md`, and usable in a layout's `props[]`. The Home grants them from play
-  (`kernel/world/build/unlocks.json`: `bench` after the first dungeon, `street_lamp` after three). No class, method,
+  (`kernel/world/build/unlocks.json`: `bench` after the first dungeon; `street_lamp` is open from the start since 27 Nov: lamps at night for a newcomer). No class, method,
   signal or property changed (`docs/generated/API-V1.json` lists `TLKit.PARTS` by name, not by its entries).
 - Not API (the visitor's side, never a pack's): the visitor steps up the risers of the Home's blocks
   (`kernel/world/terrain/walker_riser.gd`, `world_body.gd` `step_risers`, off for every `TLBiped`: a pack's walker and

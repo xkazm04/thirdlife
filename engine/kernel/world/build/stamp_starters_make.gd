@@ -44,16 +44,40 @@ func _initialize() -> void:
 
 
 ## Each course: name, box lo..hi, blocks [x0, y0, z0, x1, y1, z1, shape, mat] and zones [kind, lo, hi, opt?].
+## Lane F3 (27 Nov, the playtest: Pad hop threw a walker 4.0 m into its hazard for ever; Tower climb's 1 m hops are
+## out of a walking jump's reach, 0.87 m; a stamp sat a 0.7 m curb proud of the grass and Pad hop's start was a 2.7 m
+## wall): every course stands on a ring of slabs one cell outside its floor (the stamp's floor goes on the cell the
+## ground is in, so ground -> slab -> floor is two rises of at most 0.5 m, under the walker's 0.55 m step), Pad hop has
+## half-block stairs onto its start, a pad across the whole platform, checkpoints the width of the landing and a
+## finish on the whole last platform with a wall behind it; its pads throw 6.5 m/s forward (the walker keeps it in the
+## air), so a walking launch lands about 5.4 m on, a held run about 7 m (onto the next pad) and a launch with no key
+## held about the walking one. Tower climb is an L of 2 x 2 steps 0.5 m apart over 1-cell gaps, up to a 3 m tower.
+## Figures: play_case_starters.gd (selftest 799), the real walker at a walk.
+const PAD_FWD := 650
+const PAD_UP := 1000
+
+
+static func _apron(lo: Vector3i, hi: Vector3i, m: int) -> Array:
+	return [[lo.x - 1, 0, lo.z - 1, hi.x + 1, 0, lo.z - 1, B.SLAB, m], [lo.x - 1, 0, hi.z + 1, hi.x + 1, 0, hi.z + 1, B.SLAB, m],
+		[lo.x - 1, 0, lo.z, lo.x - 1, 0, hi.z, B.SLAB, m], [hi.x + 1, 0, lo.z, hi.x + 1, 0, hi.z, B.SLAB, m]]
+
+
 static func courses() -> Array:
+	var pad := {"fwd_cm": PAD_FWD, "up_cm": PAD_UP}
 	return [
-		{"name": "Tower climb", "lo": Vector3i(0, 0, 0), "hi": Vector3i(8, 6, 8),
-		 "blocks": [[0, 0, 0, 8, 0, 8, B.CUBE, 2], [3, 1, 3, 5, 4, 5, B.CUBE, 1],
-			[7, 1, 1, 7, 1, 1, B.CUBE, 3], [7, 1, 3, 7, 2, 3, B.CUBE, 3], [7, 1, 5, 7, 3, 5, B.CUBE, 3], [5, 1, 7, 5, 4, 7, B.CUBE, 3]],
+		{"name": "Tower climb", "lo": Vector3i(-1, 0, -1), "hi": Vector3i(12, 6, 12),
+		 "blocks": [[0, 0, 0, 11, 0, 11, B.CUBE, 2]] + _apron(Vector3i(0, 0, 0), Vector3i(11, 0, 11), 2) + [
+			[3, 1, 0, 4, 1, 1, B.SLAB, 3],                                  # step 1, +0.5 m (walked up)
+			[6, 1, 0, 7, 1, 1, B.CUBE, 3],                                  # step 2, +1.0 (a hop over a gap)
+			[9, 1, 0, 10, 1, 1, B.CUBE, 3], [9, 2, 0, 10, 2, 1, B.SLAB, 3],  # step 3, the corner, +1.5
+			[9, 1, 3, 10, 2, 4, B.CUBE, 3],                                 # step 4, +2.0
+			[9, 1, 6, 10, 2, 7, B.CUBE, 3], [9, 3, 6, 10, 3, 7, B.SLAB, 3],  # step 5, +2.5
+			[8, 1, 9, 11, 3, 11, B.CUBE, 1]],                               # the tower, +3.0
 		 "zones": [["start", Vector3i(0, 1, 0), Vector3i(1, 1, 1), {"run": "Tower climb"}],
-			["coin", Vector3i(7, 2, 1), Vector3i(7, 2, 1)], ["coin", Vector3i(7, 3, 3), Vector3i(7, 3, 3)], ["coin", Vector3i(7, 4, 5), Vector3i(7, 4, 5)],
-			["finish", Vector3i(4, 5, 4), Vector3i(4, 5, 4)]]},
-		{"name": "Garden gate", "lo": Vector3i(0, 0, -4), "hi": Vector3i(10, 3, 10),
-		 "blocks": [[0, 0, -4, 10, 0, 10, B.CUBE, 1],
+			["coin", Vector3i(6, 2, 0), Vector3i(7, 2, 1)], ["coin", Vector3i(9, 3, 3), Vector3i(10, 3, 4)], ["coin", Vector3i(9, 3, 6), Vector3i(10, 3, 7)],
+			["finish", Vector3i(8, 4, 9), Vector3i(11, 4, 11)]]},
+		{"name": "Garden gate", "lo": Vector3i(-1, 0, -5), "hi": Vector3i(11, 3, 11),
+		 "blocks": [[0, 0, -4, 10, 0, 10, B.CUBE, 1]] + _apron(Vector3i(0, 0, -4), Vector3i(10, 0, 10), 1) + [
 			[0, 1, 0, 4, 1, 0, B.FENCE, 3], [6, 1, 0, 10, 1, 0, B.FENCE, 3], [0, 1, 10, 10, 1, 10, B.FENCE, 3],
 			[0, 1, 1, 0, 1, 9, B.FENCE, 3], [10, 1, 1, 10, 1, 9, B.FENCE, 3],
 			[5, 1, 0, 5, 2, 0, B.CUBE, 4], [4, 2, 0, 4, 2, 0, B.POST, 4], [6, 2, 0, 6, 2, 0, B.POST, 4],
@@ -63,16 +87,18 @@ static func courses() -> Array:
 			["message", Vector3i(4, 1, 2), Vector3i(6, 1, 2), {"text": "Three coins hide in the beds"}],
 			["coin", Vector3i(2, 1, 5), Vector3i(2, 1, 5)], ["coin", Vector3i(8, 1, 4), Vector3i(8, 1, 4)], ["coin", Vector3i(3, 1, 7), Vector3i(3, 1, 7)],
 			["finish", Vector3i(5, 1, 9), Vector3i(5, 1, 9)]]},
-		{"name": "Pad hop", "lo": Vector3i(0, 0, 0), "hi": Vector3i(24, 4, 4),
-		 "blocks": [[0, 0, 0, 24, 0, 4, B.CUBE, 5],
-			[0, 1, 0, 3, 2, 4, B.CUBE, 7], [8, 1, 0, 10, 2, 4, B.CUBE, 7], [15, 1, 0, 17, 2, 4, B.CUBE, 7], [22, 1, 0, 24, 2, 4, B.CUBE, 7]],
+		{"name": "Pad hop", "lo": Vector3i(-5, 0, -1), "hi": Vector3i(26, 4, 5),
+		 "blocks": [[-4, 0, 0, 25, 0, 4, B.CUBE, 5]] + _apron(Vector3i(-4, 0, 0), Vector3i(25, 0, 4), 5) + [
+			[-3, 1, 0, -3, 1, 4, B.SLAB, 7], [-2, 1, 0, -2, 1, 4, B.CUBE, 7], [-1, 1, 0, -1, 1, 4, B.CUBE, 7], [-1, 2, 0, -1, 2, 4, B.SLAB, 7],
+			[0, 1, 0, 3, 2, 4, B.CUBE, 7], [8, 1, 0, 10, 2, 4, B.CUBE, 7], [15, 1, 0, 17, 2, 4, B.CUBE, 7], [22, 1, 0, 24, 2, 4, B.CUBE, 7],
+			[25, 1, 0, 25, 4, 4, B.CUBE, 7]],
 		 "zones": [["start", Vector3i(0, 3, 1), Vector3i(1, 3, 3), {"run": "Pad hop"}],
-			["pad", Vector3i(3, 3, 2), Vector3i(3, 3, 2), {"fwd_cm": 300}],
+			["pad", Vector3i(3, 3, 0), Vector3i(3, 3, 4), pad],
 			["hazard", Vector3i(4, 1, 0), Vector3i(7, 1, 4)],
-			["checkpoint", Vector3i(9, 3, 1), Vector3i(9, 3, 3)],
-			["pad", Vector3i(10, 3, 2), Vector3i(10, 3, 2), {"fwd_cm": 300}],
+			["checkpoint", Vector3i(8, 3, 0), Vector3i(9, 3, 4)],
+			["pad", Vector3i(10, 3, 0), Vector3i(10, 3, 4), pad],
 			["hazard", Vector3i(11, 1, 0), Vector3i(14, 1, 4)],
-			["checkpoint", Vector3i(16, 3, 1), Vector3i(16, 3, 3)],
-			["pad", Vector3i(17, 3, 2), Vector3i(17, 3, 2), {"fwd_cm": 300}],
+			["checkpoint", Vector3i(15, 3, 0), Vector3i(16, 3, 4)],
+			["pad", Vector3i(17, 3, 0), Vector3i(17, 3, 4), pad],
 			["hazard", Vector3i(18, 1, 0), Vector3i(21, 1, 4)],
-			["finish", Vector3i(23, 3, 2), Vector3i(23, 3, 2)]]}]
+			["finish", Vector3i(22, 3, 0), Vector3i(24, 3, 4)]]}]

@@ -1,0 +1,7 @@
+# F3 standup (playing what you built), d27-f3 from 98988c51
+
+14:23 | state: working | did: read brief, M6-COMMON, Q6 report; worktree imported | next: reproduce Pad hop and the starters in a window, read play_hud for the E prompt and coin counter | gates: ->
+14:41 | state: working | did: street lamp open, HUD 1 coin + counter only above 0, E prompt, hazard stripes + door frame looks, starters remade (Pad hop 6.5 m/s pads, stairs, slab apron; Tower climb half-block L), 799 walker case 6/6 green, Pad hop and Tower climb finished by held keys in a window | next: Garden gate window + captures, start re-entry PATCHES, gates | gates: 799 HOME starters-walked ok (headless)
+14:50 | state: working | did: 789 paths moved to the new recipes, 803 play-shows 4/4, PATCHES-F3 F3-1 (start re-entry, tested with the patch in: 773/774/789/799/803 green, then taken out); window: Pad hop 227 f, Tower 249 f, Garden gate 230 f by held keys | next: gates fast, home., world | gates: 799 ok, 803 ok, 789 ok, 774 ok
+15:01 | state: working | did: home. 201/3: three expectations still named the street lamp locked (765 locks, 767 third; 767 none passed alone) - moved | next: home. again, world | gates: fast PASS 5/5; 765 ok, 767 ok alone
+15:11 | state: done | did: all five items (4 met, re-entry proposed as PATCHES-F3 F3-1, tested), starters walkable by the real walker in a window and in 799 | next: Director: F3-1, re-run 799 on F1's body | gates: fast PASS 5/5; home. 204 passed 0 failed; world PASS 9/9 = main's

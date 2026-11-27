@@ -1,0 +1,131 @@
+F3 PLAYING WHAT YOU BUILT: lane report, day shift of 27 Nov 2026 (Opus builder)
+Worktree .claude/worktrees/d27-f3, branch d27-f3 from 98988c51. No commit (the Director lands). Blocks 799, 803.
+
+ACCEPTANCE, LINE BY LINE
+(1) Show the rules in play                                                          MET
+  - E prompt: while his feet are in a zone some rule fires on E, a key cap "E" and what it does, right of his figure
+    under the screen's centre: "open Door 1" at the Garden gate (f3-e-prompt.jpg, a window, held keys). The words
+    come from the first rule whose `if` holds: open/toggle -> "open <zone>" ("close <zone>" once a toggle has it open),
+    start -> "start <run>", launch -> "jump", teleport -> "go to <zone>", say -> "read", else "use <zone>".
+    rules_play.gd `use_prompt`, play_hud.gd `set_prompt`. 803 prompt: away '', on the Switch 'open Door' (HUD shows
+    it), toggle + E -> 'close Door', on the Start ''. 799 garden: the real walker stopped at the gate sees
+    'open Door 1', presses E, walks through.
+  - Hazard look: a zone of look none that a rule respawns from on `enter` lies as red and white cel stripes (palette
+    hazard_red / hazard_white, 0.5 m) with a red rim and a slow red shimmer (TLStyleFx.glow) on its floor, lifted onto
+    the ground found in its box (f3-hazard.jpg: Pad hop's gaps from the grass beside it).
+  - Door frame: a zone of look none that a rule opens/closes/toggles gets thin amber posts and a lintel round its
+    blocks, on both faces of the wall, outside the blocks (door_opening finds the wall's slice inside a preset's
+    3-deep zone by the solid cells, the wall's direction by its neighbours). Seen beside the Garden gate in
+    f3-e-prompt.jpg. 803 looks: roles hazard/door, stripes at the floor centre, the frame round the slice.
+(2) Pad hop                                                                         MET
+  - Before (a window, the old starter on the valley's grass, W held from the grass): blocked at x 699.65 for the
+    whole run, `visitor_blocked ... normal (-1,0,0)`: the stamp's start platform plus its curb is a 3.1 m wall
+    (f3-padhop-before.jpg). On the platform the playtest measured the loop: launch 300 cm/s forward, 4.0 m carry,
+    hazard, restart, x4 (Q6 ph2).
+  - After: the pads throw 6.5 m/s forward, 10 up. The air steering never brakes him, so a walk, a let-go W and a
+    held walk all carry 6.5 m/s: about 5.4 m on the level (gap 4 m); a held run accelerates to 9 and lands on the
+    next pad (chains). Half-block stairs onto the start (4 rises of 0.5 m), the pad across the platform's width,
+    checkpoints the width of each landing (cells 8-9, 15-16: the respawn is BEFORE the next pad), the finish on the
+    whole last platform with a wall behind it. Hazard 1 respawns at the start (a restart: nothing to keep yet).
+  - Window, W held from the grass at a walk: stairs, start, 3 launches, finish in 227 frames, no respawn
+    (f3-padhop.jpg, f3-padhop-walk.mp4 9.7 s). 799 pad / padrun / padlet: walk 227 frames, run 153, let-go 227;
+    3 launches, 0 respawns, plays 1 each.
+  - How F1's jump changes it: it does not. The pad replaces his velocity (launch), so the carry is
+    6.5 m/s x flight time (2 x 10 / 24 s on the level) and JUMP_V is not in it. It moves only if F1 changes the
+    visitor's GRAVITY, AIR_ACCEL or WALK_MPS above 6.5, or adds a mantle (a short landing would then catch the
+    edge, which only helps). 799 pad* re-measures it on F1's body: run it after F1 lands.
+(3) "1 coin", counter only once a coin exists                                       MET
+  - A counter's chip shows once it is above 0 (no "0 coins" on Pad hop), its word singular at 1: "1 coin",
+    "2 coins", "1 hop" (f3-one-coin.jpg, a window, Tower climb). lines.counters reads "1 coin" (was "coins 1":
+    774's expectation moved with it, play_case_course.gd). 803 counters.
+(4) Lamps for newcomers                                                             MET
+  - unlocks.json: three_plays grants plaster (mats 12) only; street_lamp is open from the start; light_mast stays
+    paddle_five's. The results card names unlocks only from the file, so its text needs nothing; its two comment
+    examples named the street lamp and now name the light mast. Docs: PIECES.md table, API.md 29.
+    piece_unlock_case.gd met_case: `parts:street_lamp` moved from "play any dungeon 3 times" to "" (a moved
+    expectation, not loosened: the case still checks every other lock). 803 lamps: no trophies -> lamp '',
+    mast 'score 5 in Paddle court', plaster 'play any dungeon 3 times', bench 'play any dungeon once'.
+(5) Re-entering the Start                                                           PROPOSED (seam): PATCHES-F3.md F3-1
+  - Rule: a `start` fired by `enter` of its own zone, for the run going, does nothing when the feet left that zone
+    under 60 frames (1 s) ago. Tested with the patch applied here, then taken out (rules_run.gd unchanged in d27-f3):
+    a RulesRun probe restarts at frames 6, 21, 96, 103 without it and 6, 96 with it; 773/774/789/799/803 all ok
+    with it in. The contract line to change is quoted in PATCHES-F3.md.
+All three starters finish by a person walking (held keys in a window, the real walker on the valley's grass):
+  Pad hop 227 frames, Tower climb 249 frames (W, Space x2, D, Space x3), Garden gate 230 frames (W, E at the gate).
+
+STARTERS REMADE (stamp_starters_make.gd, files regenerated)
+- All three: a ring of slabs one cell outside the floor. The stamp tool puts the floor on the cell the ground is in,
+  so grass -> slab -> floor is two rises of at most 0.5 m (the walker steps 0.55). 799 ground: every floor walked
+  onto from grass 0.0, 0.3, 0.6 and 0.9 m into the floor cell. (Before: a 0.7 m curb at the playtest's ground.)
+- Tower climb, for today's body (walking jump apex 0.87 m, 1-block hops failed 3/3): an L of 2 x 2 plank steps
+  rising 0.5 m each over 1-cell gaps (the first walked up), the coins on steps 2, 4 and 5, a 3 m stone tower with the
+  finish across its top. 799 tower: finished at jump leads 0.3, 0.6, 0.9 m before each edge, 3 coins each.
+  With F1's sure 1-block hop the steps could rise 1 m again (the original's 4 m climb): the recipe's heights only,
+  re-measured by 799 tower.
+- Garden gate: only the slab ring (its gate is 2 high with nothing over it: passable).
+- Sizes: Tower climb [14,7,14] 268 blocks, Garden gate [13,4,17] 284, Pad hop [32,5,7] 394; mats 1-9 only (789 files).
+
+GATES (this worktree, the last run of each)
+- node devx/bin/tl.mjs check --tier fast: PASS 5/5 (arch 12/12, assets 4/4, cards 3/3, devx.test 230/230, foreman
+  typecheck). (The first run failed arch: play_case_shows.gd had no .uid; `--import` made it.)
+- 799 HOME starters-walked ok (6/6); 803 HOME play-shows ok (4/4); 789 HOME stamp-starters ok (4/4, runs moved to
+  the new recipes); 774 HOME rules-play ok (5/5, looks 6 -> 8: the Door's frame and the Lava's stripes); 773 ok.
+- bash engine/tools/selftest.sh home. : "selftest: 204 passed, 0 failed" (7 m 49 s). The tip's count is 194 (794 has
+  6 cases here, A6's 7th is not on 98988c51) + 799's 6 + 803's 4 = 204: no case missing. The first run was 201/3
+  (the lamp expectations, then moved).
+- node devx/bin/tl.mjs check --tier full --only world: PASS [9/9] (233.5 s); .tl/gate-world.log diff empty against
+  main's (third-life/.tl/gate-world.log, 25 Nov): seed.drive a2940a1735bc2b72@3441 ... every hash equal.
+- Not run: the uncapped suite (the brief says not to).
+
+CHANGED FILES (all under engine/ unless said)
+  kernel/world/build/rules_play.gd        E prompt (`use_prompt`, `prompt`), the looks' `solid`, doors not ground-lifted
+  kernel/world/build/play_hud.gd          the prompt box; counters only above 0, singular words (`count_text`, `word_of`)
+  kernel/world/build/play_looks.gd        roles hazard/door; hazard stripes + shimmer; door frame (`door_opening`)
+  kernel/world/build/stamp_starters_make.gd + starters/*.json   the three courses remade (above)
+  kernel/world/build/stamp_starters_case.gd   789's feet paths in the new recipes' cells
+  kernel/world/build/play_case_course.gd  774: looks 8, counters "1 coin"
+  kernel/world/build/play_case_starters.gd (new) + tools/selftest.d/799-home-starters-walked.sh (new)
+  kernel/world/build/play_case_shows.gd (new) + tools/selftest.d/803-home-play-shows.sh (new)
+  kernel/world/build/play_fixture_starters.gd (new)   a Home with the three starters on the valley's grass, for a window
+  kernel/world/build/unlocks.json         street_lamp out of three_plays
+  kernel/world/build/piece_unlock_case.gd (one expectation, see (4)), PIECES.md, kernel/API.md (doc lines)
+  kernel/world/build/command_m5_case.gd   765 locks: the lamp is in the parts before and after (lane C's file, one line)
+  kernel/dungeon/results_card_case.gd     767 third: "Unlocked: plaster" (was "street lamp, plaster")
+  kernel/dungeon/results_card.gd          two comment examples (text only)
+  kernel/world/build/PATCHES-F3.md (new)  F3-1 for the seam
+  docs/shifts/2026-11-27-day/lanes/F3-play/  BRIEF.md, STANDUP.md, REPORT.txt, 7 stills, 2 clips
+
+BEHAVIOUR CHANGES (each names the test that moved)
+- Zones of look none with a hazard or door role now draw in play (774 looks 6 -> 8).
+- HUD counter text "coins 1" -> "1 coin"; no chip at 0 (774 walk expectation).
+- street_lamp no longer locked: three expectations moved with it (piece_unlock_case met; 765 command-m5.locks now
+  checks the lamp is offered before any play; 767 results-card.third's card reads "Unlocked: plaster"). None loosened.
+  The first home. run caught 765 and 767 (201 passed, 3 failed); 767's `none` failed in that run only (trophies.json
+  read empty) and passed alone and in the next full run: see the gate line.
+- The three starter files changed shape (789 runs paths, Pad hop's checkpoint respawn now (14.0, 3, 3.5) from the
+  stamp's corner; 3 "Checkpoint" lines in its scripted path: the wider checkpoint is re-entered after the respawn).
+- No kernel API change; no visitor, walker, layer, runtime or tool file touched; world gate not affected by design
+  (the Home's build mode is in no pack's space or hash).
+
+WHAT THE OWNER SHOULD LOOK AT, AND HOW
+- Build a fixture Home and play it:  <godot> --headless --path engine --script
+  res://kernel/world/build/play_fixture_starters.gd -- --out=<abs dir>   then
+  TL_HOME_BUILD_DIR=<abs dir> TL_EXE_START=696.0,-56.5,700.5,-56.5 <godot> --path engine res://boot/boot.tscn
+  (Pad hop; Tower climb 697.0,-44.0,700.0,-44.0; Garden gate 726.5,-49.0,726.5,-45.5). Or B, Stamps, 1-3, place.
+- f3-padhop-walk.mp4 (Pad hop walked), f3-tower-walk.mp4 (Tower climb), f3-e-prompt.jpg, f3-hazard.jpg,
+  f3-one-coin.jpg, f3-padhop-before.jpg / f3-padhop.jpg.
+- Judge by hand: is Tower climb still a climb at 0.5 m rises (it is easy at a walk; it was impossible)?
+
+QUESTIONS FOR THE DIRECTOR
+1. PATCHES-F3 F3-1 (rules_run.gd, the seam's) and its contract line: apply, or keep "starting the run that is going
+   restarts it"? 60 frames is my pick; 30 would also stop the playtest's case.
+2. The prompt sits right of the figure under the centre. A world-space "E" over the zone was the other choice; the
+   HUD needs no material and reads at every distance. Keep?
+3. Tower climb's rises: 0.5 m now; return to 1 m when F1's hop lands (one recipe edit, 799 re-measures)?
+
+THE NEXT THREE THINGS
+1. Re-run 799 on F1's body when it lands (pad carry, tower hops, the door) and, if the hop is sure, give Tower climb
+   1 m rises back.
+2. Garden gate's finish without coins (Q6 small): "find the three coins first" (a finish `if coins min 3` and a say
+   when short), as play_fixture.gd's tower does.
+3. Sound for the rules (coin, pad, door, finish, respawn): the playtest found no audio call; TLAudio exists for games.

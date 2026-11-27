@@ -379,8 +379,9 @@ func locks_case() -> void:
 	var mats1 := ids(a.get("mats", []), "id")
 	var parts0 := ids(before.get("parts", []), "kind")
 	var parts1 := ids(a.get("parts", []), "kind")
-	var granted := ["bench", "street_lamp", "light_mast", "house"]
+	var granted := ["bench", "light_mast", "house"]          # lane F3 (27 Nov): street_lamp is open from the start
 	var ok: bool = mats0 == M1_MATS and mats1 == M1_MATS + [11, 12] and granted.all(func(k: String) -> bool: return not parts0.has(k) and parts1.has(k)) and \
+		parts0.has("street_lamp") and parts1.has("street_lamp") and \
 		not parts0.has("watch_tower") and not parts1.has("watch_tower") and u.locked("parts", "watch_tower") != "" and parts1.has("tree")
 	say("locks", ok, "mats %s -> %s; parts %d -> %d (granted %s present %s; watch_tower still locked: '%s')" % [
 		str(mats0), str(mats1), parts0.size(), parts1.size(), str(granted), granted.all(func(k: String) -> bool: return parts1.has(k)), u.locked("parts", "watch_tower")])

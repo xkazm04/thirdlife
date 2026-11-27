@@ -8,6 +8,8 @@ extends CanvasLayer
 ##   the finish card centre: "Finished" or "New best!", the run's name, its time, the best; it stays CARD_FRAMES
 ##                   and slides away (a new run or build mode takes it at once); it takes no key: he keeps walking
 ##   the dip         a teleport or a respawn: the screen dips to ink and back over DIP_FRAMES
+##   the E prompt    lane F3 (27 Nov): while his feet are in a zone a rule fires on E, a key cap "E" and what it does
+##                   ("open Door 1"), right of his figure just under the screen's centre; it comes in over FADE frames
 ## Time is physics frames: `tick(frame, state)` is called once per frame by rules_play.gd; nothing reads a clock.
 ## `lines` holds what is shown, for a case to read.
 
@@ -18,13 +20,17 @@ const CARD_FRAMES := 300                 # the finish card stays 5 s
 const FADE := 12                         # frames a line or a card takes to come in or go
 const DIP_FRAMES := 22
 
-var lines := {"run": "", "clock": "", "counters": "", "say": "", "card": ""}
+var lines := {"run": "", "clock": "", "counters": "", "say": "", "card": "", "prompt": ""}
+var _prompt_box: PanelContainer = null
+var _prompt: Label = null
+var _prompt_from := -1
 var _screen: Control = null
 var _pill: PanelContainer = null
 var _run: Label = null
 var _clock: Label = null
 var _counters: HBoxContainer = null
 var _counter_labels := {}                # counter name -> Label
+var _counter_tips := {}                  # counter name -> its word's Label ("coin" / "coins")
 var _say_box: PanelContainer = null
 var _say: Label = null
 var _say_from := -1
@@ -102,6 +108,34 @@ func _ready() -> void:
 	low.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	low.add_child(_say_box)
 	_screen.add_child(low)
+	# the E prompt, under the centre (where his figure stands on the screen)
+	_prompt_box = PanelContainer.new()
+	_prompt_box.name = "Prompt"
+	_prompt_box.add_theme_stylebox_override("panel", _box(k["paper"], k["ink"], 4, 14, 14, 8))
+	var prow := HBoxContainer.new()
+	prow.add_theme_constant_override("separation", 14)
+	_prompt_box.add_child(prow)
+	var cap := PanelContainer.new()
+	cap.custom_minimum_size = Vector2(46, 46)
+	cap.add_theme_stylebox_override("panel", _box(k["accent"], k["ink"], 4, 9, 0, 0))
+	var ek: Label = UI.label("E", 30)
+	ek.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	ek.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	ek.add_theme_font_override("font", _digits())
+	cap.add_child(ek)
+	prow.add_child(cap)
+	_prompt = UI.label("", 30)
+	_prompt.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	prow.add_child(_prompt)
+	var pc := CenterContainer.new()
+	pc.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	pc.offset_top = DESIGN.y * 0.50
+	pc.offset_bottom = -DESIGN.y * 0.30
+	pc.offset_left = DESIGN.x * 0.24                   # right of his figure, so the door he faces stays in sight
+	pc.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	pc.add_child(_prompt_box)
+	_screen.add_child(pc)
+	_prompt_box.visible = false
 	# the finish card, centre (the results card's look: UI.card, a head line, the title, the counts)
 	_card = UI.card()
 	_card.name = "FinishCard"
@@ -190,9 +224,12 @@ func tick(at_frame: int, st: Dictionary, used: Array) -> void:
 
 
 func _tick_counters(values: Dictionary, used: Array, running: bool) -> void:
+	# Lane F3 (27 Nov, the playtest's "0 coins" on a course with none and "1 coins"): a counter shows once it is above
+	# 0 (the first coin taken makes the chip), its word singular at 1 ("1 coin", "2 coins").
 	var parts := PackedStringArray()
 	for c: String in used:
-		parts.append("%s %d" % [c, int(values.get(c, 0))])
+		if int(values.get(c, 0)) > 0:
+			parts.append(count_text(c, int(values.get(c, 0))))
 	lines.counters = " ".join(parts) if running or not values.is_empty() else ""
 	if _counters == null:
 		return
@@ -200,11 +237,31 @@ func _tick_counters(values: Dictionary, used: Array, running: bool) -> void:
 		for ch: Node in _counters.get_children():
 			ch.queue_free()
 		_counter_labels.clear()
+		_counter_tips.clear()
 		for c: String in used:
 			_counter_labels[c] = _counter_chip(c)
-	_counters.visible = _shown and not used.is_empty() and (running or _any(values))
+	_counters.visible = _shown and not used.is_empty() and _any(values)
 	for c: String in used:
-		(_counter_labels[c] as Label).text = str(int(values.get(c, 0)))
+		var n := int(values.get(c, 0))
+		var lab: Label = _counter_labels[c]
+		lab.text = str(n)
+		var chip: Node = lab.get_parent().get_parent()
+		if chip is Control:
+			(chip as Control).visible = n > 0
+		if _counter_tips.has(c):
+			(_counter_tips[c] as Label).text = word_of(c, n)
+
+
+## "1 coin", "3 coins", "1 hop" (a counter's name, the trailing s dropped at 1; "_" read as a space).
+static func count_text(c: String, n: int) -> String:
+	return "%d %s" % [n, word_of(c, n)]
+
+
+static func word_of(c: String, n: int) -> String:
+	var w := c.replace("_", " ")
+	if n == 1 and w.length() > 1 and w.ends_with("s") and not w.ends_with("ss"):
+		w = w.substr(0, w.length() - 1)
+	return w
 
 
 static func _any(values: Dictionary) -> bool:
@@ -235,7 +292,8 @@ func _counter_chip(c: String) -> Label:
 	var n: Label = UI.label("0", 32)
 	n.add_theme_font_override("font", _digits())
 	row.add_child(n)
-	var tip: Label = UI.label(c.replace("_", " "), 18)
+	var tip: Label = UI.label(word_of(c, 0), 18)
+	_counter_tips[c] = tip
 	tip.add_theme_color_override("font_color", k["muted"])
 	tip.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	row.add_child(tip)
@@ -319,6 +377,22 @@ func stopped() -> void:
 	lines.say = ""
 	lines.run = ""
 	lines.clock = ""
+	set_prompt("")
+
+
+## The E prompt's words ("" hides it): rules_play.gd sets it every frame the rules run.
+func set_prompt(text: String) -> void:
+	if text != lines.prompt:
+		_prompt_from = _frame if text != "" else -1
+		lines.prompt = text
+		if _prompt != null:
+			_prompt.text = text
+	if _prompt_box == null:
+		return
+	var on := text != "" and _shown
+	_prompt_box.visible = on
+	if on:
+		_prompt_box.modulate.a = clampf(float(_frame - _prompt_from + 1) / float(FADE), 0.0, 1.0)
 
 
 func dip() -> void:
@@ -343,4 +417,5 @@ func show_hud(on: bool) -> void:
 		_counters.visible = false
 		_say_box.visible = false
 		_card.visible = false
+		_prompt_box.visible = false
 		_dip.color.a = 0.0

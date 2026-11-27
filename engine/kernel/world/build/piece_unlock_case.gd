@@ -111,7 +111,7 @@ func met_case() -> void:
 	for k: Array in [["parts", "bench"], ["parts", "light_mast"], ["mats", 11], ["parts", "street_lamp"], ["mats", 12], ["parts", "house"],
 			["parts", "watch_tower"], ["parts", "fence"]]:
 		got["%s:%s" % [k[0], str(k[1])]] = u.locked(k[0], k[1])
-	var want := {"parts:bench": "", "parts:light_mast": "", "mats:11": "", "parts:street_lamp": "play any dungeon 3 times",
+	var want := {"parts:bench": "", "parts:light_mast": "", "mats:11": "", "parts:street_lamp": "",
 		"mats:12": "play any dungeon 3 times", "parts:house": "win Parkour once", "parts:watch_tower": "win Ice hockey once", "parts:fence": ""}
 	say("met", str(got) == str(want), "with plays 2, wins 1, best 5 at the paddle court: %s" % str(got))
 

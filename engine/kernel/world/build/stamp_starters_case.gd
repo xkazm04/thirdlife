@@ -9,7 +9,8 @@ extends SceneTree
 ##                           into the starters folder
 ##   stamp-starters.runs     each placed starter finishes by a scripted feet path (rules_run.gd, a recording facade):
 ##                           Tower climb (3 coins), Garden gate (E opens the gate, the message, 3 coins), Pad hop (3
-##                           pads, a hazard respawns at the checkpoint)
+##                           pads, a hazard respawns at the checkpoint before the pad). The real walker's play of the
+##                           same courses is selftest 799 (play_case_starters.gd, lane F3)
 ##   stamp-starters.runname  a course whose run the Home already has: the field "Tower climb (2)" (selected); Enter
 ##                           places it with that run, a third with Esc shares the name; one batch each; the guard keys
 
@@ -138,16 +139,22 @@ func _starter_bytes() -> String:
 
 
 ## The path of each starter in its own cells (feet cells), [cell, E down on its first frame].
+## The feet cells walked, in each recipe's own cells (stamp_starters_make.gd; lane F3 remade the courses on 27 Nov:
+## Tower climb an L of half-block steps, Pad hop with stairs, wide checkpoints and the finish on its last platform).
 static func paths() -> Dictionary:
 	return {
-		"Tower climb": [[Vector3i(-2, 1, -2), false], [Vector3i(0, 1, 0), false], [Vector3i(7, 2, 1), false], [Vector3i(7, 3, 3), false],
-			[Vector3i(7, 4, 5), false], [Vector3i(5, 5, 7), false], [Vector3i(4, 5, 4), false]],
+		"Tower climb": [[Vector3i(-1, 1, 1), false], [Vector3i(0, 1, 1), false], [Vector3i(3, 1, 1), false], [Vector3i(6, 2, 1), false],
+			[Vector3i(9, 2, 1), false], [Vector3i(9, 3, 4), false], [Vector3i(9, 3, 7), false], [Vector3i(9, 4, 10), false]],
 		"Garden gate": [[Vector3i(5, 1, -4), false], [Vector3i(5, 1, -3), false], [Vector3i(5, 1, -1), true], [Vector3i(5, 1, 0), false],
 			[Vector3i(5, 1, 1), false], [Vector3i(5, 1, 2), false], [Vector3i(2, 1, 5), false], [Vector3i(8, 1, 4), false],
 			[Vector3i(3, 1, 7), false], [Vector3i(5, 1, 9), false]],
-		"Pad hop": [[Vector3i(0, 3, 0), false], [Vector3i(0, 3, 2), false], [Vector3i(3, 3, 2), false], [Vector3i(9, 3, 2), false],
-			[Vector3i(10, 3, 2), false], [Vector3i(12, 1, 2), false], [Vector3i(9, 3, 0), false], [Vector3i(10, 3, 2), false],
+		"Pad hop": [[Vector3i(-2, 2, 2), false], [Vector3i(0, 3, 2), false], [Vector3i(3, 3, 2), false], [Vector3i(9, 3, 2), false],
+			[Vector3i(10, 3, 2), false], [Vector3i(12, 1, 2), false], [Vector3i(9, 3, 2), false], [Vector3i(10, 3, 2), false],
 			[Vector3i(16, 3, 2), false], [Vector3i(17, 3, 2), false], [Vector3i(23, 3, 2), false]]}
+
+
+## Each recipe's box corner (its `lo`): a recipe cell c is the placed stamp's cell c - lo.
+const LO := {"Tower climb": Vector3i(-1, 0, -1), "Garden gate": Vector3i(-1, 0, -5), "Pad hop": Vector3i(-5, 0, -1)}
 
 
 func runs_case(st: Array) -> void:
@@ -155,13 +162,13 @@ func runs_case(st: Array) -> void:
 	var bad := []
 	var want := {"Tower climb": {"look_taken": 3, "run_finished": 1},
 		"Garden gate": {"set_open": 2, "say": 1, "look_taken": 3, "run_finished": 1},
-		"Pad hop": {"launch": 4, "teleport": 1, "say": 2, "run_finished": 1}}
+		"Pad hop": {"launch": 4, "teleport": 1, "say": 3, "run_finished": 1}}
 	for e: Dictionary in st:
 		var d: Dictionary = e.stamp
 		var b: RefCounted = HomeBuild.new(null, null, {})
 		var at := Vector3i(100, 0, 100)
 		var r: Dictionary = b.apply(StampFile.placed_ops(b, d, at, 0).ops)
-		var shift := Vector3i(0, 0, 4) if str(d.name) == "Garden gate" else Vector3i.ZERO     # its recipe's box starts at z -4
+		var shift: Vector3i = -(LO[str(d.name)] as Vector3i)
 		var rec := Rec.new()
 		var rr: RefCounted = RulesRun.new(b.layer("rules"), rec)
 		rr.begin(0, Vector3(at))
@@ -177,7 +184,7 @@ func runs_case(st: Array) -> void:
 		for k: String in want[str(d.name)]:
 			ok_one = ok_one and kinds.count(k) == int(want[d.name][k])
 		if str(d.name) == "Pad hop":
-			ok_one = ok_one and not tel.is_empty() and (tel[0][1] as Vector3).is_equal_approx(Vector3(at) + Vector3(9.5, 3.0, 2.5))
+			ok_one = ok_one and not tel.is_empty() and (tel[0][1] as Vector3).is_equal_approx(Vector3(at) + Vector3(14.0, 3.0, 3.5))
 		lines.append("%s: %s, finished in %s frames" % [str(d.name), " > ".join(kinds), str(fin[0][2]) if not fin.is_empty() else "-"])
 		if not ok_one:
 			bad.append("%s %s" % [str(d.name), str(rec.log)])

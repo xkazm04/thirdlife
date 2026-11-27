@@ -4,7 +4,7 @@ extends CanvasLayer
 ##
 ## Its data is the dungeon's `result.trophies` (dungeon.gd `close`, from what kernel/world/build/trophies.gd `record`
 ## just wrote to `<home>/trophies.json`): {title, plays, wins, best?, won?, unlocked?}. `unlocked` lists what THIS end
-## newly unlocked for building ("parts:street_lamp", "mats:12": the rules of unlocks.json met after the record and not
+## newly unlocked for building ("parts:light_mast", "mats:12": the rules of unlocks.json met after the record and not
 ## before), so a second identical end shows no "Unlocked" line. No `trophies` (a counted run, a test's dungeon, a load
 ## that was refused or stopped: nothing was recorded): no card (`wanted`).
 ## Closed by any key or a click, after HOLD frames (the key that left the dungeon never closes it); no clock, no timer.
@@ -52,7 +52,7 @@ static func of_play(title: String, entry: Dictionary, before: Dictionary, after:
 	return out
 
 
-## A person's name for an unlocked key: "parts:street_lamp" -> "street lamp", "mats:12" -> "plaster".
+## A person's name for an unlocked key: "parts:light_mast" -> "light mast", "mats:12" -> "plaster".
 static func name_of(key: String) -> String:
 	var kind := key.get_slice(":", 0)
 	var id := key.get_slice(":", 1)
