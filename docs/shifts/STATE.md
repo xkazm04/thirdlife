@@ -480,7 +480,7 @@ on the frame and the figure and Fable on surfaces and nature, looping for 10 hou
   the second try; the look by hand; the core's bots cannot use it). Menu 23 rows. Main at 0d01da0b: fast 5/5, create.
   29/0, menu. 2/0, dungeon. 7/0. Full tier NOT RUN: disk fell to 5.4 GB (another project, kiro/gtai-wt, writing AVIs);
   the Director deleted only its own scratch (ref/thirdjam copy, base copies): 16 GB.
-- ~06:35 VERDICT (docs/shifts/2026-11-27-night/VERDICT.md):
+- ~06:35 VERDICT (docs/shifts/2026-11-27-night/VERDICT.md; page https://claude.ai/artifact/BimzZkPLUhsfdwX2e11YU3):
   - All six games juiced; Create made a version of every ability; karts and biplane were made by the editor alone.
   - J4b: the hand layer sent back as one sentence came out about as juicy as the hand version.
   - Exe 6522394: export.sh check PASS; 10 new packs ran 600 frames in it with 0/0 errors; the owner menu has 26 rows.

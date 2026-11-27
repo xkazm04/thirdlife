@@ -279,3 +279,15 @@ remain). Then plan the day: a `/shift` day or a `/spark`.
 - 2026-11-26 (day run's night tail): copying each lane's promoted pack into the owner's menu at the standup, after a
   600-frame exe run, caught an engine error the promotion gate let through (G11 v0.1.0) and gave the owner every game
   without waiting for the lane's report. Keep the exe run on every menu copy.
+- 2026-11-27 (night, juice): a game lane's hand-built juice, sent back to the editor as ONE sentence that names every
+  effect (slow beat, camera, banner, shake, bots contest), came out about as juicy as the hand version (J4b). The editor
+  builds the words and nothing more: lanes that compare editor and hand should end by sending the hand layer back as
+  words.
+- 2026-11-27: another project on the machine took free disk from 110 GB to 5 GB overnight. room.sh got a disk floor (12 GB).
+  The Director freed only its own space (merged trees, an 8.8 GB scratchpad of old reference copies), each folder after
+  a no-link walk. The full tier was skipped rather than risk filling a shared disk. Check the scratchpad's size at a
+  night's preflight.
+- 2026-11-27: resuming a finished lane by SendMessage while launching queued lanes put 6 agents up against the owner's
+  cap of 5. Count running agents before any message that resumes a finished one.
+- 2026-11-27: committing docs while export.sh ran made `export.sh check` fail (the build's tag was not the commit). Export
+  after the last commit of the verdict, into the main checkout's dist (`--out`), then check.
