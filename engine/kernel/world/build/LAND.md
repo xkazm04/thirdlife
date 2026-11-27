@@ -133,3 +133,26 @@ p50 1.62, p99 4.93). The first press opening 4 chunks: one frame of 29.6 ms. Cap
 A held stroke keeps its brush on the level plane of its first press (`land_brush.gd on_plane`): with the brush on the
 cursor's hit, a raised hill met the ray nearer the camera every frame and walked onto the visitor's feet (seen in the
 first exe run). The brush's falloff: see "The brush's shape" (M5).
+
+## The look polished (LP, 27 Nov)
+
+- **Terrace face.** Rock is no longer a vertex colour (M5's `_rock` pulled the colour toward rock_warm by the slope of
+  the steepest triangle round a vertex: it ran half a cell onto a terrace's flat top, and the shared normal lit the side
+  as level land: a flat pink shape). toon_cel.gdshader decides per triangle from its own plane (the derivatives of the
+  position) on the Home's land only (UV.y <= -8): rock from a face normal y of 0.80, all rock at 0.74, lit as that
+  plane, with the valley's rock and cliff paints in fields, beds a quarter as thick as the valley's strata and block
+  joints. The colour's alpha is how far rock may show (less where painted). 764 `look.terrace` checks every steep drawn
+  triangle carries it and the crease's top vertices keep the grass. The chunk mesh got cheaper (764 `look.cost`
+  7.6-7.7 ms against main's 8.0-8.9 ms in the same run order).
+- **Growth.** The shader cuts each kind from the density ratio flowers / tufts (tall under 0.31, flowers over 1.6, the
+  meadow between): a meadow is a lusher two-green grass with light and dark tufts, tall grass a lighter straw field
+  with tall light tufts and a wind sheen, flowers round dots on the screen (0.11 m, never under 1.6 px, the cells
+  doubling by octaves so the field stays dotted to the horizon). 768 `look2.growth`.
+- **Stone path.** A terrain ribbon with the dirt path's own field (edge, verge, tufts, round ends), its own coordinates
+  in UV2 (path_mesh.gd `STONE_UV2`); the shader lays stones in rows across the path where the earth paint shows. 768
+  `look2.stone`.
+- **Pond shore.** water_mesh.gd carries a bank depth per vertex (the water over the drawn lattice on a 0.75 m grid,
+  blurred over about 2 m, less 0.12 m) in UV.x - (-10); the shader ends the water there. The waterline runs in 0.75 m
+  squares (longest side 1.06 m against the lattice's 3-4.24 m), always inside the land's own (768 `look2.shore`). A
+  screen-space mean of the depth buffer (tried first) read a wading visitor's legs as bank. Cost: a 39-cell pond's
+  chunk mesh 9.3 ms (main 0.95 ms for its 82 triangles), once per pour.

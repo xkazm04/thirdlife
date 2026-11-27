@@ -491,6 +491,21 @@ void fragment() {
 	}
 #endif
 	vec3 wn = normalize((INV_VIEW_MATRIX * vec4(NORMAL, 0.0)).xyz);
+	// LP (27 Nov): the Home's edited land (kernel/world/build/land_mesh.gd writes UV.y <= -8; every other ground has
+	// UV.y > -7.5, so none of this runs there): a steep triangle is a rock face. Its plane (the derivatives of the
+	// position: one value per triangle) decides, so the rock ends exactly at the crease of a terrace's top and foot, and
+	// the face is lit as that plane (the shared vertex normals of a 3 m lattice lit a terrace's side as level land). The
+	// colour's alpha is how far rock may show (less where a person painted).
+	float face_k = 0.0;
+	vec3 fnw = cross(dFdy(wpos), dFdx(wpos));   // (outside the branch: a derivative in a branch that differs per pixel is undefined)
+	if (mclass == 5 && uvv.y < -7.5) {
+		fnw = normalize(fnw.y < 0.0 ? -fnw : fnw);
+		face_k = (1.0 - smoothstep(0.74, 0.80, fnw.y)) * clamp(COLOR.a, 0.0, 1.0);
+		if (face_k > 0.0) {
+			wn = normalize(mix(wn, fnw, face_k));
+			NORMAL = normalize((VIEW_MATRIX * vec4(wn, 0.0)).xyz);
+		}
+	}
 	vec3 vw = normalize((INV_VIEW_MATRIX * vec4(VIEW, 0.0)).xyz);
 	float fres = pow(1.0 - clamp(dot(wn, vw), 0.0, 1.0), 3.0);
 	float mk = m1.y < 0.0 ? g_mottle.x : m1.y;
@@ -521,6 +536,11 @@ void fragment() {
 			vec3 pig = COLOR.rgb;
 #endif
 			vec2 gq = lp.xz * m1.w;
+			if (face_k > 0.0) {
+				// LP: a rock face takes the valley's own steep paints, rock and cliff in fields (village_terrain.gd's mix)
+				vec3 rock_p = mix(g_land5.rgb, g_land6.rgb, step(0.55, vn2(gq * 0.09 + 13.0)));
+				pig = mix(pig, rock_p, face_k);
+			}
 			float pxa = length(dFdx(gq)); float pxb = length(dFdy(gq));
 			float pxm = sqrt(max(min(pxa, pxb), 1e-5) * max(pxa, pxb));   // seen at a grazing angle: the mean footprint (m)
 			float wa = vn2(gq * 0.19) - 0.5; float wb = vn2(gq * 0.19 + 17.0) - 0.5;
@@ -551,6 +571,34 @@ void fragment() {
 			float flat_k = step(0.5, wn.y);
 			float rock_k = mix(float(i2 >= 5), float(i1 >= 5), lt1) * snap;   // 1 = rock
 			rock_w = rock_k;
+			// LP (27 Nov): a stone path (kernel/world/build/path_mesh.gd: a terrain ribbon with the dirt path's field, its
+			// own coordinates in UV2, y < -500; every other mesh has none there). Where the snap took the earth paint the
+			// earth is laid with stones in rows across the path: a row 0.42 m along, stones 0.45-0.7 m across, every row
+			// set off from the last, rounded corners, each stone a tone of its own and a light bevel, dark joints with
+			// some green in them. The edge, the verge and the tufts over it are the dirt path's own (the snap's).
+			if (UV2.y < -500.0 && em_k > 0.0) {
+				vec2 sp = vec2(UV2.x, -1000.0 - UV2.y);
+				float srow = floor(sp.x / 0.42);
+				float sfy = fract(sp.x / 0.42);
+				float s_w = 0.58 + 0.24 * (h21(vec2(srow, 3.0)) - 0.5);
+				float ssx = sp.y / s_w + h21(vec2(srow, 1.0));
+				float scol = floor(ssx);
+				float sfx = fract(ssx);
+				vec2 se = vec2(min(sfx, 1.0 - sfx) * s_w, min(sfy, 1.0 - sfy) * 0.42);   // metres to the stone's sides
+				float s_rr = 0.07;
+				vec2 sc = max(vec2(s_rr) - se, vec2(0.0));
+				float s_in = min(se.x, se.y) - (length(sc) > 0.0 ? length(sc) - max(sc.x, sc.y) : 0.0);   // to the rounded outline
+				float s_aa = (fwidth(sp.x) + fwidth(sp.y)) * 0.6 + 0.002;
+				float s_keep = 1.0 - smoothstep(0.07, 0.22, s_aa);
+				vec3 s_base = m0.rgb * mix(vec3(dot(g_land3.rgb, vec3(0.30, 0.59, 0.11))), g_land3.rgb, 0.16);
+				vec2 sid = vec2(scol, srow);
+				vec3 s_col = s_base * (1.0 + (h21(sid + 5.3) - 0.5) * 0.22 * s_keep) * mix(vec3(1.0), vec3(1.03, 1.0, 0.95), step(0.6, h21(sid + 8.1)));
+				s_col = mix(s_col, s_col * 1.13 + 0.01, (1.0 - smoothstep(0.035, 0.07 + s_aa, s_in)) * s_keep);
+				vec3 s_joint = mix(s_base * 0.52, m0.rgb * g_land1.rgb * 0.62, step(0.55, h21(sid + 2.2)));
+				float s_gap = (1.0 - smoothstep(0.018, 0.018 + s_aa, s_in)) * s_keep * (1.0 - 0.5 * smoothstep(0.03, 0.12, s_aa));
+				c = mix(c, mix(s_col, s_joint, s_gap), em_k);
+				em_k = 0.0;   // (no pebbles, scratches or light patches of earth on the stones)
+			}
 			// (the marks end at `detail.marks_far` metres: far land is flat colour, not a field of dots)
 			// (away from the eye along the ground, at this fragment: a tuft stands upright wherever it is on the screen)
 			vec3 to_eye = (INV_VIEW_MATRIX * vec4(VIEW, 0.0)).xyz;
@@ -564,6 +612,29 @@ void fragment() {
 			float tuft_level = max(to_eye.y, 0.12);
 			away *= clamp(0.70 / tuft_level, 1.0, 2.6) * clamp(tuft_level / max(tuft_seen, 1e-3), 0.4, 1.0);
 			float mfade = g_cel4.w > 0.0 ? 1.0 - smoothstep(g_cel4.w * 0.4, g_cel4.w, vdepth) : 1.0;
+			// M5 + LP (27 Nov): growth a person planted on the Home's land (the plant tool). Only the Home's edited land
+			// meshes (kernel/world/build/land_mesh.gd) write UV.y <= -8; every other ground has UV.y > -7.5 (the valley and
+			// the villages write zero), so every growth term below is zero there and it draws as before. UV.x = tufts
+			// (meadow 0.5, flowers 0.3, tall grass 1), -8 - UV.y = flowers (meadow 0.35, flowers 1). The density is blurred
+			// over a few metres; each kind is cut from it at half way with a wobble, so a planted field has a crisp edge.
+			float grow_t = uvv.y < -7.5 ? clamp(uvv.x, 0.0, 1.0) : 0.0;
+			float grow_f = uvv.y < -7.5 ? clamp(-8.0 - uvv.y, 0.0, 1.0) : 0.0;
+			float gr_any = 0.0; float gr_tall = 0.0; float gr_flw = 0.0;
+			if (grow_t > 0.0 || grow_f > 0.0) {
+				// (which kind: the ratio flowers / tufts does not depend on the blur's weight: tall grass 0, meadow 0.7,
+				// flowers 3.3; a mixed border lies between)
+				float gwob = (vn2(gq * 0.3 + 3.0) - 0.5) * 0.5 + (vn2(gq * 1.1 + 9.0) - 0.5) * 0.2;
+				float gv = clamp(max(grow_t * 2.2, grow_f), 0.0, 1.0) + gwob;
+				float gaw = fwidth(gv) * 0.75 + 0.002;
+				gr_any = smoothstep(0.5 - gaw, 0.5 + gaw, gv) * gm * flat_k;
+				float g_ratio = grow_f / max(grow_t, 1e-3);
+				float tv = 1.0 - smoothstep(0.12, 0.5, g_ratio) + gwob * 0.6;
+				float taw = fwidth(tv) * 0.75 + 0.002;
+				gr_tall = smoothstep(0.5 - taw, 0.5 + taw, tv) * gr_any;
+				float fv = smoothstep(1.0, 2.2, g_ratio) + gwob * 0.6;
+				float faw = fwidth(fv) * 0.75 + 0.002;
+				gr_flw = smoothstep(0.5 - faw, 0.5 + faw, fv) * gr_any * (1.0 - gr_tall);
+			}
 			// the verge: where grass meets earth the grass side is one tone darker for a hand's width (the cut of the turf),
 			// and the grass stands thicker along it: smaller tufts, close together, for half a metre
 			if (i1 < 3 && (i2 == 3 || i2 == 4) && g_cel2.w > 0.0) {
@@ -598,7 +669,7 @@ void fragment() {
 				float dkw = fwidth(pdk) * 0.75 + 0.0015;
 				c = mix(c, c * vec3(0.85, 0.79, 0.80), smoothstep(0.62 - dkw, 0.62 + dkw, pdk) * (1.0 - patch) * em_k * g_cel2.z);
 				// (the meadow's patches are the dry-grass paint: the warm olive of the board's sunlit fields, against the green)
-				c = mix(c, m0.rgb * g_land2.rgb, cel_meadow(gq) * gm * g_cel2.z * 0.8 * flat_k);
+				c = mix(c, m0.rgb * g_land2.rgb, cel_meadow(gq) * gm * g_cel2.z * 0.8 * flat_k * (1.0 - gr_any));   // (not on planted growth)
 			}
 			// the grass under a tree or a bush is the dark grass paint, one tone deeper: a field with a cut, wobbly edge
 			if (cel_shade_uv.x != 0.0) {
@@ -611,17 +682,36 @@ void fragment() {
 			// (in some patches of the meadow the tufts are half as dark; none is lighter than the grass: the board's are all dark)
 			float tlight = step(0.62, vn2(gq * 0.045 + 61.0));
 			c = mix(c, c * mix(vec3(0.46, 0.72, 0.44), vec3(0.66, 0.84, 0.56), tlight), gk.x * gm);
-			// M5 (spark world-sandbox, lane L): growth a person painted on the Home's land (the plant tool). Only the Home's
-			// edited land meshes (kernel/world/build/land_mesh.gd) write UV.y <= -8; every other ground has UV.y > -7.5 (the
-			// valley and the villages write zero), so these terms are all zero there and it draws as before. UV.x = tuft
-			// density (more, smaller and taller tufts), -8 - UV.y = flowers (more of the meadow flowers below).
-			float grow_t = uvv.y < -7.5 ? clamp(uvv.x, 0.0, 1.0) : 0.0;
-			float grow_f = uvv.y < -7.5 ? clamp(-8.0 - uvv.y, 0.0, 1.0) : 0.0;
-			if (grow_t > 0.0) {
-				vec4 gk2 = ground_marks(gq / (max(g_cel2.y, 0.2) * 0.62) + 23.0, away * (1.0 + 0.8 * grow_t)) * fade * flat_k * mfade;
-				vec4 gk3 = ground_marks(gq / (max(g_cel2.y, 0.2) * 0.42) + 57.0, away * (1.0 + 1.3 * grow_t)) * fade * flat_k * mfade;
-				c = mix(c, c * vec3(0.46, 0.72, 0.44), gk2.x * gm * smoothstep(0.05, 0.45, grow_t));
-				c = mix(c, c * vec3(0.52, 0.76, 0.48), gk3.x * gm * smoothstep(0.45, 0.95, grow_t));
+			if (gr_any > 0.0) {
+				float gk_s = max(g_cel2.y, 0.2);
+				// the meadow (and the flowers' ground): a lusher grass in two greens, fields of 1.5-4 m with a cut edge, seen
+				// as far as the land is drawn (the valley's dry patches are not on it)
+				float mpn = vn2(gq * 0.33 + 71.0) * 0.6 + vn2(gq * 0.9 + 5.0) * 0.4;
+				float mpw = fwidth(mpn) * 0.75 + 0.0015;
+				vec3 lush = mix(m0.rgb * g_land0.rgb * vec3(0.86, 1.04, 0.64), m0.rgb * g_land0.rgb * vec3(1.04, 1.17, 0.80) + vec3(0.0, 0.012, 0.0), smoothstep(0.5 - mpw, 0.5 + mpw, mpn));
+				float not_tall = gr_any * (1.0 - gr_tall);
+				c = mix(c, lush, not_tall);
+				// thicker, smaller tufts in two sizes: the deeper green, and a light one where blades catch the sun
+				vec4 gk2 = ground_marks(gq / (gk_s * 0.62) + 23.0, away * 1.4) * fade * mfade;
+				vec4 gk3 = ground_marks(gq / (gk_s * 0.45) + 57.0, away * 1.6) * fade * mfade;
+				c = mix(c, c * vec3(0.52, 0.76, 0.46), gk2.x * not_tall);
+				c = mix(c, c * vec3(1.18, 1.16, 0.92) + 0.02, gk3.x * not_tall);
+				// tall grass: a lighter, warmer field (half way to the dry grass, in the sun), tall light tufts over a dark
+				// root, and the sheen of the wind running over it in broad bands
+				if (gr_tall > 0.0) {
+					vec3 straw = m0.rgb * mix(g_land0.rgb, g_land2.rgb, 0.18) * vec3(1.16, 1.20, 1.0);
+					float wsv = dot(gq, vec2(0.8, 0.6)) * 0.16 - TIME * 0.55 + (vn2(gq * 0.06 + 19.0) - 0.5) * 2.5;
+					float shv = sin(wsv * 6.2831853) * 0.5 + 0.5;
+					float shw = fwidth(shv) * 0.75 + 0.002;
+					c = mix(c, mix(straw, straw * vec3(1.12, 1.12, 1.10) + 0.025, smoothstep(0.72 - shw, 0.72 + shw, shv)), gr_tall);
+					vec2 away_n = normalize(away);
+					vec2 tall_a = away * 3.4;
+					float tk_d = ground_marks((gq + away_n * 0.09) / (gk_s * 1.0) + 91.0, tall_a).x * fade * mfade;
+					float tk_l = ground_marks(gq / (gk_s * 1.0) + 91.0, tall_a).x * fade * mfade;
+					float tk2 = ground_marks(gq / (gk_s * 0.6) + 37.0, tall_a).x * fade * mfade;
+					c = mix(c, c * vec3(0.56, 0.70, 0.44), tk_d * (1.0 - tk_l) * gr_tall * 0.85);
+					c = mix(c, c * vec3(1.26, 1.22, 1.00) + 0.04, max(tk_l, tk2 * 0.8) * gr_tall);
+				}
 			}
 			c = mix(c, c * 1.30 + 0.03, gk.y * (1.0 - gk.z) * em_k);
 			c = mix(c, c * 0.55, gk.z * 0.9 * em_k);
@@ -631,12 +721,12 @@ void fragment() {
 			c = mix(c, c * 0.58, pbl.y * 0.9);
 			// a few meadow flowers: in some cells a loose handful of flat dots (cream, yellow or pink), gone before they
 			// are smaller than a pixel
-			if (g_cel4.y > 0.0 || grow_f > 0.0) {
+			if (g_cel4.y > 0.0) {
 				vec2 fq = gq / 2.6;
 				vec2 fcell = floor(fq);
 				float fh = h21(fcell + 31.7);
-				float fthr = g_cel4.y * 0.30 + grow_f * 0.55;   // M5: growth (grow_f is 0 off the Home's land: as before)
-				float fkeep = (1.0 - smoothstep(0.025, 0.07, pxm / (1.0 + 2.5 * grow_f))) * gm * flat_k;   // M5: grown flowers are seen further
+				float fthr = g_cel4.y * 0.30;
+				float fkeep = (1.0 - smoothstep(0.025, 0.07, pxm)) * gm * flat_k;
 				if (fh < fthr && fkeep > 0.0) {
 					vec2 fl = (fq - fcell) * 2.6;
 					float fd = 1e9;
@@ -644,18 +734,58 @@ void fragment() {
 						vec2 fp = vec2(h21(fcell + 3.3 + float(fk) * 7.1), h21(fcell + 9.1 + float(fk) * 5.3)) * 1.7 + 0.45;
 						fd = min(fd, length(fl - fp));
 					}
-					float fr = 0.05 + 0.09 * grow_f;   // M5: and are bigger
+					float fr = 0.05;
 					float fdot = (1.0 - smoothstep(fr - pxm * 0.7, fr + pxm * 0.7, fd)) * fkeep;
 					float fwhich = fh / fthr;
 					vec3 fcol = fwhich < 0.4 ? vec3(0.96, 0.90, 0.74) : (fwhich < 0.75 ? vec3(1.0, 0.72, 0.10) : vec3(0.95, 0.42, 0.55));
 					c = mix(c, fcol, fdot);
 				}
 			}
+			// LP: planted flowers, as a person meets them: a flower head stands up, so it is a round dot on the screen
+			// (not a disc flat on the ground, which a walking eye sees as a sliver), at a place of its own on the ground; a
+			// dot is 0.11 m across the view, never under 1.6 pixels, and where the cells of 0.65 m would crowd the dots
+			// into one another the cells double (blended over an octave), so the field stays dotted out to the horizon.
+			// Their colour comes in drifts of 5-12 m (yellow, cream, pink, violet); a meadow keeps a few.
+			float fl_amt = max(gr_flw, (gr_any - gr_tall) * 0.16);
+			if (fl_amt > 0.0) {
+				mat2 fj = inverse(mat2(dFdx(gq), dFdy(gq)) + mat2(vec2(1e-6, 0.0), vec2(0.0, 1e-6)));
+				float px_min = max(min(pxa, pxb), 1e-5);
+				float r_px = max(0.055 / px_min, 1.6);
+				float oct = log2(max(r_px * pxm * 6.0 / 0.65, 1.0));
+				float ok0 = floor(oct);
+				float okt = fract(oct);
+				for (int fo = 0; fo < 2; fo++) {
+					float cs = 0.65 * exp2(ok0 + float(fo));
+					float wgt = fo == 0 ? 1.0 - okt : okt;
+					vec2 fcl = floor(gq / cs);
+					float best_d = 1e9; vec2 best_c = vec2(0.0);
+					for (int oy = -1; oy <= 1; oy++) {
+						for (int ox = -1; ox <= 1; ox++) {
+							vec2 cc = fcl + vec2(float(ox), float(oy));
+							if (h21(cc + 13.3 + float(fo) * 0.37) > 0.25 + 0.7 * fl_amt) { continue; }
+							vec2 at = (cc + 0.2 + 0.6 * vec2(h21(cc + 2.1), h21(cc + 7.7))) * cs;
+							float dp = length(fj * (gq - at));
+							if (dp < best_d) { best_d = dp; best_c = cc; }
+						}
+					}
+					float fdot = (1.0 - smoothstep(r_px - 0.6, r_px + 0.6, best_d)) * wgt;
+					vec2 dpos = (best_c + 0.5) * cs;
+					float dv = h21(floor((dpos + (vec2(vn2(dpos * 0.15 + 3.0), vn2(dpos * 0.15 + 8.0)) - 0.5) * 6.0) / 8.0) + 41.0);
+					vec3 fc1 = dv < 0.34 ? vec3(1.0, 0.78, 0.10) : (dv < 0.52 ? vec3(0.98, 0.94, 0.82) : (dv < 0.78 ? vec3(0.97, 0.42, 0.60) : vec3(0.62, 0.52, 0.98)));
+					vec3 fcol2 = h21(best_c + 4.4) < 0.75 ? fc1 : vec3(0.98, 0.94, 0.82);
+					c = mix(c, fcol2, fdot * gr_any * (1.0 - gr_tall));
+				}
+			}
 			// cliff faces: flat strata in world height, alternating two tones, a drawn seam between some
 			// (a rock field on a gentle slope carries them too: there they run wide, as terraces)
 			float steep = max(1.0 - smoothstep(0.50, 0.74, wn.y), rock_k);
 			if (steep > 0.0 && g_strata.y > 0.0) {
+				// (LP: a rock face a person cut is a few metres tall: its beds are a quarter as thick and run flatter, so
+				// several show on it, as on a bluff seen from afar)
 				float sv = wpos.y / g_strata.y + vnoise(vec3(wpos.x * 0.07, 1.0, wpos.z * 0.07)) * 2.2 + vnoise(wpos * 0.6) * 0.35;
+				if (face_k > 0.0) {
+					sv = wpos.y / (g_strata.y * 0.28) + vnoise(vec3(wpos.x * 0.07, 1.0, wpos.z * 0.07)) * 1.2 + vnoise(wpos * 0.6) * 0.35;
+				}
 				float layer = floor(sv + 0.5);
 				float sfw = fwidth(sv);
 				float keep = 1.0 - smoothstep(0.25, 0.8, sfw);
@@ -669,6 +799,28 @@ void fragment() {
 				float lcream = mix(step(0.74, h21(vec2(layer + sign(fract(sv + 0.5) - 0.5), 5.0))), step(0.74, h21(vec2(layer, 5.0))), edge_t);
 				cream_w = lcream * g_cel7.y * steep * keep * rock_k;
 				c = mix(c, c * g_detail.w, sl * g_strata.x * steep * keep);
+			}
+			if (face_k > 0.0 && g_strata.y > 0.0) {
+				// (its own block after the strata: inside them it moved the compiled valley by a bit in 27 far pixels)
+				float sv = wpos.y / (g_strata.y * 0.28) + vnoise(vec3(wpos.x * 0.07, 1.0, wpos.z * 0.07)) * 1.2 + vnoise(wpos * 0.6) * 0.35;
+				float layer = floor(sv + 0.5);
+				float keep = 1.0 - smoothstep(0.25, 0.8, fwidth(sv));
+				// LP: the beds of a cut face are broken in blocks: in a cell of 2.4 m along the face a joint at a place
+				// of its own (in 60 % of the cells), from the bed's top down a half to all of it, and each block one
+				// tone of its own
+				// (along the world axis the face runs nearest to: a direction from the derivatives times a position
+				// 700 m from the origin moved the joints per pixel quad)
+				float along = abs(wn.x) > abs(wn.z) ? wpos.z : wpos.x;
+				float ju = along / 2.4 + h21(vec2(layer, 12.0)) * 7.0;
+				float jc = floor(ju);
+				float jp = 0.15 + 0.7 * h21(vec2(jc, layer) + 3.1);
+				float jd = (fract(ju) - jp) * 2.4;
+				float jfw = fwidth(along) + 1e-4;
+				float bed_u = fract(sv + 0.5);
+				float jlen = 0.45 + 0.55 * h21(vec2(jc, layer) + 8.3);
+				float joint = (1.0 - smoothstep(0.035, 0.035 + jfw * 1.2, abs(jd))) * step(h21(vec2(jc, layer) + 5.7), 0.6) * step(1.0 - jlen, bed_u) * (1.0 - smoothstep(0.06, 0.2, jfw));
+				c *= 1.0 + (h21(vec2(jc + step(jp, fract(ju)), layer) + 9.4) - 0.5) * 0.12 * face_k * keep;
+				c = mix(c, c * g_detail.w, joint * face_k * keep * 0.8);
 			}
 		} else {
 			c = mix(c, c * g_detail.w, dt.x * fade);

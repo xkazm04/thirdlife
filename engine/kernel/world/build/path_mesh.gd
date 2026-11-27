@@ -9,8 +9,13 @@ extends RefCounted
 ## slightly wobbly edge along the curve, with the verge and the tufts hanging over a dirt or sand edge as on the
 ## valley's lanes. The ribbon runs on past both ends by h + e, so the field rounds the ends. Where two paths meet, each
 ## vertex takes the field of every path near it (in id order), so both ribbons draw the same edges at a crossing.
-## A `plank` path is a boardwalk and a `stone` path a paved way (SLABS): the kit's plank or masonry surface a little
-## up, with a darker side down into the ground, through TLMesh. No collider: the graded ground carries the walker.
+## A `plank` path is a boardwalk (SLABS): the kit's plank surface a little up, with a darker side down into the ground,
+## through TLMesh. No collider: the graded ground carries the walker.
+## LP (27 Nov): a `stone` path is a terrain ribbon too, with the dirt path's field (so the same crisp edge, verge and
+## tufts over it, and the same round ends), and its vertices carry the path's own coordinates in UV2 (x = metres along
+## from the first point, y = -1000 - metres across; every other ribbon writes 0): toon_cel.gdshader lays stones in rows
+## across the path there, the joints following it (M5 drew a slab of the kit's masonry: square ends, the bricks on the
+## world's axes).
 ## A hologram ribbon (`ghost`) is the path tool's live ghost and the layer's `preview_node`.
 
 const PathShape := preload("res://kernel/world/build/path_shape.gd")
@@ -20,12 +25,13 @@ const LIFT := 0.05                       # metres over the ground (the valley's 
 ## palette key, not a ground paint: a boardwalk. `stone` is no land paint either (toon_cel snaps the land to eight
 ## paints; measured in the exe: drawn as the land's rock it was a lavender-pink slab with purple strata, and its own
 ## grey snaps half way to dirt): a paved way of the kit's masonry, a low kerb at its sides.
-const SLABS := {"plank": ["plank", "wood_dark", 0.12], "stone": ["stone", "stone_dark", 0.06]}
+const SLABS := {"plank": ["plank", "wood_dark", 0.12]}
+const STONE_UV2 := -1000.0              # UV2.y of a stone ribbon is STONE_UV2 - metres across (the shader reads < -500)
 const EDGE := 0.5                        # metres either side of the edge between the ground's colour and the paint
 const ROW_GAP := 1.5                     # metres between inner rows at most
 const GHOST_LIFT := 0.15
 ## The land paint each ground path paint is drawn with (toon_cel snaps the land to its eight paints).
-const PIGMENT := {"dirt": "dirt", "sand": "sand", "rock_warm": "rock_warm", "grass_dry": "grass_dry"}
+const PIGMENT := {"dirt": "dirt", "sand": "sand", "rock_warm": "rock_warm", "grass_dry": "grass_dry", "stone": "dirt"}
 
 var land: RefCounted = null              # land_layer.gd (read only): heights, the ground's colour, normals
 var g: RefCounted = null                 # land_ground.gd
@@ -200,7 +206,7 @@ static func job_of(chunk: Vector2i, ids: Array, info: Dictionary) -> Dictionary:
 			if chunk_of(((secs[j][0] as Vector2) + (secs[j + 1][0] as Vector2)) * 0.5) == chunk:
 				todo.append([id, j])
 	return {"chunk": chunk, "todo": todo, "k": 0, "pos": PackedVector3Array(), "nrm": PackedVector3Array(), "col": PackedColorArray(),
-		"cus": PackedFloat32Array(), "uv": PackedVector2Array(), "idx": PackedInt32Array(), "made": {}, "plank": null, "tris": 0}
+		"cus": PackedFloat32Array(), "uv": PackedVector2Array(), "uv2": PackedVector2Array(), "idx": PackedInt32Array(), "made": {}, "plank": null, "tris": 0}
 
 
 ## Works job `job` on until about `most` more vertices are made; true when it is done. Every path's field comes from
@@ -211,6 +217,7 @@ func run(job: Dictionary, info: Dictionary, index: RefCounted, most: int) -> boo
 	var col: PackedColorArray = job.col
 	var cus: PackedFloat32Array = job.cus
 	var uv: PackedVector2Array = job.uv
+	var uv2: PackedVector2Array = job.uv2
 	var idx: PackedInt32Array = job.idx
 	var plank: RefCounted = job.plank
 	var tris: int = job.tris
@@ -275,6 +282,7 @@ func run(job: Dictionary, info: Dictionary, index: RefCounted, most: int) -> boo
 				col.append(c)
 				cus.append_array([w.x, y, w.y, float(code)])
 				uv.append(growth.uv_at(w.x, w.y) if growth != null else Vector2.ZERO)
+				uv2.append(Vector2(float(s - int(it.ext)) * PathShape.STEP, STONE_UV2 - rw[r]) if str(it.rec.paint) == "stone" else Vector2.ZERO)
 		if is_plank:
 			if plank == null:
 				plank = TLMesh.new()
@@ -307,6 +315,7 @@ func run(job: Dictionary, info: Dictionary, index: RefCounted, most: int) -> boo
 	job.col = col
 	job.cus = cus
 	job.uv = uv
+	job.uv2 = uv2
 	job.idx = idx
 	job.plank = plank
 	job.tris = tris
@@ -321,12 +330,13 @@ static func result(job: Dictionary) -> Dictionary:
 	var col: PackedColorArray = job.col
 	var cus: PackedFloat32Array = job.cus
 	var uv: PackedVector2Array = job.uv
+	var uv2: PackedVector2Array = job.uv2
 	var idx: PackedInt32Array = job.idx
 	var plank: RefCounted = job.plank
 	var tris: int = job.tris
 	var terrain := {}
 	if not pos.is_empty():
-		terrain = {"pos": pos, "nrm": nrm, "col": col, "cus": cus, "uv": uv, "idx": idx}
+		terrain = {"pos": pos, "nrm": nrm, "col": col, "cus": cus, "uv": uv, "uv2": uv2, "idx": idx}
 	return {"terrain": terrain, "plank": plank, "tris": tris, "verts": pos.size()}
 
 
@@ -344,6 +354,8 @@ static func instances(chunk: Vector2i, arrays: Dictionary) -> Array:
 		arr[Mesh.ARRAY_CUSTOM0] = t.cus
 		arr[Mesh.ARRAY_NORMAL] = t.nrm
 		arr[Mesh.ARRAY_TEX_UV] = t.uv
+		if (t.uv2 as PackedVector2Array).size() == (t.pos as PackedVector3Array).size():
+			arr[Mesh.ARRAY_TEX_UV2] = t.uv2
 		var m := ArrayMesh.new()
 		m.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arr, [], {}, Mesh.ARRAY_CUSTOM_RGBA_FLOAT << Mesh.ARRAY_FORMAT_CUSTOM0_SHIFT)
 		m.surface_set_material(0, TLStyle.material("terrain"))
@@ -364,7 +376,7 @@ static func hash_of(arrays: Dictionary) -> String:
 	h.start(HashingContext.HASH_SHA256)
 	var t: Dictionary = arrays.terrain
 	if not t.is_empty():
-		for k: String in ["pos", "nrm", "col", "cus", "idx"]:
+		for k: String in ["pos", "nrm", "col", "cus", "uv2", "idx"]:
 			h.update((t[k] as Variant).to_byte_array())
 	if arrays.plank != null:
 		h.update(str((arrays.plank as RefCounted).call("content_hash")).to_utf8_buffer())

@@ -1,0 +1,84 @@
+Lane LP (Home look polish), day shift 27 Nov 2026 -- report (resumed agent, 11:46 onward)
+
+Worktree C:/Users/kazda/kiro/third-life/.claude/worktrees/d27-look, branch d27-look (from main 8be26d61), all uncommitted.
+Item 5 (LLM bridge prompt) moved to lane C per RESUME.md: not touched here.
+
+OUTCOME PER LOOK (judged by eye in the exe, windowed, before = main's engine copy drawing the same build file from the same camera)
+1. Terrace face -- MET. lp-terrace-before/after.jpg. Before: a flat pink painted shape whose rock colour ran onto the top.
+   After: a lit rock face with beds and block joints, a clean crease at the top (grass up to the edge).
+   The rock is the valley's own palette (crisp cel rock_warm/cliff are pink-lavender: the far ridge in the same frame).
+   Headless: 764 look.terrace (rewritten: every steep drawn triangle carries the Home-land UV, terrain code, rock allowance;
+   the crease's top vertices keep the grass). Chunk mesh 7.6-7.7 ms vs main 8.0-8.9 ms (764 look.cost, A/B in one session).
+2. Growth -- MET at 10 and 25 m; PARTLY at 50 m. lp-growth-{10m,25m,50m}-{before,after}.jpg, lp-growth-10m-after-crop.jpg.
+   Meadow: lusher two-green grass with tufts; flowers: dense yellow/cream/pink/violet dots; tall grass: lighter straw
+   field with light tufts and a wind sheen. At 50 m meadow and flowers still read (dotted green); tall grass reads only as
+   a lighter strip that is close to the valley's own light grass. The capture site's bands lie beyond a gentle rise, so
+   at 25/50 m they are a thin sliver from walking eye height (same camera as the before set). Shader-only, no instances.
+   Headless: 768 look2.growth (meadow ratio 0.70, flowers 3.08, tall 0.04 -> each cut into its own kind).
+3. Stone path -- MET. lp-stone-path-before/after.jpg (near), lp-stone-path-far-before/after.jpg.
+   Before: a flat paved mat, square ends, bricks on the world's axes. After: stones in rows across the path that follow
+   its curve, a round end, the dirt path's own verge and tufts over the edge.
+   Headless: 768 look2.stone (UV2 = the path's own coordinates on every stone vertex, none on the dirt ribbon; the earth
+   field's width equals the dirt path's over 42 sections (worst 0.000 m); past the first point each section is the half
+   disc's chord within 0.06 m).
+4. Pond shore -- MET. lp-shore-before/after.jpg, lp-shore-near-*, lp-shore-wade-* (the visitor standing in the pond).
+   Options measured: (a) the previous agent's screen-space mean of the depth buffer (12 taps): round from outside, but a
+   wading visitor's legs were read as bank (foam shards round them), jagged at the screen sides; plane-exact taps, an
+   edge fade and a depth falloff fixed the sides, not the legs. (b) Chosen: the pond's MESH carries a bank depth per vertex
+   (the water over the drawn lattice on a 0.75 m grid, blurred over ~2 m, less 0.12 m) in UV.x (-10 + d; ponds stay
+   UV.x < -0.5); bank cells are drawn in 0.75 m squares, a whole cell beside them as a fan (no T-junction), fully dry
+   triangles dropped; the shader ends the water where the bank depth does and takes min(read depth, bank depth) for
+   its shallows (the legs keep their foam line). Land collision, land mesh and every land/water test unchanged.
+   Headless: 768 look2.shore (waterline triangles' longest side 1.06 m vs the lattice's 3-4.24 m; 100 % of wet vertices
+   over the drawn land: the curve lies inside). Cost: chunk mesh 9.3 ms for a 39-cell pond (main 0.95 ms for 82 tris),
+   once per pour; 761 water.cost median 5-6 ms over its 7-11 draws (main 0.95 ms).
+5. LLM bridge -- moved to lane C (not this lane).
+
+FRAME COST (TL_EXE_FRAMES_TIMES, vsync off, frames 150-1050 at each look's camera, interleaved b/a; machine shared
+with 4 Opus lanes running Godot, so the noise is larger than any difference):
+  terrace  b 2.99/10.35, 3.23/14.48   a 2.89/12.77, 5.42/21.76  (p50/p99 ms)
+  growth10 b 2.71/13.27, 3.47/12.99   a 2.98/10.56, 3.38/12.32
+  growth25 b 2.81/14.60, 3.07/15.35   a 2.78/13.08, 3.86/29.92
+  growth50 b 2.88/11.10, 3.29/12.97   a 2.83/10.31, 3.46/14.86
+  shore    b 3.29/14.13, 4.57/27.27   a 5.28/27.53, 5.18/30.88  (a = the screen-space version then; the mesh version is
+                                                                cheaper in the shader: one UV read instead of 12 taps)
+  path     b 3.48/17.54, 5.38/27.51   a 7.26/21.05, 5.92/23.55
+  Honest reading: p50 within the run-to-run spread (2.7-5.4 ms) except path a1; NOT a clean A/B. Worth a re-run on a
+  quiet machine before calling it neutral.
+
+GATES
+  (filled below)
+
+CHANGED FILES
+  engine/kernel/world/build/land_mesh.gd        rock per triangle (shader), colour alpha = rock allowance; _rock removed
+  engine/kernel/world/build/land_look_case.gd   764 look.terrace rewritten for per-triangle rock (expectation moved: M5
+                                                checked vertex colour toward rock_warm; that colour no longer exists)
+  engine/style/shaders/toon_cel.gdshader         terrace face, growth kinds, flower dots, stone path (all behind the
+                                                Home-land UV.y <= -8 or UV2.y < -500: celsurf 610 and n3 770 green)
+  engine/kernel/world/build/path_mesh.gd         stone = terrain ribbon with the dirt field + UV2 (hash includes uv2)
+  engine/kernel/world/build/water_mesh.gd        bank depth per vertex, fine bank cells, fans
+  engine/style/shaders/water_cel.gdshader        ponds with a bank depth end where it does
+  engine/kernel/world/build/look_case.gd (+uid), engine/tools/selftest.d/768-home-look2.sh   new headless block
+  engine/kernel/world/build/look_shots.gd (+uid)  capture scene (not a test)
+  engine/kernel/world/build/LAND.md             "The look polished (LP, 27 Nov)"
+  docs/shifts/2026-11-27-day/lanes/LP-look/*    stills, standups, this report
+
+BEHAVIOUR CHANGES
+  - Path mesh hashes change for every path (uv2 bytes hashed); 762 green.
+  - Water chunk meshes have ~10-20x the triangles of M5 near the bank (2229 verts for a 39-cell pond) and cost ~5-10 ms
+    per redraw instead of ~1 ms.
+  - A pond's waterline sits up to ~0.12 m of depth inside the land's polygon (on a gentle bank ~0.5 m in plan).
+
+FOR THE OWNER TO LOOK AT
+  Play Home, B: sculpt a terrace on a hillside (flatten, brush 5), plant meadow/flowers/tall grass, lay a stone path,
+  dig a hollow and pour, then walk into the pond. Stills in this folder.
+
+QUESTIONS FOR THE DIRECTOR
+  - 761 home.water.tool failed once under load (ghost 21 cells, the LMB then poured 66 at a deeper floor), passed on the
+    rerun with the same code: looks like a load-dependent flake in the case, not the mesh; worth an A/B on main.
+  - frame-time A/B needs a quiet machine.
+
+NEXT THREE
+  1. Tall grass at 50 m: a stronger far tone (it is the weakest of the five reads).
+  2. Water mesh cost: build the pond surface as an ArrayMesh with shared vertices (as path_mesh does) to get back to ~1 ms.
+  3. A quiet-machine frame-time A/B of all six cameras.
