@@ -70,3 +70,11 @@ NEXT THREE (this lane)
 1. A's dive for the human too (a key) and a "punish the wind-up" read for bots (check the lit carrier), so the rink answers both ways.
 2. Words over near divers placed so they stay in the picture (a near figure's tag goes above the frame), and a short camera beat on a dive block.
 3. With lane T's scope fix: the same generality sentence through Create end to end, then a ladder at regular/newcomer for the chosen numbers.
+
+ROUND 2 (A after T's fix, 15:31-16:10, tree d27-sp-core at 9e565f8e)
+- Fresh v0.1.23 job copy (.tl/jobs/s4a2-arsenal), ref docs = A's; the hip-check sentence word for word; one job: 18.7 min, 0.87M in (0.78M cache), 9.5k out.
+- The change took the quick cartridge diff, not a builder: hip_check on F, goal_width 2.8 -> 2.3, goalie reach 1.4 -> 1.7, body_check "1 -> 1"; the diff said
+  "a builder needs to add both" (the shove, the dives) but no builder round ran; v0.1.24 promoted. NO data/harbour.rules.json was written.
+- Measured on v0.1.24 (seeds 1-3 twice, 3600 f): rival bot hip checks 0/0/0 a minute, dives 0; run hashes 2789a91a/626117b3/e8b054bd twice; 0 errors.
+- Answer: not yet. Item 7 fixed the builder path; the quick diff never sees the sidecar. For lane T: the diff should write the sidecar from ruleSwitches()
+  or hand the remainder to the cartridge builder (job s4a2-arsenal events 1076, 1080, 1081, 1090, 1131).
