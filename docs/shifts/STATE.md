@@ -525,3 +525,4 @@ on the frame and the figure and Fable on surfaces and nature, looping for 10 hou
 - 16:47: disk crisis over: C: fell to 9 GB (gtai raw AVIs ~80 GB in kiro/gtai-wt); the gtai session deleted them and now deletes each AVI once encoded: C: back to ~97 GB. %TEMP%/claude/46f132430c565ee6 (25 GB, a gravitone-gcloud session) left for the owner. The Director freed 6.8 GB of its own (job captures in finished trees, S1 base copies).
 - 17:17 standup: T round 5 (status asked), S1 r3 B on main's fixes, S2 r2 re-runs, J2nd r2, J2b (shield v0.1.15 volleys). Disk recovered to 105 GB.
 - 17:42: J2nd round 2 (newcomer pass): karts v0.1.11 boxes from GO!, biplane v0.1.9 lesson; court cue built but thrown away with 'make it fairer' (newcomer 10-11 of 20 vs 13). Menu 68.
+- 17:43 day-27 standup: final list running on d27-m6 23be5789 (gate at packs); main +4 docs only; disk 97 GB; no agents.
