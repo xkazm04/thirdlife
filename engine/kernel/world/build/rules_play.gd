@@ -111,7 +111,7 @@ func tick(at_frame: int) -> void:
 	if run.layer != null and int(looks.get("revision")) != int(run.layer.get("revision")):
 		looks.sync(run.layer)
 		_ground_looks()
-	var cell := RulesRun.feet_cell(feet as Vector3)
+	var cell := feet_cell_reaching(feet as Vector3)
 	prompt = use_prompt(cell)
 	var use := use_down()
 	if use and uses_here(cell):
@@ -187,6 +187,21 @@ func use_down() -> bool:
 	var visit: Variant = (view as Node).get("visit") if view is Node else null
 	var input: Variant = (visit as Node).get("input") if visit is Node else null
 	return input is TLInput and (input as TLInput).just_pressed(&"enter")
+
+
+const FEET_REACH := 0.3                 # m (PATCHES-F2 A, 27 Nov): a zone whose floor is this little over his soles holds him
+
+
+## The cell the rules read the visitor in: the feet cell, or, when that is in no zone and the feet raised by
+## FEET_REACH are in one, that cell (the ground sinks a little under a zone drawn on blocks: the playtest's Door,
+## soles 2.90 under a zone of cells 3..4). Upward only: a hazard dug under a bridge never fires on the bridge.
+func feet_cell_reaching(feet: Vector3) -> Vector3i:
+	var a := RulesRun.feet_cell(feet)
+	var l: RefCounted = run.layer
+	if l == null or not (l.call("zones_at", a) as Array).is_empty():
+		return a
+	var b := RulesRun.feet_cell(feet + Vector3(0.0, FEET_REACH, 0.0))
+	return b if b != a and not (l.call("zones_at", b) as Array).is_empty() else a
 
 
 ## True when the cell is in a zone some rule triggers `on: use` and that zone is not taken.
