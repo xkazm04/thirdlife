@@ -503,3 +503,4 @@ on the frame and the figure and Fable on surfaces and nature, looping for 10 hou
 - ~11:10: T-editor items 1-6 landed (merge 658eb637; merged tree fast 5/5, npm 472/465/0/7, create. 29/0); T goes on with items 7-11. S2-juice done (A auto 29fd49ac, B choice 533c3c10, pushed): the pass gave every run the tell, word, hit-stop and kick, broke nothing; robots B-juicy flew 4.4-4.6 m (hand 3.7-5.4). 6 more menu rows (39), 600 f 0/0 each.
 - 11:17 standup: S4, S35, S2 spikes done (branches pushed), T 1-6 landed, J2nd launched; push held, Home session asked.
 - 11:50 standup: LP stopped (silent 3 h) and resumed by a new agent; T and C landed on d27-m6 (C's CRLF rewrite fixed); Q-C1 lot-overlap fix by the Director; DN and P in their uncapped suites.
+- 12:55 standup: P landed on d27-m6 (game feel confirmed by stills); DN r1 landed; T/C/DN in round 2; LP resumed and producing stills; merged-tree home. running.
