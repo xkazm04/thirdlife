@@ -83,3 +83,30 @@ NEXT THREE THINGS THIS LANE WOULD DO
    wall sentence 1 on A.
 3. Make the default ask the builder for an answer event (dodge/block/swat), so the counting hand and the card can see
    answers. Then re-measure karts B and shield A.
+
+ROUND 2 (15:00-16:35): arm A after fixes. A got two fixes B did not need, and now also carries lane T's fixes.
+- A2, commit 091f956f, in botsdefault.ts and its test. The default "use" line promises a rate a person sees (each bot
+  about once every 10-20 s of play). It asks for an event per bot use and per bot answer, and for a bot test bar of
+  2 uses and 1 answer a live minute.
+  - Gates on the A tree before the merge: fast 5/5 PASS; foreman npm 463 tests, 456 pass, 0 fail, 7 skipped.
+  - On the merged tree (Director): fast 5/5; npm 484 tests, 477 pass, 0 fail, 7 skipped.
+- Main merged into d27-sp-bots (474d9e91): lane T items 1-16. Item 10 makes "off balance" read as a play change; the
+  rebuilt foreman returns "play" on the court sentence.
+- Re-run: arm A's FIRST sentence only, on fresh copies (d25-court/.tl/s1/jobs-a2/), measured the same way. The counting
+  hands now also read the pack's notes list, where the new events are published.
+  - shield wall: v0.1.8 in 27.4 min, 4.35M in / 42k out (core r17 + crew r6, 0 noise rounds). 4 of 5 bots throw
+    4.0 a minute and answer 4.7 a minute (3.7 from throw_answer events). The bar after ONE sentence; the first run took
+    3, B took 3.
+  - half-court: v0.1.7 PROMOTED in 72.9 min, 3.97M in / 35k out (court_exchange r13 + r14, crews_stakes r13). All 5
+    bots shove 10.3 a minute and answer 17.0 a minute. The newcomer hand stayed at 12 of 20 (as v0.1.6), and is now a
+    "built as you asked" note, not a refusal. Perfect hand 20 of 20. The first run was refused twice; B took 3
+    sentences.
+  - Every run: same hash twice on seed 1, 0 script errors.
+  - clips/a2_shield_v018_throw.mp4, clips/a2_court_shove.mp4; stills a2_shield_sheet.jpg, a2_shield_flying.jpg,
+    a2_court_sheet.jpg, a2_court_wham.jpg (all looked at).
+- New findings:
+  - the card lists A's default bot rules as an "unasked rule (you did not ask for it)", beside the "bots by default"
+    line;
+  - the shield crew builder kept its rate under "every 10-20 s" (core's ai.json gaps of 10-18 s).
+- Menu rows for both A2 versions are in SPIKE.md section 6. The A after fixes section is in SPIKE.md section 4. The
+  pick has a dated round-2 addendum; the first-round text is kept.

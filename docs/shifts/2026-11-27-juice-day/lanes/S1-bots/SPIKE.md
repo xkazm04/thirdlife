@@ -145,6 +145,52 @@ newcomer player now wins 9 of 20 (was 16 of 20). Say "make it fairer"". The diff
 arms. A's default shoves made the drop happen under a sentence the gate treats as fairness. This is a finding for lane
 T: "off balance" is not a fairness ask.
 
+### A after fixes (round 2, 15:18-16:30): A got two fixes B did not need, and now also carries lane T's fixes
+The first results above stand as they are. This row is arm A again, but it is **not the same A**. On top of commit
+381de1cb, arm A now has:
+1. **A2 (091f956f):** its own default promises a rate a person sees ("each bot that can use it does so about once every
+   10 to 20 seconds of play"). It asks the builders for an event per bot use and per bot answer, and for a bot test
+   that passes only at 2 uses and 1 answer a live minute.
+2. **Main merged in (474d9e91):** lane T's items 1-16. Among them, item 10: "off balance" now reads as a play change,
+   so the card's hand bound becomes a note instead of a refusal. That was the cause of A's two half-court refusals.
+
+Arm B's runs had neither fix. No B sentence was re-run.
+
+Arm A's **first sentence only**, word for word, on fresh copies of the same base copy (`d25-court/.tl/s1/jobs-a2/`),
+measured the same way (seeds 1-3, 3600 frames, seed 1 twice). The counting hands also read the pack's `notes` list,
+where the new use and answer events are published; for the earlier versions that list was empty or absent.
+
+| | **A after fixes, sentence 1** | A, first run (for reference) | B (for reference) |
+|---|---|---|---|
+| **Shield wall** sentences to the bar | **1** (v0.1.8) | 3 | 3 |
+| wall time / tokens in, out | 27.4 min / 4.35M, 42k (core r17 + crew r6, 0 noise rounds) | 153.8 min / 8.35M, 67k | 122.2 min / 3.37M, 33k |
+| bots' uses / answers per live min | **4.0 / 4.7** (4 of 5 bots: Oda, Finn, Sable, Pip; Bram 0). Uses are WINDUP starts. Answers are 3.7 a minute from the new `throw_answer` events plus 1.0 a minute of blocks | 2.0 / 0.7 after 3 sentences | 5.7 / 1.3 after 3 sentences |
+| bot throws that floor someone (3 min) | 7 | 5 | 14 |
+| **Half-court** sentences to the bar | **1**, **promoted** (v0.1.7) | 2, never promoted | 3 (v0.1.9) |
+| wall time / tokens in, out | 72.9 min / 3.97M, 35k (court_exchange r13 + r14, crews_stakes r13; 0 noise rounds) | 328 min / 4.74M, 46k, no version | 389.8 min / 5.74M, 48k |
+| bots' uses / answers per live min | **10.3 / 17.0**, **all 5 bots**, from `shove_start`, `shove_answer` and `shove_dodge` events | 4.3 / 12.3 (4 of 5), unpromoted | 13.0 / 12.3 (5 of 5) |
+| newcomer / perfect hand (the card asks 13 newcomer wins of 20) | 12 / 20 of 20, kept as a note: "built as you asked; a newcomer player now wins 12 of 20 (was 12 of 20)" | refused at 7, then 12 | 6 / 16 (a note) |
+
+What the builders did with the new default:
+- **Shield wall.** Core put the throw's use and answer events on a new `game.note` channel. The crew package taught the
+  four crew bots to throw and answer, with `throw_start` and `throw_answer` events. The crew builder said plainly
+  that its rate stayed under "every 10-20 s": core's `ai.json` gaps of 10-18 s, round resets and the open-shot
+  condition gave each bot 1-2 throws in about 80 s.
+- **Half-court.**
+  - Core's first round tripped a guard row (a bot tell of 14 frames, against the bound of 20). Round r14 fixed it with
+    no change to the move.
+  - The crew package found that the first-match lesson flag kept Dex and Moss from ever shoving, and fixed it.
+  - The card lists the default bot rules as an "unasked rule (the builder's words; you did not ask for it): bots
+    shove only when the target has the ball or blocks their own carrier's path ...". That is honest, but it sits beside
+    the "bots by default" line that says the Foreman asked for it.
+  - The WHAM! banner is now a compact label: the builders read main's updated card juice line ("never padded ... into a
+    tall slab"). It is not part of this spike.
+- **Same shield camera.** Thrown shields now show in the air more often (`stills/a2_shield_flying.jpg`), because more
+  bots throw.
+
+Clips: `clips/a2_shield_v018_throw.mp4` (seed 2, 10-30 s), `clips/a2_court_shove.mp4` (seed 1, 8-28 s); stills
+`a2_shield_sheet.jpg`, `a2_shield_flying.jpg`, `a2_court_sheet.jpg`, `a2_court_wham.jpg`, all looked at.
+
 ### Every count above
 - 3600 frames per seed, seeds 1-3, seed 1 run twice with the same hash, 0 script errors on every run (reports in
   `d25-court/.tl/s1/film/<arm>-<game>-<version>.out/`).
@@ -207,6 +253,8 @@ For the Director, the menu rows (pack path -> menu title):
 | A shield | `C:/Users/kazda/kiro/third-life/.claude/worktrees/d25-court/.tl/s1/jobs/shield-wall-3-v-20261125-1/promoted/game.shield_wall_3_v@0.1.10` | Shield wall: shield throw, bots by default (S1 A, 3 sentences) |
 | B shield | `C:/Users/kazda/kiro/third-life/.claude/worktrees/d27-sp-bots-b/.tl/s1/jobs/shield-wall-3-v-20261125-1/promoted/game.shield_wall_3_v@0.1.10` | Shield wall: shield throw, as now (S1 B, 3 sentences) |
 | A court (not promoted) | `C:/Users/kazda/kiro/third-life/.claude/worktrees/d25-court/.tl/s1/jobs/half-court-3-v-20261125-1/reports/change-not-made-s1679/pack` (lint and smoke passed in the final verification; the Foreman refused only the newcomer hand count) | Half-court: NBA Jam shove, bots by default (S1 A, refused by the hand check) |
+| A2 shield (round 2) | `C:/Users/kazda/kiro/third-life/.claude/worktrees/d25-court/.tl/s1/jobs-a2/shield-wall-3-v-20261125-1/promoted/game.shield_wall_3_v@0.1.8` | Shield wall: shield throw, bots by default after fixes (S1 A2, 1 sentence) |
+| A2 court (round 2) | `C:/Users/kazda/kiro/third-life/.claude/worktrees/d25-court/.tl/s1/jobs-a2/half-court-3-v-20261125-1/promoted/game.half_court_3_v@0.1.7` | Half-court: NBA Jam shove, bots by default after fixes (S1 A2, 1 sentence) |
 | B court | `C:/Users/kazda/kiro/third-life/.claude/worktrees/d27-sp-bots-b/.tl/s1/jobs/half-court-3-v-20261125-1/promoted/game.half_court_3_v@0.1.9` | Half-court: NBA Jam shove, as now (S1 B, 3 sentences) |
 
 To feel what one first sentence gives on each arm, these rows too (optional):
@@ -244,6 +292,14 @@ To feel what one first sentence gives on each arm, these rows too (optional):
 
 ## Lane's recommendation
 (The lane's view, kept apart from the evidence above; the owner decides.)
+
+**Round 2 addendum (16:30).** Both fixes asked for below were then made: A2 in arm A, and lane T's on main, merged in.
+With them, arm A reached the bar with ONE sentence on all three games (karts already in round 1; shield wall and
+half-court in round 2), and promoted on all three. Arm B needed three
+sentences on each. The pick stands, now without its conditions open. The cost remains: every new move also changes
+difficulty through the bots, as a note the person must read (half-court newcomer 12 of 20 against the card's 13).
+
+The first-round text follows, unchanged:
 
 **Pick: A, on by default. Two fixes go with it before it is the default on main.**
 
