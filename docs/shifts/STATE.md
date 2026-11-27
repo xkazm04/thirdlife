@@ -514,3 +514,4 @@ on the frame and the figure and Fable on surfaces and nature, looping for 10 hou
 - 14:43 standup: A r2 landed (model uses assemble), r3 running; F1 proved the door cause and fixed it visitor-only; F2/F3 coded; integration suite 707/4 (timing + rink CLI env).
 - ~15:10: S1-bots done (A 381de1cb + docs 311f348e on d27-sp-bots, pushed): A got karts in 1 sentence (B 3); shield 3 vs 3; half-court A met the bar in 1 sentence but was refused twice ('off balance' read as a fairness ask: T item 22). 7 rows (menu 56), 600 f 0/0. Disk 39 GB.
 - ~15:45: JB-back round 3 (Arsenal v0.1.26 net of cords, no glass in the camera's way; shield v0.1.11 braces 1.8/min vs hand 4.8) and J2nd done (second crazy abilities, all by the editor: karts red shells v0.1.10, biplane harpoon v0.1.8, court alley-oop v0.1.8). Menu 61 rows, 600 f 0/0.
+- 15:20 standup: A r3/r4 and F3 landed, F3-1 applied; integration suite 769/6 (all explained); F1, F2 running; disk 30 GB.
