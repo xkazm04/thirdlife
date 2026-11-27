@@ -1,0 +1,83 @@
+extends Node
+## J2b (filming and counting, FILM COPY ONLY, not a pack test): the pack's perfect hand (tests/ai_support/play.gd), and a
+## person who has learnt Q: when the ball is loose or a rival's and its centre is 4-13 m away, hold Q for 26 frames
+## (lock 20) and let go, then wait about 3 s. Counts every magnet event (magnet_on, magnet_zap, yoink, yank_hit,
+## yank_catch) by side (me / mates / rivals) and per minute of play.
+
+var ctx
+var p
+var done := false
+var n := 0
+var hold := 0
+var wait := 0
+var q_tries := 0
+var seen: Dictionary = {}
+var log: Array = []
+
+
+func _bot_setup(c) -> void:
+	ctx = c
+	p = ctx.load_script("tests/ai_support/play.gd").new()
+	p.setup(c, "perfect")
+
+
+func _side(i: int) -> String:
+	return "me" if i == 0 else ("mate" if i < 3 else "rival")
+
+
+func _bot_tick(frame: int) -> void:
+	n += 1
+	p.s = ctx.pack_state()
+	if p.s.is_empty():
+		return
+	for e: Dictionary in p.s["events"]:
+		var k: String = str(e["kind"])
+		if k.begins_with("magnet") or k.begins_with("yank") or k == "yoink":
+			var key := "%s:%s" % [k, _side(int(e["a"]))]
+			seen[key] = int(seen.get(key, 0)) + 1
+			if log.size() < 300:
+				log.append("%d %s a%d b%s" % [frame, k, int(e["a"]), str(e.get("b", ""))])
+	p.watch()
+	if p.s["state"] == "over":
+		done = true
+		p.hand.release_all()
+		p.hand.tick()
+		return
+	p.play(frame, true)
+	var rs: Array = p.s["robots"]
+	var me: Dictionary = rs[0]
+	var owner: int = int(p.s["ball"]["owner"])
+	wait -= 1
+	if hold > 0:
+		hold -= 1
+		if hold > 0:
+			p.hand.press(&"magnet")
+		else:
+			p.hand.release(&"magnet")
+			wait = 180
+	elif wait <= 0 and not me["has_ball"] and (owner < 0 or owner >= 3):
+		var bp: Vector3 = p.s["ball"]["pos"]
+		var d: float = Vector2(bp.x - me["pos"].x, bp.z - me["pos"].z).length()
+		if d > 4.0 and d < 13.0 and me["state"] == &"run":
+			hold = 26
+			q_tries += 1
+			p.hand.press(&"magnet")
+	p.hand.tick()
+
+
+func _bot_done() -> bool:
+	return done or n >= ctx.max_frames - 2
+
+
+func _bot_result() -> Dictionary:
+	var r: Dictionary = p.result("perfect", done, false)
+	var mins: float = maxf(n / 3600.0, 0.001)
+	var per: Dictionary = {}
+	for k: String in seen:
+		per[k] = snappedf(float(seen[k]) / mins, 0.01)
+	r["ok"] = n > 0
+	r["summary"] = str(r["summary"]) + "; frames %d; my Q holds %d; magnet events %s; a minute %s" % [n, q_tries, str(seen), str(per)]
+	r["magnet"] = seen
+	r["magnet_per_min"] = per
+	r["magnet_log"] = log
+	return r

@@ -526,3 +526,4 @@ on the frame and the figure and Fable on surfaces and nature, looping for 10 hou
 - 17:17 standup: T round 5 (status asked), S1 r3 B on main's fixes, S2 r2 re-runs, J2nd r2, J2b (shield v0.1.15 volleys). Disk recovered to 105 GB.
 - 17:42: J2nd round 2 (newcomer pass): karts v0.1.11 boxes from GO!, biplane v0.1.9 lesson; court cue built but thrown away with 'make it fairer' (newcomer 10-11 of 20 vs 13). Menu 68.
 - 17:43 day-27 standup: final list running on d27-m6 23be5789 (gate at packs); main +4 docs only; disk 97 GB; no agents.
+- 18:09: J2b done: robots v0.1.11 magnet yank, shield v0.1.16 catapult volley, all by the editor (5 promotions, no refusal). Menu 70.

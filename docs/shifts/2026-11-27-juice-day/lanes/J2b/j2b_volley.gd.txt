@@ -1,0 +1,170 @@
+extends Node
+## J2b (27 Nov, FILM COPY ONLY, not a pack test): JB-back's bot_braced_count captain (shield up, bash, F when rivals stand
+## in a lane in front, C when two or more are close in front), plus a person who has learnt Q and G: Q (the call) every
+## whenever the call is ready, G whenever the crew's volley is ready (the volley aims itself at the thickest knot). Counts the core's words
+## (BRACED!, BOWLED!, SLAM!) as before, and the volley from its published state: volleys fired per side, men thrown,
+## turtled and escaped, per minute.
+
+var ctx
+var n := 0
+var was: Dictionary = {}
+var starts := {"rush": {}, "slam": {}}
+var seen := 0
+var downs := {"rush": 0, "slam": 0}
+var braced := 0
+var at: Array = []
+var words := {"BRACED!": 0, "BOWLED!": 0, "SLAM!": 0}
+var word_at: Array = []
+var main_node = null
+var last_wf := 0
+var vo: Dictionary = {}
+var g_presses := 0
+var q_presses := 0
+var vlast: Dictionary = {}
+var vlog: Array = []
+
+
+func _find_main() -> void:
+	if main_node != null:
+		return
+	for c: Node in ctx.root.get_tree().root.find_children("*", "", true, false):
+		var sc = c.get_script()
+		if sc != null and str(sc.resource_path).ends_with("scripts/main.gd") and c.get("contact") != null:
+			main_node = c
+			return
+
+
+func _words() -> void:
+	_find_main()
+	if main_node == null:
+		return
+	var sh = main_node.get("show")
+	if sh == null:
+		return
+	var wf: int = int(sh.get("word_f"))
+	var w: String = str(sh.get("word"))
+	if wf > last_wf and words.has(w):
+		words[w] += 1
+		word_at.append("%d %s" % [n, w])
+	last_wf = wf
+
+
+func _bot_setup(c) -> void:
+	ctx = c
+
+
+func _bot_tick(_frame: int) -> void:
+	n += 1
+	_words()
+	var s: Dictionary = ctx.pack_state()
+	ctx.input.release_all()
+	var me: Dictionary = {}
+	var by: Dictionary = {}
+	for f: Dictionary in s.get("fighters", []):
+		by[f["id"]] = f
+		if f["id"] == s.get("controlled", ""):
+			me = f
+		var key: String = str(f["state"]) + str(f["move"])
+		if f["move"] in ["rush", "slam"] and f["state"] == "WINDUP" and was.get(f["id"], "") != key:
+			var d: Dictionary = starts[f["move"]]
+			d[f["id"]] = int(d.get(f["id"], 0)) + 1
+			at.append("%d %s %s" % [n, f["move"], f["id"]])
+		was[f["id"]] = key
+	for e: Dictionary in s.get("events", []):
+		if int(e["f"]) > seen:
+			if e["move"] in ["rush", "slam"] and e["type"] == "knockdown":
+				downs[e["move"]] += 1
+				at.append("%d down %s<%s" % [int(e["f"]), e["defender"], e["attacker"]])
+			if e["move"] == "rush" and str(e["type"]).begins_with("blocked"):
+				braced += 1
+	for e: Dictionary in s.get("events", []):
+		seen = maxi(seen, int(e["f"]))
+	if s.get("state") == "over":
+		if n % 20 < 3:
+			ctx.input.press(&"restart")
+		return
+	vo = s.get("volley", {})
+	if not vo.is_empty():
+		for k in ["thrown", "turtled", "escaped"]:
+			if int(vo[k]) > int(vlast.get(k, 0)):
+				vlog.append("%d %s" % [n, k])
+			vlast[k] = int(vo[k])
+		for side in ["crew", "gulls"]:
+			if int(vo["fired"][side]) > int(vlast.get(side, 0)):
+				vlog.append("%d fired %s" % [n, side])
+			vlast[side] = int(vo["fired"][side])
+	if not me.is_empty() and float(me["hp"]) > 0.0:
+		var cl: Dictionary = s.get("call", {})
+		if not cl.is_empty() and str(cl["phase"]["crew"]) == "ready" and n % 10 == 0:
+			ctx.input.press(&"call")
+			q_presses += 1
+			return
+		if not vo.is_empty() and str(vo["crew"]["phase"]) == "ready" and n % 30 == 0:
+			ctx.input.press(&"volley")
+			g_presses += 1
+			return
+	if me.is_empty() or not by.has(me.get("lock", "")):
+		return
+	var foe: Dictionary = by[me["lock"]]
+	var d := Vector2(float(foe["x"]) - float(me["x"]), float(foe["z"]) - float(me["z"]))
+	var free: bool = me["state"] in ["IDLE", "MOVE", "BLOCK", "PARRY_WINDOW"]
+	var lesson: bool = bool((s.get("lesson", {}) as Dictionary).get("on", false))
+	if free and not lesson and n % 6 == 0:
+		var aim := d.normalized()
+		var lane := 0
+		var close := 0
+		var fwd := Vector2(-sin(float(me["yaw"])), -cos(float(me["yaw"])))
+		for f: Dictionary in s["fighters"]:
+			if f["side"] == me["side"] or float(f["hp"]) <= 0.0 or f["state"] == "KNOCKDOWN":
+				continue
+			var to := Vector2(float(f["x"]) - float(me["x"]), float(f["z"]) - float(me["z"]))
+			var along := to.dot(aim)
+			if along > 2.5 and along < 7.5 and (to - aim * along).length() < 1.2 and not (f["state"] in ["BLOCK", "PARRY_WINDOW"]):
+				lane += 1
+			if to.length() < 4.0 and to.normalized().dot(fwd) > 0.3:
+				close += 1
+		if close >= 2 and n % 12 == 0:
+			ctx.input.press(&"slam")
+			return
+		if lane >= 1 and n % 18 == 0:
+			ctx.input.press(&"rush")
+			return
+	var open: bool = foe["state"] in ["REBOUND", "PARRIED", "GUARDBROKEN", "STAGGER", "WALLSPLAT", "RECOVERY"]
+	if open and me["state"] != "WINDUP":
+		if d.length() > 1.8:
+			_walk(d)
+		elif n % 8 < 3:
+			ctx.input.press(&"attack")
+	else:
+		ctx.input.press(&"guard")
+		if d.length() > 2.2:
+			_walk(d)
+		elif n % 40 < 3:
+			ctx.input.press(&"attack")
+
+
+func _walk(d: Vector2) -> void:
+	var u := d.normalized()
+	ctx.input.set_axis(&"left", &"right", u.x)
+	ctx.input.set_axis(&"forward", &"back", u.y)
+
+
+func _bot_done() -> bool:
+	return n >= ctx.max_frames - 2
+
+
+func _bot_result() -> Dictionary:
+	var bot_r := 0
+	var bot_s := 0
+	for id: String in (starts["rush"] as Dictionary).keys():
+		if id != "captain":
+			bot_r += int(starts["rush"][id])
+	for id: String in (starts["slam"] as Dictionary).keys():
+		if id != "captain":
+			bot_s += int(starts["slam"][id])
+	var mins := maxf(float(n) / 3600.0, 0.001)
+	var vs := "no volley state"
+	if not vo.is_empty():
+		vs = "Q presses %d, G presses %d; volleys fired crew %d, gulls %d (%.1f / %.1f a minute); men thrown %d (%.1f a minute), turtled %d, escaped %d" % [q_presses, g_presses, int(vo["fired"]["crew"]), int(vo["fired"]["gulls"]), int(vo["fired"]["crew"]) / mins, int(vo["fired"]["gulls"]) / mins, int(vo["thrown"]), int(vo["thrown"]) / mins, int(vo["turtled"]), int(vo["escaped"])]
+	return {"ok": n > 0, "volley": vo.duplicate(true), "vlog": vlog, "summary": vs + "; " + "%d frames: bots rush %d, slam %d (%.1f / %.1f a minute); knockdowns by rush %d, by slam %d; rushes into a shield %d; starts %s; words seen %s (%.1f BRACED! a minute)" % [n, bot_r, bot_s, bot_r / mins, bot_s / mins, downs["rush"], downs["slam"], braced, str(starts), str(words), float(words["BRACED!"]) / mins],
+		"starts": starts, "downs": downs, "at": at, "frames": n, "words": words, "word_at": word_at, "found_show": main_node != null}
