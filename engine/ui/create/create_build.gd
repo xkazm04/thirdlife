@@ -1,6 +1,7 @@
 extends "res://ui/create/create_design.gd"
 
 const Dungeons = preload("res://kernel/dungeon/dungeons.gd")
+var juicy: bool = false  # S2-juice arm B: the "make it juicy" card on the change row is picked
 ## L3 (night of 21 Nov 2026): the Create page, part 3 of 4: the screens of the build (the phase strip, phase done with
 ## Try it / Pass / Hold, done, failed, error) and what their buttons do.
 
@@ -349,16 +350,23 @@ func _done() -> void:
 		var nl: Label = _label(note, 20, 700, ORANGE, W, HORIZONTAL_ALIGNMENT_CENTER)
 		nl.name = "ChangeNote"
 		_place(nl, Vector2(0, 380))
-	var play: Button = _button("Play", "Play", "play", HONEY, Vector2(W * 0.5 - 330, 414), Vector2(310, 110), 46)
+	var offer: bool = Model.juice_of(job) == "offered"  # S2-juice arm B: a move built plain; one click makes it juicy
+	var row_x: float = 150.0 if offer else W * 0.5 - 330
+	var play: Button = _button("Play", "Play", "play", HONEY, Vector2(row_x, 414), Vector2(310, 110), 46)
 	play.pressed.connect(func() -> void: launch(Model.play_dir(job)))
 	_body.add_child(play)
 	# E4: one press puts the game in the main menu's Dungeons (the person's own list, kernel/dungeon/dungeons.gd)
 	var listed: bool = not Dungeons.user_row(job_dir, menu_list).is_empty()
 	var mb: Button = _button("RemoveMenu" if listed else "AddMenu", "In the menu" if listed else "Add to menu", "check" if listed else "plus", GREEN if listed else CREAM,
-		Vector2(W * 0.5 + 20, 414), Vector2(310, 110), 30)
+		Vector2(row_x + 350, 414), Vector2(310, 110), 30)
 	mb.tooltip_text = "Press to take it out of the menu" if listed else "Show it in the main menu's Dungeons"
 	mb.pressed.connect(remove_from_menu if listed else add_to_menu)
 	_body.add_child(mb)
+	if offer:
+		var jf: Button = _button("JuicyFollowUp", "Juice that move", "power", ORANGE, Vector2(row_x + 660, 414), Vector2(320, 110), 26)
+		jf.tooltip_text = "Give the move you just added a tell, an impact word, a camera kick and a slow beat"
+		jf.pressed.connect(func() -> void: _send(Model.juicy_follow_up(job)))
+		_body.add_child(jf)
 	_change_row(Vector2(150, 572))
 
 
@@ -376,7 +384,7 @@ func _change_row(at: Vector2) -> void:
 	cb.add_theme_stylebox_override("normal", sb)
 	cb.add_theme_stylebox_override("focus", sb)
 	cb.position = at
-	cb.size = Vector2(740, 80)
+	cb.size = Vector2(490, 80)
 	cb.max_length = 800  # N27: a person's ability needs room (J2's hammer sentence lost its charge, cooldown and glow to a 240 cut)
 	cb.text = _change_draft
 	cb.text_changed.connect(func(t: String) -> void: _change_draft = t)
@@ -386,6 +394,13 @@ func _change_row(at: Vector2) -> void:
 	var go_b: Button = _button("SendChange", "Change it", "redo", ORANGE, at + Vector2(760, 0), Vector2(220, 80), 28)
 	go_b.pressed.connect(send_change)
 	_body.add_child(go_b)
+	# S2-juice arm B: "make it juicy", a card choice for this change (off until picked; the Foreman runs the pass on it)
+	var jc: Button = _button("JuicyCard", "Make it juicy", "check" if juicy else "power", HONEY_LIGHT if juicy else CREAM, at + Vector2(505, 0), Vector2(240, 80), 22)
+	jc.tooltip_text = "A tell that grows, an impact word, a camera kick, a slow beat on the big moment"
+	jc.pressed.connect(func() -> void: juicy = not juicy; _rebuild())
+	_body.add_child(jc)
+	if juicy:
+		_place(_label("Juicy: a tell that grows, an impact word mid-screen, hit-stop and a camera kick, a slow beat on the big moment", 17, 650, HONEY_LIGHT, W, HORIZONTAL_ALIGNMENT_CENTER), Vector2(0, 666))
 
 
 func send_change() -> void:
@@ -394,6 +409,10 @@ func send_change() -> void:
 		message = "Say what should change first."
 		_rebuild()
 		return
+	_send(text + (" " + Model.JUICY if juicy and not text.to_lower().contains("juicy") else ""))
+
+
+func _send(text: String) -> void:
 	var err: String = door.change(job_dir, text)
 	if not err.is_empty() and not door.dry:
 		message = err
@@ -404,6 +423,7 @@ func send_change() -> void:
 		_sent_change = text
 		started_at = _now()
 		_change_draft = ""
+		juicy = false
 	_rebuild()
 
 

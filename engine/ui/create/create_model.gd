@@ -301,6 +301,31 @@ static func balance_note(job: Dictionary, seq: int) -> String:
 	return said.substr(0, 1).to_upper() + said.substr(1) if not said.is_empty() else ""
 
 
+## S2-juice (27 Nov): the Foreman's juice-pass note on the person's last made change (foreman/src/juicepass.ts):
+## "ran" (the standard juice pass went with it), "offered" (arm B: a move built plain; Create offers "make it juicy"),
+## or "". JUICY_FOLLOW_UP is the one-click follow-up's words; the Foreman runs the pass on them.
+const JUICE_RAN := "[foreman] juice pass: "
+const JUICE_OFFER := "[foreman] juice pass offered: "
+const JUICY := "Make it juicy."
+static func juice_of(job: Dictionary) -> String:
+	var mine: Array = person_changes(job)
+	if mine.is_empty() or str((mine.back() as Dictionary).get("outcome", "")) != "made":
+		return ""
+	var seq: int = int((mine.back() as Dictionary).get("seq", 0))
+	var said: String = ""
+	for n: Variant in job.get("notes", []):
+		if n is Dictionary and int((n as Dictionary).get("seq", 0)) > seq:
+			var t: String = str((n as Dictionary).get("text", ""))
+			said = "ran" if t.begins_with(JUICE_RAN) else "offered" if t.begins_with(JUICE_OFFER) and said.is_empty() else said
+	return said
+
+
+static func juicy_follow_up(job: Dictionary) -> String:
+	var mine: Array = person_changes(job)
+	var last: String = str((mine.back() as Dictionary).get("text", "")) if not mine.is_empty() else ""
+	return "Make it juicy: the move I just added (“%s”). Keep its rules as they are." % JobModel.one_line(last, 300)
+
+
 ## The packages a change round is working on when every phase has passed (no current phase): those not promoted.
 static func working_packages(job: Dictionary) -> Array:
 	var out: Array = []
