@@ -600,3 +600,31 @@ From the juice day of 27 Nov, in a change since the last promotion:
 - What-changed lines: `not asked by you: X changed it when the Foreman's checks sent it back (<why>): <its words>`;
   `nothing changed in the game[: <why>]` when no game file changed. Create shows every `balance moved` line of the change
   (the newest per figure), and `Not applied: ...` when a frozen measure undid part of the person's ask.
+
+### Added 2026-11-27 (juice night, lanes T-editor round 5 and T2-editor): runs, counts and changes that ended unmade
+
+- A run the engine never began (only its banner, no report) is tried again, then counted as inconclusive, never judged; a
+  hand-check seed that never began is replaced by the next seed (at most 3).
+- A quick cartridge edit that leaves part of the person's ask unmade, or sets a key to the value it had, goes to the
+  cartridge builder instead of being promoted.
+- `[foreman] scope widened for this change: X's acceptance runs no bot test of its own besides the Foreman's tofu bot, so
+  it may write tests/moves_X.gd to count its new moves ...`: the Foreman runs that file in the land check on a copy whose
+  manifest lists it; the pack's manifest never does. `[foreman] new move not counted by X: ...` is not a NOT made.
+- `[foreman] X waits for Y: X's round N failed only on a script error in a file that Y owns (...)`, with the request to Y
+  `[foreman] the rest of your change, which X did not make (...)` and to X `[foreman] your change again, now that Y has
+  fixed the script error in its file (...)`.
+- An `answer` by "foreman" and `[foreman] answered for you: X asked about the Foreman's own test (...)`: the person is
+  never asked about the Foreman's tests.
+- A builder's `RULE:` line (not "RULE: none ...") makes a change a play change.
+- In a fairness change (and a hand-check send-back round) the builder's prompt has "## The measure your fairness change
+  is judged by" (the card's bound and every seed's last result), and its self-check commands include the card's hand
+  tests.
+- The change in flight begins after the last promotion, or after the last job ending (done, failed or cancelled) since
+  it (`foreman/src/changeend.ts`). An earlier change that ended without a promotion is NOT made:
+  - its words no longer make the next change a fairness (or any other) change;
+  - every package workspace is cut again from pack/ when it ends;
+  - at the next promotion it is told: `[foreman] part of your change was NOT made: your earlier change "<words>" ended
+    NOT made (<why>); nothing of it is in this version unless this change made it again`;
+  - the what-changed card reads only the events after that ending.
+- A package kept on its earlier files (a re-opening that never passed, or one that asked again after an answer) loses its
+  workspace; its next round starts from pack/.
