@@ -391,3 +391,28 @@ Two entries a game played indoors asks for; neither changes a shader or a style 
   A neutral grey is the same through both; a saturated blue comes out with red as high as green, as in the game.
 - The contact shade (`TLStyleFelt.contact_material`) has two forms on the skater (standing, lying): RIGS.md.
 
+## Time of day (`day`, lane DN, 27 Nov 2026)
+
+A style may carry a `day` section: how `dawn`, `dusk` and `night` differ from the style's own values, which are noon
+(`day/style_day.gd`; only `style_crisp.json` has one). Each phase names a few keys of `sun` (color, energy, elev, azim),
+`toon` (shade, shade_k, shade_ground, amb_sky, amb_ground, amb_energy, bounce, bounce_k, rim2, rim2_k), `fog` (color,
+density, height_density), `sky` (the painted sky's colours, glow, disc, clouds, sun_draw_elev), `water` (deep, shallow,
+sky, stripe, foam), `grade` (shadows, highlights, sat, split, contrast, lift, plum_density, olive_fill), `env`
+(exposure), and `lamps` (how strongly the kit's lamps burn; noon is 0). Unknown keys are errors; an absent key is noon's.
+
+Not pack API (TLStyle's public surface is unchanged); the kernel's Home preloads `res://style/day/style_day.gd`:
+
+```gdscript
+Day.has_day()                        # the loaded style has a day section
+Day.day_look(t)                      # the look at clock t (0..1 of a day: 0 midnight, 0.25 dawn, 0.5 noon, 0.75 dusk)
+Day.apply_day(anchor, look)          # onto the installed rig and the globals; headless or no rig: nothing (0)
+```
+
+- At t = 0.5 the look is the style's own values key for key, and the globals it writes are byte for byte those install
+  wrote (selftest `home.daynight.noon`; in a window `day_case.gd --mode=window`). The colours hold the night's from 0.80
+  to 0.20 and noon's from 0.375 to 0.625; the sun keeps moving all day (dawn's azimuth and elevation, noon's, dusk's).
+- At the two blue hours (0.225, 0.775) the lit band takes the shade's colour (flat light) and the light turns from the
+  sun to the moon (highest at midnight) or back, so the swap is never seen. The light never goes below 4 degrees.
+- Values only: no shader and no new global. `TLStyle.install(host)` (or `load_style` of the same file) gives the
+  style's own look back. The Home's clock (`kernel/world/home/day_cycle.gd`) is its only caller.
+

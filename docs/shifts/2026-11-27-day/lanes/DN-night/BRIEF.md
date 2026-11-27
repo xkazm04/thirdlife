@@ -1,0 +1,30 @@
+# Lane DN: day and night in the Home (lamps matter, the cel look at dusk)
+
+Worktree `C:/Users/kazda/kiro/third-life/.claude/worktrees/d27-night`, branch `d27-night`, from main e3b1ccc8. Opus, solo. Time box ~5 h, in rounds (send "landable" after each; no edits after a landable message until the Director confirms it landed). Selftest block range 776-778. Absolute paths only; never `cd` inside a backgrounded command.
+
+## Why (the owner, 27 Nov, away 24 h)
+"... where can outshine those two [Minecraft, Roblox] ... combining with our graphics and LLM builder which are superior game design aspects". The thesis (`docs/research/sandbox/THESIS.md`) queues day and night first after the rules: today the Home's sun is fixed (`style_crisp.json` sun elev 40, azim 176; `engine/style/tl_style.gd:544`), so the lamps players place (street_lamp, house, light_mast: real lights, `piece_draw.gd:4-6,17`, capped at 48) never matter. A night in the crisp cel look, with warm lamp pools and windows lit, is the cheapest big win for "our graphics" in a builder's Home.
+
+## Read first
+`CLAUDE.md`; `engine/style/STYLE.md` (the style is data; crisp cel), `engine/style/tl_style.gd` (sun, sky, fog, ambient), `style_crisp.json`; the Home: `engine/kernel/world/home/` (hook.gd, valley, places), `engine/kernel/world/build/piece_draw.gd`, `pieces_layer.gd`, kit lights `engine/kits/` (house, street_lamp, light_mast); `docs/TWO-WORLDS.md` ("Sky and mood"); the build mode tool keys (`build_mode.gd`) so your key does not collide.
+
+## Goal
+1. **A day cycle in the Home only**: time of day in frames (a full day of about 24 minutes at 60 Hz by default), moving the sun and moon, the sky, fog, ambient and the cel bands' light through dawn, day, dusk and night. The night is readable (moonlit blue, never black mush) and in the crisp cel style (flat bands, cut shadows, ink kept).
+2. **Lamps matter**: at dusk the kit's lights (street lamps, house windows, light masts) come on and throw warm pools; by day they are off. Mind the 48-light cap: say how you choose which lights are live (nearest the camera) and measure the frame.
+3. **The player controls it**: in build mode, a key steps the time (e.g. N: next of dawn/noon/dusk/night) and another holds/resumes the cycle; the choice is saved with the Home (a small settings file under `user://home/`, schema `tl.home-settings/1`, never in `build.json`; unknown keys are errors). Name the keys in your report and in `engine/kernel/world/build/BUILD.md` tool table.
+4. **Nothing else changes**: dungeons keep their own looks; a game on stage in the world plays and hashes as alone (`world` 9/9 hashes equal main's); look pins (`engine/tools/selftest.d/610-celsurf.sh`, n3, style.frame.*) stay byte-identical: the cycle is off unless the Home is visited in a window, or the default time draws exactly today's sun. Decide which and prove it.
+
+## Acceptance
+- Captures from the same camera at the spawn and at a lamp-lit street (build some lamps and a house if the valley has none near): `dn-dawn.jpg`, `dn-noon.jpg`, `dn-dusk.jpg`, `dn-night.jpg`, `dn-lamps-night.jpg` in `docs/shifts/2026-11-27-day/lanes/DN-night/` (JPG < 400 KB). Judge honestly against the noon look: does night read as a place, are the lamps a reason to build?
+- Frame cost p50/p99 at noon and at night with 20+ lamps near.
+- `776-home-daynight.sh` -> `HOME daynight ok` (headless: time advances in frames, settings save/reload, the default draws today's sun byte-identically or the cycle is off headless, lamps on/off by time, the light cap holds).
+- The fast gate; because this lane changes engine/style or the draw layer, the uncapped `bash engine/tools/selftest.sh` (main had 712 passed, 3 failed: base.lines x2, feel.pushbox_invariants) and `node devx/bin/tl.mjs check --tier full --only world,packs`.
+
+## Files
+Yours: new `engine/kernel/world/home/day_*.gd` / `sky_*.gd`, `engine/style/tl_style.gd` (time-of-day entry points only), `style_crisp.json` (night keys only), hooks in `home/hook.gd`, `piece_draw.gd` (light on/off and the live-light choice), the kit's light parts only if a light needs an emissive window. NOT yours: `engine/style/shaders/toon_cel.gdshader` and `water_cel.gdshader` (lane LP is in them today: if you need a shader change, write the exact change in `PATCHES-DN.md` in your worktree and tell the Director), anything under `engine/kernel/world/build/` other than `piece_draw.gd` and the BUILD.md tool table (lanes S6 and LP are there).
+
+## Lane rules (verbatim from .claude/skills/shift/lane-rules.md)
+- Standups: keep `docs/shifts/2026-11-27-day/lanes/DN-night/STANDUP.md` in YOUR worktree; one line at each milestone and at least every 60 minutes: `HH:MM | state: working|blocked|done|cut | did: <one line> | next: <one line> | gates: <last PASS/FAIL line or ->`. `blocked` names the question; keep working on what it does not touch. When you finish write `REPORT.txt` beside it (agents cannot write files named REPORT.md), return the full report as your final message, last standup line `done`.
+- Honesty: evidence or it is not done; a stopped run is never a pass; NOT RUN is not PASS; fewer tests than main is a stopped run; unmeasured is not zero; a behaviour change that moves a test expectation is named with why; never loosen a test; what the player sees is judged as a person meets it (a window, the exported game).
+- Laws: work only in your worktree; no git that writes (read-only diff/status fine); never kill a process you did not start; prefer --headless; class cache once `"$G" --headless --path engine --import`; time is frames; determinism; unknown keys are errors; absent = omit the key; packs use only TL*; kit, rigs, style reference nothing outside themselves; contracts are Director-only (questions in your report); selftest blocks only in your range; raw captures under .tl/; a kernel API addition updates engine/kernel/API.md.
+- Report: each acceptance line met / not met with evidence; gate lines with counts; changed files; behaviour changes; anything the owner should look at and how; questions for the Director; the next three things; your measurement outranks this brief.

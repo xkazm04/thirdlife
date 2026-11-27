@@ -275,9 +275,12 @@ build mode):
 | Ctrl+Z, Ctrl+Y (or Ctrl+Shift+Z) | undo, redo one batch |
 | hold MMB or Alt | look: the mouse is captured and turns the view while held |
 | W A S D, Shift, Space, C, F | as while walking (the visitor walks, jumps, flies). E does not enter a game while building |
+| N | the next of dawn, noon, dusk, night: the Home's clock jumps there (home/day_cycle.gd, lane DN; saved in `settings.json`, schema `tl.home-settings/1`, beside the build file, never in it) |
+| H | hold the Home's clock, or let it run again (a day is 86,400 physics frames: 24 minutes) |
 
 LMB, RMB, the wheel, 1-8, Tab, R and F2 are the blocks tool's: another tool gets them (its `press`, `key`) or ignores
-them. Ctrl+Z, Ctrl+Y, B, Esc, T, Enter, MMB and Alt are the host's and mean the same in every tool.
+them. Ctrl+Z, Ctrl+Y, B, Esc, T, Enter, MMB and Alt are the host's and mean the same in every tool. N and H are the Home's clock's
+(polled by home/day_cycle.gd, not by build mode; nothing while a tool has the keyboard): no tool may take them.
 
 **Tools** (the seam, for M2, M3, M4 and M5). A tool is a RefCounted script in `tools/`, made once by build mode (`TOOLS`,
 in strip order: blocks, sculpt, paint, piece, stamp, water, path, plant, command), duck-typed. The M5 tools
