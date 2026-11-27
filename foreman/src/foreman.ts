@@ -21,7 +21,7 @@ import { builderFeelSection, servesLine } from "./roomtext.js"; // JOB.md 2026-1
 import { briefText, critic, render, replanPackages, type GenerateCall, type PackageLine, type PlannerInput, type ReplanInput } from "./designer.js";
 import { NEW_PACKAGE, grow, ownerOrNew, wireWaits, type GrowHost } from "./grow.js";
 import { FINAL_NOTE, fastFinal, fastMerge, fastPromotion, mergeNote, roundAcceptance, whatChangedNote } from "./fastchange.js"; // E4b: a data-only change // E4 (24-25 Nov): a change may add a package
-import { removedSince } from "./removal.js"; import { promotionErrors } from "./promogate.js"; import { answeredThisChange, askedAgain, plainQuestion } from "./asktwice.js"; import { tofuGate } from "./tofugate.js"; import { withGrants } from "./scopegrant.js"; import { afterMerge } from "./halfmade.js"; // H1 (E5e): what a change removed, named; H1d: promotion pictures with script errors refuse
+import { removedSince } from "./removal.js"; import { promotionErrors } from "./promogate.js"; import { answeredThisChange, askedAgain, plainQuestion } from "./asktwice.js"; import { longerMatch, tofuGate } from "./tofugate.js"; import { withGrants } from "./scopegrant.js"; import { afterMerge } from "./halfmade.js"; // H1 (E5e): what a change removed, named; H1d: promotion pictures with script errors refuse
 import { criticRubric, inReach, phaseLine, phaseStep, replanPhases, stuckText, waitsForVerdict } from "./phases.js"; // JOB.md 2026-11-20: phases
 import { writeGenerateCalls } from "./transcript.js";
 import { botFinish, botMoments, planShots } from "./shots.js";
@@ -926,6 +926,8 @@ export class Foreman {
    */
   private async verifyLogged(a: Pick<Acceptance, "verb" | "args">, packDir: string, stem: string, where: { package?: string; round: number; after?: string }): Promise<Verified> {
     const vr = await this.verifyTwice(a, packDir, stem, where);
+    const longer = await longerMatch(this.gateHost, a, vr, where, (args) => this.verifyTwice({ ...a, args }, packDir, `${stem}-longer`, where)); // N27 T2: a person's longer matches get the frames
+    if (longer !== undefined) return longer;
     if (!vr.ok && isStarved(vr)) return this.starvedVerdict(a, packDir, stem, where, vr);
     if (vr.ok || !restsOnAClock(vr)) return vr;
     // The same check failed on a clock twice. Before a builder hears of it, the Foreman asks whether it was the

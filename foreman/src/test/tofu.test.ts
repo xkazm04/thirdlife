@@ -7,10 +7,11 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 import path from "node:path";
 import { cleanup, tempDir } from "./helpers.js";
-import type { JobEvent, PackageSpec } from "../events.js";
+import type { Acceptance, JobEvent, PackageSpec } from "../events.js";
 import type { GateHost } from "../p10gate.js";
 import type { VerifyResult } from "../verifier.js";
-import { tofuGate } from "../tofugate.js";
+import { longerMatch, onlyOutOfFrames, tofuGate } from "../tofugate.js";
+import { blameFinal, sendBackFinal } from "../p10gate.js";
 import { tofuLine } from "../tofu.js";
 import { BALANCE_MOVED, BALANCE_SKIPPED, askedChange, changeKind } from "../boundlift.js";
 import { keepMeasures, measureTests, runHandChecks, MEASURE_KEPT } from "../handcheck.js";
@@ -172,4 +173,97 @@ test("N27 7: the card's hand check in a play change is a note, not a refusal; th
   assert.equal(hard.appended[0]?.["package"], "teams");
   const look = await run("Gold shields and quilted jackets.", { newcomer: 6, perfect: 20 });
   assert.match(look.failure, /newcomer: 6 of 20 won/, "a look change that makes the game hard for a newcomer is refused as before");
+});
+
+// ---------------------------------------------------------------- T2: J2's final-verification loop
+
+const OUT_OF_FRAMES = { checks: [{ id: "bot.completed", ok: false, detail: "frame_budget: not done within 36000 frames" }, { id: "bot.ok", ok: false, detail: "3 matches" }], bot: { test: "tests/bot_tofu.gd", done: false, frames: 36000 } };
+
+test("N27 T2 1 (J2 robots, event 1017: the hammer made matches about 4.5 min and core's three-match tofu bot ran out of 36,000 frames): in a person's play change a bot that only ran out of frames runs again with three times the frames, and the person is told", async () => {
+  const events = [{ seq: 6, type: "promoted" }, { seq: 7, type: "change_requested", text: HAMMER }] as unknown as JobEvent[];
+  const appended: Record<string, unknown>[] = [];
+  const h = { s: { plan: PLAN, packages: { core: { round: 16 } } }, events, append: (e: Record<string, unknown>) => (appended.push(e), e) } as unknown as GateHost;
+  const failed = { verb: "bot", level: "V4", ok: false, report: OUT_OF_FRAMES, summary: "bot failed" } as unknown as VerifyResult;
+  assert.equal(onlyOutOfFrames(failed), true);
+  const asked: string[][] = [];
+  const done = await longerMatch(h, A, failed, { round: 1 }, async (args) => (asked.push(args), { verb: "bot", level: "V4", ok: true, report: { bot: { test: "tests/bot_tofu.gd", done: true, frames: 48600 } }, summary: "bot passed" }) as unknown as VerifyResult);
+  assert.deepEqual(asked, [["--test=tests/bot_tofu.gd", "--frames=108000"]]);
+  assert.equal(done?.ok, true, "the run with the frames it needs counts");
+  assert.match(String(appended[0]?.["text"]), /^\[foreman\] balance moved by your change: built as you asked; matches now run longer \(the Foreman's test needed about 1\.4 times the frames it planned\)\. Say "make matches shorter" to tune it\./);
+  // a match that never ends stays a failure
+  const never = await longerMatch(h, A, failed, { round: 1 }, async () => ({ ...failed, report: { ...OUT_OF_FRAMES, bot: { ...OUT_OF_FRAMES.bot, frames: 108000 } } }) as unknown as VerifyResult);
+  assert.equal(never?.ok, false);
+  assert.match(never?.summary ?? "", /not done with 108000 frames either/);
+  // not in a play change, or not only frames: the run stands as it was
+  const look = { ...h, events: [{ seq: 6, type: "promoted" }, { seq: 7, type: "change_requested", text: "Paint the robots gold." }] } as unknown as GateHost;
+  assert.equal(await longerMatch(look, A, failed, { round: 1 }, async () => assert.fail("no rerun")), undefined);
+  const crashed = { ...failed, report: { ...OUT_OF_FRAMES, checks: [...OUT_OF_FRAMES.checks, { id: "smoke.no_script_errors", ok: false, detail: "1 error" }] } } as unknown as VerifyResult;
+  assert.equal(await longerMatch(h, A, crashed, { round: 1 }, async () => assert.fail("no rerun")), undefined);
+});
+
+/** A J2-shaped log: core's tofu bot passed at 980, show merged at 1011 (a control run cleared it at 1006), final fails at 1017. */
+function finalJob(extra: Record<string, unknown>[]) {
+  const dir = tempDir("n27-final");
+  fs.mkdirSync(path.join(dir, "reports"), { recursive: true });
+  for (const f of ["pass-980.json", "final-1017.json"]) fs.writeFileSync(path.join(dir, "reports", f), JSON.stringify({ bot: { test: "tests/bot_tofu.gd" } }));
+  const events = [
+    { seq: 900, type: "promoted" },
+    { seq: 930, type: "change_requested", text: HAMMER },
+    { seq: 960, type: "merge", package: "core", files: ["scripts/sim/hammer.gd"] },
+    { seq: 980, type: "verify", round: 3, level: "V4", verb: "bot", ok: true, report: "reports/pass-980.json", package: "brain" },
+    { seq: 1006, type: "note", package: "show", round: 2, text: "[foreman] pack test fails without this merge too: tests/bot_tofu.gd, a test of package core, fails on the whole pack with the round-2 files of show merged in (x) and fails without them as well (control run: y). Not caused by this merge, which goes on; core is the package to look at." },
+    { seq: 1011, type: "merge", package: "show", files: ["data/show.json"] },
+    ...extra,
+  ] as unknown as JobEvent[];
+  const appended: Record<string, unknown>[] = [];
+  const reopened: string[] = [];
+  const pkgs = { core: { state: "promoted", round: 16, mergedFiles: ["scripts/sim/hammer.gd"] }, show: { state: "promoted", round: 2, mergedFiles: ["data/show.json"] } };
+  const h = {
+    o: { roundLimit: 4 },
+    s: { plan: [{ id: "core", registers: { tests: ["tests/bot_tofu.gd"] } }, { id: "show", registers: { tests: [] } }], packages: pkgs, promotions: [{}], order: ["core", "show"] },
+    events,
+    pkg: (id: string) => pkgs[id as keyof typeof pkgs],
+    dir: (...p: string[]) => path.join(dir, ...p),
+    rel: (abs: string) => path.relative(dir, abs).split(path.sep).join("/"),
+    append: (e: Record<string, unknown>) => (appended.push(e), e),
+    reopen: (id: string) => reopened.push(id),
+  } as unknown as GateHost;
+  const vr = { verb: "bot", level: "V4", ok: false, report: OUT_OF_FRAMES, reportFile: path.join(dir, "reports", "final-1017.json"), summary: "bot failed: failed checks [bot.completed, bot.ok]" } as unknown as VerifyResult;
+  return { h, appended, reopened, vr };
+}
+const FINAL_A = { level: "V4", verb: "bot", args: ["--test=tests/bot_tofu.gd"] } as unknown as Acceptance;
+
+test("N27 T2 2 (J2 events 1006 and 1018: a control run showed core's test fails without show's files, and the final verification still sent it to show, four times): a package a control run cleared is not blamed; the test's owner takes it", () => {
+  const j = finalJob([]);
+  assert.equal(blameFinal(j.h, FINAL_A, j.vr)?.id, "core");
+  assert.match(blameFinal(j.h, FINAL_A, j.vr)?.how ?? "", /show is cleared \(a control run showed tests\/bot_tofu\.gd fails without its files too \(event 1006\)\)/);
+  assert.equal(sendBackFinal(j.h, FINAL_A, j.vr), "sent");
+  assert.deepEqual(j.reopened, ["core"]);
+});
+
+test("N27 T2 3 (J2 event 1022, show r3: \"No change made ... nothing in my scope can fix the cause\"): a builder's nothing-in-my-part answer stops the loop and the person is told why", () => {
+  // core was sent the check and answered that nothing in its part can fix it: nobody is left
+  const j = finalJob([
+    { seq: 1018, type: "reopened", package: "core", reason: "FINAL VERIFICATION FAILED (1 of 4) at bot (V4) --test=tests/bot_tofu.gd [report: r]. Sent back to core: ..." },
+    { seq: 1022, type: "note", package: "core", round: 17, text: "- No change made. The failing check is the tofu bot running out of frames; nothing in my scope can fix the cause without working around the check." },
+  ]);
+  assert.equal(blameFinal(j.h, FINAL_A, j.vr), undefined);
+  assert.equal(sendBackFinal(j.h, FINAL_A, j.vr), "spent", "the loop stops: the change ends on the earlier version");
+  assert.deepEqual(j.reopened, []);
+  assert.match(String(j.appended[0]?.["text"]), /^\[foreman\] change not finished: the game's check tests\/bot_tofu\.gd still fails .*no part of the game is left that can fix it: show: a control run .*; core: its builder answered: "No change made\. The failing check is the tofu bot running out of frames; nothing in my scope can fix the cause/);
+});
+
+test("N27 T2 4 (J2's copy, event 1146: \"close test rounds: now 0, was 0\" was told to the person as their change's doing): a row already outside before the change gets no balance note", () => {
+  const j = job(HAMMER);
+  fs.writeFileSync(path.join(j.dir, "reports", "final-bot-bot_tofu-s5.json"), JSON.stringify({ bot: { test: "tests/bot_tofu.gd", done: true, result: { ok: true, metrics: { ...GOOD, close_rounds: 0 } } } }));
+  assert.equal(tofuGate(j.h, "core", A, bot({ ...GOOD, close_rounds: 0 }, j.dir)), undefined);
+  assert.equal(j.appended.filter((e) => String(e["text"]).startsWith(BALANCE_MOVED)).length, 0);
+  assert.match(String(j.appended.find((e) => String(e["text"]).includes("already outside"))?.["text"]), /close_rounds \(was 0, bound 1 or more\)/);
+});
+
+test("N27 T2 5 (J2's copy, core r16 refused on tells 2 < 3 after \"hold F to raise it, release to swing\"): a new attack move with its own wind-up moves the tells the frozen bot counts; a look change still guards them", () => {
+  const j = job("Give every robot a double-headed sledgehammer: hold F to raise it, release to swing. A hit launches a robot far, tumbling.");
+  assert.equal(tofuGate(j.h, "core", A, bot({ ...GOOD, tells: 2 }, j.dir)), undefined);
+  const look = job("Paint the robots gold.");
+  assert.match(tofuGate(look.h, "core", A, bot({ ...GOOD, tells: 2 }, look.dir))?.summary ?? "", /tells 2 \(the plan's bound: >= 3\)/);
 });

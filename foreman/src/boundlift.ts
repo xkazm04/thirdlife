@@ -104,7 +104,9 @@ export const BALANCE_ROWS = new Set(["skill_spread", "skill_variants", "lead_cha
 /** Rows outside the balance family that a person's words touch when they name what the row measures. */
 const TOUCH: { ids: RegExp; words: RegExp }[] = [
   { ids: /^idle_max_f$/, words: /\b(launch\w*|tumbl\w*|knock\w*|flatten\w*|floor(s|ed|ing)?|stun\w*|freez\w*|frozen|ragdoll\w*|fl(y|ies|ying|ung|ew)|fall\w*|fell|topple\w*|dizzy|daze\w*|flip\w*|bowl\w* over)\b/i },
-  { ids: /^tell(s|_min_f)$/, words: /\b(fast\w*|quick\w*|instant\w*|sudden\w*|surprise|no warning|snap\w*|dash\w*|lunge\w*|rush\w*|charg\w*)\b/i },
+  // T2 (J2's copy, core r16: "hold F to raise it, release to swing" refused on tells 2 < 3): a new attack move with its
+  // own wind-up is one the frozen tofu bot does not count among its tells, so the count moves with the person's words
+  { ids: /^tell(s|_min_f)$/, words: /\b(fast\w*|quick\w*|instant\w*|sudden\w*|surprise|no warning|snap\w*|dash\w*|lunge\w*|rush\w*|charg\w*|swing\w*|wind[- ]?up\w*|rais\w*|slam\w*|smash\w*|hammer\w*|leap\w*|dunk\w*|pounc\w*)\b/i },
   { ids: /^(scrum|overlap)_share$/, words: /\b(crowd\w*|pile\w*|clump\w*|swarm\w*|gang\w*|all at once|huge|giant|bigger|pull\w*|magnet\w*|tackl\w*|body ?check\w*)\b/i },
 ];
 
@@ -149,11 +151,14 @@ export type RowCall = "judged" | "moved" | "skipped" | "before";
 
 /** One row's treatment in a change of `kind` (words: the person's), from whether it was outside its bound before the change. */
 export function rowCall(kind: ChangeKind, id: string, words: string, failedBefore: boolean): RowCall {
+  // T2 (J2's copy, event 1146: "close test rounds: now 0, was 0"): a row already outside before the change was not moved
+  // by it; no note says the person's change did it
+  if (failedBefore) return "before";
   if (BALANCE_ROWS.has(id)) {
     if (kind === "play") return "moved";
     if (kind === "view") return "skipped";
   } else if (kind !== "fair" && TOUCH.some((t) => t.ids.test(id) && t.words.test(words))) return "moved";
-  return failedBefore ? "before" : "judged";
+  return "judged";
 }
 
 /** The rows of a person's change: those still judged, and the moved, skipped and already-failing ones outside their bounds now. */
