@@ -54,6 +54,10 @@ test("bots by default: a new move the words say nothing about goes to its owner 
   assert.ok(note?.type === "note" && note.package === "court", JSON.stringify(note));
   assert.match(note.text, /said nothing about the bots, so by default the bots use "lob shot" at sensible moments \(Rex lobs when the other paddle is close to the net\)/);
   assert.match(note.text, /answers it \(Rex backs off to the baseline when he sees the dip\)/);
+  // round 2: a rate a person sees, and events a test can count
+  assert.match(note.text, /about once every 10 to 20 seconds of play/);
+  assert.match(note.text, /Publish one event each time a bot starts the move and one each time a bot answers it/);
+  assert.match(note.text, /use it at least twice and answer it at least once/);
   const wire = evs.find((e) => e.type === "change_requested" && e.package === "paddle_ai");
   assert.match(wire?.type === "change_requested" ? wire.text : "", /^\[foreman\] wire in court \(bots by default, change request event \d+\)/);
   // the wire waits for court: paddle_ai is re-opened only after court was promoted again
@@ -77,6 +81,8 @@ test("bots by default: \"only I can do it\" turns the use off (the brief and the
   const e0 = since(readEvents(off), b0);
   const n0 = e0.find((e) => e.type === "note" && e.text.startsWith(BOTS_NOTE));
   assert.match(n0?.type === "note" ? n0.text : "", /OFF, the person said only they use "lob shot": no bot ever uses it/);
+  assert.match(n0?.type === "note" ? n0.text : "", /Publish one event each time a bot starts the move/);
+  assert.doesNotMatch(n0?.type === "note" ? n0.text : "", /once every 10 to 20 seconds/);
   const card = e0.find((e) => e.type === "note" && e.text.includes("[foreman] what changed in v"));
   assert.match(card?.type === "note" ? card.text : "", /\nbots by default: off, as you said: no bot uses "lob shot"/);
 

@@ -55,7 +55,7 @@ export function botsPromptText(packages: readonly PackageLine[]): string {
     "- `move`: only when the request ADDS a move a player does (an ability, an attack, a jump, a trick, a throw, a dash, a shove): name it in a few words. Omit it for anything else (a number, a look, a rule, a camera, a sound).",
     "- `bots` (with a move only): \"said\" when the request says what the bots, the rivals, the opponents or the computer players do with it; \"only_me\" when the player keeps it to himself (\"only I can do it\", \"the bots never use it\"); \"unsaid\" when it says nothing about them.",
     "- `bot_packages` (with a move only): EVERY package above whose own files make a bot decide what to do (a brain, a mind, AI or crew data), the owner too when it drives a bot. In a 3 v 3 game the crew or team package usually drives most of the bots.",
-    "- `use` (with \"unsaid\"): one sentence: the sensible moments a bot uses the move (when it pays off, respecting its cost and cooldown, never as spam).",
+    "- `use` (with \"unsaid\"): one sentence: the moments a bot uses the move (when it pays off, respecting its cost and cooldown, never as spam). Pick moments that come up often in this game, not a rare perfect line-up: a person should see each bot that can use it do so about once every 10 to 20 seconds of play.",
     "- `answer` (with \"unsaid\" or \"only_me\"): one sentence: how a bot answers the move when it comes at him (dodge, block, brace, hop, spin away, punish the miss), using the counters the request or the game already has.",
   ].join("\n");
 }
@@ -76,14 +76,18 @@ export function botsPlanOf(v: { move?: string; bots?: string; bot_packages?: str
   return { move: clip(move, 120), mode: v.bots as BotsMode, packages: pk, ...(v.use ? { use: clip(v.use.trim(), 300) } : {}), ...(v.answer ? { answer: clip(v.answer.trim(), 300) } : {}) };
 }
 
-const useWords = (b: BotsPlan): string => `the bots use "${b.move}" at sensible moments${b.use ? ` (${b.use.replace(/\.$/, "")})` : ""}, never as spam: they respect its wind-up, cost and cooldown and use it when it pays`;
+// S1 round 2: a rate a person sees (A's shield bots threw 0.7 a minute on a rare-moment rule) and events a test can
+// count (B's kart dodges and A's shield sidesteps published nothing, so neither a hand nor the card could see them).
+export const BOTS_RATE = "each bot that can use it does so about once every 10 to 20 seconds of play, so a person sees the bots use it several times a minute";
+export const BOTS_EVENTS = "Publish one event each time a bot starts the move and one each time a bot answers it (its dodge, block, hop, swat or punish names the move it answers), so a test and the person can count both";
+const useWords = (b: BotsPlan): string => `the bots use "${b.move}" at sensible moments${b.use ? ` (${b.use.replace(/\.$/, "")})` : ""}: ${BOTS_RATE}; never as spam: they respect its wind-up, cost and cooldown and use it when it pays`;
 const answerWords = (b: BotsPlan): string => `a bot that sees "${b.move}" coming at him answers it${b.answer ? ` (${b.answer.replace(/\.$/, "")})` : " (dodges, blocks, braces or punishes the miss)"}, after his normal reaction delay`;
 
 /** What the Foreman adds for change request `seq` (undefined: nothing, the words already say it). */
 export function botsWords(b: BotsPlan, seq: number): string | undefined {
   if (b.mode === "said") return undefined;
-  if (b.mode === "only_me") return `${BOTS_NOTE} (change request event ${seq}): OFF, the person said only they use "${b.move}": no bot ever uses it; ${answerWords(b)}.`;
-  return `${BOTS_NOTE} (change request event ${seq}): the person added "${b.move}" and said nothing about the bots, so by default ${useWords(b)}; and ${answerWords(b)}. Every bot this package drives does both (not only one of them), and a test that counts the bots' uses and answers passes. The person can turn this off by saying "only I can do it".`;
+  if (b.mode === "only_me") return `${BOTS_NOTE} (change request event ${seq}): OFF, the person said only they use "${b.move}": no bot ever uses it; ${answerWords(b)}. ${BOTS_EVENTS}.`;
+  return `${BOTS_NOTE} (change request event ${seq}): the person added "${b.move}" and said nothing about the bots, so by default ${useWords(b)}; and ${answerWords(b)}. Every bot this package drives does both (not only one of them). ${BOTS_EVENTS}; a test counts them over one live minute and passes only when the bots together use it at least twice and answer it at least once. The person can turn this off by saying "only I can do it".`;
 }
 
 /** The wire request for another bot package `pkg`: waits until `owner` (which builds the move) is merged again. */
