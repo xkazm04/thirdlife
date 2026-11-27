@@ -114,7 +114,7 @@
       "Keep the target wall in front of the camera's default yaw so the first throw needs no camera work."
     ],
     "juice": [
-      "Words for the big moments go in big letters in the middle of the screen, apart from the score and the clock (a TLHudLayer text with an outline, or a center label of its own), and are gone when the moment ends: never added to the score line or the clock, never padded with blank lines into a tall slab; a word about the player says YOU ARE (never YOU IS), anyone else goes by the name the game shows.",
+      "Words for the big moments go in big letters in the middle of the screen, apart from the score and the clock (a TLHudLayer text with an outline, or a center label of its own), and are gone when the moment ends: never added to the score line or the clock, never padded with blank lines into a tall slab; a word about the player says YOU ARE (never YOU IS), anyone else goes by the name the game shows; a word over a body is clamped whole inside the screen's safe area (5 % in from each edge), never cut by the edge.",
       "A block that breaks gets debris and dust (TLVfx.burst), a break sound (TLAudio.play) and a shake of about 0.12 m over 14 frames (TLCameras.shake), as seed_wall does.",
       "A hit that does not break gets a small dust puff only; the horn and a big HUD line mark the end.",
       "Squash the thrown ball on impact (TLVfx.squash on its visual) so a hard throw reads as hard."

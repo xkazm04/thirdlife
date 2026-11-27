@@ -136,7 +136,7 @@
       "The camera must show the goal the player attacks; a view from 100 m up loses the puck and the player."
     ],
     "juice": [
-      "Words for the big moments go in big letters in the middle of the screen, apart from the score and the clock (a TLHudLayer text with an outline, or a center label of its own), and are gone when the moment ends: never added to the score line or the clock, never padded with blank lines into a tall slab; a word about the player says YOU ARE (never YOU IS), anyone else goes by the name the game shows.",
+      "Words for the big moments go in big letters in the middle of the screen, apart from the score and the clock (a TLHudLayer text with an outline, or a center label of its own), and are gone when the moment ends: never added to the score line or the clock, never padded with blank lines into a tall slab; a word about the player says YOU ARE (never YOU IS), anyone else goes by the name the game shows; a word over a body is clamped whole inside the screen's safe area (5 % in from each edge), never cut by the edge.",
       "A goal gets the horn, a cheer, a goal flash and confetti (TLVfx.burst, TLAudio.play), as the hockey fx script does.",
       "Fast skating throws ice spray; a check that lands should shake the view a little (TLCameras.shake) and knock the skater down (TLBiped.down).",
       "A shot needs weight: a short wind-up, a sound on release, a spray where the puck leaves the stick."

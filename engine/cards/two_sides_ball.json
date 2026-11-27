@@ -107,7 +107,7 @@
       "Put the player's own end nearest the camera so left and right mean what the keys say."
     ],
     "juice": [
-      "Words for the big moments go in big letters in the middle of the screen, apart from the score and the clock (a TLHudLayer text with an outline, or a center label of its own), and are gone when the moment ends: never added to the score line or the clock, never padded with blank lines into a tall slab; a word about the player says YOU ARE (never YOU IS), anyone else goes by the name the game shows.",
+      "Words for the big moments go in big letters in the middle of the screen, apart from the score and the clock (a TLHudLayer text with an outline, or a center label of its own), and are gone when the moment ends: never added to the score line or the clock, never padded with blank lines into a tall slab; a word about the player says YOU ARE (never YOU IS), anyone else goes by the name the game shows; a word over a body is clamped whole inside the screen's safe area (5 % in from each edge), never cut by the edge.",
       "A goal jolts the view (about 0.08 m over 10 frames, TLCameras.shake), as seed_paddle does; add a sound and a flash at the goal line (TLAudio.play, TLVfx.burst).",
       "A return off the paddle gets a click and a faster ball, so every rally builds tension."
     ],

@@ -12,6 +12,9 @@ import type { PackageSpec } from "./events.js";
 import { isBase } from "./coreroute.js";
 import { FOREMAN_NOTE, clip } from "./conduct.js";
 import { drawPartHead } from "./playsplit.js";
+import type { JobEvent } from "./events.js";
+import { matchesAny } from "./scope.js";
+import { pathsIn } from "./scopegrant.js";
 
 /** A person's words, lower case, without punctuation at the ends and with one space between words. */
 const norm = (s: string): string => s.toLowerCase().replace(/[‘’]/g, "'").replace(/[^a-z0-9'%]+/g, " ").trim();
@@ -87,4 +90,63 @@ export function readOr(file: string): string | undefined {
   } catch {
     return undefined;
   }
+}
+
+// ---------- D27 T3 round 2: a package that draws its own copy of another package's text is sent back once ----------
+// The routing above sends the person's words to the package that holds them. A builder can still keep its own copy:
+// N-newcomer's Arsenal copy, harbour r25 (event 1496): "The HOME card's lines now come from `data/tuning.json`
+// `harbour.about_lines` and replace the skin's `about` list on screen"; and S4's base Arsenal, where the skin's own
+// builder found it (event 808): "`scripts/main.gd` overrides the skin's tagline with `harbour.tagline` in
+// `data/tuning.json` ... a later wording change must update the tuning value too, or the skin's text will not show".
+// At a merge, a builder line that says one package's files draw over, override or replace another package's text sends
+// the copier back once, naming the text's owner. A second time it is the person's note.
+
+/** Words that say a copy is drawn over, or instead of, someone's text. */
+export const COPY_WORDS = /\b(overrid\w*|replace[sd]? (?:the|its|their) [\w-]+'s|instead of (?:the|its|their) [\w-]+'s|(?:is|are) no longer shown|(?:will not|won't|does not|doesn't) show|never shown|drawn over|draws? (?:its|my|their) own)\b/i;
+/** Words that name a text a person reads. */
+export const TEXT_WORDS = /\b(text|lines?|tagline|title|about|words?|labels?|captions?|wording|sentence|card|hint)\b/i;
+/** The start of the Foreman's request (after FOREMAN_NOTE). */
+export const ONE_OWNER = "one owner per text";
+
+/**
+ * The copies a builder line reports: the package whose files hold the copy (`copier`) and the package whose text it
+ * covers (`holder`, a package with text files: named as "the <id>'s ..." or by one of its text files). [] when none.
+ */
+export function textCopies(plan: readonly PackageSpec[], reporter: string, line: string): { copier: string; holder: string; line: string }[] {
+  // "it never replaces the core's ... lines" (the d27-newc kart copy, items, event 1722) says the opposite
+  const said = line.replace(/\b(?:never|not|n't|without)\s+(?:\w+\s+)?(?:overrid\w*|replac\w*)[^.;]*/gi, " ");
+  if (!COPY_WORDS.test(said) || !TEXT_WORDS.test(line) || /\bNOT (?:DONE|MADE)\b/.test(line)) return [];
+  const own = plan.filter((p) => !isBase(p));
+  const ownerOf = (f: string): string | undefined => own.find((p) => p.scope.includes(f) || matchesAny(p.scope, f))?.id;
+  const named = [...new Set(pathsIn(line).map(ownerOf).filter((x): x is string => x !== undefined))];
+  // the text's owner is named as "the skin's tagline" first; only without that, by a text file of its own the line names
+  const holder = own.find((p) => textFiles(p).length > 0 && new RegExp(`\\b${p.id}'s\\b`, "i").test(line)) ?? own.find((p) => textFiles(p).some((f) => line.includes(f)) && !named.every((x) => x === p.id));
+  if (holder === undefined) return [];
+  const copiers = named.filter((x) => x !== holder.id);
+  const copier = copiers.length === 1 ? copiers[0] : copiers.length === 0 && reporter !== holder.id ? reporter : undefined;
+  return copier === undefined ? [] : [{ copier, holder: holder.id, line }];
+}
+
+/**
+ * At `id`'s merge: each copy its builder's notes since its re-opening report goes back once to the copier, naming the
+ * text's owner; a copy already sent back in this change is a note for the person. [] when none.
+ */
+export function copiedTextEvents(plan: readonly PackageSpec[], events: readonly JobEvent[], id: string, round: number): Record<string, unknown>[] {
+  let last = -1;
+  for (const e of events) if (e.type === "promoted") last = e.seq;
+  const since = [...events].reverse().find((e) => e.type === "reopened" && e.package === id)?.seq ?? last;
+  const lines = events.filter((e) => e.type === "note" && e.package === id && e.seq > since && !e.text.startsWith(FOREMAN_NOTE)).flatMap((e) => (e.type === "note" ? e.text.split(/\r?\n/) : [])).map((l) => l.replace(/^\s*[-*]\s*/, "").trim());
+  const out: Record<string, unknown>[] = [];
+  for (const c of lines.flatMap((l) => textCopies(plan, id, l))) {
+    const holder = plan.find((p) => p.id === c.holder) as PackageSpec;
+    const files = textFiles(holder).join(", ");
+    const sent = events.some((e) => e.type === "change_requested" && e.seq > last && e.package === c.copier && e.text.startsWith(`${FOREMAN_NOTE}${ONE_OWNER}`));
+    if (out.some((o) => o["package"] === c.copier)) continue;
+    if (sent) {
+      out.push({ type: "note", package: id, round, text: `${FOREMAN_NOTE}${ONE_OWNER}: ${c.copier} still draws its own copy of ${c.holder}'s text (${files}), after it was sent back once, in ${id}'s words: "${clip(c.line, 300)}"; a later change to ${files} may not show` });
+      continue;
+    }
+    out.push({ type: "change_requested", package: c.copier, text: clip(`${FOREMAN_NOTE}${ONE_OWNER}: ${c.copier}'s files draw their own copy of a text that ${c.holder} owns (${files}), in ${id}'s words: "${c.line}". Take the copy out of your files and draw the words as ${files} holds them; a word that must change is ${c.holder}'s, so write it as a NOT DONE line naming ${files.split(", ")[0]} with the exact words. Change nothing else.`, 2000) });
+  }
+  return out;
 }

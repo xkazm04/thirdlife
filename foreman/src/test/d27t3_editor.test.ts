@@ -15,9 +15,10 @@ import { unseenChange } from "../rinkjudge.js";
 import { catalogFor, catalogRows, keyHint, keysFor } from "../keyfind.js";
 import { afterMerge, coreHintOf } from "../halfmade.js";
 import { coreChangeOwner } from "../coreowner.js";
-import { drawPartHead, drawnElsewhere, playSentences, playSplit, playWhy } from "../playsplit.js";
+import { drawPartHead, drawnElsewhere, drawnHandoffs, playSentences, playSplit, playWhy } from "../playsplit.js";
 import { diffLeavesUnmade } from "../coregate.js";
-import { askedFragments, quotedFragments, textSplit } from "../textowner.js";
+import { askedFragments, copiedTextEvents, quotedFragments, textCopies, textSplit } from "../textowner.js";
+import { newMovesOf } from "../landcheck.js";
 import { NARROWED, narrowedNotes, narrowings } from "../narrowed.js";
 import { botsDone, ownerMadeBots } from "../botsdone.js";
 import { rivalSentences } from "../rivals.js";
@@ -249,4 +250,63 @@ test("D27 T3 44b (this lane's live copy, event 1371: \"When a rival knocks me do
   // N's shield narrowing is still found
   const sh = fixture<{ events: JobEvent[] }>("n-shield-call-1500-1530.json");
   assert.equal(narrowedNotes(sh.events.filter((e) => e.seq <= 1524), "rally", 4).length, 1);
+});
+
+// ---------------------------------------------------------------- round 2 (Director's rulings after the landing)
+
+test("D27 T3 R2 none (this lane's live Arsenal copy, events 1286-1301: harbour r21 wrote \"NEW MOVE: none (MEGA is a timed effect ...)\"; the land gate asked for a move called \"none\" and harbour r23 counted one): \"none\" says there is no new move", () => {
+  const live = fixture<{ events: JobEvent[]; refusal: { message: string }[] }>("t3-live-ars-none-1286-1298.json");
+  const note = ev(live.events, 1286).text;
+  assert.match(live.refusal[0]?.message ?? "", /no bot test of your package reports moves\.none/, "main's real refusal (event 1298)");
+  assert.deepEqual(newMovesOf(note), []);
+  assert.deepEqual(newMovesOf("- NEW MOVE: nothing new here."), []);
+  assert.deepEqual(newMovesOf("- NEW MOVE: none\n- New moves `rush` and `slam` were the core's."), [], "an explicit NEW MOVE line is the builder's word, over a loose line");
+  assert.deepEqual(newMovesOf("- NEW MOVE: rush, slam"), ["rush", "slam"]);
+});
+
+test("D27 T3 R2 copies (N's Arsenal copy, event 1496: harbour drew its own harbour.about_lines over the skin's `about`; S4's base Arsenal, event 808: the skin's builder found \"scripts/main.gd overrides the skin's tagline with harbour.tagline\"): the package that draws its own copy of another package's text goes back once, with the owner named", () => {
+  const j = fixture<{ n: { plan: PackageSpec[]; events: JobEvent[] }; s4: { plan: PackageSpec[]; events: JobEvent[] } }>("text-copies-n1496-s4808.json");
+  // N: harbour's own note, at harbour's merge
+  const n = copiedTextEvents(j.n.plan, j.n.events, "harbour", 25);
+  assert.deepEqual(n.map((e) => `${e["type"]} ${e["package"]}`), ["change_requested harbour"]);
+  assert.match(String(n[0]?.["text"]), /^\[foreman\] one owner per text: harbour's files draw their own copy of a text that skin owns \(data\/skin\.json, data\/harbour_commentary\.json\), in harbour's words: "The HOME card's lines now come from/);
+  assert.match(String(n[0]?.["text"]), /a word that must change is skin's, so write it as a NOT DONE line naming data\/skin\.json/);
+  // S4: the skin's note names harbour's copy; harbour goes back
+  const s = copiedTextEvents(j.s4.plan, j.s4.events.filter((e) => e.seq <= 812), "skin", 3);
+  assert.deepEqual(s.map((e) => `${e["type"]} ${e["package"]}`), ["change_requested harbour"]);
+  assert.match(String(s[0]?.["text"]), /in skin's words: "The title screen already showed the new line before this edit: `scripts\/main\.gd` overrides the skin's tagline/);
+  // once: a second report in the same change is the person's note
+  const again = copiedTextEvents(j.n.plan, [...j.n.events, { ...(n[0] as object), seq: 9001 } as unknown as JobEvent], "harbour", 26);
+  assert.deepEqual(again.map((e) => e["type"]), ["note"]);
+  // "it never replaces the core's ... lines" is not a copy
+  assert.deepEqual(textCopies(j.n.plan, "harbour", "It reads `data/tuning.json` and never replaces the skin's tagline lines."), []);
+});
+
+test("D27 T3 R2 edge (this lane's v0.1.29 film, stills/t3_v029_mate_mega_f756-864_sheet.jpg: FLATTENED! over a man near the screen's edge read \"ATTENED!\"): every builder, and every card's juice line, is told to clamp a word over a body inside the safe area", () => {
+  const builder = fs.readFileSync(path.join(REPO_ROOT, "foreman", "prompts", "builder.md"), "utf8");
+  assert.match(builder, /A word over a body stays whole on the screen:\*\* a word drawn at a body's\s+screen point \(`lay\.project`\) is measured \(`lay\.measure`\) and its box is clamped inside the safe area/);
+  assert.match(builder, /behind the camera \(z <= 0\) gets no word over it/);
+  for (const card of fs.readdirSync(path.join(REPO_ROOT, "engine", "cards")).filter((f) => f.endsWith(".json"))) {
+    const juice = JSON.stringify((JSON.parse(fs.readFileSync(path.join(REPO_ROOT, "engine", "cards", card), "utf8")) as Record<string, unknown>));
+    assert.match(juice, /a word over a body is clamped whole inside the screen's safe area \(5 % in from each edge\), never cut by the edge/, card);
+  }
+});
+
+test("D27 T3 R2 drawn (this lane's l3 copy, events 1355-1381: the drawing had gone to harbour, and the cartridge's NOT DONE lines for the camera and FLATTENED! went on to harbour and BACK to the cartridge, which spent r16 saying it cannot): a drawing-only hand-off of the cartridge's owner is dropped when the drawing already went to another package", () => {
+  const l3 = fixture<{ plan: PackageSpec[]; events: JobEvent[] }>("t3-live-l3-handoffs-1334-1365.json");
+  const atMerge = l3.events.filter((e) => e.seq <= 1355);
+  // main: the real log sent both on (events 1357 to harbour, 1359 back to the cartridge)
+  assert.deepEqual(l3.events.filter((e) => e.type === "change_requested" && e.seq > 1355).map((e) => e.type === "change_requested" ? e.package : ""), ["harbour", "cartridge"]);
+  const dir = tempDir("d27t3-drawn");
+  fs.mkdirSync(path.join(dir, "ref", "cores", "rink"), { recursive: true });
+  fs.writeFileSync(path.join(dir, "ref", "cores", "rink", "CARTRIDGE.md"), MD);
+  const core = coreHintOf(l3.plan, { core: "rink" }, (...p: string[]) => path.join(dir, ...p));
+  const raw = afterMerge(l3.plan, atMerge, "cartridge", 15, ["data/harbour.cartridge.json"], ev(l3.events, 1334).text, core);
+  assert.deepEqual(raw.filter((e) => e["type"] === "change_requested").map((e) => e["package"]), ["harbour", "cartridge"], "afterMerge alone does what the live run did");
+  const out = drawnHandoffs(atMerge, "cartridge", raw);
+  assert.deepEqual(out.filter((e) => e["type"] === "change_requested"), []);
+  assert.ok(out.filter((e) => e["type"] === "note").every((e) => !String(e["text"]).startsWith("[foreman] part of your change was NOT made")), JSON.stringify(out));
+  assert.match(String(out[0]?.["text"]), /^\[foreman\] the drawing part already went to harbour in this change, so this is not sent on: /);
+  // without a drawing part in the change, afterMerge's hand-offs pass as they are
+  assert.deepEqual(drawnHandoffs(atMerge.filter((e) => e.seq !== 1337), "cartridge", raw), raw);
 });
