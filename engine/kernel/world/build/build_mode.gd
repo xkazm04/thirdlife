@@ -14,6 +14,12 @@ extends Node
 ## drag), on quit; only where a load was made (a person walks the Home, or `open(dir)`); an unreadable build file is
 ## never written over. Mounting: home/hook.gd `grow` calls `mount`; metas "tl_build" (the builder) and
 ## "tl_build_mode" (this node). A case sets `cam`, `feet_at` and `pointer`.
+## F2 (27 Nov 2026 day, the newcomer's playtest #3, #4, #7): the hotbar answers a click (hotbar.gd `at`: a tab picks
+## its tool, a slot presses its key for the tool, a gap between them takes the click) and a press on the bar never
+## reaches the tool, so nothing is built behind it; while the pointer is over the bar the tool aims at nothing (no
+## ghost). Where can I build (buildable.gd, refusal_tint.gd): with a ground tool or a stamp in the hand the refused
+## ground round the cursor is tinted red, and the hotbar's where line says the reason as a sentence and, when the
+## cursor's own ground is refused, the way to the nearest buildable ground; a cursor past the reach says so.
 
 const HomeBuild := preload("res://kernel/world/build/home_build.gd")
 const Ghost := preload("res://kernel/world/build/ghost.gd")
@@ -26,6 +32,10 @@ const TOOLS := [preload("res://kernel/world/build/tools/blocks_tool.gd"), preloa
 	preload("res://kernel/world/build/tools/assembly_tool.gd"), preload("res://kernel/world/build/tools/rules_tool.gd"),
 	preload("res://kernel/world/build/tools/command_tool.gd")]   # strip order; seam_lists.gd TOOLS holds the cases to it
 const RulesPlay := preload("res://kernel/world/build/rules_play.gd")
+const Buildable := preload("res://kernel/world/build/buildable.gd")
+const RefusalTint := preload("res://kernel/world/build/refusal_tint.gd")
+const FAR := 400.0                      # metres a cursor ray past the reach is asked, to say "out of reach"
+const OUT_OF_REACH := "out of reach: aim within 24 m of you (F flies you closer)"
 const SELF := "res://kernel/world/build/build_mode.gd"
 const REACH := 24.0                     # metres the cursor reaches past the camera's distance to the visitor
 const AUTOSAVE_FRAMES := 1800
@@ -57,6 +67,11 @@ var devices: RefCounted = null          # build_devices.gd: TL_BUILD_DEVICES (a 
 var play: RefCounted = null             # M6: rules_play.gd, the Home's rules while build mode is off (lane P's)
 var _view: Node = null
 var _saved_on_exit := false
+var bar_hover := {}                     # F2: hotbar.gd `at` under the pointer ({"tool": i} or {"slot": i}), {} none
+var where_line := ""                    # F2: the hotbar's where line now
+var where: RefCounted = null            # F2: buildable.gd
+var tint: MeshInstance3D = null         # F2: refusal_tint.gd
+var bar_clicks := 0                     # F2: clicks the hotbar took (figures)
 
 # M1's names for the blocks tool's selection (cases and the state line read them)
 var shape: int:
@@ -114,6 +129,9 @@ func _ready() -> void:
 	add_child(ghost)
 	hotbar = Hotbar.new()
 	add_child(hotbar)
+	tint = RefusalTint.new()
+	add_child(tint)
+	where = Buildable.new()
 	_view = land.get_parent() if land != null else null
 	build.dirty_changed.connect(_on_dirty)
 	tree_exiting.connect(_on_exit)
@@ -166,6 +184,8 @@ func leave(why := "key") -> void:
 	hit = {}
 	tool().selected(false)
 	ghost.hide_ghost()
+	_show_where({})
+	bar_hover = {}
 	save_now("leave")
 	print(JSON.stringify({"schema": "tl.view/1", "kind": "build_mode", "on": false, "why": why, "frame": frames,
 		"blocks": int(build.blocks.total)}, "", false))
@@ -229,15 +249,27 @@ func _physics_process(_delta: float) -> void:
 func _process(_delta: float) -> void:
 	if build == null:
 		return
+	bar_hover = {}
 	if active and not looking and not tool().blocks_input():
-		tool().aim(_pick(), _mods())
-		var g: Dictionary = tool().ghost_state()
-		if g.is_empty():
+		var over: Dictionary = hotbar.at(pointer_px()) if _holding == 0 else {}
+		if not over.is_empty():              # F2: the pointer is on the bar: the tool aims at nothing
+			if not over.has("bar"):
+				bar_hover = over
+			hit = {}
+			tool().aim({}, _mods())
 			ghost.hide_ghost()
+			_show_where({})
 		else:
-			ghost.show_at(g.cell, int(g.code), str(g.mode))
+			tool().aim(_pick(), _mods())
+			var g: Dictionary = tool().ghost_state()
+			if g.is_empty():
+				ghost.hide_ghost()
+			else:
+				ghost.show_at(g.cell, int(g.code), str(g.mode))
+			_show_where(hit, true)
 	else:
 		ghost.hide_ghost()
+		_show_where({})
 	hotbar.refresh(hotbar.state_of(self))
 
 
@@ -344,6 +376,11 @@ func _poll() -> void:
 	if looking:
 		_release()
 		return
+	var over: Dictionary = hotbar.at(pointer_px()) if _holding == 0 else {}
+	if not over.is_empty():                     # F2: a press on the bar is the bar's, never the tool's
+		if lmb_e:
+			_click_bar(over)
+		return
 	var h := _pick()
 	if _holding != 0:
 		if not (lmb if _holding == MOUSE_BUTTON_LEFT else rmb):
@@ -354,6 +391,72 @@ func _poll() -> void:
 		_holding = MOUSE_BUTTON_LEFT
 	elif _holding == 0 and rmb_e and t.press(MOUSE_BUTTON_RIGHT, _mods()):
 		_holding = MOUSE_BUTTON_RIGHT
+
+
+## F2: a click on the bar (`over`: hotbar.gd `at`): a tab picks its tool, a slot presses its key for the current tool
+## (as the digit key would), a gap between tabs or slots does nothing.
+func _click_bar(over: Dictionary) -> void:
+	bar_clicks += 1
+	var what := "bar"
+	if over.has("tool"):
+		what = "tool %s" % str(tools[int(over.tool)].get("id"))
+		switch_tool(int(over.tool) - tool_index)
+	elif over.has("slot"):
+		var k := str(over.get("key", ""))
+		what = "slot %d (key %s)" % [int(over.slot), k]
+		if k.length() == 1 and k.is_valid_int():
+			var ev := InputEventKey.new()
+			ev.keycode = (KEY_0 + int(k)) as Key
+			ev.physical_keycode = ev.keycode
+			ev.pressed = true
+			tool().key(ev)
+	print(JSON.stringify({"schema": "tl.view/1", "kind": "build_bar", "frame": frames, "click": what,
+		"tool": str(tool().get("id"))}, "", false))
+
+
+## F2: the where line and the refusal tint for the cursor's hit `h` ({} none: both cleared). `aiming`: build mode is
+## on and the tool aims (a cursor with no hit then asks a longer ray: past the reach, the line says so).
+func _show_where(h: Dictionary, aiming := false) -> void:
+	if where == null:
+		return
+	var t := tool()
+	var id := str(t.get("id"))
+	var why := str(t.status().get("reason", ""))
+	if h.is_empty():
+		where.update(null, null, "", {}, "", frames)
+		tint.hide_tint()
+		where_line = OUT_OF_REACH if aiming and _past_reach() else ""
+		return
+	var land: RefCounted = build.layer("land") if build != null else null
+	var foot := Vector2.ZERO
+	if id == "stamp" and int(t.get("current")) >= 0:
+		var d: Dictionary = t.call("stamp")
+		var s: Array = d.get("size", [1, 1, 1])
+		foot = Vector2(float(s[2]), float(s[0])) if int(t.get("turn")) % 2 == 1 else Vector2(float(s[0]), float(s[2]))
+	where.update(build.protect, land, id, h, why, frames, foot)
+	var height := Callable(land, "height_at") if land != null and land.has_method("height_at") else Callable()
+	tint.show_cells(where.cells, where.tint_key, height, (h.pos as Vector3).y, where.free)
+	where_line = where.line(why)
+
+
+## True when the cursor's ray, carried FAR past the reach, meets something (the ground or a block out of reach).
+func _past_reach() -> bool:
+	var r := ray()
+	if r.is_empty() or build == null:
+		return false
+	return not build.pick(r[0], r[0] + r[1] * (reach(r[0]) + FAR)).is_empty()
+
+
+## The pixel the cursor is at: the test hook's `pointer` (following its world point `at`, as `ray` does), else the
+## mouse's (viewport coordinates).
+func pointer_px() -> Vector2:
+	var c := _cam()
+	if devices != null and devices.aim_at != null and c != null:
+		pointer = c.unproject_position(devices.aim_at)
+	if pointer.x >= 0.0:
+		return pointer
+	var vp := get_viewport()
+	return vp.get_mouse_position() if vp != null else Vector2(-1.0, -1.0)
 
 
 ## The current tool lets go of the button it holds (a drag ends: one batch).

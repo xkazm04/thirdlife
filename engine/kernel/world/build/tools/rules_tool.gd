@@ -282,6 +282,7 @@ func place(kind: String, lo: Vector3i, hi: Vector3i, opt := {}) -> String:
 		o["thin"] = _thin()
 	if top_extra > 0:
 		o["exact"] = true
+	o["stand"] = Callable(self, "stand_at")   # F2: the box fitted to the ground he stands on
 	var ops := Presets.ops(l, kind, lo, hi, o)
 	var why := _write(ops, "%s refused" % Presets.TITLES[kind])
 	if why == "":
@@ -293,6 +294,30 @@ func place(kind: String, lo: Vector3i, hi: Vector3i, opt := {}) -> String:
 		corner_b = null
 	_log("preset %s" % kind, ops, why)
 	return why
+
+
+## F2: the height a person's feet stand at, at (x, z), for a preset box whose cells are `lo_y`..`hi_y`
+## (rules_tool_presets.gd `fit_ground`): NAN when a block fills that column inside the box (a wall, the door's own
+## blocks: nobody stands there); else the top of the highest block in the two cells under the box, or the ground's
+## drawn height (what the walker's collider is), whichever is higher. Read only.
+func stand_at(x: float, z: float, lo_y: int, hi_y: int) -> float:
+	var b: RefCounted = host.build if host != null else null
+	if b == null:
+		return NAN
+	var cx := floori(x)
+	var cz := floori(z)
+	for y: int in range(lo_y, hi_y + 1):
+		if b.blocks.get_code(Vector3i(cx, y, cz)) != 0:
+			return NAN
+	var h := -INF
+	var land: RefCounted = b.layer("land")
+	if land != null:
+		h = float(land.drawn_height_at(x, z))
+	for y: int in [lo_y - 1, lo_y - 2]:
+		if b.blocks.get_code(Vector3i(cx, y, cz)) != 0:
+			h = maxf(h, float(y + 1))
+			break
+	return h if h > -INF else NAN
 
 
 ## Removes zone `zid` and the rules that name it. Returns "" or why not.
@@ -447,6 +472,7 @@ func ghost_of(kind: String) -> Node3D:
 		o["thin"] = _thin()
 	if top_extra > 0:
 		o["exact"] = true
+	o["stand"] = Callable(self, "stand_at")   # F2: the box fitted to the ground he stands on
 	var ops := Presets.ops(l, kind, b[0], b[1], o)
 	var r: Dictionary = host.build.preview(ops)
 	if not bool(r.ok):

@@ -1,0 +1,103 @@
+F2 BUILDING WHERE YOU STAND (playtest #3, #4, #6, #7), day shift 27 Nov 2026. Opus builder.
+Worktree .claude/worktrees/d27-f2 (branch d27-f2 from 98988c51). No git writes; nothing committed.
+
+ACCEPTANCE (brief section F2)
+1. Hotbar clicks - MET.
+   A click on a tool tab picks that tool, a click on a slot presses that slot's key for the current tool, a click in a
+   gap between tabs or slots does nothing; a press on the bar never reaches the tool, and while the pointer is on the
+   bar the tool aims at nothing (no ghost behind it); the tab or slot under the pointer gets a hover border.
+   Evidence: selftest 797 where.tab (the Rules tab clicked with the mouse: tool rules, blocks 0 -> 0, edits 0 -> 0,
+   though the ray at that pixel meets the ground in reach), where.slot (Blocks tab and "2 slab" slot through the hook's
+   pointer: shape 2, nothing built; a gap click builds nothing; a click in the world still builds one).
+   Window (editor binary, 1920x1080, TL_EXE_START=-72,64,-72,90 as the playtest's ux1): Rules tab clicked, then
+   "5 Door": build_bar lines "tool rules", "slot 5 (key 5)", no build_edit. Before: the playtest's ux1 placed a plank at
+   (-74,3,64) for the same click (hotbar.gd and build_mode.gd then differed from my base only by one more tab).
+   Still f2-hotbar.jpg (top: Rules tab hovered with Blocks in hand; bottom: Rules lit, the Door slot lit and hovered,
+   nothing built).
+   The text lines (reason, where, info, keys) are NOT buttons: a click there goes to the world. Reason: the keys line
+   is as wide as most of the window and lies over ground a person aims at (home.paths.skip clicked ground there).
+   Layout: the red reason and the new where line now stand OVER the tab strip, so a refusal appearing never moves the
+   tabs a person is about to click (before, the reason line sat under the info line and pushed the bar up).
+2. Where can I build - MET (tint, sentence, way to buildable ground, red stamp ghost, out of reach).
+   - Tint: with Sculpt, Water (land), Paint, Plants, Paths, Blocks or Stamps (game lots only: blocks may go in the
+     village) in the hand, the refused 3 m cells within 18 m of the cursor get a red film on the ground, denser along
+     their sides that face buildable ground (refusal_tint.gd).
+   - Where line (amber, over the tabs, under the red reason): the reason as a sentence ("the village's land stays as it
+     is", "a game's lot: kept free for its game", ...) and, when the cursor's own ground is refused, "buildable ground
+     <m> <8-way compass>" (north -z), from rings of samples round the cursor (buildable.gd: 9 m apart, at most 96 a
+     ring, 48 a drawn frame, to 800 m; "looking for buildable ground..." meanwhile; "no buildable ground within 800 m").
+   - Cursor past the 24 m reach: "out of reach: aim within 24 m of you (F flies you closer)" (playtest #7's silent reach).
+   - Stamp ghost: its blocks turn red while the stamp would be refused, holo again where it fits.
+   - Red is now the style's own hazard_red material (TLStyle.material_instance: the glass look, alpha blended, opacity
+     raised in private copies), for the tint, the stamp ghost AND the land brush's refused ring (land_brush.gd). The
+     holo look in red is ADDED light: in the window a red holo tint, red stamp ghost and red brush ring were invisible
+     on sunlit grass (first window run). This also fixes the existing refused ring of Sculpt, Paint and Plants.
+   Evidence: 797 where.village (Sculpt in the village band: reason 'village', 113 cells tinted, 'buildable ground
+   65 m south-east', that ground takes the land; from where he arrives (-60, 2): 'buildable ground 360 m south' after
+   63 frames, 3113 samples, 12.6 us a sample, about 0.6 ms a frame while searching; the playtest measured 352 m),
+   where.lot (Garden gate on lot 'walker': '243 of 243 refused: game lot', ghost red, cells tinted, 'buildable ground
+   45 m north' free of lots; there the ghost is red exactly when refused), where.reach.
+   Windows: f2-refused.jpg (Sculpt at the village band's south edge, (-72, 345): film and red ring, "village" /
+   "the village's land stays as it is   buildable ground 10 m south-east"); f2-refused-stamp.jpg (Pad hop on the kit
+   lot's edge: red ghost blocks, "103 of 275 refused: game lot" / "a game's lot: kept free for its game   buildable
+   ground 35 m north").
+3. Presets on natural ground - MET for the tool; the runtime change is written in PATCHES-F2.md (the seam's).
+   rules_tool_presets.gd `fit_ground` + rules_tool.gd `stand_at`: a preset's box takes the feet cell (rules_run
+   `feet_cell`) a person standing on the ground under it reads, where that ground is within 0.5 m under its floor or
+   over its top (columns a block fills inside the box, a wall or the door itself, are skipped; block floors count).
+   Evidence: 798 slope.door (a wall whose blocks stand a cell over feet at 33.84: the Door's box [[702,33,-61],
+   [702,35,-59]] holds the feet cell at 18 of 18 points in front and behind; the box as drawn before held 0; E opens it;
+   a Checkpoint on the wall's top keeps its box as drawn), slope.pad (pad clicked on ground 29.978: box y 29..30,
+   9 of 9 points inside, before 0; walking on launches). 775 rules-tool 9/9 unchanged (flat ground: no change).
+   Window: f2-preset-slope.jpg: the playtest's course spot (x -71.5, wall at z 71, ground 2.90), a wall with a 3-high
+   door placed by the Rules tool (zone [[-72,2,70],[-72,5,72]]: floor fitted from 3 to 2), build mode left, W to the
+   wall (feet 2.90 at z 70.65), E: it opens; he walks through to z 79 (trace). Before: the playtest's mine2/course4
+   Door (zone 3..4, the same feet 2.90) did nothing on E. (The door is 3 high because a 2-high doorway stops him at the
+   lintel: F1's finding.)
+   Not fixed by the tool: zones already saved, LLM zones, a person's own stamps made on slopes. PATCHES-F2.md asks
+   the seam for a 0.3 m upward feet reach in rules_run / rules_play (code quoted; downward is unsafe: a hazard dug
+   under a bridge would fire on the bridge).
+
+GATES (this worktree, the end state)
+- home. (every home block): selftest: 201 passed, 0 failed. That is the base's 194 plus my 7 new cases (797: 5,
+  798: 2); my diff removes or edits no selftest block; every block ran to its final marker.
+- 797 home.where 5/5, 798 home.slope 2/2 (each also runs alone: `bash engine/tools/selftest.d/797-home-where-bar.sh`).
+- tl check --tier fast: PASS 5/5 (arch 12/12, assets 4/4, cards 3/3, devx.test 230/230, foreman.typecheck clean).
+- tl check --tier full --only world: PASS [9/9] world = alone (211 s).
+- Uncapped selftest: NOT RUN (the lane rules say not to).
+
+CHANGED FILES (engine/kernel/world/build/ unless noted)
+  hotbar.gd (`at`, `parts`, hover styles, the where line, layout order), build_mode.gd (`_click_bar`, `_show_where`,
+  `_past_reach`, `pointer_px`; 538 lines), tools/stamp_tool.gd (`_redden`), land_brush.gd (refused ring red glass,
+  both windings), rules_tool_presets.gd (`fit_ground`, box_for's `stand`), tools/rules_tool.gd (`stand_at`, opt
+  "stand" in place and in the ghost; CRLF kept), path_case.gd (+2 lines: the skip case looks down on its own path),
+  BUILD.md (three rows).
+  New: buildable.gd, refusal_tint.gd, build_where_case.gd (+ .uid files), PATCHES-F2.md,
+  engine/tools/selftest.d/797-home-where-bar.sh, 798-home-preset-slope.sh, this lane folder (BRIEF, STANDUP, REPORT,
+  f2-hotbar.jpg, f2-refused.jpg, f2-refused-stamp.jpg, f2-preset-slope.jpg; all under 120 KB).
+
+BEHAVIOUR CHANGES THAT MOVED A TEST
+- home.paths.skip (path_case.gd, lane M5's file): its clicks 30 m south of the site fell on the hotbar's slots, which
+  now take a click (two build_bar lines "slot 2 (key 3)", "slot 4 (key 5)" changed the path's paint). The case now
+  looks down on its path's own centre before clicking and back after (2 lines); its checks are unchanged.
+- The hotbar's vertical order changed (reason and where over the tabs). No case reads positions.
+- Presets placed by hand on natural ground get boxes up to a cell lower or higher than drawn (by design).
+
+WHAT THE OWNER SHOULD LOOK AT (and how)
+- The four stills in this folder. In a window: B where he arrives, click "Sculpt": the line points 360 m south; fly
+  there. Click "Stamps", 2, aim at the kit court's lawn: the ghost goes red and the line points out of the lot.
+- The red reason now sits over the tabs, right over his red jacket in the default camera: readable but low contrast
+  (f2-refused-stamp.jpg). The amber where line reads well.
+
+QUESTIONS FOR THE DIRECTOR
+1. PATCHES-F2.md: apply the 0.3 m upward feet reach (A) so old Homes' and the LLM's zones fire too, or keep the fix
+   tool-only (B)?
+2. A Door fitted one cell lower also opens that lower cell of its own column (a wall's foundation block set into the
+   ground would hide while the door is open). Not seen in a window; acceptable?
+3. Should lane C fit the LLM's zones with the same `fit_ground` (static; needs only the blocks and the land layer)?
+
+NEXT THREE
+1. Draw the game lots' and the village band's outline while building (a line on the ground at the edge, not only a
+   film within 18 m of the cursor), so the way is visible before the cursor reaches it.
+2. Show the reason near the cursor (a small tag at the ghost), off the jacket.
+3. Apply PATCHES-F2 A (or fit the LLM's zones) and replay the playtest's course4 Door unchanged.
