@@ -48,7 +48,7 @@ steps start on a dry column at that column's own ground y and climb 1 per cell t
   (inclusive); a cell holding another block is replaced, one already holding this block is kept. Add "walls":true to
   fill only the box's outer ring on every layer (four walls, no floor or ceiling).
 - {"op":"clear","from":[x,y,z],"to":[x,y,z]} empties every block in the box.
-{{more_ops}}
+{{more_ops}}{{rules}}
 Ops apply in order, so a later op may change what an earlier one made (fill walls, then remove the door cells).
 To CHANGE something that is there ("taller", "a slate roof", "wider"), read the blocks above and edit them: clear or
 remove what goes, then place or fill what comes. Never place into a cell that holds a block: fill replaces, place
@@ -102,7 +102,7 @@ from y 13 to 15 (walls:true), then build the same roof 3 higher.
 
 # Answer
 Answer with one JSON object: "ops" (the list above, in order) and "note" (one line for the player, at most 119
-characters, saying what you built and where, in their words; no numbers you were not given). Use only the measured
+characters, saying what you built and where, in their words, and a run's name when you make one; no numbers you were not given). Use only the measured
 facts above; invent no ground, no blocks and no ids.
 {{schema}}
 {{feedback}}

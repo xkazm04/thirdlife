@@ -166,3 +166,61 @@ columns at their own ground y, wooden fence railings with corner posts. No white
 water key two levels, 384 columns); the headless ask with the water read takes about 50-65 ms of wall clock (765,
 measured, not decided on). Captures: lane C's scratchpad `c-bridge-ghost.jpg`, `c-bridge.jpg`, `c-bridge-side-e.png`,
 `c-bridge-side-w.png`.
+
+## M6 (lane C, 27 Nov 2026): zones and rules, the space check
+
+- **The ask** carries the rules layer's `ask_part(lo, hi)` at the top level (`command_ask.gd` RULES_KEYS): `zones` (the
+  zones meeting the region), `rules` (the rules naming them, and those naming none), each omitted when none, and
+  `rules_room` `{zones_left, rules_left, counters}` (always, once the rules layer offers `zone`). `home_build.gd`
+  `read_region` merges the layer's `zones` and `rules` into its read; the ask takes them out of `layers`.
+- **The prompt** (`foreman/prompts/world_edit_rules.md`, inserted by `world_edit.ts` `rulesFacts` only when the ask
+  offers `zone`): the measured zones, rules and room, the four ops with every trigger, condition and effect, the ids
+  (the answer's own; the exe renumbers), the space rules (a pad's or flag's bottom row is the feet cell over a floor,
+  a coin is 1 x 2 x 1 on such a cell, every block rests on something, a run's way is walkable: half-block steps, jumps
+  of 1 block up and 3 empty cells across) and two worked examples: a door that opens on E, a short run (start pad, a
+  stair onto a ledge with a coin and a checkpoint, a 2-cell gap, a pillar with the flag). About 3.85 KB on a Home with
+  no zones (selftest 785 measures it on a real ask and holds it under 4 KB).
+- **The Foreman's checks** (`world_edit_rules.ts`, fed back like every problem, 2 attempts): the contract's every shape
+  and limit (box low corner first, at most 64 a side, in the region and off the refused columns; look, name, ids
+  positive and not made twice; triggers, conditions, effects and their ranges; 1-8 effects, at most 8 conditions; at
+  most 8 counters in the Home with the room's; the room's zones and rules left), references resolved as the exe's
+  `renumber` resolves them (an id some zone op of the answer makes names that zone, which must come before the rule;
+  any other names a listed zone not removed earlier), `unzone` / `unrule` naming a listed zone or rule whole, and an
+  `unzone` of a zone a remaining rule names refused (unrule it first, earlier in the answer).
+- **The note** counts zones and rules and names the runs the answer starts: "17 blocks, 5 zones, 5 rules: Hop"
+  (`command_answer.gd` `counts`; removals "2 zones removed", "1 rule removed").
+- **The space check before accept** (`command_space.gd`; it never refuses): over the dry run's scratch copies it finds
+  added blocks joined to nothing that was there and to no ground ("2 blocks float"), a pad or flag whose floor-centre
+  cell has no floor ("the pad Start has no floor"), a coin whose centre is inside a cube or window or the lower half of
+  a slab, stair, ramp or roof ("a coin is inside a block"), and for every run an added rule starts whether a feet cell
+  of a finish zone is reached from one of the start zone ("finish not reachable"; the answer's coins out of that reach
+  are counted, "1 coin out of reach"). Feet cells: an empty cell over a cube or window, a slab / stair / ramp / roof
+  cell, or the ground's cell of an empty column, with 1.8 m of headroom. Moves: a walk or step of at most 0.55 m to a
+  neighbouring column; a jump of at most 1.2 m up and 4 m across (cell centre to cell centre) or a drop within 4 m,
+  nothing solid in the columns between nor over the two feet cells up to head height; a launch zone's longer jump
+  (world_body.gd gravity 24 m/s2, at most 16 m); a teleport. A zone some rule opens is passable. The searched box is
+  the answer's blocks and zones with 6 cells round them in x and z (at most 96 a side, clipped and said). The problem
+  cells get red holo boxes (`marks_node`, at most 64) beside the ghost, and the line goes in the note after "check:"
+  (the hotbar line and the label over the ghost). Measured in 785: 16-51 ms of wall clock for 224-350 feet cells.
+- **The replay** (`command_replay.gd`): a Home's runs walked headless over the check's walk (start, each coin it can
+  reach without crossing a finish, the nearest first, then the finish), the seam's `rules_run.gd` stepped 8 frames per
+  feet cell with a recording facade: says whether the run starts, which coins are taken and whether the finish is
+  recorded, when lane P's play is not in the tree. `command_m6_case.gd -- replay <home dir>` runs it on a saved Home.
+- **The case:** `command_m6_case.gd`, `engine/tools/selftest.d/785-home-command-m6.sh` (`HOME command-m6 ok`, 6 cases).
+
+Figures (27 Nov 2026, the editor binary in a window, `res://boot/boot.tscn`, claude-cli `--model opus` =
+claude-opus-5-5, a fresh Home; cursor on the grass at (-69, 2, 21), 25 m north-west of the spawn, looking north):
+
+| Ask | Model time | Tokens in / out | Ops | Refused | Space check | Frames from ask to ghost |
+|---|---|---|---|---|---|---|
+| "build a small stone tower with stairs and make it a parkour run: a start pad at the bottom, three coins on the way up and a finish flag on top" | 106.2 s | 41,791 / 11,554 | 548 (418 blocks, 9 zones, 9 rules) | 2: the "Fall" zone (game lot, protect.gd `refusal_box`) and the respawn rule naming it | nothing found; 483 feet cells in 48.9 ms | 6,435 |
+
+The answer: a 9 x 9 tower of light and dark stone (x -71..-63, z 11..19, y 2..11) with windows and crenellations, dark
+stone stairs and landings winding up its east, north and west sides; the start pad on the grass at its south-east, three
+coins on the way up (y 5, 8, 10), three checkpoint landings, the finish flag on the roof (y 11), the run "Tower Climb".
+The prompt was 26.0 KB (3.85 KB of it the zones-and-rules section). Tokens in are about twice the M5 bridge's single
+attempt for a similar prompt, so the Foreman probably fed one problem back (it logs no attempt count). The kept Home
+replayed headless (`command_m6_case.gd -- replay`): the walk reaches all 3 coins and the finish with hops of at most
+2 m across and 1.2 m up (13 feet cells, the run recorded in 96 frames of scripted walk, both says shown); walking
+alone (steps of 0.55 m, no jump) reaches no coin and no finish: it is a jumping course. Captures:
+`docs/shifts/2026-11-27-day/lanes/C6-llm/c6-ghost.jpg`, `c6-built.jpg`.

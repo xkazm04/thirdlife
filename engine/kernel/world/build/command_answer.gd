@@ -69,7 +69,8 @@ static func llm_ops(ops: Array) -> Array:
 ## The note's counts over every op a preview or apply result `r` took (its `refused` [[i, reason]]: i indexes `ops`;
 ## a negative i is an op refused before the dry run, an unexpanded pour or a locked part): what was built, by kind in
 ## the order the kinds come, then the refusals by reason, the most first (at most REASONS named):
-## "212 blocks, 3 parts, 40 m path, pond 120 cells; 6 refused: game lot, locked: win Parkour once". `placed`: the
+## "212 blocks, 3 parts, 40 m path, pond 120 cells; 6 refused: game lot, locked: win Parkour once"; M6: "4 zones,
+## 6 rules: Tower climb" (the rules' count, then the runs they start by name). `placed`: the
 ## blocks figure (a dry run's cells added, or the places applied); a remove whose cell no later place fills is "removed".
 static func counts(r: Dictionary, placed: int, ops: Array = []) -> String:
 	var refused: Array = r.get("refused", [])
@@ -85,6 +86,7 @@ static func counts(r: Dictionary, placed: int, ops: Array = []) -> String:
 			placed_at[str(ops[i].get("at"))] = true
 	var got := {}                            # kind -> [count, metres] in the order kinds come
 	var order := []
+	var runs := []                           # M6: the runs the answer's rules start, by name
 	for i: int in ops.size():
 		var o: Dictionary = ops[i] if ops[i] is Dictionary else {}
 		var k := str(o.get("op", ""))
@@ -93,9 +95,13 @@ static func counts(r: Dictionary, placed: int, ops: Array = []) -> String:
 		if not got.has(k):
 			got[k] = [0, 0.0]
 			order.append(k)
-		got[k][0] = int(got[k][0]) + (1 if k in ["remove", "put", "lift", "path", "unpath", "pour"] else _entries(o))
+		got[k][0] = int(got[k][0]) + (1 if k in ["remove", "put", "lift", "path", "unpath", "pour", "zone", "unzone", "rule", "unrule"] else _entries(o))
 		if k == "path":
 			got[k][1] = float(got[k][1]) + _length_m(o.get("pts", []))
+		if k == "rule":
+			for e: Variant in o.get("do", []):
+				if e is Dictionary and str(e.get("do")) == "start" and not runs.has(str(e.get("run"))):
+					runs.append(str(e.get("run")))
 	for k: String in order:
 		var n := int(got[k][0])
 		match k:
@@ -109,6 +115,10 @@ static func counts(r: Dictionary, placed: int, ops: Array = []) -> String:
 			"path": parts.append("%d m path%s" % [roundi(float(got[k][1])), "" if n == 1 else " (%d)" % n])
 			"unpath": parts.append("%s removed" % _n(n, "path"))
 			"plant": parts.append("plants %d cells" % n)
+			"zone": parts.append(_n(n, "zone"))
+			"unzone": parts.append("%s removed" % _n(n, "zone"))
+			"rule": parts.append(_n(n, "rule") + ("" if runs.is_empty() else ": " + ", ".join(PackedStringArray(runs))))
+			"unrule": parts.append("%s removed" % _n(n, "rule"))
 			_: parts.append("%d %s" % [n, k])
 	var s := ", ".join(parts) if not parts.is_empty() else "nothing"
 	if refused.is_empty():
