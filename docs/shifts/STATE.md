@@ -464,3 +464,6 @@ on the frame and the figure and Fable on surfaces and nature, looping for 10 hou
   moves is a note; the measures are frozen; RULE: lines. Merged tree: fast 5/5, npm 455/448/0/7, create. 29/0. J trees
   fast-forwarded. J2 hammer by hand done (editor made it, then threw it away: frame-budget loop routed to show, 14 M
   tokens); J2 resends on the fix. T2 (final-verification routing) under way; T3 queued (the 240-character change box).
+- 04:51 standup: 5 lanes on track. T landed; T2 live on a copy of J2's job ("measure kept" fired). Editor-made so far:
+  kart jump, court dunk and block (bots under-use them), biplane loop and kill. By hand: hammer, aerials, sky dunk / block /
+  on fire, deflect. CPU 100 %, disk 36 GB.
