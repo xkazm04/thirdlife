@@ -194,3 +194,62 @@ NEXT THREE
    when the lane rings appear.
 3. A hand test for the editor's shield that counts braces from the BRACED! event, so the hand and editor counts are
    the same instrument.
+
+======================================================================================================================
+ROUND 3 (14:29-15:10; tree at main d311514b with T's items 7-16, foreman rebuilt before sending)
+
+OUTCOME
+1. Arsenal: one sentence (456 chars, 14:36:14) -> v0.1.26, promoted 14:53:18 (17.1 min, 0.89M in). Drawing only:
+   the hashes are the same as v0.1.25's.
+   - Net: met. A bag of white cords with its own red frame is driven back and swings. From the camera it looks like a
+     second goal frame behind the first, but it reads as the net going back.
+   - Glass in front of the camera: met. The round-1 frame (seed 2, 1820) is now clear.
+   - Glass that visibly flexes: NOT met.
+     - harbour hides the panes whenever the human is within 12 m of that end board, and the scorer of a meteor goal is
+       always that close.
+     - So in my goal take there is no glass at all; the wobble never shows.
+2. Shield: one sentence (476 chars, 14:35:36) -> v0.1.11, promoted 15:07:39 (32.1 min, 1.79M in).
+   - Braces counted from the BRACED! word on screen: a new counting test on my film copies only
+     (.tl/jb/shield/tests_jb/bot_braced_count.gd, read-only, hashes unchanged).
+   - Six seeds, a minute:
+     - BRACED!: 1.8 (v0.1.10 1.2; hand 4.8);
+     - BOWLED! words: 4.5 (v0.1.10 6.7; hand 7.0).
+   - Braces rose but stay under half the hand's, and bowling fell: the brace came at bowling's cost.
+   - On screen (seed 2, about frame 560): BRACED! in gold, gold sparks, the charger thrown back.
+   - 0 script errors; seed 1 647ec68124850340 twice.
+3. The crew duplicate: crew ran one round (r12).
+   - But this sentence did not trigger the rivals routing; only core's NOT DONE went to crew.
+   - So T's "join the queued round" was not exercised, and I cannot say from this that the duplicate is gone.
+   - To test it: a sentence that names the rivals and also makes core say NOT DONE for crew.
+
+MENU ROWS (new)
+- C:/Users/kazda/kiro/third-life/.claude/worktrees/d25-shield/.tl/jobs/three-against-three-hockey-20261125-1/promoted/game.three_against_three_hockey@0.1.26
+  "Arsenal hockey: meteor slapshot v0.1.26 (made in Create from juice sentences)"
+- C:/Users/kazda/kiro/third-life/.claude/worktrees/d25-shield/.tl/jobs/shield-wall-3-v-20261125-1-jb/promoted/game.shield_wall_3_v@0.1.11
+  "Shield wall: charge and slam v0.1.11 (made in Create from juice sentences)"
+
+GATES
+- tl check --tier fast at 15:09: PASS 5/5. arch 12/12, assets 4/4, cards 3/3, devx.test 230/230, foreman.typecheck
+  clean.
+- Every new version: 3600 headless frames per seed, 0 script errors, seed 1 twice with the same hash. The promoted
+  packs are file for file the ones measured.
+- No code changed by this lane: docs and .tl/ only. The counting test lives on film copies.
+
+NEW FILES (lane folder)
+- clips:
+  - arsenal_v0126_meteor_goal.mp4 (0.5 MB);
+  - shield_v0111_braced.mp4 (0.9 MB);
+  - shield_v0111_vs_hand.mp4 (640 wide, 4.7 MB).
+- stills:
+  - arsenal_g6_goal_f470-650, arsenal_g6_net_crops, arsenal_g6_glass_strip, arsenal_ed0126_s2_f1820;
+  - shield_ed0111_braced_f528-616, shield_ed0111_s2_overview.
+- bot_braced_count.gd: a copy of the counting test, for the record; it lives on film copies only.
+- PROOF-JB-back.md sections 7-8, SENTENCES.md round 3, STANDUP.md.
+
+NEXT THREE
+1. Arsenal: "show the glass wobble even when I am close; only keep it out of the line between the camera and the ice"
+   (one sentence), judged on the same scoring copy.
+2. Shield: a sentence for the charge to bowl as before while the braces stay (both at once), measured with
+   bot_braced_count over six seeds.
+3. A sentence built to exercise T's queued-round join (names the rivals and triggers core's NOT DONE for crew), to
+   prove the duplicate gone.

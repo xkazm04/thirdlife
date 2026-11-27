@@ -63,3 +63,19 @@ the hand version prints BONK! (no small/big scale), the words are thin pale text
 letters at the spot), and the reach ring is a thin line (hand: a thick bright band).
 
 > Two things still read weaker than in a real brawler. Every hit says KA-BONK!!, even a quick tap: keep KA-BONK!! for a big charged hit and BONK! for a small one, and print them as fat yellow comic letters with a dark outline that pop out where the blow lands and hang there for most of a second, instead of thin pale text drifting up. And the red reach ring is a thin line that is hard to see across the pitch: make it a thick, bright band.
+
+## Round 3 (after T's items 7-16, tree at main d311514b, foreman rebuilt)
+
+### Shield wall braces again, on v0.1.10, sent 14:35:36
+
+476 characters. What a person sees in v0.1.10: BRACED! comes up 0 / 1 / 2 times a minute (counted from the word on
+screen, `bot_braced_count.gd`); the men in a charge's lane keep fighting and are bowled.
+
+> I still almost never see BRACED!: when the red lane rings appear in front of a charger, the men standing in that lane just keep fighting and get bowled over. They should see the rings, turn to face the charger and get the shield up before he arrives; about a third of them should make it in time, so the charge stops dead on the shield with BRACED!, a clang and gold sparks, and the charger bounces back wide open. I want to see that a few times every minute, from both sides.
+
+### Arsenal net and glass, on v0.1.25, sent 14:36:14
+
+456 characters. What v0.1.25 shows on a meteor goal: a solid white box behind the goal, glass that does not visibly
+move, and a pale pane across the view when the camera is behind my own net.
+
+> On a meteor goal the net bulges back as a solid white box, and from my camera I cannot see the glass move at all. Make it look like a real net of cords that the puck drives a metre back and that swings back after, and make the glass panes over that end bow out and wobble far enough to see from where I stand. And when the camera swings behind my own net a big pale glass pane lies across the view: the glass must never come between the camera and the ice.

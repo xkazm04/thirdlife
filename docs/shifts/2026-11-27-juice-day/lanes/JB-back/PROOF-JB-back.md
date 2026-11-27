@@ -545,3 +545,124 @@ charge are not visible or not checkable from my takes in either version.
 - Robot soccer: `C:/Users/kazda/kiro/third-life/.claude/worktrees/d25-shield/.tl/jobs/robot-soccer-3-v-20261125-1/promoted/game.robot_soccer_3_v@0.1.9`,
   "Robot soccer: sledgehammer v0.1.9 (made in Create from juice sentences)".
 - Arsenal: no new version (v0.1.25 stays; it was only filmed).
+
+---
+
+# Round 3 (27 Nov, 14:29-15:10): the Arsenal net and glass, shield braces counted from the word on screen
+
+Tree fast-forwarded by the Director to main d311514b (lane T's items 7-16); foreman rebuilt (exit 0) before sending.
+
+## 7. Arsenal v0.1.26: a net of cords, glass that flexes, no glass in front of the camera
+### The sentence (456 characters, sent 14:36:14, event 1179; on v0.1.25)
+> On a meteor goal the net bulges back as a solid white box, and from my camera I cannot see the glass move at all.
+> Make it look like a real net of cords that the puck drives a metre back and that swings back after, and make the
+> glass panes over that end bow out and wobble far enough to see from where I stand. And when the camera swings behind
+> my own net a big pale glass pane lies across the view: the glass must never come between the camera and the ice.
+
+- harbour r18 (3.6 min, 0.88M in; `scripts/harbour_toys.gd`, `data/tuning.json`), drawing only:
+  - the bag is now a grid of thin white cords with red posts and crossbar. It is driven 1.0 m back and swings past its
+    rest over 72 frames;
+  - the panes bow up to 0.5 m and 14 degrees, with thicker frames;
+  - the panes are **hidden except during the wobble, and also hidden whenever the human is within 12 m of that end
+    board**.
+- **v0.1.26 promoted 14:53:18**, 17.1 min from the sentence; 0.89M tokens in, 12k out.
+  - The promoted pack is file for file the one filmed.
+  - Headless on the scoring copy, seeds 1-3: the run and core hashes are the same as v0.1.25's (`e07a4673...`, the
+    goal at 508 on seed 1), 0 script errors.
+
+### Judged on the scoring copy (seed 1 window take, the goal at about frame 508)
+Clip `clips/arsenal_v0126_meteor_goal.mp4` (5.5 s, 960 wide). Stills, all looked at:
+- `stills/arsenal_g6_goal_f470-650.jpg`;
+- `stills/arsenal_g6_net_crops.jpg` (frames 536-600);
+- `stills/arsenal_g6_glass_strip.jpg` (the top of the frame, frames 530-578);
+- `stills/arsenal_ed0126_s2_f1820.jpg`.
+
+What they show:
+- **The net: yes, it reads as a net now.** A bag of white cords with its own red frame stands behind the goal; it is
+  pushed back, then swings. From the follow camera it looks like a second red goal frame with a cord bag set behind
+  the first one. That is odd, but it reads as "the net went back".
+- **The glass: not seen.** In the goal take there is no glass at all over the scoring end.
+  - The scorer is inside 12 m of that end board when the puck goes in, so the new rule hides the panes for the whole
+    wobble.
+  - The rule that keeps the glass out of the camera's way also hides the wobble the sentence asked for, at the very
+    moment it is meant for.
+- **Glass in front of the camera: fixed.** The seed 2 take at frame 1820 (where round 1 found the pale pane) now shows
+  the ice and my net clear (`stills/arsenal_ed0126_s2_f1820.jpg`).
+
+**As a person:** the meteor goal now has a net that moves, and nothing pale lies across my view. In practice the glass
+wobble does not exist for me: a person who scores a meteor is near that end, so the panes stay hidden. A next sentence
+would say "show the glass wobble even when I am close; just keep it out of the line between the camera and the ice".
+
+## 8. Shield wall v0.1.11: braces counted from BRACED! on screen
+### The counting test (film copies only)
+`.tl/jb/shield/tests_jb/bot_braced_count.gd` is J19's editor hand (`bot_juice_editor.gd`) plus a count of the words a
+person sees.
+- Each frame it reads the pack's own `show`, found as the node running `scripts/main.gd`. It counts every time a new
+  BRACED!, BOWLED! or SLAM! word goes up (the word's timer jumps back up).
+- It only reads: the state hashes are the same as `bot_juice_editor.gd`'s (seed 1 `098f54b9...` on v0.1.10).
+- It is added to the film copies `.tl/jb/shield/ed0110` and `ed0111`, never to the job.
+- The hand version's figure is its own event count of braced charges. It puts up a BRACED! over the bracer each time
+  (J19), so the two are the same kind of count.
+
+### The sentence (476 characters, sent 14:35:36, event 1092; on v0.1.10)
+> I still almost never see BRACED!: when the red lane rings appear in front of a charger, the men standing in that lane
+> just keep fighting and get bowled over. They should see the rings, turn to face the charger and get the shield up
+> before he arrives; about a third of them should make it in time, so the charge stops dead on the shield with
+> BRACED!, a clang and gold sparks, and the charger bounces back wide open. I want to see that a few times every
+> minute, from both sides.
+
+- **core r20** (2.8 min, 1.08M in; `scripts/brain.gd`) found the cause: "a Gull decided whether to brace on one exact
+  frame, 3 frames after the charger started crouching. If he was mid-swing, recovering or stunned on that frame, he
+  never braced".
+  - Now a man in the lane rolls once per charge: brace 40 %, sidestep 15 %, otherwise stand.
+  - He keeps a brace choice while busy and raises the shield as soon as his hands are free.
+  - NOT DONE: the same for the crew's mind, handed to crew.
+- **crew r12** (1.9 min, 0.71M in; `scripts/crew/mind.gd`): the same once-per-charge choice for Oda, Finn, Sable and
+  Pip.
+- **The crew duplicate:** crew ran **one** round this time, but the condition that made the duplicates did not arise.
+  - This sentence was not routed to crew as "the rivals' part" (no event like 754 / 869 / 992). Only core's NOT DONE
+    went to crew.
+  - So this sentence did not exercise T's "join the queued round" fix, and I cannot say from it that the duplicate is
+    gone.
+- **v0.1.11 promoted 15:07:39**, 32.1 min from the sentence; 1.79M tokens in, 17k out. The promoted pack is file for
+  file the one measured and filmed.
+
+### Measured (3600 frames per run, 0 script errors on every run; seed 1 `647ec68124850340` twice)
+Six seeds, because three seeds swing too much at these small counts:
+
+| a minute, seeds 1-6 | hand | v0.1.10 | **v0.1.11** |
+|---|---|---|---|
+| BRACED! (hand: braced charges) | 5 / 6 / 3 / 4 / 7 / 4 (mean **4.8**) | 0 / 1 / 2 / 0 / 1 / 3 (mean 1.2) | 1 / 3 / 2 / 1 / 0 / 4 (mean **1.8**) |
+| BOWLED! (hand: men bowled) | 10 / 9 / 8 / 5 / 4 / 6 (mean **7.0**) | 7 / 5 / 8 / 4 / 6 / 10 (mean 6.7) | 2 / 5 / 2 / 6 / 7 / 5 (mean **4.5**) |
+| bots' charges | 14 / 15 / 6 / 8 / 10 / 9 | 7 / 11 / 13 / 9 / 8 / 12 | 5 / 14 / 10 / 7 / 12 / 9 |
+
+The editor's BOWLED! row counts words on screen. Two men bowled by one charge within the word's 50 frames show one
+word, so it can read lower than the men floored: v0.1.10's men floored by a charge were 7 / 5 / 9 on seeds 1-3.
+
+**In the window** (seed 2), looked at:
+- clips `clips/shield_v0111_braced.mp4` (3.5 s) and `clips/shield_v0111_vs_hand.mp4` (640 wide);
+- stills `stills/shield_ed0111_braced_f528-616.jpg` and `stills/shield_ed0111_s2_overview.jpg`.
+
+What happens: BOWLED! as a Gull goes over. Then a Gull with his shield up stops the next charge: BRACED! in gold
+letters, gold sparks, and the blue charger is thrown back onto the stones behind him.
+
+**As a person:**
+- BRACED! now happens and reads well when it does (1.8 a minute, against 1.2). It is still well under the hand
+  version's 4.8.
+- The charges now floor fewer men: 4.5 BOWLED! words a minute, against 6.7. The brace came at the cost of bowling, not
+  on top of it.
+- The hand version has both because of two differences:
+  - its bots brace by man (Bram 85 % down to Pip 30 %), while the editor's men brace at 38-40 % once per charge;
+  - its charge throws everyone in a 1.1 m lane.
+
+## Round 3 in short
+| | sentence | time | tokens in | what a person meets |
+|---|---|---|---|---|
+| Arsenal v0.1.26 | 456 chars | 17.1 min | 0.89M | a cord net driven back; no glass in front of the camera; the glass wobble is hidden whenever the scorer is near, so not seen |
+| Shield wall v0.1.11 | 476 chars | 32.1 min | 1.79M | BRACED! 1.8 a minute (hand 4.8; v0.1.10 1.2), seen on screen with gold sparks and a thrown charger; BOWLED! down to 4.5 (hand 7.0) |
+
+**New pack paths and menu titles (round 3):**
+- Arsenal: `C:/Users/kazda/kiro/third-life/.claude/worktrees/d25-shield/.tl/jobs/three-against-three-hockey-20261125-1/promoted/game.three_against_three_hockey@0.1.26`,
+  "Arsenal hockey: meteor slapshot v0.1.26 (made in Create from juice sentences)".
+- Shield wall: `C:/Users/kazda/kiro/third-life/.claude/worktrees/d25-shield/.tl/jobs/shield-wall-3-v-20261125-1-jb/promoted/game.shield_wall_3_v@0.1.11`,
+  "Shield wall: charge and slam v0.1.11 (made in Create from juice sentences)".
