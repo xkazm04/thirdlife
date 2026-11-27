@@ -310,8 +310,8 @@ jump pad, a coin, a hazard, and a **run** (start, checkpoints, finish) that time
   (temp, read back, rename) and replaces the earlier best's file. Unknown keys are errors.
 - When that run starts again, a ghost of the figure (the holo look, no collider, no shadow) walks the kept track from
   frame 0 beside the visitor, so a person races their own best; it vanishes at the track's end. It is drawn only in
-  the visitor's view, never in a pack's space or hash. A key in play hides or shows it (saved in
-  `tl.home-settings/1` as `ghost`: true or false; absent = shown).
+  the visitor's view, never in a pack's space or hash. A key in play hides or shows it for the rest of the visit
+  (not saved; every visit starts with it shown).
 
 ### Courses travel: `tl.stamp/2` and the share code (M6, round 2)
 
