@@ -536,3 +536,59 @@ NEXT
 1. The "how often" figure: when the person names a rate ("twice as often") that the measured check can count, check it
    after the change, as askedFigureMiss does for minutes and goals (l3 finding).
 2. Item 30: `foreman revert`, built to the plan.
+
+==========================================================================================================================
+ROUND 3: the "how often" guard (the Director's last item; round 2 landed as f8b3a687), 23:55-
+Tree d25-hard-a. Not committed: the Director lands it.
+
+A rate the person asks for must move: MET (unit, on the live l3 events and the real measured figures).
+- Cause (l3, events 1334-1415):
+  - the ask was "I want to face their giants about twice as often, so they should land their body checks on me and my
+    mates more often";
+  - cartridge r15 set game.skater.check_speed_min 1.5 -> 1;
+  - v0.1.29 then played to v0.1.28's state hashes on seeds 1-3, and it was promoted with no word.
+  - Before this, only minutes and goals a match were checked against the person's words, and only on the quick diff
+    (askedFigureMiss).
+- Fix (ratecheck.ts rateGate, called on the cartridge owner's round after its acceptance and the land gate, before the
+  merge; foreman.ts line 877, +0 lines):
+  - rateAsks reads the person's asks of the change for a rate, more or fewer ("more often", "twice as often",
+    "N times as often", "fewer", "less often"). The topic names the figure the measured check counts: checks, hits,
+    knockdowns, giants and mega give pro_knockdowns; then goals, shots and passes.
+  - The measured check (thirdjam's regular playtester at pro, the same one the quick diff uses) runs on the last
+    promoted cartridge (once a change, kept in reports/rate-before-s<seq>.json) and on the round's.
+  - A figure that did not move at least 5 % the asked way is "unmoved". The measure's own spread is about 2 %: l3's
+    v0.1.29 plays the same game as v0.1.28 and still read 32 -> 32.7.
+  - Unmoved, the first time in a change: the round fails a check of its own (reports/<id>-r<n>-rate-s<seq>.json, a
+    failed V4 verify) and goes back to its builder with the figures: "the rate you asked for did not move: ...
+    pro_knockdowns 32 before, 32.7 after ... another key may be the one that does it".
+  - The second time it merges, and the person reads "part of your change was NOT made: the rate you asked for did not
+    move after cartridge was sent back once ...". Create and the card read that prefix.
+  - A check that could not run (code 2) gives no verdict: nothing is claimed, and the round goes on as before.
+- The real figures (engine/tools/rink.sh check-cartridge on l3's two promoted cartridges, 00:05):
+  - l3's v0.1.28 -> v0.1.29: pro_knockdowns 32 -> 32.7. Unmoved, so it would have gone back.
+  - J2b's quick diff of the same ask (bot_check_windup_frames 12 -> 6, d25-biplane event 1347): 32 -> 35, which
+    doubled the rival giants on J2b's hand. Moved, so it passes.
+- Test D27 T3 R3 rate:
+  - the asks of event 1334;
+  - both real figure pairs;
+  - the gate on l3's real events: back once with the figures, then the NOT made note;
+  - a check that could not run gives no verdict.
+- Scan: of the 32 distinct person's asks on rink jobs on this machine, only J2b's follow-up asks a rate. The guard is
+  narrow, and so is its cost (two measured runs a change, only when a rate is asked).
+- Weaknesses, said plainly:
+  - The figure is the playtester's whole-match knockdowns, not "rival giants on me". A key that moves the rivals' checks
+    on me but not the total would read as unmoved.
+  - Only four topics are mapped. "Every 10 s" (a period, not a direction) is not read: no measured figure counts a
+    period yet.
+  - Not run live: no paid job was sent for it. It is proven on l3's real events and on real figures measured tonight.
+
+GATES (round 3, final source)
+- foreman npm test: 537 tests, 530 pass, 0 fail, 7 skipped (23:58-00:05). Main f8b3a687: 536/529/0/7. The +1 is R3
+  rate.
+- Fast tier: PASS 5/5 (arch 12/12, assets 4/4, cards 3/3, devx.test 230/230, foreman.typecheck), 00:06.
+- create.: not run, engine/ui untouched. Full tier: NOT RUN. The kernel, kits, rigs, style and seeds are untouched.
+- foreman.ts: 2005 lines.
+- Changed: foreman/src/ratecheck.ts (new); foreman/src/foreman.ts (line 877, one import line);
+  foreman/src/test/d27t3_editor.test.ts (+1 test); foreman/fixtures/d27t3/t3-live-l3-rate-figures.json.
+- The tree is idle: no process of mine runs. Two job copies remain under .tl/t3/jobs and .tl/t3/jobs2 (about 1.4 GB).
+  They are gitignored, kept as evidence, and the Director may delete them.

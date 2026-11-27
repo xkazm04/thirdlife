@@ -23,7 +23,7 @@ import { NEW_PACKAGE, grow, ownerOrNew, wireWaits, type GrowHost } from "./grow.
 import { FINAL_NOTE, changedFiles, fastFinal, fastMerge, fastPromotion, mergeNote, removedInRound, roundAcceptance, whatChangedNote } from "./fastchange.js"; // E4b: a data-only change // E4 (24-25 Nov): a change may add a package
 import { removedSince } from "./removal.js"; import { promotionErrors } from "./promogate.js"; import { answeredThisChange, askedAgain, plainQuestion } from "./asktwice.js"; import { longerMatch, tofuGate } from "./tofugate.js"; import { withGrants } from "./scopegrant.js"; import { afterMerge, coreHintOf, foldable } from "./halfmade.js"; import { rivalSplit } from "./rivals.js"; import { finalLandNotes, landGate, movesRun } from "./landcheck.js"; import { blockedByOwner, ownerWaits, waitsWhy } from "./ownerfix.js"; import { ownTestAnswer } from "./owntest.js"; import { fairChecks, fairText } from "./fairseeds.js"; // D27 items 1 and 4; D27b items 23, 24, 26, 32 // H1 (E5e): what a change removed, named; H1d: promotion pictures with script errors refuse
 import { criticRubric, inReach, phaseLine, phaseStep, replanPhases, stuckText, waitsForVerdict } from "./phases.js"; // JOB.md 2026-11-20: phases
-import { writeGenerateCalls } from "./transcript.js"; import { drawnHandoffs, playSplit } from "./playsplit.js"; import { copiedTextEvents, readOr, textSplit } from "./textowner.js"; import { narrowedNotes } from "./narrowed.js"; import { botsDone } from "./botsdone.js"; // D27 T3 items 37, 45, 44, 34
+import { writeGenerateCalls } from "./transcript.js"; import { drawnHandoffs, playSplit } from "./playsplit.js"; import { rateGate } from "./ratecheck.js"; import { copiedTextEvents, readOr, textSplit } from "./textowner.js"; import { narrowedNotes } from "./narrowed.js"; import { botsDone } from "./botsdone.js"; // D27 T3 items 37, 45, 44, 34
 import { botFinish, botMoments, planShots } from "./shots.js";
 import { coreRouteOf, templateOf } from "./templates.js";
 import { CARTRIDGE_INVALID, startFromBase } from "./coreroute.js"; // E3 of 24 Nov: a game on a core starts from the base
@@ -874,7 +874,7 @@ export class Foreman {
           break;
         }
       }
-      if (!failure) failure = (await movesRun(this.gateHost, id, round), landGate(this.gateHost, id, round)) ?? (await this.serialMerge(() => this.mergeAndGate(id, round))); // D27 item 4: a new attack must land (D27b item 23: counted by its own moves test)
+      if (!failure) failure = (await movesRun(this.gateHost, id, round), landGate(this.gateHost, id, round)) ?? (await rateGate(this.gateHost, id, round, this.wsDir(id))) ?? (await this.serialMerge(() => this.mergeAndGate(id, round))); // D27 item 4: a new attack must land (D27b item 23: counted by its own moves test); D27 T3: a rate the person asked for must move
       if (!failure) return;
       if (failure.inconclusive !== undefined) {
         // N3b: no verdict. The round is not lost, the builder gets no feedback for it, and nothing is merged: the

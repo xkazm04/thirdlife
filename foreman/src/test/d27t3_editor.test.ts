@@ -19,6 +19,7 @@ import { drawPartHead, drawnElsewhere, drawnHandoffs, playSentences, playSplit, 
 import { diffLeavesUnmade } from "../coregate.js";
 import { askedFragments, copiedTextEvents, quotedFragments, textCopies, textSplit } from "../textowner.js";
 import { newMovesOf } from "../landcheck.js";
+import { rateAsks, rateGate, unmoved } from "../ratecheck.js";
 import { NARROWED, narrowedNotes, narrowings } from "../narrowed.js";
 import { botsDone, ownerMadeBots } from "../botsdone.js";
 import { rivalSentences } from "../rivals.js";
@@ -309,4 +310,39 @@ test("D27 T3 R2 drawn (this lane's l3 copy, events 1355-1381: the drawing had go
   assert.match(String(out[0]?.["text"]), /^\[foreman\] the drawing part already went to harbour in this change, so this is not sent on: /);
   // without a drawing part in the change, afterMerge's hand-offs pass as they are
   assert.deepEqual(drawnHandoffs(atMerge.filter((e) => e.seq !== 1337), "cartridge", raw), raw);
+});
+
+// ---------------------------------------------------------------- round 3: a rate the person asks for must move
+
+test("D27 T3 R3 rate (this lane's l3 copy: \"I want to face their giants about twice as often, so they should land their body checks ... more often\"; cartridge r15 set check_speed_min 1.5 -> 1, the measured check read pro_knockdowns 32 -> 32.7, v0.1.29 played to v0.1.28's hashes, and it was promoted with no word): an unmoved rate goes back once, then is a NOT made note", async () => {
+  const l3 = fixture<{ plan: PackageSpec[]; events: JobEvent[] }>("t3-live-l3-handoffs-1334-1365.json");
+  const fig = fixture<{ v0128: { code: number; figures: Record<string, number>; summary: string }; v0129: { code: number; figures: Record<string, number>; summary: string }; j2b1347: { before: Record<string, number>; after: Record<string, number> } }>("t3-live-l3-rate-figures.json");
+  assert.deepEqual(rateAsks(ev(l3.events, 1334).text), [{ figure: "pro_knockdowns", way: 1, said: "I want to face their giants about twice as often" }]);
+  assert.equal(unmoved(rateAsks(ev(l3.events, 1334).text), fig.v0128.figures, fig.v0129.figures).length, 1, "l3: 32 -> 32.7 is unmoved");
+  assert.equal(unmoved(rateAsks(ev(l3.events, 1334).text), fig.j2b1347.before, fig.j2b1347.after).length, 0, "J2b's windup 12 -> 6 (32 -> 35) moved it");
+  assert.deepEqual(rateAsks("Make the words bigger and pull the camera back."), []);
+  // through the gate, on l3's events at cartridge r15's acceptance, with the two real measured runs
+  const dir = tempDir("d27t3-rate");
+  const cart = "data/harbour.cartridge.json";
+  for (const d of ["pack", "promoted/game.three_against_three_hockey@0.1.28", "ws/cartridge"]) {
+    fs.mkdirSync(path.join(dir, ...d.split("/"), "data"), { recursive: true });
+    fs.writeFileSync(path.join(dir, ...d.split("/"), ...cart.split("/")), JSON.stringify({ v: d }));
+  }
+  const events = l3.events.filter((e) => e.seq <= 1347);
+  const appended: Record<string, unknown>[] = [];
+  let seq = 5000;
+  const runs = (file: string) => Promise.resolve(file.includes("promoted") ? fig.v0128 : fig.v0129);
+  const h = { o: { coreCheck: runs }, s: { plan: l3.plan, lastSeq: 1347, promoted: { dest: "promoted/game.three_against_three_hockey@0.1.28" }, brief: { concept: { template: { id: "rink_sport" } } } }, events, dir: (...p: string[]) => path.join(dir, ...p), rel: (p: string) => path.relative(dir, p).split(path.sep).join("/"), pkg: () => ({ round: 15 }), append: (e: Record<string, unknown>) => { const x = { ...e, seq: seq++ }; appended.push(x); events.push(x as unknown as JobEvent); return x as unknown as JobEvent; } } as unknown as GateHost;
+  const first = await rateGate(h, "cartridge", 15, path.join(dir, "ws", "cartridge"));
+  assert.equal(first?.ok, false);
+  assert.match(first?.summary ?? "", /^the rate you asked for did not move: .*"I want to face their giants about twice as often": pro_knockdowns 32 before, 32\.7 after/);
+  assert.deepEqual(appended.map((e) => `${e["type"]} ${e["ok"]}`), ["verify false"]);
+  // the second time in the change it merges, and the person reads it
+  const second = await rateGate(h, "cartridge", 16, path.join(dir, "ws", "cartridge"));
+  assert.equal(second, undefined);
+  assert.match(String(appended.at(-1)?.["text"]), /^\[foreman\] part of your change was NOT made: the rate you asked for did not move after cartridge was sent back once/);
+  // a check that could not run is no verdict
+  const h2 = { ...h, o: { coreCheck: () => Promise.resolve({ code: 2, figures: {}, summary: "could not run" }) }, events: l3.events.filter((e) => e.seq <= 1347) } as unknown as GateHost;
+  fs.rmSync(path.join(dir, "reports"), { recursive: true, force: true });
+  assert.equal(await rateGate(h2, "cartridge", 15, path.join(dir, "ws", "cartridge")), undefined);
 });

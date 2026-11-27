@@ -1,0 +1,65 @@
+{
+ "source": "lane T3 l3: engine/tools/rink.sh check-cartridge --defects --toys --json-only on the promoted v0.1.28 and v0.1.29 cartridges of .tl/t3/jobs2 (00:05 on 28 Nov), read by coreroute.rinkCheckRun; and J2b's quick diff of the same ask (d25-biplane Arsenal event 1347: game.contact.bot_check_windup_frames 12 -> 6): pro_knockdowns 32 -> 35",
+ "v0128": {
+  "code": 0,
+  "figures": {
+   "rookie_wins_of_10": 10,
+   "pro_wins_of_10": 10,
+   "pro_goals_a_match": 17.5,
+   "pro_minutes": 4.1,
+   "pro_play_minutes": 2.9,
+   "pro_carry_s": 0.8,
+   "pro_loose_share": 0.32,
+   "pro_shots": 62.9,
+   "pro_passes_completed": 2.6,
+   "pro_speed_mean": 10.1,
+   "pro_changes_min": 25.7,
+   "pro_human_touches_min": 15.4,
+   "pro_knockdowns": 32,
+   "all_star_wins_of_10": 10,
+   "idle_wins_of_16": 0,
+   "skate_only_wins_of_16": 2
+  },
+  "toys": [
+   "The pickups: changes little (80 of 80 wins with, 79 without)",
+   "The fast-ice zones: changes little (80 of 80 wins with, 76 without)",
+   "The slow-ice zones: changes little (80 of 80 wins with, 77 without)"
+  ],
+  "summary": "measured, warnings: trivial at all_star: thirdjam's regular playtester won every match; a goal flood at rookie (18.7 a match); a goal flood at pro (17.5 a match); a goal flood at all_star (18.6 a match); toy: the pickups (speed, precision): worth about nothing, pro 80 of 80 wins with it, 79 without (+1 points; won only with it 1, only without it 0), paired goal difference +0.43 (thirdjam's regular playtester); toy: the fast-ice zones (4): worth about nothing, pro 80 of 80 wins with it, 76 without (+5 points; won only with it 4, only without it 0), paired goal difference +0.41 (thirdjam's regular playtester); toy: the slow-ice zones (2): worth about nothing, pro 80 of 80 wins with it, 77 without (+4 points; won only with it 3, only without it 0), paired goal difference +0.41 (thirdjam's regular playtester)"
+ },
+ "v0129": {
+  "code": 0,
+  "figures": {
+   "rookie_wins_of_10": 10,
+   "pro_wins_of_10": 10,
+   "pro_goals_a_match": 17.9,
+   "pro_minutes": 4.1,
+   "pro_play_minutes": 2.9,
+   "pro_carry_s": 0.8,
+   "pro_loose_share": 0.34,
+   "pro_shots": 64.6,
+   "pro_passes_completed": 1.9,
+   "pro_speed_mean": 10.1,
+   "pro_changes_min": 25.7,
+   "pro_human_touches_min": 15.6,
+   "pro_knockdowns": 32.7,
+   "all_star_wins_of_10": 10,
+   "idle_wins_of_16": 1,
+   "skate_only_wins_of_16": 1
+  },
+  "toys": [
+   "The pickups: changes little (79 of 80 wins with, 79 without)",
+   "The fast-ice zones: changes little (79 of 80 wins with, 77 without)",
+   "The slow-ice zones: changes little (79 of 80 wins with, 76 without)"
+  ],
+  "summary": "measured, warnings: trivial at all_star: thirdjam's regular playtester won every match; a goal flood at rookie (17.1 a match); a goal flood at pro (17.9 a match); a goal flood at all_star (18.1 a match); toy: the pickups (speed, precision): worth about nothing, pro 79 of 80 wins with it, 79 without (+0 points; won only with it 1, only without it 1), paired goal difference -0.24 (thirdjam's regular playtester); toy: the fast-ice zones (4): worth about nothing, pro 79 of 80 wins with it, 77 without (+3 points; won only with it 3, only without it 1), paired goal difference +0.11 (thirdjam's regular playtester); toy: the slow-ice zones (2): worth about nothing, pro 79 of 80 wins with it, 76 without (+4 points; won only with it 4, only without it 1), paired goal difference -0.37 (thirdjam's regular playtester)"
+ },
+ "j2b1347": {
+  "before": {
+   "pro_knockdowns": 32
+  },
+  "after": {
+   "pro_knockdowns": 35
+  }
+ }
+}
