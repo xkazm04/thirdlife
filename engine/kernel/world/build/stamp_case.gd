@@ -210,7 +210,7 @@ func tool_case() -> void:
 	e.pressed = true
 	root.push_input(e)                  # Enter into the name field (the GUI's path), "Stamp 1" already in it
 	await wait(2)
-	var listed: int = (t.get("stamps") as Array).size()
+	var listed: int = (t.call("own_stamps") as Array).size()     # M6 round 3: the starters are listed too
 	var name_ := str((t.call("stamp") as Dictionary).get("name", ""))
 	await tap(KEY_1)
 	await tap(KEY_R)
@@ -230,7 +230,7 @@ func tool_case() -> void:
 	DirAccess.rename_absolute(home.path_join("stamps/stamp-1.json"), home.path_join("stamps/stamp-1.old"))
 	await tap(KEY_T, true)
 	await tap(KEY_T)
-	var after_import: int = (t.get("stamps") as Array).size()
+	var after_import: int = (t.call("own_stamps") as Array).size()
 	var inbox_left := FileAccess.file_exists(home.path_join("stamps/inbox/friend.tlitem"))
 	await tap(KEY_B)
 	bm.queue_free()

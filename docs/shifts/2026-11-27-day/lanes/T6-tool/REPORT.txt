@@ -261,3 +261,101 @@ NEXT THREE
 2. Show the code as text too (a small field with it selected) for a person whose clipboard is elsewhere (a phone, a
    chat), and a paste field for the same reason.
 3. Play both pasted courses in the visit with lane P's looks and time a person's copy and paste by hand.
+==================================================================================================================
+ROUND 3: the run-name field (R5), stamp_code.gd (R6), the Ctrl+C patch, three starter courses; on 916e2847
+==================================================================================================================
+
+1. R5 (contracts/BUILD.md "Courses travel"): MET. Placing a stamp whose `start` names a run the Home already has opens
+   a field "This course's run is called <name>, like one you have. Enter: its own run   Esc: share <name>'s best
+   time", prefilled with the next free "<name> (n)" (n from 2; cut to 24 characters), selected. Enter places it with
+   that name (or the typed one), Esc places it with the shared name; either way ONE batch. The field has the
+   keyboard (blocks_input) and the stamp name field's latch: the closing Enter / Esc neither opens the command bar
+   nor leaves build mode. Case 789 stamp-starters.runname: first Tower climb placed; second: field "Tower climb (2)"
+   selected, Enter HELD 8 frames: still the stamp tool, still building, one batch; third: field "Tower climb (3)"
+   (the next free), Esc: building, one batch; runs {"Tower climb": 2, "Tower climb (2)": 1}.
+2. R6: MET. engine/kernel/world/build/stamp_code.gd (220 lines): the share code (copy, paste), X export, I import,
+   the starters' listing, the run-name field and the stamp's zone ghost. tools/stamp_tool.gd 600 -> 539 lines (the
+   box frame now uses zone_draw.gd frame_mesh instead of its own copy of it).
+3. Ctrl+C sinks the visitor: the exact fix is PATCHES-T6.md T6-3 (kernel/runner/visit.gd `steer`, the `wish` call:
+   while build mode is on and Ctrl is held, `slide` neither slides nor descends: climb = strength(jump) instead of
+   axis(slide, jump)). Not applied (not my file). The world gate cannot see it (no pack's input path changes).
+4. Starter courses: MET with the honest notes below.
+   Files: engine/kernel/world/build/starters/garden-gate.json, pad-hop.json, tower-climb.json (tl.stamp/2), written by
+   engine/kernel/world/build/stamp_starters_make.gd from recipes in it (blocks as boxes; zones and rules by the
+   Rules tool's own presets, so the side card reads them like a hand-made course). Exported: *.json is in the
+   export include filter.
+     Tower climb  9 x 7 x 9, 127 blocks (stone, stone_dark, plank), a 3x3 tower, 4 plank pillars rising 1 a step
+                  with 1-cell hops; start pad, 3 coins on the pillar tops, finish flag on the tower; 5 zones, 5 rules
+     Garden gate  11 x 4 x 15, 228 blocks (stone, plank fence, wood_dark gate and posts, rock_warm beds); start
+                  outside, the gate opens on E and closes when you walk on, a message "Three coins hide in the
+                  beds", 3 coins on the beds, finish at the back; 7 zones, 8 rules
+     Pad hop      25 x 5 x 5, 255 blocks (roof-red floor, concrete platforms); 4 platforms over 4-cell gaps, a jump
+                  pad on each platform's edge (10 m/s up, 3 m/s forward: about 6 m), a hazard over each gap floor,
+                  checkpoints on platforms 2 and 3, finish on 4; 10 zones, 10 rules
+   All under 4,000 blocks, materials 1-9 only (never locked), so a newcomer's first stamp is never "locked".
+   In the stamp tool they are the first page, "Starters" (each slot "<name> starter"; the info line "Starters (Tab:
+   more)"), your own stamps on the next pages; `stamps` keeps your own first, so an index of yours is what it was
+   (the frozen 758 reads slots()[1] of your own page: green). They are never written (the case checks their bytes).
+   Each finishes by a scripted replay (789 stamp-starters.runs, rules_run.gd, a recording facade):
+     Tower climb  run_started > 3 x look_taken > run_finished (15 frames)
+     Garden gate  run_started > set_open(open, E) > set_open(close) > say > 3 x look_taken > run_finished (24 frames)
+     Pad hop      run_started > launch > say(checkpoint) > launch > teleport (the hazard: back to checkpoint 1's
+                  floor centre) > launch > say > launch > run_finished (27 frames)
+   The feet paths are cells, not physics: whether the pads' 6 m lands on the next platform in the real walker is
+   lane P's facade (launch) and is NOT measured here.
+   NOT met as asked: "make each with your own tool in a window". The starters were made headless by the recipe
+   script (the tool's preset code, not its clicks). In the window I made Tower climb's rules by hand on a scripted
+   stage (fill), as the newcomer test:
+     5 mouse actions (1 drag for the start, 4 clicks) and 5 keys (1, Enter for the run-name field's "Run 1", 4, 3,
+     3) in 250 frames (frame 277 -> 527, with 25-frame settles). 3 of the 5 zones landed where meant; Coin 3 and the
+     Finish landed where the ray hit the TOWER'S SIDE from that camera (the third pillar top and the tower top were
+     behind the tower's edge): a coin floating in front of the tower and the finish on its side. The ghost showed
+     each before the click, so a person would have moved; a script does not. Finding: from a walker's camera the
+     tops behind a tower are not clickable; flying up (F) first is what a person must learn. Capture t6-climb.jpg.
+   The starters placed in a window: a fresh Home, the stamp tool, 1 (Garden gate) LMB, 2 (Pad hop) R LMB, 3 (Tower
+   climb) LMB: 3 clicks, 4 keys, three courses with 22 zones and 23 rules, three different runs (no name field). Then
+   F and Space to rise for the picture: docs/shifts/2026-11-27-day/lanes/T6-tool/t6-starters.jpg (1440x810, 166 KB;
+   the Tower climb left, Pad hop in the middle running away from the camera, Garden gate right). Two aims were
+   refused first by the dry run ("occupied": the second course overlapped the first because the ray met rising
+   ground short of the aim point) and placed after moving the aim: a person sees the red ghost and the reason.
+
+GATES (round 3)
+- 789 alone: HOME stamp-starters ok 4/4. 788 HOME stamp-courses ok 8/8; 756 HOME pieces ok (stamp.tool's
+  expectation now counts your own stamps: own_stamps(), since the starters are listed too: a moved expectation, named
+  here); 758 HOME unlocks ok (frozen, unchanged, green); 765 HOME command-m5 ok; 775 HOME rules-tool ok.
+- tl check --tier fast: PASS 5/5.
+- selftest home. (foreman rebuilt first): 175 cases, 169 PASS, 6 FAIL, all six home.paths.* (lay, grade, undo,
+  unpath, ids, files): the case found path ids 7 and 8 already there ("the second path is id 8") in its folder
+  user://tl_paths_case, which is the machine's ONE Godot user folder shared by every worktree and session: another
+  session's paths case ran at the same time. 762 alone right after: HOME paths ok, 10/10 (path id 1 as expected).
+  Not my files and not my change; named as cross-session interference, not called green: the case's TMP under
+  user:// is not per-worktree (a question for the Director: TL_SELFTEST_DIR or the worktree's name in TMP).
+  Every other block green, including 789 4/4, 788 8/8, 773, 775, 758.
+- world: PASS 9/9 (274.3 s), the 9 rows identical to main's 25 Nov gate log.
+
+FILES (round 3)
+New: engine/kernel/world/build/stamp_code.gd, stamp_starters_make.gd, stamp_starters_case.gd (+ .uid),
+starters/garden-gate.json, starters/pad-hop.json, starters/tower-climb.json, engine/tools/selftest.d/
+789-home-stamp-starters.sh, lane folder t6-starters.jpg, t6-climb.jpg.
+Changed: tools/stamp_tool.gd (539 lines), stamp_case.gd (two counts: own stamps), PATCHES-T6.md (T6-3). LF as before;
+PATCHES-T6.md and REPORT.txt keep theirs.
+
+BEHAVIOUR CHANGES
+- The stamp tool opens on the Starters page; Tab goes to your own stamps; 1-9 pick within the page shown.
+- Placing a course whose run name exists asks once (R5).
+- X, I, Ctrl+C, Ctrl+V behave as before (moved to stamp_code.gd).
+
+QUESTIONS (round 3)
+S1 The brief asked the starters to be made in a window with my tool; they were made by a recipe script with the
+   tool's presets, and only Tower climb's rules were made by clicks in a window (2 of 5 aimed wrong from the walker's
+   camera). If the owner wants them hand-made, a person should do it: the tool's ghost is what makes it work.
+S2 The starters' run names are their titles ("Tower climb"). Placing one twice asks for "Tower climb (2)" (R5).
+S3 T6-3 is a raw Ctrl read in visit.gd's steer, only while build mode is on; a TLInput action for Ctrl would be
+   cleaner if the Director prefers (then Ctrl+C is replayable too).
+
+NEXT THREE
+1. Apply T6-3 and check by hand that Ctrl+C in flight holds his height.
+2. Play the three starters in the visit with lane P's effects (does Pad hop's 6 m land? does the gate's E work from
+   both sides?), tune the recipes, re-make the files.
+3. A "fly up to aim" hint in the Rules tool when a click lands on a side face far from the aim (the Tower climb
+   finding).
