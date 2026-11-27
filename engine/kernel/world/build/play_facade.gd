@@ -67,6 +67,7 @@ func launch(up_cm: int, fwd_cm: int) -> void:
 	var p := _p()
 	if p != null:
 		p.call("burst", "dust", v.get("feet") as Vector3, 1.2, 60)       # the pad's kick: a puff where he left it
+		p.call("launched")
 
 
 ## His feet to `at`, facing where the camera looks now (so the view does not swing round), the screen dipping.
@@ -100,6 +101,8 @@ func run_started(run_name: String, frame: int) -> void:
 	var was: Dictionary = (recs as RefCounted).call("of", run_name) if recs is RefCounted else {}
 	if h != null:
 		h.call("started", run_name, int(was.get("best_frames", 0)))
+	if p != null:
+		p.call("ghost_start", run_name)
 
 
 func run_finished(run_name: String, frames: int, best_frames: int, new_best: bool) -> void:
@@ -110,12 +113,16 @@ func run_finished(run_name: String, frames: int, best_frames: int, new_best: boo
 		h.call("finished", run_name, frames, best_frames, new_best)
 	var p := _p()
 	if p != null:
+		p.call("ghost_finish", run_name, frames, new_best)
 		p.call("finish_fx")
 
 
 func run_stopped(run_name: String, why: String) -> void:
 	_log(["run_stopped", run_name, why])
 	_print("run_stopped", {"run": run_name, "why": why})
+	var p := _p()
+	if p != null:
+		p.get("ghost").call("play_stop")
 	var h := _hud()
 	if h != null:
 		h.call("stopped")

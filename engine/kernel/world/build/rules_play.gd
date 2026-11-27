@@ -28,6 +28,8 @@ const PlayDoors := preload("res://kernel/world/build/play_doors.gd")
 const PlayLooks := preload("res://kernel/world/build/play_looks.gd")
 const PlayHud := preload("res://kernel/world/build/play_hud.gd")
 const HomeRecords := preload("res://kernel/world/build/home_records.gd")
+const PlayGhost := preload("res://kernel/world/build/play_ghost.gd")
+const GHOST_KEY := KEY_G                 # round 2: hides / shows the best run's ghost for the rest of the visit
 const Blocks := preload("res://kernel/world/build/blocks.gd")
 const FALL_Y := Blocks.Y_MIN - 8.0       # metres: below the block grid ...
 const HARD_FALL := -200.0                # ... with nothing under him, or this far down whatever is under him
@@ -51,6 +53,19 @@ var claimed := 0                         # E presses kept from entering a game (
 var falls := 0                           # respawns after falling out of the world (figures)
 var _use_zones := {}                     # zone id -> true: zones some rule triggers `on: use`
 var _use_rev := -1
+var ghost: RefCounted = null             # play_ghost.gd: the best run's ghost (recorded while a run goes, played on a restart)
+var ghost_key: Callable                  # () -> bool, a case's G; else the keyboard (a display toggle, not a rule input)
+var ghost_error := ""                    # why the run's ghost file was not read at its start ("" read, "none" no file)
+var ghost_write_error := ""              # why the last new best's ghost was not written ("" written)
+var _g_was := false
+const CAM_FAR := 0.38                    # round 2: during a run the camera's arm is this much longer ...
+const CAM_UP := 0.6                      # ... and it looks this many metres higher (eased in and out over CAM_FRAMES)
+const CAM_FRAMES := 45
+const STRETCH_FRAMES := 14               # a launch: the figure stretched up and thin, easing back
+var cam_k := 0.0                         # 0 the person's camera .. 1 the run's
+var _cam_base: Array = []                # [arm, look height] of the visitor's camera before any run
+var _stretch_at := -1000
+var _feet := Vector3.ZERO
 
 
 func _init(h: Node) -> void:
@@ -60,6 +75,7 @@ func _init(h: Node) -> void:
 	doors = PlayDoors.new(b as RefCounted if b is RefCounted else null)
 	looks = PlayLooks.new((b as RefCounted).get("root") if b is RefCounted else null)
 	run = RulesRun.new(_rules(), facade, records)
+	ghost = PlayGhost.new()
 
 
 func _rules() -> RefCounted:
@@ -83,21 +99,33 @@ func tick(at_frame: int) -> void:
 		run.facade = facade
 		run.records = records
 		doors.clear()
+		ghost.call("set_shown", true)                  # every visit starts with the ghost shown
 		run.begin(at_frame, feet as Vector3)
 		running = true
 		_show(true)
-	looks.sync(run.layer)
+	if run.layer != null and int(looks.get("revision")) != int(run.layer.get("revision")):
+		looks.sync(run.layer)
+		_ground_looks()
 	var cell := RulesRun.feet_cell(feet as Vector3)
 	var use := use_down()
 	if use and uses_here(cell):
 		claim_enter()
+	_feet = feet as Vector3
+	_ghost_key()
+	ghost.call("play_tick")                                       # frame n of the kept track beside frame n of this run
 	run.step(at_frame, cell, use)
+	if bool(run.get("running")):
+		var v := visitor_node()
+		var rg: Variant = v.get("rig") if v != null else null
+		ghost.call("record", int(run.call("state").frames), _feet, float(v.get("face_yaw")) if v != null else 0.0,
+			str((rg as Node).get("clip")) if rg is Node else "")
 	if bool(run.get("running")) and out_of_world(feet as Vector3):
 		falls += 1
 		run.respawn_now()
 	doors.tick(at_frame)
 	looks.tick(at_frame)
 	_hud_tick(at_frame)
+	_feel_tick(at_frame)
 	ticks += 1
 
 
@@ -114,6 +142,9 @@ func _off_reason(feet: Variant) -> String:
 
 
 func stop(why: String) -> void:
+	_feel_reset()
+	ghost.call("play_stop")
+	ghost.set("recording", false)
 	if running:
 		if "instant" in facade:
 			facade.set("instant", true)
@@ -236,7 +267,104 @@ func _hud_tick(at_frame: int) -> void:
 		hud.call("tick", at_frame, run.call("state"), l.call("counters") if l != null else [])
 
 
-## A run was finished: confetti at his feet (play_facade.gd `run_finished`).
+## A pad or a flag stands on what is under it: a zone's floor cell can hold the terrain's surface (an LLM's start pad
+## on grass at y 2 where the ground is 2.7 m): the look is lifted onto the ground found in its box (the visitor's space).
+func _ground_looks() -> void:
+	var v := visitor_node()
+	var sp: Variant = v.get("space") if v != null else null
+	if not (sp is Object):
+		return
+	var zones: Dictionary = run.layer.get("zones")
+	var nodes: Dictionary = looks.get("nodes")
+	for z: int in nodes:
+		var n: Node3D = nodes[z]
+		if str(looks.get("looks")[z]) == "coin" or not zones.has(z):
+			continue
+		var top := float(zones[z].box[1][1]) + 1.0
+		var g := float((sp as Object).call("ground_at", n.position.x, n.position.z, top))
+		if not is_nan(g) and g > n.position.y and g < top:
+			n.position.y = g + 0.01
+
+
+## Round 2, the run's feel: while a run goes the camera eases back and up (CAM_FAR, CAM_UP) so a wall or a pad ahead
+## is seen over his shoulder, and eases back to the person's when it ends; a launch stretches the figure for a moment.
+## Through the visitor's own camera arm (visitor.gd `_cam_dist`, `_cam_look_h`, read by its `_place_cam`): PATCHES-P6 E3.
+func _feel_tick(at_frame: int) -> void:
+	var v := visitor_node()
+	if v == null or v.get("_cam_dist") == null:
+		return
+	if _cam_base.is_empty():
+		_cam_base = [float(v.get("_cam_dist")), float(v.get("_cam_look_h"))]
+	var want := 1.0 if bool(run.get("running")) else 0.0
+	cam_k = move_toward(cam_k, want, 1.0 / CAM_FRAMES)
+	var e := cam_k * cam_k * (3.0 - 2.0 * cam_k)
+	v.set("_cam_dist", float(_cam_base[0]) * (1.0 + CAM_FAR * e))
+	v.set("_cam_look_h", float(_cam_base[1]) + CAM_UP * e)
+	var k := float(at_frame - _stretch_at) / STRETCH_FRAMES
+	if k >= 0.0 and k <= 1.0:
+		var a := 1.0 - k
+		v.scale = Vector3(1.0 - 0.12 * a, 1.0 + 0.22 * a, 1.0 - 0.12 * a)
+	elif v.scale != Vector3.ONE and k > 1.0:
+		v.scale = Vector3.ONE
+
+
+func _feel_reset() -> void:
+	var v := visitor_node()
+	if v != null and not _cam_base.is_empty():
+		v.set("_cam_dist", float(_cam_base[0]))
+		v.set("_cam_look_h", float(_cam_base[1]))
+		v.scale = Vector3.ONE
+	cam_k = 0.0
+	_stretch_at = -1000
+
+
+## A launch went off (play_facade.gd `launch`): the pad under him kicks, he stretches.
+func launched() -> void:
+	_stretch_at = frame
+	var l: RefCounted = run.layer
+	if l != null:
+		looks.call("kick", l.call("zones_at", RulesRun.feet_cell(_feet)), frame)
+
+
+## G went down (a case's `ghost_key`, else the keyboard): the ghost hidden or shown for the rest of the visit.
+func _ghost_key() -> void:
+	var down := bool(ghost_key.call()) if ghost_key.is_valid() else Input.is_physical_key_pressed(GHOST_KEY)
+	if down and not _g_was:
+		ghost.call("set_shown", not bool(ghost.get("shown")))
+		print(JSON.stringify({"schema": "tl.view/1", "kind": "rules", "what": "ghost_shown", "frame": frame, "shown": ghost.get("shown")}, "", false))
+	_g_was = down
+
+
+## A run started (play_facade.gd `run_started`): record it from frame 0; its best's ghost, if one is kept, walks too.
+func ghost_start(run_name: String) -> void:
+	ghost.call("record_start")
+	var d := str(host.get("dir")) if host != null else ""
+	ghost.call("play_stop")
+	if d == "":
+		return
+	var r: Dictionary = PlayGhost.read(PlayGhost.path_of(d, run_name))
+	ghost_error = str(r.get("error", ""))
+	if r.has("ghost"):
+		ghost.call("play_start", looks.get("holder"), r.ghost)
+	elif ghost_error != "none":
+		push_warning("[rules] the ghost of '%s' was not read: %s" % [run_name, ghost_error])
+
+
+## A run finished: on a new best its path replaces the kept ghost. The ghost already walking goes on to its end.
+func ghost_finish(run_name: String, frames: int, new_best: bool) -> void:
+	var v := visitor_node()
+	var rg: Variant = v.get("rig") if v != null else null
+	ghost.call("record", frames, _feet, float(v.get("face_yaw")) if v != null else 0.0, str((rg as Node).get("clip")) if rg is Node else "")
+	var doc: Dictionary = ghost.call("doc_of", run_name, frames)
+	var d := str(host.get("dir")) if host != null else ""
+	if not new_best or doc.is_empty() or d == "":
+		return
+	ghost_write_error = PlayGhost.write(d, doc)
+	if ghost_write_error != "":
+		push_warning("[rules] the ghost of '%s' was not written: %s" % [run_name, ghost_write_error])
+
+
+## A run finished: confetti at his feet (play_facade.gd `run_finished`).
 func finish_fx() -> void:
 	var v := visitor_node()
 	if v != null:
