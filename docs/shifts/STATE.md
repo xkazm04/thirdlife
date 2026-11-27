@@ -517,3 +517,4 @@ on the frame and the figure and Fable on surfaces and nature, looping for 10 hou
 - 15:20 standup: A r3/r4 and F3 landed, F3-1 applied; integration suite 769/6 (all explained); F1, F2 running; disk 30 GB.
 - ~16:20: T round 4 landed (merge 4c7ce613; merged: fast 5/5 after renaming JB's stray .gd in docs, npm 489/482/0/7, create. 29/0). T next: round 5 (23-28, 25 first). Disk 27 GB.
 - 15:31 standup: 5 lanes on track (T r5, S1 r2, JB r4, J2nd r2, S4 r2); disk 25 GB and falling (not this shift's trees; Home session told).
+- 15:43 standup: F2 landed + feet reach; F1 status asked; disk 26 GB after freeing three trees (the growth is another project's session).
