@@ -552,3 +552,4 @@ on the frame and the figure and Fable on surfaces and nature, looping for 10 hou
 - 21:33: T round 5 landed (merge 5e5da87a over M6; merged: fast 5/5, npm 508/501/0/7, create. 29/0). N-newcomer done: each game's newest ability was missed or misread by a newcomer because of the screen; one sentence each fixed it (robots v0.1.12, shield v0.1.18, Arsenal v0.1.32). Menu 81.
 - 21:51: T2-editor landed (23, 24, 26-28, 31, 32, 41, 42; merge 37a3f288; merged: fast 5/5, npm 520/513/0/7, create. 29/0). Live: biplane balance now told; the court fairness ask still fails (9 of 20) even with every seed's result in the builder's hands.
 - 22:09: T2 round 5 landed (c7ccb64e: one change boundary). JOB.md: juice night section (T round 5 + T2).
+- 22:10 note: T round 5 and T2 landed; T3 and N r2 running; quiet gates at about 04:00.
