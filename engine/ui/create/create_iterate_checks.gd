@@ -72,6 +72,12 @@ static func run(tree: SceneTree, check: Callable, tmp: String) -> bool:
 	var unfinished: String = _job(tmp.path_join("e4-balance-jobs").path_join("e4-unfinished"), [asked, running,
 		{"type": "note", "package": "penguin_moves", "round": 3, "text": "[foreman] change not finished: the game's check tests/bot_tofu.gd still fails (bot failed), and no part of the game is left that can fix it: show: a control run showed it fails without its files too. The earlier version stays the one to play."},
 		{"type": "job_state", "state": "done", "reason": "the change was NOT made: the final verification still fails at bot (V4)"}], ["0.1.0"])
+	# D27 item 9 (S35's biplane: the person asked to restore the test pilot, the freeze undid it): Create says so in words
+	var kept: String = _job(tmp.path_join("e4-balance-jobs").path_join("e4-kept"), [asked, running,
+		{"type": "note", "package": "penguin_moves", "round": 3, "text": "[foreman] measure kept: tests/support/pilot.gd is a measure the Foreman judges by (merged before this round); this round's edit was undone and the round is verified with the measure as merged. Change the game, never the test that measures it."},
+		{"type": "note", "package": "penguin_moves", "round": 3, "text": "[foreman] what changed in v0.1.1 (since v0.1.0): asked \"x\"; nothing changed in the game: the Foreman kept tests/support/pilot.gd as merged"},
+		{"type": "promoted", "packId": "game.penguin_push", "version": "0.1.1", "dest": "promoted/game.penguin_push@0.1.1"},
+		{"type": "job_state", "state": "done", "reason": "promoted 0.1.1"}], ["0.1.0", "0.1.1"])
 	var list: String = tmp.path_join("e4-dungeons.user.json")
 	DirAccess.remove_absolute(list)
 
@@ -81,13 +87,15 @@ static func run(tree: SceneTree, check: Callable, tmp: String) -> bool:
 	var jx: Dictionary = JobModel.read_job(failed, 0.0)
 	var jb: Dictionary = JobModel.read_job(balanced, 0.0)
 	var ju: Dictionary = JobModel.read_job(unfinished, 0.0)
+	var jk: Dictionary = JobModel.read_job(kept, 0.0)
 	check.call("create.iterate.model: a change made is version 2 (Play opens @0.1.1); in flight it is building with its words; failed, the first version still plays with a note; the Foreman's own wire request is not the person's",
 		Model.screen_of(jm) == "done" and Model.version_n(jm) == 2 and Model.play_dir(jm).ends_with("@0.1.1") and Model.person_changes(jm).size() == 1 and Model.change_note(jm).is_empty()
 		and Model.screen_of(jf) == "building" and Model.changing(jf) == TEXT
 		and Model.screen_of(jx) == "done" and Model.change_note(jx).begins_with("Your last change could not be made") and Model.play_dir(jx).ends_with("promoted/game.penguin_push")
 		and Model.change_note(jb) == "Built as you asked; the gulls side now wins 3 of 3 of the Foreman's test rounds (was 1 of 3). Say \"make it fairer\" to tune it.\nBuilt as you asked; matches now run longer (the Foreman's test needed about 2 times the frames it planned). Say \"make matches shorter\" to tune it."
-		and Model.screen_of(ju) == "done" and Model.changing(ju).is_empty() and Model.change_note(ju).begins_with("Your last change could not be made: “" + TEXT + "”\nThe game's check tests/bot_tofu.gd still fails"),
-		"made %s v%d %s; flight %s '%s'; failed %s '%s'; balance '%s'; unfinished %s '%s'" % [Model.screen_of(jm), Model.version_n(jm), Model.play_dir(jm), Model.screen_of(jf), Model.changing(jf), Model.screen_of(jx), Model.change_note(jx), Model.change_note(jb), Model.screen_of(ju), Model.change_note(ju)])
+		and Model.screen_of(ju) == "done" and Model.changing(ju).is_empty() and Model.change_note(ju).begins_with("Your last change could not be made: “" + TEXT + "”\nThe game's check tests/bot_tofu.gd still fails")
+		and Model.change_note(jk) == "Not applied: a change to tests/support/pilot.gd was undone. The Foreman judges the game by it, so a change may not rewrite it. Nothing in the game changed in this version.",
+		"made %s v%d %s; flight %s '%s'; failed %s '%s'; balance '%s'; unfinished %s '%s'; kept '%s'" % [Model.screen_of(jm), Model.version_n(jm), Model.play_dir(jm), Model.screen_of(jf), Model.changing(jf), Model.screen_of(jx), Model.change_note(jx), Model.change_note(jb), Model.screen_of(ju), Model.change_note(ju), Model.change_note(jk)])
 
 	# the page, as the exe mounts it (a dry door: every command is recorded)
 	var page: Control = CreateScene.instantiate()

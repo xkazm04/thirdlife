@@ -10,13 +10,14 @@ import type { JobEvent, PackageSpec } from "../events.js";
 import type { GateHost } from "../p10gate.js";
 import { JobLog } from "../joblog.js";
 import { REPO_ROOT } from "../paths.js";
+import { grantedScope, sidecarOf, widenedNote, withGrants } from "../scopegrant.js";
 import { mindFiles, rivalSentences, rivalSplit } from "../rivals.js";
 import { NOT_DONE, NOT_MADE, REST_OF, afterMerge, coreHintOf } from "../halfmade.js";
 import { catalogRows, keyHint, keysFor } from "../keyfind.js";
 import { coreExcerpt, RINK_ROUTE } from "../coreroute.js";
 import { MOVES_LAND, finalLandNotes, judgeLanding, landGate, newMovesOf } from "../landcheck.js";
-import { BALANCE_MOVED, balanceLines } from "../boundlift.js";
-import { UNASKED_RULE, removedInRound, whatChangedNote } from "../fastchange.js";
+import { BALANCE_MOVED, balanceLines, changeKind } from "../boundlift.js";
+import { NOT_ASKED, UNASKED_RULE, changedFiles, measureKeptWords, removedInRound, whatChangedNote } from "../fastchange.js";
 
 after(cleanup);
 
@@ -281,4 +282,66 @@ test("D27 4c (the d27 copy of J1, event 1163: harbour named \"NEW MOVE: shotgun\
   const notes = finalLandNotes(h);
   assert.equal(notes.length, 1);
   assert.equal(notes[0]?.text, `${MOVES_LAND}: meteor landed 2 of 3 (the final run: tests/bot_harbour.gd)`);
+});
+
+// ---------------------------------------------------------------- 7. the rules sidecar in a person's change
+
+test("D27 7 (S4's Arsenal copy, events 1082-1095: the cartridge builder named bot_ability_share and dive_shot_share and marked them NOT BUILT because data/harbour.rules.json was outside its scope; the person's \"Yes, add that file\" granted nothing): in a person's change on a core, the cartridge's owner owns its rules sidecar", () => {
+  const S4 = fixture<{ plan: PackageSpec[]; events: JobEvent[] }>("s4a-cartridge-r13-14.json");
+  const spec = (id: string) => S4.plan.find((p) => p.id === id) as PackageSpec;
+  assert.equal(grantedScope(S4.events, "cartridge").length, 0, "the yes granted nothing: the question named no file");
+  assert.equal(sidecarOf(S4.plan, spec("cartridge"), S4.events), "data/harbour.rules.json");
+  assert.ok(withGrants(spec("cartridge"), S4.events, S4.plan).scope.includes("data/harbour.rules.json"));
+  for (const other of ["base", "harbour", "skin"]) assert.ok(!withGrants(spec(other), S4.events, S4.plan).scope.includes("data/harbour.rules.json"), other);
+  // only in a person's change: before it (the promotion is the last event) the plan's scope stands
+  const before = S4.events.filter((e) => e.seq <= 1071);
+  assert.equal(sidecarOf(S4.plan, spec("cartridge"), before), undefined);
+  // another package that lists the file keeps it
+  const listed = S4.plan.map((p) => (p.id === "skin" ? { ...p, scope: [...p.scope, "data/harbour.rules.json"] } : p));
+  assert.equal(sidecarOf(listed, spec("cartridge"), S4.events), undefined);
+  assert.match(widenedNote(S4.plan, S4.events, "cartridge", ["data/harbour.cartridge.json", "data/harbour.rules.json"]) ?? "", /^\[foreman\] scope widened for this change: cartridge owns the game's cartridge, so it may write its rules sidecar data\/harbour\.rules\.json/);
+  assert.match(coreExcerpt({ id: "rink_game", title: "rink" }, RINK_ROUTE, "builder"), /\*\*The rules sidecar in a person's change\*\*.*do not mark the rule NOT BUILT for want of the file/);
+});
+
+// ---------------------------------------------------------------- 9-11. S35: a fairness ask, every package on the card, nothing changed
+
+test("D27 10 (S35's kart copy s35-3A, events 1295-1442: \"Take out two things the old balance check added ...\" read as a fairness ask; the tofu gate refused the clean-up three times and teams changed the bots unasked): only a real fairness ask is one", () => {
+  const kart = fixture<{ events: JobEvent[] }>("s35-kart-3A.json").events.find((e) => e.type === "change_requested") as JobEvent & { text: string };
+  const biplane = fixture<{ events: JobEvent[] }>("s35-biplane-3A.json").events.find((e) => e.type === "change_requested") as JobEvent & { text: string };
+  assert.equal(changeKind(kart.text), "play", "naming the old balance check is not asking for balance");
+  assert.notEqual(changeKind(biplane.text), "fair");
+  for (const ask of ["Make it fairer.", "Balance the teams: the reds win every match.", "Rebalance it so the rookie can win.", "Make the sides more even.", "The hammer is overpowered.", "The gulls are too strong.", "I want a more balanced game."]) assert.equal(changeKind(ask), "fair", ask);
+});
+
+test("D27 11a (S35's kart copy, event 1440: the card quoted only core's words; teams changed the bots' shooting range, angle and blocking when the Foreman's checks sent it back, and the person never saw it): every package's change reaches the card, the unasked ones on their own line", () => {
+  const events = fixture<{ events: JobEvent[] }>("s35-kart-3A.json").events;
+  const card = whatChangedNote(events, "0.1.8");
+  const lines = card.split("\n");
+  assert.match(lines[0] ?? "", /what you will see, in the builder's words: `main\.gd` no longer has the per-bot override/);
+  const teams = lines.find((l) => l.startsWith(`${NOT_ASKED} teams changed it when the Foreman's checks sent it back`));
+  assert.ok(teams !== undefined, card);
+  assert.match(teams ?? "", /\(its dependency core was changed and merged again, and invariants \(V3\) now fails/);
+  assert.match(teams ?? "", /`shoot\.range_max` changed from 40 to 30/);
+  assert.ok(lines.some((l) => l.startsWith(`${NOT_ASKED} show changed it`)), "show's round too");
+});
+
+test("D27 11b (S35's biplane copy, events 750-787: the freeze undid the person's restore of the test pilot, v0.1.5 was v0.1.4 byte for byte, and the card said \"none ...; files: <16 files>\"): a promotion that changed nothing says so, and why", () => {
+  const events = fixture<{ events: JobEvent[] }>("s35-biplane-3A.json").events;
+  const card = whatChangedNote(events, "0.1.5", [], []);
+  assert.match(card, /; nothing changed in the game: the Foreman kept tests\/support\/pilot\.gd as merged: it judges the game by it, so a change cannot rewrite it, and the change to it was undone$/);
+  assert.doesNotMatch(card, /files:/);
+  // the d27 copy of the same job merged 0 files (a fresh workspace): the card still says why, not "the change was NOT made" alone
+  assert.match(whatChangedNote(events.filter((e) => e.type !== "merge"), "0.1.5"), /; nothing changed in the game: the Foreman kept tests\/support\/pilot\.gd as merged/);
+  assert.match(whatChangedNote(events, "0.1.5"), /files: data\/moves\.json/, "without the comparison the merge's list is named, as before");
+  // the comparison itself: pack.json is the Foreman's; a byte-equal file is not a change
+  const dir = tempDir("d27-changed");
+  for (const [d, v] of [["a", "1"], ["b", "1"]] as const) {
+    fs.mkdirSync(path.join(dir, d, "data"), { recursive: true });
+    fs.writeFileSync(path.join(dir, d, "pack.json"), d);
+    fs.writeFileSync(path.join(dir, d, "data", "same.json"), v);
+    fs.writeFileSync(path.join(dir, d, "data", "moved.json"), d);
+  }
+  fs.writeFileSync(path.join(dir, "b", "data", "new.json"), "x");
+  assert.deepEqual(changedFiles(path.join(dir, "a"), path.join(dir, "b"))?.sort(), ["data/moved.json", "data/new.json"]);
+  assert.match(measureKeptWords("[foreman] measure kept: tests/bot_tofu.gd, tests/support/pilot.gd are measures the Foreman judges by (merged before this round)"), /kept tests\/bot_tofu\.gd, tests\/support\/pilot\.gd as merged: it judges the game by them/);
 });

@@ -240,3 +240,195 @@ NEXT (queued by the Director, after this lands)
 9. Create says plainly when a frozen measure undid a person's ask (S35 biplane).
 10. Only a real fairness ask counts as one; "balance" alone does not (S35 karts).
 11. Every package's change reaches the what-changed card; a promotion that changed nothing says "nothing changed".
+
+==========================================================================================================================
+ROUND 2: items 7-11 (after the Director landed 1-6 as 658eb637), 11:15-12:35
+Tree d25-hard-a (fast-forwarded to 658eb637), foreman rebuilt. Not committed: the Director lands.
+
+THE DIRECTOR'S RULINGS ON ROUND 1, AS WRITTEN DOWN
+- Item 4's bar stays "at least once" today. For the owner: "a share of uses instead?" (J19's rush passed at 1 landing in 13,
+  and my hand measured 0 knockdowns in 11 rushes).
+- The faceoff meteor (every v0.1.22 meteor scored) is a balance question for the owner and is left as it is.
+- The JOB.md text is below (PROPOSED JOB.md TEXT), for the Director to add to the contract.
+
+OUTCOME AGAINST EACH ITEM
+
+7. A person-asked play rule can reach the cartridge's rules.json: MET.
+   - Cause: S4's job, events 1082-1095. The cartridge's builder named the sidecar switches and marked them NOT BUILT:
+     data/harbour.rules.json was outside its scope ["data/harbour.cartridge.json", "data/match.json"], and its contract
+     said "no sidecar". The person's "Yes, add that file" granted nothing, because the question named no path, as
+     questions to a person must not.
+   - Fix (scopegrant.ts sidecarOf, through withGrants):
+     - on a game on a core, in a person's change (a change since the last promotion), the package that owns the game's
+       cartridge (the one with data/match.json) also owns data/<cut>.rules.json, unless another package lists it;
+     - the scope listed in the builder prompt shows the file;
+     - the merge note says "scope widened for this change: cartridge owns the game's cartridge, so it may write its
+       rules sidecar ...";
+     - a core builder rule (coreroute.ts) says the same: write the file, never mark a rule NOT BUILT for want of it.
+   - Unit test D27 7, on S4's real plan and events 1071-1095:
+     - the cartridge gets data/harbour.rules.json; base, harbour and skin do not;
+     - nothing changes before a change, or when another package lists the file.
+   - Live, on my J1 copy (at v0.1.22), sentence: "Nobody may skate the puck into the net any more: a puck I or anyone
+     carries stops at the goal line, so every goal has to be a real shot."
+     - The Planner named cartridge, and the diff found no cartridge key.
+     - cartridge r15 wrote data/harbour.rules.json {"schema": "tl.rink.rules/1", "rules": {"net_carry_wall": true}} in
+       its FIRST round (event 1177). It merged with the widening note (event 1187).
+     - v0.1.23 PROMOTED 7.9 min after the sentence (event 1196), 0.72M tokens in.
+   - S4's own switches (bot_ability_share, dive_shot_share) are arm A's core patch, not on main. On main, that rules file
+     would still be refused by the Foreman's validation (unknown switch). The scope is fixed; the switch is S4's question.
+   - Not filmed: net_carry_wall only shows when a skater carries the puck to the goal line, and no hand of mine does
+     that. The Foreman's acceptance and smoke passed on the rule-patched core.
+
+8. The exe no longer crashes on a refused rules file: MET, inside the base.
+   - Reproduced with main's exe (dist/ThirdLife, build 6522394): "ThirdLife.exe --headless -- --dungeon=<the base with
+     an unknown-switch rules file> --frames=600" gives "Segmentation fault", exit 139.
+   - Cause: the kernel's ctx.cores.open returns null after "rules ... do not load" (correct), and the base's
+     scripts/main.gd went on with rink.set_difficulty(...) on null. Through the editor's worker that is 24 script errors
+     in 15 frames and a watchdog stop; in the release exe it crashes.
+   - Fix (engine/templates/rink_game/scripts/main.gd, +24 lines): a null core makes the base stop playing and pushes
+     one plain error line.
+     - It shows a plated label mid-screen: "THIS GAME CANNOT START / The rink core refused this game's rules (data/<cut>,
+       or its rules file data/<cut>.rules.json). / The reason is the error line just before this one in the log."
+     - It uses its own view; ticks stop, and pack_state is {state: refused}.
+   - Main's exe on the fixed pack: exit 1, the dungeon ends on its 600 frames ("why": "frames"), 2 engine errors, no
+     crash.
+   - Still: stills/i8_refused_rules_message.jpg (960 px, looked at). The rink hall, and the message in the middle on a
+     dark plate, on three lines.
+   - Named, outside the Director's list: engine/packs/hokej/scripts/main.gd got the same bytes. Selftest rink.template
+     requires the template's scripts to equal hokej's byte for byte. The change is inert in hokej (no rules file), and
+     rink.template plus rink.template_bots still PASS. Veto it if you want: the alternative is an exception in that
+     selftest.
+   - Existing packs keep their own copy of main.gd (a pack copies the base at its first build). S4's hand_a still
+     crashes main's exe. New jobs, and any pack whose main.gd is updated, get the guard. The kernel was not touched.
+   - Selftest 803-rink-refused.sh (block 800-809; 800-802 were taken):
+     - rink.refused_smoke: 600 frames, exactly 2 errors, no watchdog;
+     - rink.refused_dungeon: through boot.tscn, ends on its frames;
+     - 2/2 PASS. Before the fix: watchdog at frame 15 in smoke, and the dungeon stopped at frame 16 with 22 script
+       errors.
+
+9. Create says plainly when a frozen measure undid a person's ask, and why: MET. Whether a person may unfreeze a measure
+   is not decided here.
+   - engine/ui/create: the notes moved to the new create_notes.gd, because create_model.gd hit its 600-line budget.
+     - measure_note shows: "Not applied: a change to tests/support/pilot.gd was undone. The Foreman judges the game by
+       it, so a change may not rewrite it."
+     - It adds " Nothing in the game changed in this version." when the what-changed note says so.
+     - The line comes before the balance lines.
+   - Create test: a case inside create.iterate.model (count unchanged; CRLF kept).
+   - Live, on a copy of S35's biplane job (v0.1.4) with S35's exact sentence:
+     - core r24 restored the pilot, and the freeze undid it (event 751, "measure kept");
+     - v0.1.5 was promoted byte-equal to v0.1.4 (only pack.json's version differs), 33.3 min, 0.43M in.
+     - Create on the real job (Godot headless, .tl/d27/create_note.gd): main shows "" (nothing); this lane shows "Not
+       applied: a change to tests/support/pilot.gd was undone. The Foreman judges the game by it, so a change may not
+       rewrite it."
+
+10. Only a real fairness ask counts as one: MET.
+   - boundlift.ts FAIR_WORDS no longer matches any "balanc...". It matches:
+     - "balance it/them/the teams/the game/...", "rebalance ...", "more balanced", "balanced game/teams";
+     - "more even", "make it fairer", "too strong/weak", "overpowered", "nerf".
+   - Unit test D27 10: S35's kart sentence ("the old balance check added ...") is a play change, and the biplane
+     sentence is not "fair". Seven real fairness asks are still "fair".
+   - Live, on a copy of S35's kart job (v0.1.7) with S35's FIRST wording, word for word:
+     - core r19 built the clean-up and passed its first round with the balance note ("the share of test rounds where
+       the lead changes hands: now 0.17, was 0.33. Say "make it fairer" to tune it.");
+     - 0 tofu refusals, and no package other than core merged (no unasked teams change);
+     - v0.1.8 PROMOTED in 51.9 min with 0.44M tokens in. S35's run took 125 min and 5.89M, with 3 refusals and teams
+       changing the bots unasked. Most of the 51.9 min was verification and the 40 hand checks at CPU 100 %.
+
+11. Every package's change reaches the card, and "nothing changed" when nothing did: MET.
+   - fastchange.ts whatChangedNote:
+     - "what you will see" takes up to two lines from every merged package (three when only one package merged, as
+       before);
+     - a package the Foreman's own checks sent back (its reopen was not the person's change) gets its own line: "not
+       asked by you: teams changed it when the Foreman's checks sent it back (its dependency core was changed ...):
+       `shoot.range_max` changed from 40 to 30 ...";
+     - the files named are only those that really differ from the version before (changedFiles: a byte compare against
+       the last promoted copy; foreman.ts passes it, +0 lines);
+     - none, or nothing merged, reads "nothing changed in the game: the Foreman kept tests/support/pilot.gd as merged:
+       it judges the game by it, so a change cannot rewrite it, and the change to it was undone".
+   - Unit tests:
+     - D27 11a, on S35's kart events 1294-1388: teams' and show's rounds get "not asked by you:" lines with their own
+       words;
+     - D27 11b, on S35's biplane events 741-786: "nothing changed in the game: ...", no 16-file list; changedFiles on
+       temp directories.
+   - Live:
+     - the biplane card was written by a process that loaded the code from before the last tweak. It reads "nothing was
+       merged: the change was NOT made".
+     - The current code, run on the same live events with changedFiles of the two promoted copies, gives "...; nothing
+       changed in the game: the Foreman kept tests/support/pilot.gd as merged: ...".
+     - The kart run merged only core, so the "not asked by you" line had nothing to show live. It is proven on S35's
+       real events (D27 11a).
+
+GATES ON d25-hard-a (round 2, final source)
+- foreman npm test: 476 tests, 469 pass, 0 fail, 7 skipped (main after round 1: 472/465/0/7; +4 tests: D27 7, 10, 11a,
+  11b).
+  - Run 5 had 2 failures:
+    - H1f 5: fixed by keeping 3 lines when one package merged;
+    - cli kill/resume: a timing test that passed alone (10/10) and in run 6.
+- node devx/bin/tl.mjs check --tier fast: PASS 5/5 (arch 12/12, assets 4/4, cards 3/3, devx.test 230/230,
+  foreman.typecheck).
+  - An earlier run failed arch on create_model.gd's 600-line budget (614). That is now fixed by create_notes.gd
+    (create_model.gd is 556 lines).
+  - It then failed on create_notes.gd.uid missing; fixed by one class-cache import.
+- selftest create.: 29 passed, 0 failed (after the split).
+- selftest rink.refused: 2/2. rink.template and rink.template_bots: 2/2.
+- Full tier: NOT RUN. The kernel, kits, rigs, style and seeds are untouched. engine/templates and engine/packs/hokej
+  changed (the base guard); the house hockey's play is unchanged (the guard only acts on a null core).
+
+CHANGED FILES (round 2)
+- foreman/src:
+  - scopegrant.ts (sidecarOf; withGrants with the plan; widenedNote);
+  - foreman.ts (spec passes the plan; the card gets changedFiles; 2004 lines);
+  - coreroute.ts (sidecar rule);
+  - boundlift.ts (FAIR_WORDS);
+  - fastchange.ts (per-package words, "not asked by you:", "nothing changed in the game", measureKeptWords,
+    changedFiles).
+- Tests and fixtures: foreman/src/test/d27_editor.test.ts (+4 tests, +2 asserts); foreman/fixtures/d27/
+  s4a-cartridge-r13-14.json, s35-kart-3A.json, s35-biplane-3A.json.
+- engine/templates/rink_game/scripts/main.gd and engine/packs/hokej/scripts/main.gd (byte-equal); selftest.d/
+  803-rink-refused.sh.
+- engine/ui/create: create_model.gd (change_note), create_notes.gd (+ .uid, new), create_iterate_checks.gd.
+- Lane folder: stills/i8_refused_rules_message.jpg.
+
+BEHAVIOUR CHANGES (named)
+- In a person's change on a core, the cartridge's owner may write its rules sidecar.
+- Sentences that only name "the balance check" are play changes: balance figures become notes, not refusals.
+- The card names every merged package. Packages sent back by the Foreman's checks get their own "not asked by you:"
+  line. The files named are only those that changed. A byte-equal promotion says "nothing changed in the game".
+- Create shows a "Not applied" line when the Foreman's measure freeze undid a change.
+- The rink base stops with a readable card when its core does not open.
+
+PROPOSED JOB.md TEXT (Director-only), rounds 1 and 2
+- "[foreman] the rivals' part of change request N, for the bots your files drive (<files>): "<words>" ...": the person's
+  sentences that tell the rivals what to do, sent to every other package whose files decide for a bot.
+- "[foreman] new move lands in the Foreman's bot run: <id> landed L of S, ... (<tests>)" and "[foreman] new move judged
+  at the end: ...":
+  - a new attack's landing count;
+  - a bot test reports it as bot.result.metrics.moves.<id> {started, landed};
+  - a builder names a new move on a line "NEW MOVE: <id>".
+- "part of your change was NOT made by X: the new move <id> never landed in the Foreman's bot run (...)".
+- "[foreman] the rest of your change, which X did not make (...)": the NOT DONE lines of a builder, sent once (one hop) to
+  the owner of the files they name. A "no key" claim carries the catalog's candidate keys.
+- "[foreman] scope widened for this change: X owns the game's cartridge, so it may write its rules sidecar <file> ...".
+- What-changed lines:
+  - "not asked by you: X changed it when the Foreman's checks sent it back (<why>): <its words>";
+  - "nothing changed in the game[: <why>]".
+
+FOR THE OWNER
+- Item 4: should a new attack have to land a share of its uses, not just once?
+- Whether a person may unfreeze a measure (item 9 only makes the refusal visible).
+- Menu rows, if wanted:
+  - .tl/d27/jobs/three-against-three-hockey-20261125-1/promoted/game.three_against_three_hockey@0.1.23: "Arsenal hockey:
+    no skating it in (rules sidecar, editor d27)";
+  - .tl/d27/jobs/bumper-kart-football-3-20261125-1/promoted/game.bumper_kart_football_3@0.1.8: "Bumper kart football:
+    clean-up, first wording (editor d27)".
+
+QUESTIONS FOR THE DIRECTOR
+1. Keep the byte-equal copy of the base guard in engine/packs/hokej/scripts/main.gd? Selftest rink.template requires it.
+2. S4's hand_a and editor_a packs still crash main's exe (they carry the old main.gd). Re-copy the base's main.gd into
+   them, or leave them as spike evidence?
+
+NEXT
+1. A Create screen still for "Not applied" (headless text only so far) and for several balance lines.
+2. Freeze the card's hand tests (T1's open ask 3), now that the card names measure kept.
+3. Make the one-hop rule smarter: a handed-on round may still send a line to a package that has not merged in this
+   change.

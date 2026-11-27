@@ -14,6 +14,7 @@ extends RefCounted
 ##   error       the job's log cannot be read
 
 const JobModel = preload("res://ui/job_model.gd")
+const Notes = preload("res://ui/create/create_notes.gd")   # D27: the Foreman notes a change is told by (balance, measure kept, not finished)
 
 const SCREENS: PackedStringArray = ["idea", "designing", "pitch", "building", "phase_done", "done", "failed", "error"]
 
@@ -274,42 +275,11 @@ static func change_note(job: Dictionary) -> String:
 	# not made either; the Foreman's "change not finished" note says why, in words
 	var ended: bool = str(c.get("outcome", "")) == "in flight" and str(job.get("phase", "")) == "done" and str(job.get("job_reason", "")).begins_with("the change was NOT made")
 	if ended or str(c.get("outcome", "")) in ["not made", "failed", "cancelled"]:
-		var why: String = not_finished(job, int(c.get("seq", 0)))
+		var why: String = Notes.not_finished(job, int(c.get("seq", 0)))
 		return "Your last change could not be made: \u201c%s\u201d%s" % [JobModel.one_line(str(c["text"]), 60), ("\n" + why) if not why.is_empty() else ""]
-	return balance_note(job, int(c.get("seq", 0)))
-
-
-## N27 T2: why a change could not be finished (p10gate.ts CHANGE_NOT_FINISHED), from the newest such note after `seq`.
-const NOT_FINISHED := "[foreman] change not finished: "
-static func not_finished(job: Dictionary, seq: int) -> String:
-	var said: String = ""
-	for n: Variant in job.get("notes", []):
-		if n is Dictionary and int((n as Dictionary).get("seq", 0)) > seq and str((n as Dictionary).get("text", "")).begins_with(NOT_FINISHED):
-			said = str((n as Dictionary)["text"]).substr(NOT_FINISHED.length())
-	return JobModel.one_line(said.substr(0, 1).to_upper() + said.substr(1), 220) if not said.is_empty() else ""
-
-
-## N27 (lane T): the balance a person's change moved, in the Foreman's plain words (boundlift.ts BALANCE_MOVED: its first
-## line), from the notes after the change request `seq`; "" when the change moved no bound. The change was built as
-## asked; this says what it did to the balance and how to tune it ("make it fairer"). D27 item 6: one line for each
-## thing it moved (who wins the test rounds, a hand check's wins, how long matches run: the words before " now "), the
-## newest line of each, in the order they were first told (boundlift.ts balanceLines); before, only the newest of all.
-const BALANCE_MOVED := "[foreman] balance moved by your change: "
-static func balance_note(job: Dictionary, seq: int) -> String:
-	var order: Array = []
-	var newest: Dictionary = {}
-	for n: Variant in job.get("notes", []):
-		if n is Dictionary and int((n as Dictionary).get("seq", 0)) > seq and str((n as Dictionary).get("text", "")).begins_with(BALANCE_MOVED):
-			var said: String = str((n as Dictionary)["text"]).substr(BALANCE_MOVED.length()).get_slice("\n", 0)
-			var key: String = said.get_slice(" now ", 0)
-			if not newest.has(key):
-				order.append(key)
-			newest[key] = said
-	var lines: PackedStringArray = []
-	for key: Variant in order:
-		var l: String = str(newest[key])
-		lines.append(l.substr(0, 1).to_upper() + l.substr(1))
-	return "\n".join(lines)
+	var kept: String = Notes.measure_note(job, int(c.get("seq", 0)))
+	var moved: String = Notes.balance_note(job, int(c.get("seq", 0)))
+	return kept + ("\n" if not kept.is_empty() and not moved.is_empty() else "") + moved
 
 
 ## The packages a change round is working on when every phase has passed (no current phase): those not promoted.

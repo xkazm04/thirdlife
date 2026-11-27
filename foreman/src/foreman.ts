@@ -20,7 +20,7 @@ import { CARRIED_FIELDS, MANIFEST_FILE, PACK_VERSION, kernelApiFor, acceptedCarr
 import { builderFeelSection, servesLine } from "./roomtext.js"; // JOB.md 2026-11-21: builders read the design
 import { briefText, critic, render, replanPackages, type GenerateCall, type PackageLine, type PlannerInput, type ReplanInput } from "./designer.js";
 import { NEW_PACKAGE, grow, ownerOrNew, wireWaits, type GrowHost } from "./grow.js";
-import { FINAL_NOTE, fastFinal, fastMerge, fastPromotion, mergeNote, removedInRound, roundAcceptance, whatChangedNote } from "./fastchange.js"; // E4b: a data-only change // E4 (24-25 Nov): a change may add a package
+import { FINAL_NOTE, changedFiles, fastFinal, fastMerge, fastPromotion, mergeNote, removedInRound, roundAcceptance, whatChangedNote } from "./fastchange.js"; // E4b: a data-only change // E4 (24-25 Nov): a change may add a package
 import { removedSince } from "./removal.js"; import { promotionErrors } from "./promogate.js"; import { answeredThisChange, askedAgain, plainQuestion } from "./asktwice.js"; import { longerMatch, tofuGate } from "./tofugate.js"; import { withGrants } from "./scopegrant.js"; import { afterMerge, coreHintOf } from "./halfmade.js"; import { rivalSplit } from "./rivals.js"; import { finalLandNotes, landGate } from "./landcheck.js"; // D27 items 1 and 4 // H1 (E5e): what a change removed, named; H1d: promotion pictures with script errors refuse
 import { criticRubric, inReach, phaseLine, phaseStep, replanPhases, stuckText, waitsForVerdict } from "./phases.js"; // JOB.md 2026-11-20: phases
 import { writeGenerateCalls } from "./transcript.js";
@@ -406,7 +406,7 @@ export class Foreman {
   private spec(id: string): PackageSpec {
     const p = this.s.plan.find((x) => x.id === id);
     if (!p) throw new ForemanError(`unknown package ${id}`);
-    return withGrants(p, this.log.events); // H1f: a person's yes to a scope question widens it for this change
+    return withGrants(p, this.log.events, this.s.plan); // D27 item 7: the cartridge owner writes its rules sidecar in a change; H1f: a person's yes to a scope question widens it for this change
   }
 
   // ---------- scheduling ----------
@@ -1902,7 +1902,7 @@ export class Foreman {
     if (errs !== undefined) return this.endJob("failed", clip(`promotion refused: ${errs}. ${nth > 1 ? `Earlier version v${this.s.promoted?.version ?? "?"} stays the one to play.` : "Nothing was promoted."}`, 900), true), false;
     if (nth > 1) {
       for (const n of finalLandNotes(this.gateHost)) this.append(n); // D27 item 4: a move handed on is judged by the final bot run
-      this.append({ type: "note", package: owner, round: this.pkg(owner).round, text: whatChangedNote(this.log.events, this.jobIdentity().version, removedSince(path.resolve(this.jobDir, this.s.promotions.at(-1)?.dest ?? "pack"), this.dir("pack"))) }); // E3f: one line for Create; H1: each removal on its own line
+      this.append({ type: "note", package: owner, round: this.pkg(owner).round, text: whatChangedNote(this.log.events, this.jobIdentity().version, removedSince(path.resolve(this.jobDir, this.s.promotions.at(-1)?.dest ?? "pack"), this.dir("pack")), changedFiles(path.resolve(this.jobDir, this.s.promotions.at(-1)?.dest ?? "pack"), this.dir("pack"))) }); // E3f: one line for Create; H1: each removal on its own line; D27 11: only files that changed
       if (shots.length > 0) this.append({ type: "note", package: owner, round: this.pkg(owner).round, text: `${FOREMAN_NOTE}pictures of the pack as it is promoted the ${nth}${nth === 2 ? "nd" : nth === 3 ? "rd" : "th"} time (after the change): ${shots.join(", ")}` });
     }
     if (this.o.promote) {
