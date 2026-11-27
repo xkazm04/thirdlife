@@ -572,3 +572,9 @@ first one on the done screen):
   merge; the edit was undone before verification.
 - A what-changed line `unasked rule (the builder's words; you did not ask for it): ...`: a builder line that adds a rule
   the person did not ask for (its `RULE:` line under `DEVIATIONS:`, or hidden-rule words).
+- `[foreman] change not finished: ...` (lane T2): a final check still fails and every package it could go back to is
+  cleared. A package is cleared when a control run showed the check fails without that package's files, or when its
+  builder answered that nothing in its part can fix it. The job ends done on the earlier version; Create shows the reason
+  under "Your last change could not be made".
+- `[foreman] balance moved by your change: built as you asked; matches now run longer ...` (lane T2): a bot run in a
+  person's play change ran out of its frames and passed when run once more with three times as many (at most 108,000).
