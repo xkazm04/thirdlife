@@ -106,7 +106,12 @@ person wanting another go. Put every feel number your package uses in `data/tuni
   counted only from the game's own contact events. A count whose last use falls before the last third of its run is no
   measure and sends your round back, and so does a new attack that never lands. Check its reach against how close
   two bodies can really come (their pushboxes or capsules stop a charger before his blow), not only against the
-  distance you meant.
+  distance you meant. When your acceptance runs no bot test of your own besides the tofu bot, write the count in a new
+  test of your own, `tests/moves_<your package id>.gd` (in your scope for a play change; the Foreman runs it in its land
+  check, and you do not add it to pack.json): never write "I cannot add a test", and never put the count in the tofu bot.
+- **The Foreman's own tests are not the person's question.** Never ask the person how to make the tofu bot or another
+  test the Foreman judges by pass or fit (more frames, fewer matches, wider goals for the test's sake). Keep the game as
+  the person asked; a match that runs longer than the test's frames is run again by the Foreman with more frames.
 - **What is not yours goes on.** When part of the change needs a file outside your scope, write it as one line
   `NOT DONE: <what the person asked> needs <path>, which is outside my scope: <the exact edit>`. The Foreman sends that
   part, with the person's words, to the package that owns the path. Do not end the change with it unsaid.

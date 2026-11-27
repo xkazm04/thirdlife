@@ -344,7 +344,7 @@ static func reduce(events: Array, now: float) -> Dictionary:
 	var changes: Array = job["changes"]
 	for i: int in changes.size():
 		var c: Dictionary = changes[i]
-		var until: int = int(changes[i + 1]["seq"]) if i + 1 < changes.size() else 1 << 30
+		var until: int = int((changes.slice(i + 1).filter(func(x: Dictionary) -> bool: return str(c["text"]).begins_with("[foreman] ") or not str(x["text"]).begins_with("[foreman] ")) + [{"seq": 1 << 30}])[0]["seq"])  # D27b item 32: a person's change is closed by the next PERSON change, never by the Foreman's hand-offs (T2-editor's court copy: its failure never reached it)
 		for e: Dictionary in events:
 			var seq: int = int(e.get("seq", 0))
 			if seq <= int(c["seq"]) or seq >= until:

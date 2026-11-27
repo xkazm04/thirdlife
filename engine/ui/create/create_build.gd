@@ -347,7 +347,9 @@ func _done() -> void:
 	var note: String = Model.change_note(job)
 	# D27 item 13 (a window still of T2's robot job: four note lines ran under Play and Add to menu): a longer note takes
 	# smaller letters and pushes the buttons and the change box down; one line keeps the old places
-	var below: float = 414.0
+	# D27b item 32 (T2-editor's court copy: the note ran over the second line of a long title): a wrapped title moves the rest down
+	var dy: float = 40.0 * int(title.get_theme_font("font").get_string_size(title.text, HORIZONTAL_ALIGNMENT_LEFT, -1, 34).x / (W - 40.0))
+	var below: float = 414.0 + dy
 	if not note.is_empty():
 		var lines: int = 0
 		for l: String in note.split("\n"):
@@ -355,8 +357,8 @@ func _done() -> void:
 		var px: int = 20 if lines <= 1 else (17 if lines <= 6 else 15)
 		var nl: Label = _label(note, px, 700, ORANGE, W - 80.0, HORIZONTAL_ALIGNMENT_CENTER)
 		nl.name = "ChangeNote"
-		_place(nl, Vector2(40, 376 if lines > 1 else 380))
-		below = maxf(414.0, 376.0 + lines * (px + 6) + 10)
+		_place(nl, Vector2(40, (376 if lines > 1 else 380) + dy))
+		below = maxf(414.0 + dy, 376.0 + dy + lines * (px + 6) + 10)
 	var bh: float = 110.0 if below <= 414.0 else 88.0
 	var play: Button = _button("Play", "Play", "play", HONEY, Vector2(W * 0.5 - 330, below), Vector2(310, bh), 46)
 	play.pressed.connect(func() -> void: launch(Model.play_dir(job)))

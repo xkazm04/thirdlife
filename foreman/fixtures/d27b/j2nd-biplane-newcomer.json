@@ -1,0 +1,37 @@
+{
+ "from": "the same job, events 987-1000 (the newcomer fix routed to first_flight)",
+ "promoted": {
+  "seq": 985,
+  "type": "promoted",
+  "packId": "game.biplane_duel_two_biplanes",
+  "version": "0.1.8",
+  "dest": "promoted/game.biplane_duel_two_biplanes@0.1.8"
+ },
+ "events": [
+  {
+   "seq": 987,
+   "type": "change_requested",
+   "text": "As a newcomer I never get to use the harpoon in my first minute and cannot answer hers. In the lesson Vesper stays far away as a small blue arrow, so the hint get Vesper in front of your nose never comes true: have her fly slowly across in front of me once in the lesson so I can harpoon her and see HOOKED!. When the real fight starts, her HARPOON! ROLL comes at the same moment as REAL FIGHT and a stall hint, while my energy is empty, so I cannot roll: let her first harpoon wait 10 seconds into the fight, never fire it while I am too low on energy to roll, and show one message at a time with her warning first."
+  },
+  {
+   "seq": 990,
+   "type": "reopened",
+   "package": "first_flight",
+   "reason": "change request (event 987); the Planner names the package: The lesson script, its hints, the move into the REAL FIGHT and when Vesper's first harpoon threat comes all live in first_flight's scripts/first/first.gd and gen/hook_first.gd, so this package owns th\n... (37 more characters cut): As a newcomer I never get to use the harpoon in my first minute and cannot answer hers. In the lesson Vesper stays far away as a small blue arrow, so the hint get Vesper in front of your nose never comes true: have her fly slowly across in front of me once in the lesson so I can harpoon her and see \n... (316 \n... (20 more characters cut)"
+  },
+  {
+   "seq": 994,
+   "type": "note",
+   "package": "first_flight",
+   "round": 4,
+   "text": "- The lesson has a new step `cross` (state `lesson.step == \"cross\"`) between `weave` and the loop pass. It starts at lesson frame 120 and lasts up to 300 frames; it ends 90 frames after you hook her, once she's flying again. During it she steers at a point 30 m ahead of my nose, sweeping ±6 m sideways, at a speed that holds that gap. Hint: \"Q: HARPOON her as she crosses your nose\".\n- RULE: during the lesson Vesper never rolls off the player's harpoon. To do this first.gd moves `game.harpoon.guns.me.age` one frame past `rival_react_f` and sets `dodge` to 0 (it writes into `game.harpoon`, a main member outside the contract's shared API list). What a player sees: in the lesson a harpoon fired with her in front always hooks her, and the ring fires one frame sooner.\n- RULE: once the lesson is done, in every round, Vesper's harpoon cooldown (`game.harpoon.guns.vesper.cool`) is held at 2 frames or more whenever the player's ENERGY is below `moves.roll.cost` and her harpoon is idle. What a player sees: she doesn't hunt for or fire her harpoon while they couldn't roll away from it.\n- When the lesson ends, Vesper's harpoon cooldown is set to at least 600 frames (10 s).\n- While Vesper's harpoon is aiming or flying, first.gd's big word (REAL FIGHT, PERFECT, EARLY/LATE) is paused and its hints are held back. The stall-turn hint \"W released while climbing: stall turn\" now shows after the REAL FIGHT word ends, not with it. Core hints (`game.hint` called from other packages) are not held back.\n- New numbers (cross_at_f 120, cross_max_f 300, cross_gap 30, cross_side 6, cross_rate 0.015, cross_after_f 90, harpoon_first_f 600, harpoon_guard_f 2) are in first.gd's MORE table, read through `game.tune.lesson` first. `data/tuning.json` is another package's file, so they aren't in it.\n- `tests/bot_first_flight.gd` doesn't press Q, so no bot checks that the lesson hook lands."
+  },
+  {
+   "seq": 1000,
+   "type": "note",
+   "package": "first_flight",
+   "round": 4,
+   "text": "[foreman] balance not judged: a change to the view or the screen only; tests/bot_tofu.gd figures outside their bounds, not judged: skill_spread 0.04 (bound 0.25 to 0.95); skill_variants 2 (bound 3 or more)"
+  }
+ ]
+}

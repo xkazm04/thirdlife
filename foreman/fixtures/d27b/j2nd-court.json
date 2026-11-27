@@ -1,0 +1,1154 @@
+{
+ "from": "d25-kart/.tl/jobs/j2nd/half-court-3-v-20261125-1: notes 1333/1345 (item 27), 1525 (item 28), 1664-1786 (item 32); seeds = the newcomer hand reports s1742-s1761 (bot part) of the hand check that failed at 1782",
+ "plan": [
+  {
+   "id": "court_exchange",
+   "title": "Greybox court, ball, verbs, rivals",
+   "milestone": "blockout",
+   "deps": [],
+   "serves": [
+    "screen_spring",
+    "peak_swat",
+    "roll_finish"
+   ],
+   "scope": [
+    "scripts/main.gd",
+    "scripts/core/**",
+    "data/tuning.json",
+    "data/venue.json",
+    "tests/bot_play.gd",
+    "tests/bot_tofu.gd",
+    "tests/support/**",
+    "README.md"
+   ],
+   "registers": {
+    "capabilities": [
+     "physics",
+     "input",
+     "ui",
+     "audio",
+     "vfx",
+     "camera",
+     "rules",
+     "ai",
+     "ball",
+     "biped",
+     "kit",
+     "style"
+    ],
+    "tests": [
+     "tests/bot_play.gd",
+     "tests/bot_tofu.gd"
+    ],
+    "cameras": [
+     "play",
+     "side"
+    ]
+   },
+   "contract": "Half-court street ball on flat shapes, 2v2 (you+Mags vs Crane+Pip), code generic to 3v3. Patterns: ref/packs/hockey (carry.gd, poke.gd, ai/, tests/metrics.gd), seed_wall. NO screen speed boost. NO camera swing. All numbers in data/tuning.json (keys court, move, turbo, ball, pickup, shoot, screen, poke, swat, pass, contact, camera, match, ai, roster, tiers, teach, comeback, curve); scripts read game.tune live, since later modules overwrite entries. Several small files; run bot_tofu as soon as a match finishes, then tune data only.\n\nTOFU CHECK: tests/bot_tofu.gd reports metrics feedback_f, skill_spread, skill_variants, idle_max_f, tell_min_f, tells, pressure_waves, lead_change_share, close_rounds, verbs_used, possession_median_f, scrum_share, overlap_share\nCounted from played frames; result {ok, summary, hand, metrics, moments}. Bounds: feedback_f<=3; skill_spread .25..95 over skill_variants>=3 (shoot only: early, good, perfect, late; >=5 tries each; mean points); idle_max_f<=120; tell_min_f>=20, tells>=3; pressure_waves>=2 (180 f windows, >=3 rival attack starts after one with <=1); lead_change_share>=.3 over 3 full matches (R between); close_rounds>=1 (loser within 35% or 1 point); verbs_used=5 (shoot, screen, poke, swat, pass, each >=3); possession_median_f 240..600; scrum_share<=.3 (>=4 players within 5 m of ball); overlap_share<=.02 (>0.1 m). moments: screen_spring, peak_swat, roll_finish, snag, swat, miss_short, miss_long, miss_side, miss_rimout, poke, crash.\n\nPOSSESSION (the last build failed only here: 234). It belongs to a SIDE: starts when that side gains the ball, ends only when the other side gains it, on a basket or a dead ball. Own passes, shots, loose balls and offensive rebounds do not end it; loose frames count to the last side. Dials: ai.min_hold_f 150 (no bot shoots before its side has held that long, except under 3 s left or a scripted force), ai.fresh_poke_f 60 (no bot pokes a fresh carrier). Tune to a median of 300-420 on seeds 1-3.\n\nPLAYER CHECK: tests/bot_play.gd fails when actor you, driven only by input actions, no longer produces at least 2 screen snags, 1 swat and 3 shots or passes in a finished match\nbot_play is a perfect hand.\n\nSPACE x -7.5..7.5, z 0 (baseline)..11; W=-z; hoop (0,3.05,1.575); arc 6.75; floor y=0, chalk top .012. data/venue.json tl.layout/1 flat pad, 10 m open apron at +z. Backboard/rim TLBodies.make, TLTrigger score. TLBiped, rig scale .95, TLHit.pushbox .4; Pip .92, Crane 1.06; crew yellow, quarry plum.\n\nINPUT up(W) down left right turbo(Shift) shoot(Space, left) pass(Q, right) screen(E) rematch(R). Buffer 8 f; body moves within 3 f (squash/lean), full pose by 6; fresh press after possession change.\nMOVE cruise 5.5, turbo 7.5, carrier x.92; accel 20/17; brake 26; turn 9, carrier 8, turbo 6 rad/s; turbo 3 s, refill 25%/s after 30 f.\nBALL &\"LOOSE\",&\"CARRIED\",&\"PASS_IN_FLIGHT\",&\"SHOT_IN_FLIGHT\". Carried: TLBall.hold, critically damped spring k 400, .6 m at dribble hand; bounce 1.0 m-floor-back 30 f (22 turbo), thump; cut >60 deg crosses hands; gather lifts; turbo hard turn 6 f past .45 m swing loses it. Pickup .9 m ±70 deg; <9 m/s clean, 9-14 bobble (-60%, 10 f), above deflect; receiver 1.3 m ±100, 18 f magnet in 2 m. After change: old owner and opponents in 2 m no steal 30 f, owner unpokeable 12; no pickup 6 f after own pass/shot. Drawn 1.3x, hot rim; green ring; edge arrow.\n\nVERBS (anticipation/active/recovery). shoot 8/30/14: rise .8 (rig y, airtime 36), perfect 15-21 f after takeoff, good within 8 of 18 x.75, early/late x.35; layup .95, inside .75, outside .6; grounded hand in 1.2 m x.6; turns to hoop; tap <8 pump fake, 10 recovery; turbo within 2.5 m of rim layup. screen 12/90 held/16 while mate carries; release after contact rolls hoopward 1.2x 30 f; early release slips. poke 5/7/12: 1.3 m ±35, .65 x front 1, side .7, back .4, x.6 if cut within 10 f, cooldown 40. swat 5/16/18 without ball: hand .8 m from held or first-12-f rising ball, turbo +.2; same jump rebounds. pass 4/2/8 toward facing, arrives ~8 m/s, launch 12-15, cancels dribble/grounded gather; without ball calls. i-frames 0.\nMISSES rolled at release, first cause shown in the solved real path: early short/front iron/air; late long/backboard/back iron; hand near: lean away, side iron; open unlucky: circles rim 36 f (TLBall.hold), spills, rattle, groan; swat before arc.\n\nCONTACTS change BOTH (TLHit.impact on the two, decaying vibration, TLHit.react, shove). Swat: freeze 8, ball off 6 m/s, shooter .7, blocker squash, slap, cheer, shake .05/8 f. Fake bitten: 18 f landing. Set screen hit >2.5 m/s: freeze 6, defender .7 for 30 f, bounced .6; screener .3, slides .2, stays set; thud, leaves. Turbo into set: freeze 8, TLHit.down 45, screener .5, shake .12/12. Unset screen: both .3. Poke hit: freeze 3, carrier .3, follow through. Body poke: both bump, poker back .3. Poke whiff: lunge, turn halved 15, swoosh. Swat whiff: 18 f landing, swoosh. Carrier into planted: freeze 4, carrier .5 half speed, defender .4. Rebound clash: both .3. Interception: catcher .3, passer arms 8 f. Perfect make: net snap. No other shake or burst.\n\nMATCH TLRules crew,quarry; 1/2 points; first to 21; 300 s leader wins, tie first to add 2; 12 s possession limit (variable names never start clock/timer/score); after basket, defensive rebound or steal clear past arc (arc lights; basket: under hoop, live); out/expiry: other ball at top in 60 f. No other stop. End text, R in 2 s. Matchups you-Crane, Mags-Pip.\n\nAI every frame: score shoot, pass, drive, screen, use_screen, support, guard with vetoes; roles on-ball/support/safety by time to ball, hysteresis .3 s; support >=4 m from ball; none idle >60 f. USE_SCREEN: your screen within 4 m of carrier mate: waits f 12, turbos past shoulder opposite defender, centres .9; chaser steers into you; goes under: carrier shoots two behind; both crowd: you roll. Human uses screen within 1 m. Mates shoot freely, never steal yours, pass on call if safe, call_hand when open. Pip chases over, pokes after thigh_slap 24 f, hops after steal, slumps after snag. Crane leaps at believed gathers after deep_gather 24 f; rival jumpers gather 24 f. Tiers 1-3 bite .70/.45/.20, read .20/.45/.70 (visibly around), error 8/5/3; default 1.\n\nCAMERA play: add_view each frame, player +(1.2, 5.4, 7.2), fov 48, 4 f lag, fixed facing -z; check near baseline. side: from +x of ball/contact pair. HUD score, both clocks, turbo bar, one hint.\n\nSEAMS: after setup main.gd loads ctx.root meta \"hc_modules\" (pack-relative paths, default []) via ctx.load_script, calls if present setup(game), tick(game,frame), on_event(game,ev), state(game). game (scripts/core/game.gd): ctx, tune, actors, actor(id), add_actor({id,team,pos:[x,z],scale,mark,traits,brain}), ball, ball_state, owner_id, rules, hud, hint(text), set_brain(id,brain|null), set_tier(n), set_refill_mult(team,m), set_guard_scale(f), force_next_shot(id,\"make\"|\"\"), place(id,pos), restart_match(). actor: id (&\"you\",&\"mags\",&\"pip\",&\"crane\",&\"dex\",&\"moss\"), team, body, rig, mark, traits, action, action_frame, clip, clip_frame, clip_len, turbo. action: free,gather,air_shot,pump_fake,layup,screen_in,screen_set,screen_out,roll,swat,swat_land,poke,pass,stumble,down. clips: dribble_stand,dribble_run,jump_shot,layup,chest_pass,screen_set,swat,ball_steal,deep_gather,shoulder_dip,thigh_slap,call_hand,slump (core only sets actor.clip, never borrows). brain.decide(game,actor)->{move,turbo,verb:\"\"|shoot|release|fake|pass|screen|screen_end|poke|swat,target,face,tell}. ev {kind,frame,by,on,data}: match_start,match_end,press,screen_set,snag,crash,screen_bump,pass,pickup,intercept,possession,shot_release,takeoff,make,miss(data.cause short,long,side_iron,rim_out,swat),swat,fake_bitten,poke,poke_body,poke_whiff,carry_bump,rebound_clash,dead_ball. _pack_state: rules snapshot, actors, ball, ball_state, owner, clear_owed, possession_left, last_miss, events, hint, modules.",
+   "acceptance": [
+    {
+     "level": "V1",
+     "verb": "lint",
+     "args": []
+    },
+    {
+     "level": "V2",
+     "verb": "smoke",
+     "args": []
+    },
+    {
+     "level": "V3",
+     "verb": "invariants",
+     "args": []
+    },
+    {
+     "level": "V4",
+     "verb": "bot",
+     "args": [
+      "--test=tests/bot_play.gd"
+     ]
+    },
+    {
+     "level": "V4",
+     "verb": "bot",
+     "args": [
+      "--test=tests/bot_tofu.gd",
+      "--frames=72000"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "bodies_first_minute",
+   "title": "Own clips, builds and first minute",
+   "milestone": "blockout",
+   "deps": [
+    "court_exchange"
+   ],
+   "serves": [
+    "screen_spring",
+    "peak_swat",
+    "roll_finish"
+   ],
+   "scope": [
+    "gen/mod_bodies.gd",
+    "scripts/bodies/**",
+    "scripts/teach/**",
+    "data/clips.json",
+    "tests/bot_first_minute.gd"
+   ],
+   "registers": {
+    "capabilities": [
+     "biped",
+     "physics",
+     "input",
+     "ui",
+     "audio",
+     "vfx",
+     "camera",
+     "style"
+    ],
+    "assets": [
+     "gen/mod_bodies.gd"
+    ],
+    "tests": [
+     "tests/bot_first_minute.gd"
+    ]
+   },
+   "contract": "Gives the greybox readable bodies and a teaching first minute through the core seams only. gen/mod_bodies.gd: static generate(ctx) appends \"scripts/bodies/mod.gd\" and \"scripts/teach/mod.gd\" to ctx.root meta hc_modules (get_meta default [], append, set_meta). Hooks: setup(game), tick(game,frame), on_event(game,ev), state(game). Never edit core files; numbers come from game.tune (keys teach, camera, shoot, swat).\n\nCLIPS: read ref/rigs/RIGS.md. Build all 13 as the pack's own pose clips in data/clips.json (clip id -> keyframes of joint poses), applied each tick from actor.clip / clip_frame / clip_len by scripts/bodies/poses.gd: dribble_stand and dribble_run (hand synced to the ball bounce, 30 f standing/cruise, 22 turbo; visible hand cross on a cut), jump_shot, layup, chest_pass (arms stay out 8 f on interception), screen_set (wide planted stance, arms crossed), swat (one arm overhead, hand at the ball by frame 6 of active), ball_steal (low one-handed swipe, never cross_check), deep_gather (deep crouch, arms dropped, 24 f), shoulder_dip (24 f), thigh_slap (24 f), call_hand, slump. Full pose by frame 6 of a verb. Hit-stop holds the pose (TLHit.stop_left). If the rig has a clip of exactly that id, use it. If it offers no fence-legal way to pose joints, report a kernel gap; never borrow another clip. Existing jump, fall, run, cheer, taunt keep their meanings; TLHit reactions override poses. Miss tells: early shot's wrist stops low; contested shooter leans away; late arm over-extends.\n\nBUILDS (visual only: TLBodies.make with color, layer 0, mask 0, on rig sockets; no own materials): Pip small, wiry, backwards cap; Crane tall, long arms, rust beanie; Mags long ponytail; Dex stocky with sweatband and Moss broad with grey hoodie, applied by actor id whenever they appear (a later package adds them). Shirts stay yellow vs plum. Nothing technical drawn on figures.\n\nFIRST MINUTE, the session's first match only (not after restart_match). At match_start game.place (x,z): you (-2.0,7.6), ring glowing; Mags (-4.5,6.5) dribbling at left wing; Pip (-3.9,5.8) tight; Crane (-0.6,6.6). Two flat chalk footprints at Pip + (1.0,0,0), Mags's driving side, top y .016; they follow Pip until E is pressed and return until two snags have landed. Hint exactly: HOLD E ON THE CHALK. The possession limit starts on the first E press (hold it full until then); after 8 s without one Mags attacks alone. Pip's first route: once you are set within 1.0 m of the chalk, Pip waits until frame 12, then its brain's move target is your centre until the snag event (it cannot read, go under or miss it); contact comes from your side across the lens line so your back never hides it. Mags passes your far shoulder (centres .9 m), drives, and the open layup drops (force_next_shot(&\"mags\",\"make\")); a short tag I DID THAT (TLHud.add_tag).\nQuarry's first possession: Crane takes the ball, walks to .9 m to your SIDE (lateral x, never between lens and you), starting once within 1.2 m (or after 3 s), plays deep_gather for 36 f, takes off and releases 21 f after takeoff. Cue on the takeoff event, not the crouch: a glint at the ball (TLVfx.burst sparks) and hint SPACE: SWAT. A swat on that first shot drops the ball loose within 1 m of you at low speed; after your pickup the hint says CLEAR PAST THE ARC; once cleared a tag MINE. A missed press changes nothing else. Afterwards normal rules and odds: set_brain(id,null), hint back to controls.\n\nThe play view stays steady (no swing). Check with captures of play and side that your hand, the ball and the first snag are uncovered, also near the baseline; report it if tuning cannot fix it.\n\nstate(game): teach_beat (&\"screen\",&\"drive\",&\"swat\",&\"clear\",&\"done\"), chalk position, snags.\n\ntests/bot_first_minute.gd drives input only through TLHand regular: walks to the chalk, holds screen, waits for Mags's make, presses shoot about 12 f after Crane's takeoff, grabs, dribbles past the arc. ok when snag, Mags make, swat, pickup and clear all happen within 2400 frames. moments: screen_spring, snag, peak_swat, swat, hint, early in the run. tests/bot_play.gd must still pass with these modules loaded.",
+   "acceptance": [
+    {
+     "level": "V1",
+     "verb": "lint",
+     "args": []
+    },
+    {
+     "level": "V2",
+     "verb": "smoke",
+     "args": []
+    },
+    {
+     "level": "V3",
+     "verb": "invariants",
+     "args": []
+    },
+    {
+     "level": "V4",
+     "verb": "bot",
+     "args": [
+      "--test=tests/bot_first_minute.gd",
+      "--frames=3600"
+     ]
+    },
+    {
+     "level": "V4",
+     "verb": "bot",
+     "args": [
+      "--test=tests/bot_play.gd"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "crews_stakes",
+   "title": "Three on three, rivals, stakes",
+   "milestone": "greybox",
+   "deps": [
+    "court_exchange",
+    "bodies_first_minute"
+   ],
+   "serves": [
+    "screen_spring",
+    "roll_finish",
+    "peak_swat"
+   ],
+   "scope": [
+    "gen/mod_crews.gd",
+    "scripts/crews/**",
+    "data/crews.json",
+    "tests/bot_crews.gd",
+    "tests/bot_hand_newcomer.gd",
+    "tests/bot_hand_perfect.gd"
+   ],
+   "registers": {
+    "capabilities": [
+     "biped",
+     "physics",
+     "input",
+     "ui",
+     "audio",
+     "vfx",
+     "ai",
+     "rules",
+     "style"
+    ],
+    "assets": [
+     "gen/mod_crews.gd"
+    ],
+    "tests": [
+     "tests/bot_crews.gd",
+     "tests/bot_hand_newcomer.gd",
+     "tests/bot_hand_perfect.gd"
+    ]
+   },
+   "contract": "Pillars Fellowship and Challenge. gen/mod_crews.gd appends \"scripts/crews/mod.gd\" to ctx.root meta hc_modules. Hooks setup(game), tick(game,frame), on_event(game,ev), state(game). Use only the core seams: game.add_actor, actor(id), set_brain, set_tier, set_refill_mult, set_guard_scale, hint, restart_match, hud, events; actor fields mark, traits, action, clip, turbo. brain.decide(game,actor)->{move,turbo,verb:\"\"|shoot|release|fake|pass|screen|screen_end|poke|swat,target,face,tell}. Numbers come from game.tune (keys tiers, comeback, curve, roster, ai); new numbers go in data/crews.json, whose entries setup may merge over game.tune. No speed boost off screens; difficulty never changes speed.\n\nADD Dex (&\"dex\", crew) and Moss (&\"moss\", quarry); opening matchups both ways: you-Crane, Mags-Pip, Dex-Moss. The first-minute teaching still works with six on court (Dex and Moss stay in the weak-side corner, x>3, until teach_beat is done, never idle over 60 f).\nDex: cuts, rebounds, screens for you when your defender is within 1.2 m (visible screen_set, same contact rules; you spring by dribbling within 1 m), shoots without waiting, never steals your ball, passes on your call if the lane is safe.\nMoss: guards Dex first; ducks under screens and sags, leaving outside shots; sets thick screens (full 90 f); tell shoulder_dip 24 f before a bulldozing turbo drive; taunt after its baskets; jumpers gather 24 f. Support players keep >=4 m from the ball (scrum share <=.3).\nPip and Crane keep their core habits; Crane cheers after swats and plays slump when fooled; Pip hops after steals, slumps after snags. Screen reads follow the tier chance and are visible (the defender goes around). Rival screens work on your crew the same way.\n\nROTATION: each time the leader's score passes 7 or 14, quarry marks rotate one step (Crane->Mags, Pip->Dex, Moss->you, and again), with a 90 f HUD line naming your new man and the habit (CRANE: FAKE FIRST; PIP: PROTECT THE BALL; MOSS: SHOOT OVER MOSS). The game does not stop.\nCOMEBACK: a side trailing by 5 or more refills turbo at 37.5%/s (set_refill_mult 1.5) with orange heel trails (TLVfx.trail) only while it lasts.\nCURVE: early possessions calm (drive and poke weights lowered until either side has 4); from 18 points or the last 20 s drums rise (TLAudio.play repeating, faster) and both crews guard tighter (set_guard_scale); sudden death shows FIRST TO ADD 2.\nEND CARD on match_end (TLHud.add_layer): result and score, your screen assists (a make by a mate within 120 f of a snag on your screen), your swats, and the biggest cause of defeat counted from events with its answer: CRANE SWATTED 4: FAKE FIRST; PIP POKED n: TURN YOUR BACK; n SHORT: RELEASE LATER; n LONG: RELEASE SOONER; MOSS SCORED n: STAY IN FRONT. R restarts within 2 s (restart_match). A win raises the tier (max 3: fake bite 70/45/20, screen read 20/45/70, shot error 8/5/3) and shows a session streak to defend; a loss keeps the tier and resets the streak. Session values live on the module instance, never static.\n\nstate(game): tier, streak, rotation, comeback_side, intensity, assists, swats, defeat_cause.\n\ntests/bot_crews.gd plays through input only: screens, shoots, swats, a full match, rematch, then 600 f of the next. ok when six actors existed, Dex set >=1 screen, Moss played shoulder_dip and drove >=1, a rotation happened, the end card showed counts, the rematch started within 120 f. moments: dex_screen, moss_drive, rotation, comeback, end_card, roll_finish, with dex_screen and moss_drive within the first 900 f where play allows.\ntests/bot_hand_perfect.gd and bot_hand_newcomer.gd: the same input-only policy through TLHand perfect / newcomer; ok when the match ends and the hand acted (winning not required).\ntests/bot_play.gd must still pass in 3v3.",
+   "acceptance": [
+    {
+     "level": "V1",
+     "verb": "lint",
+     "args": []
+    },
+    {
+     "level": "V2",
+     "verb": "smoke",
+     "args": []
+    },
+    {
+     "level": "V3",
+     "verb": "invariants",
+     "args": []
+    },
+    {
+     "level": "V4",
+     "verb": "bot",
+     "args": [
+      "--test=tests/bot_crews.gd",
+      "--frames=45000"
+     ]
+    },
+    {
+     "level": "V4",
+     "verb": "bot",
+     "args": [
+      "--test=tests/bot_hand_perfect.gd"
+     ]
+    },
+    {
+     "level": "V4",
+     "verb": "bot",
+     "args": [
+      "--test=tests/bot_hand_newcomer.gd"
+     ]
+    },
+    {
+     "level": "V4",
+     "verb": "bot",
+     "args": [
+      "--test=tests/bot_first_minute.gd",
+      "--frames=3600"
+     ]
+    },
+    {
+     "level": "V4",
+     "verb": "bot",
+     "args": [
+      "--test=tests/bot_play.gd"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "viaduct_art",
+   "title": "Autumn viaduct court and mood",
+   "milestone": "art_pass",
+   "deps": [
+    "court_exchange",
+    "crews_stakes"
+   ],
+   "serves": [
+    "screen_spring",
+    "peak_swat",
+    "roll_finish"
+   ],
+   "scope": [
+    "gen/mod_arena.gd",
+    "scripts/arena/**",
+    "data/arena.json",
+    "data/arena_layout.json"
+   ],
+   "registers": {
+    "capabilities": [
+     "kit",
+     "style",
+     "physics",
+     "vfx",
+     "audio",
+     "biped"
+    ],
+    "assets": [
+     "gen/mod_arena.gd"
+    ]
+   },
+   "contract": "The player's picture, visible in captures from views play and side: tall brick viaduct arches behind the hoop, yellow autumn trees, a chain fence, blue court with an orange key, yellow team against plum team (team colours are set by the core; do not change them). gen/mod_arena.gd appends \"scripts/arena/mod.gd\" to ctx.root meta hc_modules. Hooks setup(game), tick(game,frame), on_event(game,ev), state(game). Presentation only: never move actors, ball or rules; never edit core files; no own materials, lights, sky, environment or meshes in scripts.\n\nSPACE: x -7.5..7.5, z 0 (baseline)..11, hoop (0,3.05,1.575), floor top y=0, core chalk lines top .012, footprints .016. The camera stands at the player + (about 1.2, 5.4, 7.2), steady, facing -z, never swinging.\n\nBUILD data/arena_layout.json (tl.layout/1, one TLKit.build_layout call) plus data/arena.json for colours, counts and timings:\n- court paint: flat plates (TLBodies.make with color, layer 0, mask 0), top y .004: blue court, orange key (4.9 m wide, 5.8 m deep from the baseline), worn darker patches; core lines stay visible above.\n- three tall brick arches 3 m behind the hoop (z about -3), springing from piers, at least 7 m high, soot-dark brick, from kit arch_rib, stones and plain bodies; the middle arch frames the backboard and the ball stays readable against it.\n- side piers under 1.5 m, 5 m outside the court (x about ±12.5).\n- chain fence (kit fence) along both sides and behind the arches; side scenery at most 1.5 m.\n- yellow and some rust autumn trees (kit tree, recoloured) behind and far to the sides; leaf piles; a crate bench.\n- a dozen onlookers (low-cost figures, no collision) behind the baseline and far back at the sides; they cheer on swat, snag and a mate's make after a screen, and groan on a rim-out.\n- NOTHING on the camera side: no wall, pier, tree, crowd or fence with z > 11 inside |x| < 14; 10 m open apron.\nWarm dusk through the style layer's palette only.\n\nMOTION AND SOUND: a few leaves drift continuously (visual nodes, at most 40, deterministic with ctx.rng); on snag and crash add a yellow leaf burst (TLVfx.burst debris); no other new bursts, no new shake, no leaf trail off screens. At 150 s of rules.seconds_played lamps light (kit light_mast or lamp heads switch to a warm glowing colour) with a soft cue. Sneaker squeaks on hard cuts and a low neighbourhood cheer on sprung baskets via TLAudio presets; the core already plays thumps, clank and rattle.\n\nBudgets: at most 600 physics bodies and 5,000 nodes for the whole pack; frame p99 under 8 ms headless; static scenery comes from the layout so it merges.\nstate(game): lamps_on. Earlier bots must still pass.",
+   "acceptance": [
+    {
+     "level": "V1",
+     "verb": "lint",
+     "args": []
+    },
+    {
+     "level": "V2",
+     "verb": "smoke",
+     "args": []
+    },
+    {
+     "level": "V3",
+     "verb": "invariants",
+     "args": []
+    },
+    {
+     "level": "V4",
+     "verb": "bot",
+     "args": [
+      "--test=tests/bot_play.gd"
+     ]
+    },
+    {
+     "level": "V4",
+     "verb": "bot",
+     "args": [
+      "--test=tests/bot_first_minute.gd",
+      "--frames=3600"
+     ]
+    }
+   ]
+  }
+ ],
+ "card": {
+  "schema": "tl.card/1",
+  "id": "card.team_possession",
+  "version": "0.4.0",
+  "title": "Team possession: skaters or players carry one puck or ball, pass and shoot at two goals",
+  "summary": "Two teams of a few walkers or skaters on a bounded rink; whoever has the puck inside his reach carries it on his stick, passes to a mate or shoots; a puck inside a goal volume is a point; periods and a score decide. The worked example is the house game hockey (engine/packs/hockey). Covers ice hockey, street hockey, five-a-side football, a team ball game with carriers and passes.",
+  "applies_when": [
+   "two teams of several players each, the player controls one of them and the others are run by the AI",
+   "players carry the ball or puck themselves, pass it to mates and shoot it at the other team's goal",
+   "a point is the ball or puck inside a goal; the match ends by a score or by periods on a clock"
+  ],
+  "not_when": [
+   "hockey or another game on a rink with a puck: card.rink_core (a cartridge on the rink core, thirdjam's match); since 24 Nov this card's old hockey is the hand-built route only",
+   "one piece per side on a rail or in its own half returning the ball by contact (pong, air hockey): use card.two_sides_ball",
+   "no opponent team: targets to knock down use card.knock_down, a course against the clock card.timed_drive",
+   "a full simulation with goalies, offside or line changes (hockey shows none of them; see its README, known limits)"
+  ],
+  "pack": "hockey",
+  "capabilities": [
+   "physics",
+   "input",
+   "ui",
+   "camera",
+   "rules",
+   "ball",
+   "kit",
+   "style",
+   "biped",
+   "ai",
+   "audio",
+   "vfx"
+  ],
+  "kit_parts": [
+   "rink",
+   "goal",
+   "puck",
+   "stands",
+   "scoreboard",
+   "light_mast",
+   "sign",
+   "flag",
+   "entrance"
+  ],
+  "swap_parts": [
+   "ball",
+   "ground_patch",
+   "fence",
+   "barrier_wall"
+  ],
+  "api": [
+   "TLKit.build_layout",
+   "TLKit.build",
+   "TLKitSite.bind_scoreboard",
+   "TLBiped.create",
+   "TLBall.create",
+   "TLBall.hold",
+   "TLBall.release",
+   "TLBodies.trigger",
+   "TLSteer.arrive",
+   "TLSteer.separate",
+   "TLHand.create",
+   "TLRules.create",
+   "TLRules.add_score",
+   "TLRules.is_over",
+   "TLRules.snapshot",
+   "TLHud.create",
+   "TLHud.add_score",
+   "TLHud.add_clock",
+   "TLVfx.burst",
+   "TLAudio.play"
+  ],
+  "rules_keys": [
+   "sides",
+   "score_to_win",
+   "periods",
+   "period_seconds",
+   "sudden_death",
+   "time_limit_seconds"
+  ],
+  "data_files": [
+   {
+    "file": "data/venue.json",
+    "role": "the play space as one tl.layout/1 file: the rink and the two goals"
+   },
+   {
+    "file": "data/venue_art.json",
+    "role": "the dressing as a second tl.layout/1 file: stands, scoreboards, light masts, signs, flags, the entrance"
+   },
+   {
+    "file": "data/tuning.json",
+    "role": "the rules object TLRules is created from (sides, score, periods) plus skater, shot, carry (reach, pass speed) and camera numbers"
+   },
+   {
+    "file": "data/ai.json",
+    "role": "what the AI skaters do: roles, reaction, how they chase, pass and shoot"
+   },
+   {
+    "file": "data/levels/rookie.json",
+    "role": "one difficulty level of the opponents (reaction frames, speed share); pro and all-star beside it"
+   },
+   {
+    "file": "data/modes/base.json",
+    "role": "one mode as data (roster, rules, rink); the other modes are files beside it"
+   }
+  ],
+  "do": [
+   "Decide possession by reach: a loose puck inside a player's ring is his on that frame; carry it with TLBall.hold and let it go with TLBall.release for a shot or a pass.",
+   "Put a goal volume in each net (TLBodies.trigger) and read the puck's position against it every live tick: a puck inside counts carried, released or lying there, not only on the enter event.",
+   "Keep the rule set, the levels and the modes as data files; the script reads them and only TLRules decides the score and the end.",
+   "Move the AI players with TLSteer (arrive, separate) from roles in data/ai.json; difficulty is their reaction and speed, not hidden help.",
+   "Name the player's check: one bot drives the human side's actions and fails when that side never touched the puck.",
+   "Read every difficulty figure through a hand (TLHand: perfect, sharp, regular, newcomer), never through a perfect bot alone."
+  ],
+  "dont": [
+   "Do not let the human's AI mates take a loose puck he is as near to: they yield it to him (scripts/ai/brain.gd).",
+   "Do not hand the puck to anybody at a face-off: drop it between the two centre men outside both reaches.",
+   "Do not animate a hit by hand: the closing speed picks bump, stumble or knockdown (numbers in data/tuning.json hits) and TLBiped's own down, stumble and shove play it.",
+   "Do not tune the levels against the perfect hand: the ladder is read per hand (tl ladder)."
+  ],
+  "bot": {
+   "template": "tests/bot_hockey.gd",
+   "plays_by": "the human side's own actions through a TLHand: it gets behind the puck on the far side from the other goal, dribbles toward the goal around the opponents and shoots when within range and lined up.",
+   "wins_when": "the match reached its result (the HUD reads WIN, LOSE or DRAW) and the bot's skater took the puck at least once; who won is a number in the result, the must-win verdict is a separate ladder cell."
+  },
+  "acceptance": [
+   "The bot plays a match to its result and takes the puck at least once, on seeds 1 to 20.",
+   "A player who does nothing never takes the puck and does not win the face-off.",
+   "A bot-only match ends with both sides scoring and nobody outside the rink.",
+   "Every mode file ends by its own rules inside its frame budget.",
+   "Lint reports 0 bypasses; the win share per level is quoted with the hand it was read through."
+  ],
+  "fun": {
+   "camera": [
+    "A chase camera behind the player's skater (TLCameras.chase), so carrying, passing and shooting read from behind; the fixed arena view stays for captures (TLCameras.set_subject).",
+    "The camera must show the goal the player attacks; a view from 100 m up loses the puck and the player."
+   ],
+   "juice": [
+    "A goal gets the horn, a cheer, a goal flash and confetti (TLVfx.burst, TLAudio.play), as the hockey fx script does.",
+    "Fast skating throws ice spray; a check that lands should shake the view a little (TLCameras.shake) and knock the skater down (TLBiped.down).",
+    "A shot needs weight: a short wind-up, a sound on release, a spray where the puck leaves the stick."
+   ],
+   "rivals": [
+    "Opposing skaters play roles from data (chaser, defender, a goalie in the crease) and steer with TLSteer.arrive and TLSteer.separate; difficulty is their speed and reaction, read through a TLHand.",
+    "Give the other team a name and one habit the player can read: the chaser always goes for the carrier; the defender cheats toward the slot."
+   ],
+   "first_minute": [
+    "The puck drops near the player's skater and one hint line names the three keys (move, pass, shoot); the first opponent is slow to arrive.",
+    "No goalie or a weak one in the first round, so the first shot can score."
+   ],
+   "stakes": [
+    "Periods and a score on the HUD (TLHud.add_score, TLHud.add_clock); the end screen says WIN, LOSE or DRAW and by how much.",
+    "A ladder of difficulty levels (data) so a win unlocks a harder opponent."
+   ]
+  },
+  "variants": [
+   {
+    "ask": "football instead of hockey",
+    "change": "the kit's ball for the puck and ground_patch for the rink in data/venue.json; walkers instead of skaters in data/tuning.json; the same possession by reach."
+   },
+   {
+    "ask": "more or fewer players a side",
+    "change": "a mode file under data/modes/ with its roster; big ice is two against two."
+   },
+   {
+    "ask": "harder opponents",
+    "change": "a level file under data/levels/: less reaction delay and more speed; measure it with tl ladder per hand."
+   }
+  ],
+  "hands": {
+   "seeds": 20,
+   "checks": [
+    {
+     "hand": "newcomer",
+     "wins_min": 13,
+     "measured": "hockey rookie newcomer 18 of 20, Wilson 70..97 (tl ladder, 16 Nov 06:08, engine/packs/hockey/README.md)"
+    },
+    {
+     "hand": "perfect",
+     "wins_min": 16,
+     "measured": "hockey rookie perfect 20 of 20, Wilson 84..100 (tl ladder, 16 Nov 06:08)"
+    }
+   ]
+  },
+  "interview": {
+   "kind": "a team game with a puck or a ball",
+   "example": "the house game Ice hockey, three against three",
+   "match": [
+    "hockey",
+    "puck",
+    "football",
+    "soccer",
+    "team",
+    "teams",
+    "pass",
+    "passing",
+    "goal",
+    "goals",
+    "skate",
+    "skaters",
+    "rink",
+    "a side",
+    "five-a-side",
+    "match"
+   ],
+   "estimate": {
+    "packages": 5,
+    "minutes": 60,
+    "source": "the 11 Nov hockey job: 5 packages, about an hour"
+   },
+   "questions": [
+    {
+     "key": "sport",
+     "group": "who",
+     "ask": "Which game is it?",
+     "options": [
+      {
+       "id": "ice_hockey",
+       "label": "Ice hockey",
+       "say": "ice hockey on a rink with boards, a puck",
+       "from_words": [
+        "ice hockey",
+        "hockey",
+        "puck"
+       ]
+      },
+      {
+       "id": "football",
+       "label": "Football on grass",
+       "say": "football on a grass pitch with a ball",
+       "from_words": [
+        "football",
+        "soccer"
+       ],
+       "size": {
+        "set": [
+         64,
+         40,
+         6
+        ]
+       },
+       "shape": "pitch"
+      },
+      {
+       "id": "street",
+       "label": "Street hockey",
+       "say": "street hockey on concrete with a ball",
+       "from_words": [
+        "street hockey"
+       ],
+       "shape": "court"
+      }
+     ],
+     "propose": "ice_hockey",
+     "reason": "the worked example is ice hockey; football is its smallest known variant"
+    },
+    {
+     "key": "players",
+     "group": "who",
+     "ask": "How many players a side?",
+     "options": [
+      {
+       "id": "2",
+       "label": "2 against 2",
+       "say": "two against two",
+       "from_words": [
+        "two against two",
+        "2 against 2",
+        "2v2",
+        "two on two"
+       ]
+      },
+      {
+       "id": "3",
+       "label": "3 against 3",
+       "say": "three against three",
+       "from_words": [
+        "three against three",
+        "3 against 3",
+        "3v3",
+        "three on three"
+       ]
+      },
+      {
+       "id": "5",
+       "label": "5 against 5",
+       "say": "five against five",
+       "from_words": [
+        "five against five",
+        "5 against 5",
+        "5v5",
+        "five-a-side",
+        "five a side"
+       ],
+       "size": {
+        "add": [
+         8,
+         4,
+         0
+        ]
+       }
+      }
+     ],
+     "propose": "3",
+     "reason": "the example plays 3 against 3; its rink holds eight skaters (mode outnumbered)"
+    },
+    {
+     "key": "opponents",
+     "group": "who",
+     "ask": "How hard are the computer's players?",
+     "options": [
+      {
+       "id": "rookie",
+       "label": "Rookie",
+       "say": "rookie opponents (slow to react)"
+      },
+      {
+       "id": "pro",
+       "label": "Pro",
+       "say": "pro opponents"
+      },
+      {
+       "id": "allstar",
+       "label": "All-star",
+       "say": "all-star opponents (quick and fast)",
+       "from_words": [
+        "hard",
+        "harder",
+        "difficult"
+       ]
+      }
+     ],
+     "propose": "rookie",
+     "reason": "a newcomer's hand wins 18 of 20 against rookie (tl ladder, 16 Nov)"
+    },
+    {
+     "key": "match",
+     "group": "win",
+     "ask": "How is a match won?",
+     "options": [
+      {
+       "id": "periods",
+       "label": "3 periods of 36 s, first to 3",
+       "say": "three periods of 36 seconds, first to 3 goals, a draw plays on to the next goal"
+      },
+      {
+       "id": "one",
+       "label": "One 3-minute period",
+       "say": "one period of 3 minutes, most goals wins"
+      },
+      {
+       "id": "first5",
+       "label": "First to 5, no clock",
+       "say": "first to 5 goals, no clock"
+      }
+     ],
+     "propose": "periods",
+     "reason": "the example's rules (data/tuning.json): every mode ends inside its frame budget"
+    },
+    {
+     "key": "rink",
+     "group": "where",
+     "ask": "How big is the rink?",
+     "options": [
+      {
+       "id": "standard",
+       "label": "Standard 60 x 30 m",
+       "say": "a 60 x 30 m rink"
+      },
+      {
+       "id": "big",
+       "label": "Big ice 80 x 40 m",
+       "say": "a big 80 x 40 m rink",
+       "from_words": [
+        "big ice",
+        "big rink",
+        "large rink"
+       ],
+       "size": {
+        "set": [
+         84,
+         44,
+         9
+        ]
+       }
+      },
+      {
+       "id": "small",
+       "label": "Small 40 x 20 m",
+       "say": "a small 40 x 20 m rink",
+       "from_words": [
+        "small ice",
+        "small rink",
+        "little rink"
+       ],
+       "size": {
+        "set": [
+         47,
+         27,
+         9
+        ]
+       }
+      }
+     ],
+     "propose": "standard",
+     "reason": "the example's rink; big ice is the largest that fits an 88 m plot (mode big_ice)"
+    },
+    {
+     "key": "dressing",
+     "group": "where",
+     "ask": "What stands around it?",
+     "options": [
+      {
+       "id": "arena",
+       "label": "Stands, scoreboard, light masts",
+       "say": "stands, a scoreboard and light masts around it",
+       "from_words": [
+        "stands",
+        "scoreboard",
+        "crowd"
+       ],
+       "size": {
+        "add": [
+         0,
+         8,
+         3
+        ]
+       },
+       "stands": true
+      },
+      {
+       "id": "bare",
+       "label": "Just the boards",
+       "say": "nothing around it but the boards",
+       "from_words": [
+        "no stands",
+        "just the boards",
+        "bare boards"
+       ]
+      },
+      {
+       "id": "pond",
+       "label": "A frozen pond, trees",
+       "say": "an outdoor pond look with trees",
+       "from_words": [
+        "pond",
+        "outdoor",
+        "frozen lake"
+       ]
+      }
+     ],
+     "propose": "arena",
+     "reason": "the example's dressing (data/venue_art.json); stands add about 4 m on each long side"
+    }
+   ],
+   "variants": [
+    {
+     "ask": "football instead of hockey",
+     "set": {
+      "sport": "football"
+     }
+    },
+    {
+     "ask": "more or fewer players a side",
+     "set": {
+      "players": "5"
+     }
+    },
+    {
+     "ask": "harder opponents",
+     "set": {
+      "opponents": "allstar"
+     }
+    }
+   ]
+  },
+  "footprint": {
+   "size_m": [
+    67,
+    37
+   ],
+   "height_m": 9,
+   "shape": "rink",
+   "source": "the house game's rink 60 x 30 m with a 3.5 m apron (data/venue.json)"
+  }
+ },
+ "events": [
+  {
+   "seq": 1333,
+   "type": "note",
+   "package": "court_exchange",
+   "round": 13,
+   "text": "- NEW MOVE: alley_oop (game events `oop_throw` when the ball is thrown, `oop_catch` when it is caught over the rim). `tests/bot_play.gd` reports `metrics.moves.alley_oop` {started, landed}; this run saw 6 started and 2 landed.\n- New input action `oop` on key C. With the ball it is the verb \"oop\" in `brain.decide`'s verb list. Without the ball it marks a call: actor `you` is chosen as catcher only within `tune.oop.call_f` frames of pressing C.\n- New actor action `lob`, played with the `chest_pass` clip. The catcher uses the existing `dunk` action and flight (slow beat, rim close-up, slam, hang) without the `crouch` phase.\n- During the lob, `ball_state` is `SHOT_IN_FLIGHT` with `game.shot.oop = true`. The ball's path is scripted by `scripts/core/oop.gd`.\n- New events: `oop_throw` (by thrower, on catcher), `oop_catch`, `oop_stolen` (by defender, on catcher). A steal also emits `intercept` with `data.oop`.\n- New miss cause `brick` (in `miss` `data.cause` and `last_miss`) for a late catcher; the contract's list did not have it.\n- RULE: bots throw an alley-oop no more often than every `tune.oop.every_f` frames (3300, plus up to 600 random) per team, with the first one at 1500 frames (quarry 900 later). A player sees each crew try a lob roughly once a minute.\n- RULE: when a lob is thrown, rival bots within 3 m of the rim go up to contest it with chance 0.35, 0.50 or 0.65 by tier. A player sees defenders near the rim leap at lobs, more often on harder tiers.\n- The centre banner no longer pads SLAM!, REJECTED! and ON FIRE with blank lines (this removes the old pulse). ALLEY-OOP! and STOLEN! use the same centre label.\n- New `tune.oop` block in `data/tuning.json`. No existing value changed.\n- Not done this round: `bot_tofu`, smoke and invariants were not rerun after the change."
+  },
+  {
+   "seq": 1345,
+   "type": "note",
+   "package": "court_exchange",
+   "round": 13,
+   "text": "[foreman] part of your change was NOT made: court_exchange made what it could and says: Not done this round: `bot_tofu`, smoke and invariants were not rerun after the change.. No other package owns the rest: say it again as a change of its own if you still want it"
+  },
+  {
+   "seq": 1525,
+   "type": "note",
+   "package": "court_exchange",
+   "round": 14,
+   "text": "- Why the bots' lobs bricked: the catcher ran to the rim on foot, slowed by acceleration and by other bodies, and could not cover up to 8 m before the ball got there. Now, when an alley-oop is thrown, the teammate nearest the rim sky-jumps as the ball leaves the hand and flies the whole way to a spot under the rim on an eased path. The height is still the dunk flight's height. A catcher knocked out of the flight still bricks it.\n- Your bot teammates now throw alley-oops to you without you calling for one. You are flown up like any other catcher, and your movement keys do nothing during that flight. The C call stays for when you are the one throwing.\n- Defenders who go up to contest a lob now drift toward the ball in the air at `oop.steal_drift` 3.5 m/s, so STOLEN! can actually happen. The reach for stealing an alley-oop is its own value, `oop.steal_reach` 1.5 m (it used `block.reach` 1.3 before). The share of defenders who go up is unchanged at 0.35/0.50/0.65 by tier.\n- RULE: none added. The odds of the throw, the catch and the contest are as before; only how the bodies reach the ball changed.\n- ALLEY-OOP! and STOLEN! are no longer in the centre banner label. They are drawn on a new HUD layer, `shout`, in the black face with an outline, at `oop.word_pt` 120 pt, centred at 38% of the screen height (`oop.word_y`) and cleared when the flash ends. That is about twice the old banner size. The letter spacing changed from \"A L L E Y - O O P !\" to \"ALLEY-OOP!\" because the face's tracking now spaces it. SLAM!, REJECTED! and ON FIRE stay in the banner label.\n- The glowing hand of your open teammate went from radius 0.16 to 0.42 (`oop.glow_r`), and its height from 2.25 to 2.7 m (`oop.glow_h`). That is larger than the usual modest step, because the request was that it be visible from the play camera 19 m away.\n- NEW MOVE: alley_oop. It is counted in `tests/bot_play.gd` as `metrics.moves.alley_oop` (started 7, landed 5 on seed 1).\n- KIT: none. No bypass was added; the new layer is the kernel's `TLHud.add_layer`."
+  },
+  {
+   "seq": 1664,
+   "type": "reopened",
+   "package": "court_exchange",
+   "reason": "change request (event 1643); the Planner names the package: How hard the rivals play is set by numbers in data/tuning.json and the rival AI in scripts/core/ai.gd, both owned by the root court_exchange (crews_stakes, which holds the newcomer test, depends on it\n... (93 more characters cut): Make it fairer: a newcomer now wins only 11 of 20 matches. Bring it back to about 13 or 14 of 20 without taking away the alley-oops, the steals or the dunks."
+  },
+  {
+   "seq": 1673,
+   "type": "note",
+   "package": "court_exchange",
+   "round": 16,
+   "text": "- Tier 1 `tiers[0]` in `data/tuning.json`: `bite` 0.7 → 0.8, `read` 0.2 → 0.12, `error_f` 8 → 10. These move away from the contract's tier-1 figures (.70 bite, .20 read, 8 frames error) to answer the change request. Tiers 2 and 3 are unchanged.\n- The bite and read values are read in `scripts/core/ai.gd` by every bot defender, so your own bot mates' fake bites and screen reads at tier 1 change too, not only the rivals'. The rivals set most of the screens and pump fakes against them, so the change mostly helps your side.\n- `error_f` is read in `scripts/core/ai.gd` for every bot's jump-shot release, unless the crews package's own per-team shot error overrides it.\n- I could not measure the newcomer win share; the newcomer hand test is not one of the commands I may run."
+  },
+  {
+   "seq": 1782,
+   "type": "reopened",
+   "package": "crews_stakes",
+   "reason": "hand check failed (1 of 1) for card card.team_possession: tests/bot_hand_newcomer.gd (newcomer hand): 10 of 20 won (Wilson 95 % 30..70); the card asks at least 13. Sent back to crews_stakes, which registers the test."
+  },
+  {
+   "seq": 1786,
+   "type": "note",
+   "package": "crews_stakes",
+   "round": 17,
+   "text": "- Tier-1 values only in `data/crews.json` `crews`; tiers 2 and 3 are unchanged:\n  - `rival_error_f[0]`: 18 → 24 (the rivals' jump-shot timing error)\n  - `rival_error_min_f[0]`: 9 → 12\n  - `rival_gap[0]`: 1.8 → 2.4 (rivals guard looser on tier 1)\n  - `rival_poke[0]`: 0.14 → 0.10\n  - `rival_drive_wait_f[0]`: 60 → 80\n  - `rival_hesitate[0]`: 0.7 → 0.85\n  - `mate_swat[0]`: 0.7 → 0.85\n- These are the existing per-tier difficulty values: clumsiness, looser guarding and later drives, never speed. No new rule was added.\n- `rival_gap` moved by a third and `rival_error_f` and `rival_error_min_f` by a third or more; that is the size of a modest step, and the others moved less.\n- The first match of a session is tier 1, so a newcomer's first-match rivals are now clumsier. Later matches are unchanged.\n- The newcomer win share was measured on seed 1 only (one win). The seeds 1–20 count is unmeasured.\n- Smoke and invariants were not run after this change."
+  }
+ ],
+ "seeds": [
+  {
+   "seed": 1,
+   "seq": 1742,
+   "bot": {
+    "test": "tests/bot_hand_newcomer.gd",
+    "done": true,
+    "frames": 15381,
+    "result": {
+     "ok": true,
+     "summary": "newcomer hand: finished true, acted 35, { \"crew\": 21, \"quarry\": 17 }",
+     "acted": 35,
+     "won": true
+    }
+   }
+  },
+  {
+   "seed": 2,
+   "seq": 1743,
+   "bot": {
+    "test": "tests/bot_hand_newcomer.gd",
+    "done": true,
+    "frames": 18002,
+    "result": {
+     "ok": true,
+     "summary": "newcomer hand: finished true, acted 39, { \"crew\": 19, \"quarry\": 14 }",
+     "acted": 39,
+     "won": true
+    }
+   }
+  },
+  {
+   "seed": 3,
+   "seq": 1744,
+   "bot": {
+    "test": "tests/bot_hand_newcomer.gd",
+    "done": true,
+    "frames": 13850,
+    "result": {
+     "ok": true,
+     "summary": "newcomer hand: finished true, acted 37, { \"crew\": 21, \"quarry\": 18 }",
+     "acted": 37,
+     "won": true
+    }
+   }
+  },
+  {
+   "seed": 4,
+   "seq": 1745,
+   "bot": {
+    "test": "tests/bot_hand_newcomer.gd",
+    "done": true,
+    "frames": 14058,
+    "result": {
+     "ok": true,
+     "summary": "newcomer hand: finished true, acted 26, { \"crew\": 22, \"quarry\": 15 }",
+     "acted": 26,
+     "won": true
+    }
+   }
+  },
+  {
+   "seed": 5,
+   "seq": 1746,
+   "bot": {
+    "test": "tests/bot_hand_newcomer.gd",
+    "done": true,
+    "frames": 18002,
+    "result": {
+     "ok": true,
+     "summary": "newcomer hand: finished true, acted 45, { \"crew\": 15, \"quarry\": 16 }",
+     "acted": 45,
+     "won": false
+    }
+   }
+  },
+  {
+   "seed": 6,
+   "seq": 1747,
+   "bot": {
+    "test": "tests/bot_hand_newcomer.gd",
+    "done": true,
+    "frames": 18002,
+    "result": {
+     "ok": true,
+     "summary": "newcomer hand: finished true, acted 48, { \"crew\": 5, \"quarry\": 20 }",
+     "acted": 48,
+     "won": false
+    }
+   }
+  },
+  {
+   "seed": 7,
+   "seq": 1748,
+   "bot": {
+    "test": "tests/bot_hand_newcomer.gd",
+    "done": true,
+    "frames": 18002,
+    "result": {
+     "ok": true,
+     "summary": "newcomer hand: finished true, acted 44, { \"crew\": 12, \"quarry\": 18 }",
+     "acted": 44,
+     "won": false
+    }
+   }
+  },
+  {
+   "seed": 8,
+   "seq": 1749,
+   "bot": {
+    "test": "tests/bot_hand_newcomer.gd",
+    "done": true,
+    "frames": 18002,
+    "result": {
+     "ok": true,
+     "summary": "newcomer hand: finished true, acted 48, { \"crew\": 16, \"quarry\": 18 }",
+     "acted": 48,
+     "won": false
+    }
+   }
+  },
+  {
+   "seed": 9,
+   "seq": 1750,
+   "bot": {
+    "test": "tests/bot_hand_newcomer.gd",
+    "done": true,
+    "frames": 17690,
+    "result": {
+     "ok": true,
+     "summary": "newcomer hand: finished true, acted 46, { \"crew\": 19, \"quarry\": 21 }",
+     "acted": 46,
+     "won": false
+    }
+   }
+  },
+  {
+   "seed": 10,
+   "seq": 1751,
+   "bot": {
+    "test": "tests/bot_hand_newcomer.gd",
+    "done": true,
+    "frames": 18440,
+    "result": {
+     "ok": true,
+     "summary": "newcomer hand: finished true, acted 51, { \"crew\": 20, \"quarry\": 21 }",
+     "acted": 51,
+     "won": false
+    }
+   }
+  },
+  {
+   "seed": 11,
+   "seq": 1752,
+   "bot": {
+    "test": "tests/bot_hand_newcomer.gd",
+    "done": true,
+    "frames": 18002,
+    "result": {
+     "ok": true,
+     "summary": "newcomer hand: finished true, acted 59, { \"crew\": 18, \"quarry\": 14 }",
+     "acted": 59,
+     "won": true
+    }
+   }
+  },
+  {
+   "seed": 12,
+   "seq": 1753,
+   "bot": {
+    "test": "tests/bot_hand_newcomer.gd",
+    "done": true,
+    "frames": 15582,
+    "result": {
+     "ok": true,
+     "summary": "newcomer hand: finished true, acted 35, { \"crew\": 21, \"quarry\": 19 }",
+     "acted": 35,
+     "won": true
+    }
+   }
+  },
+  {
+   "seed": 13,
+   "seq": 1754,
+   "bot": {
+    "test": "tests/bot_hand_newcomer.gd",
+    "done": true,
+    "frames": 15781,
+    "result": {
+     "ok": true,
+     "summary": "newcomer hand: finished true, acted 36, { \"crew\": 19, \"quarry\": 21 }",
+     "acted": 36,
+     "won": false
+    }
+   }
+  },
+  {
+   "seed": 14,
+   "seq": 1755,
+   "bot": {
+    "test": "tests/bot_hand_newcomer.gd",
+    "done": true,
+    "frames": 18003,
+    "result": {
+     "ok": true,
+     "summary": "newcomer hand: finished true, acted 39, { \"crew\": 18, \"quarry\": 17 }",
+     "acted": 39,
+     "won": true
+    }
+   }
+  },
+  {
+   "seed": 15,
+   "seq": 1756,
+   "bot": {
+    "test": "tests/bot_hand_newcomer.gd",
+    "done": true,
+    "frames": 17397,
+    "result": {
+     "ok": true,
+     "summary": "newcomer hand: finished true, acted 35, { \"crew\": 22, \"quarry\": 20 }",
+     "acted": 35,
+     "won": true
+    }
+   }
+  },
+  {
+   "seed": 16,
+   "seq": 1757,
+   "bot": {
+    "test": "tests/bot_hand_newcomer.gd",
+    "done": true,
+    "frames": 18002,
+    "result": {
+     "ok": true,
+     "summary": "newcomer hand: finished true, acted 48, { \"crew\": 18, \"quarry\": 16 }",
+     "acted": 48,
+     "won": true
+    }
+   }
+  },
+  {
+   "seed": 17,
+   "seq": 1758,
+   "bot": {
+    "test": "tests/bot_hand_newcomer.gd",
+    "done": true,
+    "frames": 18002,
+    "result": {
+     "ok": true,
+     "summary": "newcomer hand: finished true, acted 54, { \"crew\": 11, \"quarry\": 17 }",
+     "acted": 54,
+     "won": false
+    }
+   }
+  },
+  {
+   "seed": 18,
+   "seq": 1759,
+   "bot": {
+    "test": "tests/bot_hand_newcomer.gd",
+    "done": true,
+    "frames": 17517,
+    "result": {
+     "ok": true,
+     "summary": "newcomer hand: finished true, acted 44, { \"crew\": 21, \"quarry\": 14 }",
+     "acted": 44,
+     "won": true
+    }
+   }
+  },
+  {
+   "seed": 19,
+   "seq": 1760,
+   "bot": {
+    "test": "tests/bot_hand_newcomer.gd",
+    "done": true,
+    "frames": 18002,
+    "result": {
+     "ok": true,
+     "summary": "newcomer hand: finished true, acted 57, { \"crew\": 12, \"quarry\": 17 }",
+     "acted": 57,
+     "won": false
+    }
+   }
+  },
+  {
+   "seed": 20,
+   "seq": 1761,
+   "bot": {
+    "test": "tests/bot_hand_newcomer.gd",
+    "done": true,
+    "frames": 18002,
+    "result": {
+     "ok": true,
+     "summary": "newcomer hand: finished true, acted 44, { \"crew\": 12, \"quarry\": 18 }",
+     "acted": 44,
+     "won": false
+    }
+   }
+  }
+ ]
+}

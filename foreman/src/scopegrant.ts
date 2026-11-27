@@ -7,6 +7,7 @@
 import type { JobEvent, PackageSpec } from "./events.js";
 import { FOREMAN_NOTE } from "./conduct.js";
 import { matchesAny } from "./scope.js";
+import { movesTestFor } from "./movestest.js";
 
 /** A question that asks for files outside the package's scope (the builder's words or the Foreman's). */
 const SCOPE_QUESTION = /\b(scope|outside|may (the fix|it|this package|i) (touch|change|edit)|can (those|these) files|be added to)\b/i;
@@ -66,7 +67,8 @@ export function sidecarOf(plan: readonly PackageSpec[], spec: PackageSpec, event
 /** The package as the Foreman verifies and merges it now: its plan scope plus what the person granted in this change. */
 export function withGrants(spec: PackageSpec, events: readonly JobEvent[], plan?: readonly PackageSpec[]): PackageSpec {
   const side = plan !== undefined ? sidecarOf(plan, spec, events) : undefined;
-  const extra = [...grantedScope(events, spec.id), ...(side !== undefined ? [side] : [])].filter((g) => !spec.scope.includes(g));
+  const moves = plan !== undefined ? movesTestFor(plan, spec, events) : undefined; // D27b item 23: a count of its own
+  const extra = [...grantedScope(events, spec.id), ...(side !== undefined ? [side] : []), ...(moves !== undefined ? [moves] : [])].filter((g) => !spec.scope.includes(g));
   return extra.length === 0 ? spec : { ...spec, scope: [...spec.scope, ...extra] };
 }
 
@@ -78,6 +80,8 @@ export function widenedNote(plan: readonly PackageSpec[], events: readonly JobEv
   const spec = plan.find((p) => p.id === id);
   const side = spec !== undefined ? sidecarOf(plan, spec, events) : undefined;
   if (side !== undefined && outside.includes(side)) return `${FOREMAN_NOTE}scope widened for this change: ${id} owns the game's cartridge, so it may write its rules sidecar ${side} for a play rule the person asked that no cartridge key says; merged outside its plan scope: ${outside.join(", ")}`;
+  const moves = spec !== undefined ? movesTestFor(plan, spec, events) : undefined;
+  if (moves !== undefined && outside.includes(moves)) return `${FOREMAN_NOTE}scope widened for this change: ${id}'s acceptance runs no bot test of its own besides the Foreman's tofu bot, so it may write ${moves} to count its new moves (the Foreman runs it in its land check; the pack's manifest does not list it); merged outside its plan scope: ${outside.join(", ")}`;
   const granted = grantedScope(events, id);
   if (granted.length === 0) return undefined; // H1g: files outside the plan scope that no answer granted are not "widened" (another rule put them there)
   return `${FOREMAN_NOTE}scope widened for this change, on the person's answer: ${id} may change ${granted.join(", ")}; merged outside its plan scope: ${outside.join(", ")}`;

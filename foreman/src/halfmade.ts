@@ -17,6 +17,27 @@ import { cartridgeOwner } from "./coreowner.js";
 // D27 item 2 (lane J1, event 1012): "RULE: not done. ... It needs `data/harbour.cartridge.json`, which is outside my
 // scope" was missed (lower case, no "here"), so the cartridge edit its builder spelled out never reached the cartridge.
 export const NOT_DONE = /\bNOT (DONE|MADE|BUILT)\b|\bnot done here\b|\bbelongs? to another package\b|^(?:RULE:\s*)?[Nn]ot (?:done|made|built)\b|\b[Nn]eeds? `?[\w./*-]+`?,? which (?:is|are) outside (?:of )?my scope\b/;
+/**
+ * D27b item 27 (J2nd's court copy, events 1333 and 1345: court_exchange r13's "Not done this round: `bot_tofu`, smoke and
+ * invariants were not rerun after the change." reached the card as "part of your change was NOT made"): a line about the
+ * builder's own checks (what it did not run, rerun, test or measure) is a process remark, not a part of the game left
+ * unmade. It names no game file (a path outside tests/), and it says what was not run.
+ */
+export const PROCESS_REMARK = /\b(not (been )?(re-?)?run|(re-?run|run) (again|yet)|were not (re-?)?(run|checked|tested|measured|verified)|was not (re-?)?(run|checked|tested|measured|verified)|not (re-?)?(tested|checked|measured|verified)|untested|unverified|unmeasured)\b/i;
+export function processRemark(line: string): boolean {
+  return PROCESS_REMARK.test(line) && pathsIn(line).every((p) => p.startsWith("tests/"));
+}
+/**
+ * D27b (this lane's live run on a copy of J2nd's biplane, event 994: first_flight wrote "The new numbers (...) are in the
+ * script's own default table (`MORE`). I didn't put them in `data/tuning.json`, which belongs to another package", the
+ * words "belongs to another package" made it a hand-off, and core was re-opened for r30 to copy them): a line that says
+ * the part was made in the builder's own files, and has no NOT DONE of its own, is not a hand-off.
+ */
+export const MADE_IN_OWN = /\b(is|are) (kept |now )?in (the script's|my|its|this package's) own\b|\b(I )?(did not|didn't) put (it|them|these|those)\b/i;
+export const madeInOwn = (line: string): boolean => MADE_IN_OWN.test(line) && !/\bNOT (DONE|MADE|BUILT)\b|^(?:RULE:\s*)?[Nn]ot (?:done|made|built)\b/.test(line);
+/** A builder's line that hands a part of the change on (NOT DONE), and is not a remark about its own checks. */
+export const handsOff = (line: string): boolean => NOT_DONE.test(line) && !processRemark(line) && !madeInOwn(line);
+
 /** The start of the Foreman's request for the rest (after FOREMAN_NOTE), and of the note when nobody owns it. */
 export const REST_OF = "the rest of your change";
 /** D27 items 17-18: the start of the Foreman's request (after FOREMAN_NOTE) that sends a NOT DONE about the base's files back to its builder. */
@@ -57,7 +78,7 @@ export function afterMerge(plan: readonly PackageSpec[], events: readonly JobEve
   const reason = [...events].reverse().find((e) => e.type === "reopened" && e.package === id);
   if (request === undefined || request === "" || reason?.type !== "reopened" || !/change request|rest of your change/.test(reason.reason)) return out;
   // D27 item 2: every round since the re-opening (a NOT DONE line of a round that failed is still not done)
-  const rest = [...new Set(noteLines(builderNote(events, id, reason.seq)).filter((l) => NOT_DONE.test(l)))];
+  const rest = [...new Set(noteLines(builderNote(events, id, reason.seq)).filter(handsOff))]; // D27b item 27: never a process remark
   if (rest.length === 0) return out;
   // D27: lists, not singletons: each line goes to the package that owns the files it names; a line that names none
   // goes with the others when they all go to one package, and on a core a line about the cartridge or a key goes to

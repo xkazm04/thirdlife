@@ -8,6 +8,10 @@ import { MANIFEST_FILE } from "./manifest.js";
 import type { GateHost } from "./p10gate.js";
 import { toPosix } from "./paths.js";
 import { copyDir, hashFile, listFiles } from "./scope.js";
+import type { JobEvent } from "./events.js";
+import { FOREMAN_NOTE, clip } from "./conduct.js";
+import { NOT_MADE } from "./halfmade.js";
+import { endsSincePromotion, lastPromotion } from "./changeend.js";
 
 /** What of the Foreman these need: its gate host (p10gate.ts), state and log read live. */
 export type UnmadeHost = Pick<GateHost, "o" | "s" | "events" | "dir" | "append">;
@@ -37,6 +41,8 @@ export function packIsLastPromotion(h: UnmadeHost): boolean {
  */
 export function restoreLastPromotion(h: UnmadeHost): string {
   const p = h.s.promoted;
+  // D27b item 41: a change that was not made leaves no trace in any workspace either (they are cut again from pack/)
+  if (p !== undefined) dropWorkspaces(h, h.s.order);
   if (!p || !h.s.mergedSincePromotion || packIsLastPromotion(h)) return "";
   const src = promotedDir(h, p.dest);
   if (!fs.existsSync(path.join(src, MANIFEST_FILE))) return ` pack/ could NOT be put back: the last promoted pack ${p.dest} is missing, so pack/ still holds the unpromoted files.`;
@@ -73,4 +79,42 @@ export function restoreLastPromotion(h: UnmadeHost): string {
     if (removed.length > 0 || files.length > 0) h.append({ type: "merge", package: id, files, ...(removed.length > 0 ? { removed } : {}) });
   }
   return ` pack/ was put back to the last promotion ${p.packId} ${p.version} (${toPosix(p.dest)}); the unpromoted files of the change are kept only in ${keepRel}/.`;
+}
+
+/**
+ * D27b item 41 (J2nd's court copy j2nd3, events 1858-1925: after "The change was NOT made" only pack/ was put back; the
+ * workspaces kept the failed "make it fairer" tuning, and the next change's crews_stakes round, which wrote "No game
+ * script or data changed this round", merged data/crews.json with the failed values). A workspace that holds a round
+ * that was not made is removed with its baseline; the package's next round cuts it again from pack/. Returns the ids
+ * whose workspace was there.
+ */
+export function dropWorkspaces(h: Pick<GateHost, "dir">, ids: readonly string[]): string[] {
+  const out: string[] = [];
+  for (const id of ids) {
+    const ws = h.dir("ws", id);
+    if (fs.existsSync(ws)) out.push(id);
+    fs.rmSync(ws, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
+    for (const f of ["baseline", "carried", "members"]) fs.rmSync(h.dir("ws", `${id}.${f}.json`), { force: true });
+  }
+  return out;
+}
+
+/**
+ * D27b item 42 (J2nd's court copy j2nd3, v0.1.9, event 2063: the C: ALLEY-OOP cue was made only in a change that ended
+ * "NOT made" (event 2046); the next change's builder wrote "The C: ALLEY-OOP cue, your mate's glow and the steal hint are
+ * unchanged", true of v0.1.8, read by a person as "it is in the game"). At a promotion, every change since the last
+ * promotion that ended NOT made is told as not in this version, in the person's words, with why.
+ */
+export function earlierUnmade(events: readonly JobEvent[], pkg: string, round: number): { type: "note"; package: string; round: number; text: string }[] {
+  const out: { type: "note"; package: string; round: number; text: string }[] = [];
+  let from = lastPromotion(events);
+  // the Director's ruling: one boundary (changeend.ts); every job ending since the last promotion closes the change before it
+  for (const end of endsSincePromotion(events)) {
+    if (end.type !== "job_state") continue;
+    const asks = events.filter((e) => e.type === "change_requested" && e.seq > from && e.seq < end.seq && !e.text.startsWith(FOREMAN_NOTE)).map((e) => (e.type === "change_requested" ? `"${clip(e.text, 300)}"` : ""));
+    const why = clip((end.reason ?? end.state).split(/ ?The change was NOT made/)[0]?.replace(/^the change was NOT made: /, "") ?? "", 240);
+    if (asks.length > 0) out.push({ type: "note", package: pkg, round, text: `${FOREMAN_NOTE}${NOT_MADE}: your earlier change ${asks.join(" / ")} ended NOT made (${why}); nothing of it is in this version unless this change made it again` });
+    from = end.seq;
+  }
+  return out;
 }

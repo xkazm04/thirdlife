@@ -1,0 +1,11 @@
+{
+ "from": "T2-editor copy .tl/t2e/jobs/biplane-duel-two-biplanes-20261125-1 (J2nd biplane rolled back to v0.1.8), event 994 (first_flight r4); event 1006 handed its last line on to core",
+ "event": {
+  "seq": 994,
+  "ts": "2026-11-27T19:00:24.558Z",
+  "type": "note",
+  "package": "first_flight",
+  "round": 4,
+  "text": "- The lesson has a new step, `cross`, between `weave` and the loop pass. It starts at lesson frame 300 and ends 150 frames after your hook, or after 900 frames. Because of it, the first pass now usually starts later than frame 720.\n- In the `cross` step, Vesper's harpoon roll is suppressed. When your harpoon ring reaches her reaction frame, the module moves your harpoon's age past that frame by one. Your ring is one frame shorter there.\n- RULE: when the real fight starts, both planes' ENERGY is raised to at least the start value (60), and Vesper's harpoon cooldown is set to at least 600 frames. What a player sees: you can roll right away, and her first harpoon comes 10 s or more into the fight.\n- RULE: from the real fight on, Vesper's harpoon cooldown is held at 2 frames while your ENERGY is below the roll cost (20). This also stops her harpoon hunt. What a player sees: she never fires the harpoon when you couldn't roll it.\n- REAL FIGHT no longer shows its stall-turn hint at the same moment. The hint waits until the banner is gone and Vesper's harpoon is not firing, then shows for 240 frames. A \"why you were hit\" hint replaces it if it is still waiting. The REAL FIGHT, PERFECT, EARLY and LATE banners pause while her harpoon fires.\n- `state().lesson` has a new key, `hooked` (bool).\n- The new numbers (`cross_at_f` 300, `cross_max_f` 900, `cross_gap` 32, `cross_side` 14, `cross_sweep_f` 300, `cross_after_f` 150, `fight_harpoon_f` 600, `pending_f` 240) are in the script's own default table (`MORE`). I didn't put them in `data/tuning.json`, which belongs to another package. A `lesson` key of the same name there would override them."
+ }
+}
