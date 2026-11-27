@@ -1,0 +1,56 @@
+{
+ "source": "lane T-editor d27 copy of J1 job, events 1044-1058 (the cartridge diff for the meteor, its removals, its data-only merge)",
+ "events": [
+  {
+   "v": 1,
+   "seq": 1044,
+   "ts": "2026-11-27T08:17:08.235Z",
+   "job": "three-against-three-hockey-20261125-1",
+   "type": "note",
+   "package": "cartridge",
+   "round": 12,
+   "text": "[foreman] cartridge diff: game.abilities: - 2 shields, - a hip_check, 1 shield changed, kind \"shield\" -> \"shotgun\", cooldown_frames 180 -> 720, charges, duration_frames, magnitude; game.shot.charge_frames_max: absent -> 40; game.shot.charge_speed_bonus: absent -> 12; game.contact.spin_stability: absent -> 0.5; game.skater.goalie.reach_m: 1.4 -> 1.6 (F is now your meteor slapshot in place of the bubble and the green-spot tricks, and it comes back 12 seconds after each use. Hold shoot to wind it up: the longer you hold, the harder it flies, but you\n... (429 more characters cut)); measured before: ok (rookie_wins_of_10 10, pro_wins_of_10 7, pro_goals_a_match 14.2, pro_minutes 3.9, pro_play_minutes 3, pro_carry_s 0.9, pro_loose_share 0.29, pro_shots 54.2, pro_passes_completed 3.3, pro_speed_mean 9.7, pro_changes_min 27.6, pro_human_touches_min 14.6, pro_knockdowns 21.1, all_star_wins_of_10 8, idle_wins_of_16 0, skate_only_wins_of_16 1); after: ok (rookie_wins_of_10 10, pro_wins_of_10 10, pro_goals_a_match 17, pro_minutes 4, pro_play_minutes 2.9, pro_carry_s 0.7, pro_loose_share 0.33, pro_shots 61.3, pro_passes_completed 2.8, pro_speed_mean 9.9, pro_changes_min 28.2, pro_human_touches_min 14.3, pro_knockdowns 34.8, all_star_wins_of_10 10, idle_wins_of_16 0, skate_only_wins_of_16 2); measured, warnings: trivial at all_star: thirdjam's regular playtester won every match; a goal flood at rookie (19.5 a match); a goal flood at pro (17 a match); a goal flood at all_star (21 a match); toy: the pickups (speed, precision): worth about nothing, pro 20 of 20 wins with it, 20 without (+0 \n... (600 more characters cut) [report: reports/cartridge-r12-diff-s1044.json]"
+  },
+  {
+   "v": 1,
+   "seq": 1045,
+   "ts": "2026-11-27T08:17:08.239Z",
+   "job": "three-against-three-hockey-20261125-1",
+   "type": "note",
+   "package": "cartridge",
+   "round": 12,
+   "text": "[foreman] removed: 2 shields (game.abilities); why: F is now your meteor slapshot in place of the bubble and the green-spot tricks, and it comes back 12 seconds after each use. Hold shoot to wind it up: the longer you hold, the harder it flies, but you are easy to knock over while you wind up. Each keeper reaches a little further, so goals against th"
+  },
+  {
+   "v": 1,
+   "seq": 1046,
+   "ts": "2026-11-27T08:17:08.242Z",
+   "job": "three-against-three-hockey-20261125-1",
+   "type": "note",
+   "package": "cartridge",
+   "round": 12,
+   "text": "[foreman] removed: a hip_check (game.abilities); why: F is now your meteor slapshot in place of the bubble and the green-spot tricks, and it comes back 12 seconds after each use. Hold shoot to wind it up: the longer you hold, the harder it flies, but you are easy to knock over while you wind up. Each keeper reaches a little further, so goals against th"
+  },
+  {
+   "v": 1,
+   "seq": 1056,
+   "ts": "2026-11-27T08:20:20.285Z",
+   "job": "three-against-three-hockey-20261125-1",
+   "type": "merge",
+   "package": "cartridge",
+   "files": [
+    "data/harbour.cartridge.json"
+   ]
+  },
+  {
+   "v": 1,
+   "seq": 1058,
+   "ts": "2026-11-27T08:20:20.293Z",
+   "job": "three-against-three-hockey-20261125-1",
+   "type": "note",
+   "package": "cartridge",
+   "round": 12,
+   "text": "[foreman] data-only change (data/harbour.cartridge.json): the pack tests, the re-verification of harbour, skin and the milestone's re-look are skipped (their files did not change; the measured check and this round's acceptance played the new data)"
+  }
+ ]
+}

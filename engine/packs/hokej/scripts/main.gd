@@ -31,6 +31,23 @@ var arena                # thirdjam's hall, the core's own part (ctx.cores.part;
 var react                # the hall answering the game: lamps, net, caps, crowd (arena.reactions; lane K6 round 3)
 var screen               # lane K5: the HUD (scripts/hud/screen.gd)
 var toys                 # lane E1b: what the cartridge puts on the ice (scripts/rink_toys.gd)
+var refused: String = "" # D27 item 8: why the core did not open (a cartridge or rules file it refused); "" = it opened
+
+
+# D27 item 8 (S4: main's exe refused data/harbour.rules.json, "unknown rule bot_ability_share", then the base went on with a
+# null core and the exe crashed): the core did not open. The game says so in plain words in the middle of the screen,
+# with the files it read, and stops; the core's own reason is the error line ctx.cores.open printed just before.
+func _refuse() -> void:
+	var side: String = cart_file.trim_suffix(".cartridge.json") + ".rules.json"
+	refused = "The rink core refused this game's rules (data/%s, or its rules file data/%s), so the game cannot start. The reason is the error line just before this one in the log." % [cart_file, side]
+	push_error("rink_game: %s" % refused)
+	ctx.cameras.add_view(&"refused", Vector3(0, 6, 12), Vector3.ZERO, 60.0)   # a view of its own, so the screen (and its HUD) is up
+	ctx.cameras.activate(&"refused")
+	var hud := TLHud.create()
+	ctx.root.add_child(hud)
+	hud.add_label(&"refused", "THIS GAME CANNOT START\n" + refused.replace(", so the game cannot start. ", ".\n"), "center")
+	hud.set_align(&"refused", "center")
+	hud.set_plate(&"refused", true)
 
 
 func _pack_setup(c) -> void:
@@ -56,6 +73,9 @@ func _pack_setup(c) -> void:
 	toys = Toys.new(ctx.root, cart)                # lane E1b: game.rink.zones / obstacles and game.pickups, from the cartridge and the bus
 	rink_c = {"L": float(rk["length_m"]), "W": float(rk["width_m"]), "R": maxf(0.0, float(rk["corner_radius_m"]))}   # FJamCameraRink::FromFrame cpp:127-134
 	rink = ctx.cores.open("rink", cart_file)
+	if rink == null:
+		_refuse()                                  # D27 item 8: a refused cartridge or rules file is said, not crashed on
+		return
 	rink.set_difficulty(String(match_cfg["difficulty"]))
 	rink.set_human_mode("raw")                     # the person's devices; thirdjam's game-mode rules in the core's glue (GAMEMODE.md)
 	rink.reset(ctx.seed)
@@ -119,6 +139,8 @@ func _pack_start() -> void:
 
 
 func _pack_tick(frame: int) -> void:
+	if refused != "":
+		return                                      # D27 item 8: nothing plays on a core that did not open
 	var inp = ctx.input
 	if frame == 0 and arena != null:
 		arena.light(ctx.root)                       # thirdjam's rig light and post (lane K6)
@@ -244,6 +266,8 @@ func _present() -> void:
 
 
 func _pack_state() -> Dictionary:
+	if refused != "":
+		return {"state": "refused", "refused": refused}
 	var me: int = int(snap["HumanIndex"])
 	var s: Dictionary = snap["Skaters"][me]
 	var p: Vector2 = s["Pos"]

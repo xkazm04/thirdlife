@@ -345,21 +345,30 @@ func _done() -> void:
 	title.name = "GameTitle"
 	_place(title, Vector2(0, 334))
 	var note: String = Model.change_note(job)
+	# D27 item 13 (a window still of T2's robot job: four note lines ran under Play and Add to menu): a longer note takes
+	# smaller letters and pushes the buttons and the change box down; one line keeps the old places
+	var below: float = 414.0
 	if not note.is_empty():
-		var nl: Label = _label(note, 20, 700, ORANGE, W, HORIZONTAL_ALIGNMENT_CENTER)
+		var lines: int = 0
+		for l: String in note.split("\n"):
+			lines += 1 + int(l.length() / 118)
+		var px: int = 20 if lines <= 1 else (17 if lines <= 6 else 15)
+		var nl: Label = _label(note, px, 700, ORANGE, W - 80.0, HORIZONTAL_ALIGNMENT_CENTER)
 		nl.name = "ChangeNote"
-		_place(nl, Vector2(0, 380))
-	var play: Button = _button("Play", "Play", "play", HONEY, Vector2(W * 0.5 - 330, 414), Vector2(310, 110), 46)
+		_place(nl, Vector2(40, 376 if lines > 1 else 380))
+		below = maxf(414.0, 376.0 + lines * (px + 6) + 10)
+	var bh: float = 110.0 if below <= 414.0 else 88.0
+	var play: Button = _button("Play", "Play", "play", HONEY, Vector2(W * 0.5 - 330, below), Vector2(310, bh), 46)
 	play.pressed.connect(func() -> void: launch(Model.play_dir(job)))
 	_body.add_child(play)
 	# E4: one press puts the game in the main menu's Dungeons (the person's own list, kernel/dungeon/dungeons.gd)
 	var listed: bool = not Dungeons.user_row(job_dir, menu_list).is_empty()
 	var mb: Button = _button("RemoveMenu" if listed else "AddMenu", "In the menu" if listed else "Add to menu", "check" if listed else "plus", GREEN if listed else CREAM,
-		Vector2(W * 0.5 + 20, 414), Vector2(310, 110), 30)
+		Vector2(W * 0.5 + 20, below), Vector2(310, bh), 30)
 	mb.tooltip_text = "Press to take it out of the menu" if listed else "Show it in the main menu's Dungeons"
 	mb.pressed.connect(remove_from_menu if listed else add_to_menu)
 	_body.add_child(mb)
-	_change_row(Vector2(150, 572))
+	_change_row(Vector2(150, 572.0 if below <= 414.0 else minf(below + bh + 16.0, H - 84.0)))
 	if Model.juice_of(job) == "ran":  # S2-juice arm A: the pass ran by itself on a new move; say how to leave it out
 		var jn: Label = _label("Your new move got the juice pass: a tell, an impact word, a camera kick, a slow beat. Say “keep it plain” to leave it out.", 18, 650, MUTED, W, HORIZONTAL_ALIGNMENT_CENTER)
 		jn.name = "JuiceNote"

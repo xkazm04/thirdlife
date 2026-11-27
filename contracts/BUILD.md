@@ -226,6 +226,88 @@ omitted, a removal carries what it removed). Each kind is owned by one **layer**
 - Every layer shows its own part of an answer as a ghost before accept (blocks, land, paint, pieces, water, paths,
   plants).
 
+## Milestone 6: rules and runs (added 27 Nov, day shift, Director with the owner away)
+
+A build can do something: **zones** (boxes on the block grid) and **rules** (when, if, do) make a door that opens, a
+jump pad, a coin, a hazard, and a **run** (start, checkpoints, finish) that times itself. Thesis and sources:
+`docs/research/sandbox/THESIS.md`.
+
+```
+{"v":1, "op":"zone",   "id":<int>, "box":[[x0,y0,z0],[x1,y1,z1]], "look":"<zone look>", "name":"<text>", "author":..., "batch":...}
+{"v":1, "op":"unzone", "id":<int>, "box":[...], "look":"...", "name":"...", "author":..., "batch":...}
+{"v":1, "op":"rule",   "id":<int>, "when":{...}, "if":[...], "do":[...], "author":..., "batch":...}
+{"v":1, "op":"unrule", "id":<int>, "when":{...}, "if":[...], "do":[...], "author":..., "batch":...}
+```
+
+- **Zones.** `box` is two block cells, inclusive, `x0 <= x1`, `y0 <= y1`, `z0 <= z1`, at most 64 cells a side, in the
+  block grid's bounds. `id` is a positive integer, unique among zones in the Home (the layer gives the next free one).
+  `look` is one of `none` (invisible in play), `pad` (a flat glowing disc on the zone's floor), `coin` (a turning token
+  at the zone's centre), `flag` (a pole and flag at the zone's floor centre). `name` is optional, 1-24 printable
+  characters. A Home holds at most 512 zones and 512 rules. A `zone` op on an id that exists is refused (remove it first: `unzone` then `zone` in one batch).
+  `unzone` carries the whole zone it removes, so undo needs no lookup. Zones are refused in the protected areas of
+  blocks, with the blocks' reasons. Zones may overlap each other and blocks.
+- **Rules.** `id` is a positive integer, unique among rules. `when` is exactly one trigger, `if` an optional list
+  (omitted when empty) whose conditions must all hold, `do` 1-8 effects applied in order. `unrule` carries the whole
+  rule. A rule that names a zone id that does not exist is refused; `unzone` of a zone a rule names is refused (remove
+  the rule first, in the same batch).
+- **Triggers** (`when`):
+  - `{"on":"enter", "zone":<id>}`: the visitor's feet cell enters the zone (fires once per entry).
+  - `{"on":"leave", "zone":<id>}`: it leaves the zone.
+  - `{"on":"use", "zone":<id>}`: the use key (E) goes down while the feet cell is in the zone.
+  - `{"on":"every", "frames":<60-36000>}`: every N frames while the Home is visited (not while building).
+  - `{"on":"count", "counter":"<counter>", "at":<1-999>}`: a counter reaches the value (fires once per run).
+  - `{"on":"start"}` / `{"on":"finish"}`: a run starts / is finished.
+- **Conditions** (`if`): `{"running":true|false}` (a run is or is not going); `{"counter":"<counter>", "min":<0-999>}`
+  and/or `"max":<0-999>` in the same object.
+- **Effects** (`do`):
+  - `{"do":"start", "run":"<run name>"}`: starts a run (1-24 printable characters) from this frame: the run's clock
+    is 0, counters are 0, every zone is closed and every coin is back. Starting the run that is going restarts it.
+  - `{"do":"checkpoint", "zone":<id>}`: the run's respawn becomes the zone's floor centre.
+  - `{"do":"finish"}`: ends the run that is going and records it (below).
+  - `{"do":"respawn"}`: puts the visitor at the run's respawn (the start zone's floor centre until a checkpoint), or
+    where the visit began when no run is going.
+  - `{"do":"add", "counter":"<counter>", "by":<-99..99, not 0>}`: counters are named `[a-z_]{1,16}`, at most 8 per
+    Home, 0 at the start of a run and of a visit, clamped to 0-999.
+  - `{"do":"take", "zone":<id>}`: the zone's look (a coin) is hidden until the run restarts or the visit ends.
+  - `{"do":"open", "zone":<id>}` / `{"do":"close", "zone":<id>}` / `{"do":"toggle", "zone":<id>}`: the blocks inside
+    the zone stop being drawn and stop colliding while it is open (a door, a gate, a bridge that appears). Opening
+    never changes the saved blocks; every zone is closed when a visit or a run starts.
+  - `{"do":"launch", "up_cm":<0-3000>, "fwd_cm":<0-3000>}`: sets the visitor's velocity: up, and forward along his
+    facing, in cm per second (a jump pad).
+  - `{"do":"teleport", "zone":<id>}`: puts the visitor at the zone's floor centre.
+  - `{"do":"say", "text":"<text>", "frames":<30-600>}`: shows a line of 1-60 printable characters on the screen.
+- **Running.** Rules run only while the Home is visited and build mode is off, once per physics frame, in the visitor's
+  space only (never a pack's, never in a pack's state hash). Each frame: the triggers are read from the visitor's feet
+  cell and keys, then every fired rule runs in ascending `id`, each checking its `if` when it fires; an effect sees
+  the effects before it in the same frame. A rule fires at most once per frame. The same inputs from the same saved
+  Home give the same frames: a run is deterministic.
+- **Runs are recorded** in `user://home/records.json`:
+  `{"schema":"tl.records/1", "runs":{"<run name>":{"plays":<int>, "finishes":<int>, "best_frames":<int>}}}`
+  (`best_frames` omitted until the first finish). `plays` counts starts, `finishes` counts finishes. A finish shows a
+  card: the run's name, its time, the best time, and "new best" when it is.
+
+### `tl.build/4`
+
+```
+{"v": 4, ...every v3 key...,
+ "zones": [{"id":<int>, "box":[[x0,y0,z0],[x1,y1,z1]], "look":"...", "name":"..."}, ...],
+ "rules": [{"id":<int>, "when":{...}, "if":[...], "do":[...]}, ...]}
+```
+
+- Sorted by `id`; omitted when empty; `name` and `if` omitted when absent. zone, unzone, rule and unrule need version 4.
+
+### The LLM command bar, M6 additions
+
+- The ask gains `zones` and `rules`: the zones whose box meets the region and the rules that name them (and every rule
+  with no zone), in the file's shapes, omitted when there are none; and `rules_room`: `{"zones_left":<int>,
+  "rules_left":<int>, "counters":["<counter>", ...]}` (the counters already used).
+- `ops` may name `zone`, `unzone`, `rule` and `unrule`. Ids in an answer are the answer's own: the exe gives each new
+  zone and rule the next free id when it shows the answer, and rewrites the answer's references to match.
+- Before accept, the exe checks an answer's space and shows what it finds with the ghost (it does not refuse): blocks
+  that rest on nothing, a pad or a flag with no floor under it, a coin inside a solid block, a run whose finish cannot
+  be reached from its start (an estimate over standable cells: walking, steps of at most 0.55 m, and jumps of at most
+  1.2 m up and 4 m across).
+
 ## Laws
 
 - Blocks live only in the visitor's physics space (one static body per non-empty chunk, layer 1). They are never in a

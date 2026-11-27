@@ -1,0 +1,78 @@
+{
+ "source": "d25-biplane .tl/jobs/s35-3A biplane-duel-two-biplanes-20261125-1 (lane S35): events 741-786, the pilot restore the freeze undid",
+ "events": [
+  {
+   "v": 1,
+   "seq": 741,
+   "ts": "2026-11-27T05:02:40.610Z",
+   "job": "biplane-duel-two-biplanes-20261125-1",
+   "type": "promoted",
+   "packId": "game.biplane_duel_two_biplanes",
+   "version": "0.1.4",
+   "dest": "promoted/game.biplane_duel_two_biplanes@0.1.4"
+  },
+  {
+   "v": 1,
+   "seq": 743,
+   "ts": "2026-11-27T07:19:30.538Z",
+   "job": "biplane-duel-two-biplanes-20261125-1",
+   "type": "change_requested",
+   "text": "Clean up something the old balance check made a builder do that I never asked for: in the round that made the barrel roll, it edited the test pilot (tests/support/pilot.gd) so the test hand fires a burst at Vesper whenever she hangs in a stall turn. Put the test pilot back the way it was before that edit, and change nothing in the game itself."
+  },
+  {
+   "v": 1,
+   "seq": 746,
+   "ts": "2026-11-27T07:19:34.296Z",
+   "job": "biplane-duel-two-biplanes-20261125-1",
+   "type": "reopened",
+   "package": "core",
+   "reason": "change request (event 743); the Planner names the package: The test pilot file tests/support/pilot.gd belongs to the root core package, so reverting the edit that made it fire a burst at Vesper during her stall turns happens there, and the packages that depen\n... (39 more characters cut): Clean up something the old balance check made a builder do that I never asked for: in the round that made the barrel roll, it edited the test pilot (tests/support/pilot.gd) so the test hand fires a burst at Vesper whenever she hangs in a stall turn. Put the test pilot back the way it was before that\n... (45 m\n... (19 more characters cut)"
+  },
+  {
+   "v": 1,
+   "seq": 750,
+   "ts": "2026-11-27T07:20:53.443Z",
+   "job": "biplane-duel-two-biplanes-20261125-1",
+   "type": "note",
+   "package": "core",
+   "round": 24,
+   "text": "none (test pilot only; no game file changed)"
+  },
+  {
+   "v": 1,
+   "seq": 751,
+   "ts": "2026-11-27T07:20:53.456Z",
+   "job": "biplane-duel-two-biplanes-20261125-1",
+   "type": "note",
+   "package": "core",
+   "round": 24,
+   "text": "[foreman] measure kept: tests/support/pilot.gd is a measure the Foreman judges by (merged before this round); this round's edit was undone and the round is verified with the measure as merged. Change the game, never the test that measures it."
+  },
+  {
+   "v": 1,
+   "seq": 759,
+   "ts": "2026-11-27T07:24:42.767Z",
+   "job": "biplane-duel-two-biplanes-20261125-1",
+   "type": "merge",
+   "package": "core",
+   "files": [
+    "data/moves.json",
+    "data/rivals.json",
+    "data/tuning.json",
+    "data/valley.json",
+    "data/world.json",
+    "gen/planes.gd",
+    "scripts/core/brain.gd",
+    "scripts/core/cam.gd",
+    "scripts/core/combat.gd",
+    "scripts/core/fx.gd",
+    "scripts/core/hud.gd",
+    "scripts/core/plane.gd",
+    "scripts/core/world.gd",
+    "scripts/main.gd",
+    "tests/bot_tofu.gd",
+    "tests/support/pilot.gd"
+   ]
+  }
+ ]
+}

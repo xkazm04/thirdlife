@@ -1,0 +1,277 @@
+{
+ "source": "d25-shield shield-wall-3-v-20261125-1, events 593 and 600 (night of 27 Nov, lane J19); merged files as of v0.1.7",
+ "plan": [
+  {
+   "id": "core",
+   "title": "Shield exchange on flat shapes",
+   "milestone": "blockout",
+   "deps": [],
+   "scope": [
+    "scripts/main.gd",
+    "scripts/fighter.gd",
+    "scripts/contact.gd",
+    "scripts/feel.gd",
+    "scripts/brain.gd",
+    "scripts/camera.gd",
+    "scripts/show.gd",
+    "scripts/lesson.gd",
+    "data/court.json",
+    "data/tuning.json",
+    "data/moves.json",
+    "data/contacts.json",
+    "data/fighters.json",
+    "data/ai.json",
+    "gen/arms.gd",
+    "tests/bot_tofu.gd",
+    "tests/bot_player.gd",
+    "README.md"
+   ],
+   "contract": "",
+   "acceptance": [
+    {
+     "level": "V1",
+     "verb": "lint",
+     "args": []
+    },
+    {
+     "level": "V2",
+     "verb": "smoke",
+     "args": []
+    },
+    {
+     "level": "V3",
+     "verb": "invariants",
+     "args": []
+    },
+    {
+     "level": "V4",
+     "verb": "bot",
+     "args": [
+      "--test=tests/bot_tofu.gd"
+     ]
+    },
+    {
+     "level": "V4",
+     "verb": "bot",
+     "args": [
+      "--test=tests/bot_player.gd"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "crew",
+   "title": "Three against three crews",
+   "milestone": "greybox",
+   "deps": [
+    "core"
+   ],
+   "scope": [
+    "gen/mod_crew.gd",
+    "scripts/crew/**",
+    "data/crew.json",
+    "tests/bot_crew.gd"
+   ],
+   "contract": "",
+   "acceptance": [
+    {
+     "level": "V1",
+     "verb": "lint",
+     "args": []
+    },
+    {
+     "level": "V2",
+     "verb": "smoke",
+     "args": []
+    },
+    {
+     "level": "V3",
+     "verb": "invariants",
+     "args": []
+    },
+    {
+     "level": "V4",
+     "verb": "bot",
+     "args": [
+      "--test=tests/bot_crew.gd"
+     ]
+    },
+    {
+     "level": "V4",
+     "verb": "bot",
+     "args": [
+      "--test=tests/bot_player.gd"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "rally",
+   "title": "Captain's call and match arc",
+   "milestone": "greybox",
+   "deps": [
+    "crew"
+   ],
+   "scope": [
+    "gen/mod_rally.gd",
+    "scripts/rally/**",
+    "data/rally.json",
+    "tests/bot_call.gd"
+   ],
+   "contract": "",
+   "acceptance": [
+    {
+     "level": "V1",
+     "verb": "lint",
+     "args": []
+    },
+    {
+     "level": "V2",
+     "verb": "smoke",
+     "args": []
+    },
+    {
+     "level": "V3",
+     "verb": "invariants",
+     "args": []
+    },
+    {
+     "level": "V4",
+     "verb": "bot",
+     "args": [
+      "--test=tests/bot_call.gd"
+     ]
+    },
+    {
+     "level": "V4",
+     "verb": "bot",
+     "args": [
+      "--test=tests/bot_crew.gd"
+     ]
+    },
+    {
+     "level": "V4",
+     "verb": "bot",
+     "args": [
+      "--test=tests/bot_player.gd"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "harbour",
+   "title": "Sunny harbour and sailor crews",
+   "milestone": "art_pass",
+   "deps": [
+    "rally"
+   ],
+   "scope": [
+    "gen/mod_look.gd",
+    "gen/harbour.gd",
+    "gen/sailors.gd",
+    "scripts/look/**",
+    "data/harbour.json",
+    "tests/bot_look.gd"
+   ],
+   "contract": "",
+   "acceptance": [
+    {
+     "level": "V1",
+     "verb": "lint",
+     "args": []
+    },
+    {
+     "level": "V2",
+     "verb": "smoke",
+     "args": []
+    },
+    {
+     "level": "V3",
+     "verb": "invariants",
+     "args": []
+    },
+    {
+     "level": "V4",
+     "verb": "bot",
+     "args": [
+      "--test=tests/bot_look.gd"
+     ]
+    },
+    {
+     "level": "V4",
+     "verb": "bot",
+     "args": [
+      "--test=tests/bot_player.gd"
+     ]
+    }
+   ]
+  }
+ ],
+ "merged": {
+  "core": [
+   "README.md",
+   "data/ai.json",
+   "data/contacts.json",
+   "data/court.json",
+   "data/fighters.json",
+   "data/moves.json",
+   "data/tuning.json",
+   "gen/arms.gd",
+   "scripts/brain.gd",
+   "scripts/camera.gd",
+   "scripts/contact.gd",
+   "scripts/fighter.gd",
+   "scripts/main.gd",
+   "scripts/show.gd",
+   "tests/bot_player.gd",
+   "tests/bot_tofu.gd"
+  ],
+  "crew": [
+   "data/crew.json",
+   "gen/mod_crew.gd",
+   "scripts/crew/bram.gd",
+   "scripts/crew/mind.gd",
+   "scripts/crew/mod.gd",
+   "scripts/crew/pairs.gd",
+   "tests/bot_crew.gd"
+  ],
+  "rally": [
+   "data/rally.json",
+   "gen/mod_rally.gd",
+   "scripts/rally/arc.gd",
+   "scripts/rally/call.gd",
+   "scripts/rally/end.gd",
+   "scripts/rally/mod.gd",
+   "scripts/rally/surge.gd",
+   "tests/bot_call.gd"
+  ],
+  "harbour": [
+   "data/harbour.json",
+   "gen/harbour.gd",
+   "gen/mod_look.gd",
+   "gen/sailors.gd",
+   "scripts/look/mod.gd",
+   "tests/bot_look.gd"
+  ]
+ },
+ "events": [
+  {
+   "v": 1,
+   "seq": 593,
+   "ts": "2026-11-27T04:10:42.405Z",
+   "job": "shield-wall-3-v-20261125-1",
+   "type": "change_requested",
+   "text": "Give every fighter two big moves. F is a shield charge: crouch behind the lowered shield for a moment, then sprint straight ahead three times as fast; everyone in the way is bowled over like pins, thrown back tumbling, and gets up slowly, so one charge can flatten a whole line. A fighter facing it with his shield raised stops it dead: the charger bounces off with a loud clang and staggers wide open. C is a leaping overhead slam: jump high with the weapon over my head, a red ring shows where I land, and the landing sends a shockwave ring of dust that knocks everyone near off their feet, with a freeze and a camera kick. After each move I am open for a moment, with a cooldown. The rivals charge an open line, raise shields when charged, slam a crowd and run out of the ring."
+  },
+  {
+   "v": 1,
+   "seq": 600,
+   "ts": "2026-11-27T04:13:52.732Z",
+   "job": "shield-wall-3-v-20261125-1",
+   "type": "note",
+   "package": "core",
+   "round": 14,
+   "text": "- New moves `rush` (F, `body_check` clip, 18-frame crouch, then 30 frames straight along facing at 10.8 m/s, three times the 3.6 walk) and `slam` (C, `strike_heavy` clip, a 54-frame wind-up while the body jumps and moves 2.6 m forward, then a 2.8 m landing ring). Their numbers (damage, stamina, cooldown 300/360 frames, stop, down/getup frames, push, bounce, shake, dust) are in `data/moves.json`, outside `tuning.json`.\n- New input actions `rush` (F) and `slam` (C). The pad may carry the keys `rush` and `slam`, and pads without them still work. Both moves are off during the lesson.\n- Contacts: a rush or slam that lands is recorded as type `knockdown`, with move `rush` or `slam`. A rush into a raised shield from the front is recorded as `blocked_heavy`: the defender takes heavy blockstun, and the charger is knocked back 1.2 m and is GUARDBROKEN for 60 frames. The slam ignores shields and hits only on its first two active frames; a roll's or dodge's invulnerable frames evade both moves. Mods' `gate_contact` still runs on these contacts.\n- Fighter has new members `cd` (cooldowns), `land` (where the slam comes down) and `ready_big(m)`. Show has a new `slam_land(f)` (dust, stone thud, camera kick, shock ring) and a red ring where the slam will land.\n- Brain: a rival raises its shield when a charge is aimed at it (chance is its tier's defend value + 0.3), runs out of a slam's red ring, slams when 2 or more rivals are near, and charges a foe 3–6.5 m away whose shield is down. The numbers are in `data/ai.json` under `big`.\n- RULE: the rivals' chance to raise their shield against a charge is their defend value + 0.3. A player sees the Gulls usually stop a charge they can see coming.\n- No F or C key buttons were added to the HUD.\n- KNOWN FAILURE: `tests/bot_tofu.gd` is stopped by the watchdog at frame 5915 (a tick of 255–272 ms against the 250 ms limit, the same frame on two runs), so this round does not pass acceptance yet. The cause is not found.\n\nThe shell would not run my first command (`cd` plus `wc`, `ls` and `grep`) because it needed approval and nobody could give it. I read the files with the file tools instead."
+  }
+ ]
+}
