@@ -556,3 +556,4 @@ on the frame and the figure and Fable on surfaces and nature, looping for 10 hou
 - 23:09: T3-editor landed (34, 35, 37-39, 43-45; 89f64291; merged: fast 5/5, npm 532/525/0/7, create. 29/0). Live: Arsenal MEGA went to the cartridge first, no unasked question.
 - 23:17 standup: T3 landed (89f64291) and is on round 2; N r2; disk 18 GB (foreign growth again; gtai asked), the Director freed 5.3 GB: 23.7.
 - 23:37: disk back to ~76 GB (gtai removed ~29 GB of raw .rgb frame dumps and stale mutate copies). Finding: devx/test/gate-honesty.test.mjs leaves a tl_hon_* repo per run in %TEMP% (5260 since 25 Nov, 1.8 MB).
+- 23:55: T3 round 2 landed (f8b3a687; merged: fast 5/5, npm 536/529/0/7, cards check ok): 'NEW MOVE: none', text-copy check, words kept on screen.
