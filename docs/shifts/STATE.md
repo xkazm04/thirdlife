@@ -504,3 +504,4 @@ on the frame and the figure and Fable on surfaces and nature, looping for 10 hou
 - 11:17 standup: S4, S35, S2 spikes done (branches pushed), T 1-6 landed, J2nd launched; push held, Home session asked.
 - 11:50 standup: LP stopped (silent 3 h) and resumed by a new agent; T and C landed on d27-m6 (C's CRLF rewrite fixed); Q-C1 lot-overlap fix by the Director; DN and P in their uncapped suites.
 - 12:55 standup: P landed on d27-m6 (game feel confirmed by stills); DN r1 landed; T/C/DN in round 2; LP resumed and producing stills; merged-tree home. running.
+- ~13:05: T-editor items 7-11 landed (merge bd7c07a5; merged: fast 5/5, npm 476/469/0/7, create. 29/0, rink. 49/0 once the lab was built in d25-main); JOB.md notes 2706f2e6; T on round 3 (12-15). Menu 41 rows.
