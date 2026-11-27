@@ -33,11 +33,19 @@ writes it back. Newest shift-log entry last.
   VERDICT.md, page https://claude.ai/artifact/Gyq4DfepcQnY7amcWNXDKF). Arsenal hockey (a derivation on the rink core)
   reached v0.1.21 with tricks that decide matches; from-scratch games (robot soccer v0.1.5; half-court, karts stopped)
   do not reach hokej's quality yet. G11 biplane and G19 shield wall run on the hardened editor.
+- Since 27 Nov day (owner away, Director decided): the Home sandbox's direction from Minecraft/Roblox research
+  (docs/research/sandbox/THESIS.md): "build it, say what it does, play it"; free in the large, guided in the small. M6
+  landed (main cafb68de, pushed): zones + rules (Rules tool, presets, LLM ops), runs with ghost and finish card, three
+  starters, TL1 share codes, day/night with lamps, assemblies (Shapes tab; the LLM picks them). F1 (2-high doorways,
+  1-block hop) waits on branch d27-f1. VERDICT docs/shifts/2026-11-27-day/VERDICT.md, page
+  https://claude.ai/artifact/Y3yj7UtQ65PrTaCUJvp7hA.
 - Next 3: (1) the owner's hand on Arsenal v0.1.21 and the asks (newcomer check as a note; dusk export; kit parts; rookie);
   (2) land G11/G19 and harden on what they find; (3) the remaining editor gaps (trick names to the skin, stale HOME text
   after changes, a rebased game's new tests not listed, a builder note's last segment only).
 
 ## Open owner verdicts
+Asks from the day of 27 Nov (Home M6, docs/shifts/2026-11-27-day/VERDICT.md): 1 land F1; 2 street lamp free; 3 drop
+layers.ground_refused; 4 door opens its foundation cell; 5 rename runs on paste; 6 steppable pieces, "best 0", shore.
 Asks from the day of 21 Nov: ANSWERED ~18:50 (see Decisions).
 Asks from the night of 21 Nov (docs/shifts/2026-11-21-night/VERDICT.md): L2 1-4 (camera behind scenery, twist timing,
 card-name drift, card fun lines to builders); L4 1-3 (pack.json dungeon block, shared watchdog, dungeon sharing); L3 1-2
@@ -70,6 +78,11 @@ Asks from the night of 19 Nov, by ID (details in VERDICT.md):
 - ex_car asphalt look (held back 18 Nov: looked worse than grass).
 
 ## Decisions
+
+- 2026-11-27 day (Director, owner away 24 h): Home thesis "build it, say what it does, play it"; rules are a fixed
+  when/if/do vocabulary (no code language, if <= 8); start/finish/count fire next frame; a 1 s re-entry grace on starts;
+  feet read zones 0.3 m up; the street lamp is free from the start; the LLM gets assemblies first. Not now: multiplayer,
+  survival, a code language, generated art, a marketplace. All the owner's to overturn.
 - 2026-11-25 (owner, morning): merge all hockey-campaign and editor-path progress to main right away; clean the
   session's outputs; the day run = editor hardening + one derivation builder (player lenses) + scratch builders, one
   per game picked from the 20 in the night's VERDICT.md.
@@ -529,3 +542,4 @@ on the frame and the figure and Fable on surfaces and nature, looping for 10 hou
 - 18:09: J2b done: robots v0.1.11 magnet yank, shield v0.1.16 catapult volley, all by the editor (5 promotions, no refusal). Menu 70.
 - 18:32: S2 round 2: A's hammer from one plain sentence matched the hand version (flights 4.6-5.3 m vs hand 3.7-5.4); B with the card came out thin, and the check missed it (it read only the last answer): fix A4/B4 committed on both branches. Menu 72.
 - 18:43 day-27 standup: full gate 11/13 on d27-m6 (kernel cap + hockey many_budget timing; A/B next); uncapped suite running.
+- 19:10 day-27 VERDICT: M6 landed + pushed (main cafb68de); uncapped suite 809/812, reds A/B'd equal on main; exe cafb68d check PASS; F1 unlanded; page Y3yj7UtQ65PrTaCUJvp7hA.
