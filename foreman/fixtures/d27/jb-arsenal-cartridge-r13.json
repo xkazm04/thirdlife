@@ -1,0 +1,63 @@
+{
+ "source": "d25-shield .tl/jobs/three-against-three-hockey-20261125-1 (lane JB-back): the hand-off to the cartridge (1097), its reopen (1099), its NOT DONE note (1105) and merge (1114)",
+ "events": [
+  {
+   "v": 1,
+   "seq": 1071,
+   "ts": "2026-11-27T04:35:25.411Z",
+   "job": "three-against-three-hockey-20261125-1",
+   "type": "promoted",
+   "packId": "game.three_against_three_hockey",
+   "version": "0.1.23",
+   "dest": "promoted/game.three_against_three_hockey@0.1.23"
+  },
+  {
+   "v": 1,
+   "seq": 1073,
+   "ts": "2026-11-27T10:33:00.628Z",
+   "job": "three-against-three-hockey-20261125-1",
+   "type": "change_requested",
+   "text": "Make the meteor look and sound like one, NHL Hitz style, and call it METEOR everywhere, not cannon or shotgun. When I light it with F my stick blade burns with flame and sparks; while I hold shoot a ring of fire grows round me and pulses when full, with WINDING UP and the percent in the hint. On release: a white-hot flash, a boom, a camera kick and METEOR! over me; the puck becomes a fireball with a long fire trail, sparks and smoke. Every skater it floors gets a burst of fire, a clang and FLOORED! over him. A meteor goal makes the net bulge back a full metre and the glass shake hard enough to see, with fire and confetti in the mouth. Show METEOR BACK IN and the seconds. No meteor off a faceoff: F lights only a second after the drop."
+  },
+  {
+   "v": 1,
+   "seq": 1097,
+   "ts": "2026-11-27T10:42:40.475Z",
+   "job": "three-against-three-hockey-20261125-1",
+   "type": "change_requested",
+   "package": "cartridge",
+   "text": "[foreman] the rest of your change, which harbour did not make (\"NOT DONE: \"F lights only a second after the drop\". This is a rule, not drawing. I found no key for it in CARTRIDGE.md (searched: ability, faceoff, drop, cooldown). The pack's F input goes through `scripts/human_input.gd`, which is outside my scope: it would have to stop sending `bAbility` for 60 frames after `Phase` turns from 3 to 0.\"): harbour said the cartridge has no key for part of it, but the catalog (ref/cores/rink/CARTRIDGE.md) has keys that may be exactly that: game.contact.check_cooldown_frames (integer 0..120 A check press has a cooldown (R-0060 point 4): for this many frames after a check press that opened a win); game.contact.check_cooldown_restart (boolean A mashed button lands nothing: true = a check press inside the cooldown (check_cooldown_frames) starts the coold); game.contact.take_shield_human_side (boolean true = the take shield (take_shield_frames) only for skaters of a side that has a human on it; a bot of the othe); game.contact.cross_back_human (boolean The human's cross-check takes a carrier's back (lane A215, track F1, the night; the Director's ruling of 15 Nov); game.skater.burst.frames (integer 0..60 How long the burst lasts after a stop or a cut, in physics frames; 0 turns the burst off.); game.stick.stop_grace_frames (integer 0..120 Lane A163 (track F2 evolution 6): the stop tucks the puck. On the frame the reverse brake of a carrier a): read those rows before you say a key is missing. \"Make the meteor look and sound like one, NHL Hitz style, and call it METEOR everywhere, not cannon or shotgun. When I light it with F my stick blade burns with flame and sparks; while I hold shoot a ring of fire grows round me and pulses when full, with WINDING UP and the percent in the hint. On release: a white-hot flash, a boom, a camera kick and METEOR! over me; the puck becomes a fireball with a long fire trail, sparks and smoke. Every skater it floors gets a burst of fire, a clang and FLOORED! over him. A meteor goal makes the net bulge back a full metre and the glass shake hard enough to see, with fire and confetti in the mouth. Show METEOR BACK IN and the seconds. No meteor off a faceoff: F lights only a second after the drop.\""
+  },
+  {
+   "v": 1,
+   "seq": 1099,
+   "ts": "2026-11-27T10:42:40.488Z",
+   "job": "three-against-three-hockey-20261125-1",
+   "type": "reopened",
+   "package": "cartridge",
+   "reason": "change request (event 1097); the request names the package: [foreman] the rest of your change, which harbour did not make (\"NOT DONE: \"F lights only a second after the drop\". This is a rule, not drawing. I found no key for it in CARTRIDGE.md (searched: ability, faceoff, drop, cooldown). The pack's F input goes through `scripts/human_input.gd`, which is outsi\n... (1949 more characters cut)"
+  },
+  {
+   "v": 1,
+   "seq": 1105,
+   "ts": "2026-11-27T10:44:34.340Z",
+   "job": "three-against-three-hockey-20261125-1",
+   "type": "note",
+   "package": "cartridge",
+   "round": 13,
+   "text": "NOT DONE: no key in CARTRIDGE.md for \"F lights only a second after the drop\" (searched: ability, abilities, faceoff, drop, cooldown, no_hit, grace, lock, delay; read game.contact.check_cooldown_frames, game.contact.check_cooldown_restart, game.contact.take_shield_human_side, game.contact.cross_back_human, game.skater.burst.frames, game.stick.stop_grace_frames, game.stick.faceoff.no_hit_frames, game.stick.faceoff.winner_shield_frames, game.abilities[].cooldown_frames). None of them gate the trick press. no_hit_frames refuses only checks and lifts, and cooldown_frames counts only from a use.\nNOT DONE: \"No meteor off a faceoff: F lights only a second after the drop\" needs scripts/human_input.gd, which is outside my scope: for 60 frames after the snapshot's `Phase` turns from 3 to 0, send `bAbility` false."
+  },
+  {
+   "v": 1,
+   "seq": 1114,
+   "ts": "2026-11-27T10:48:01.869Z",
+   "job": "three-against-three-hockey-20261125-1",
+   "type": "merge",
+   "package": "cartridge",
+   "files": [
+    "data/harbour.cartridge.json",
+    "data/match.json"
+   ]
+  }
+ ]
+}

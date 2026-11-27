@@ -1,0 +1,154 @@
+{
+ "source": "d25-biplane .tl/jobs/s35-3A bumper-kart-football-3-20261125-1 (lane S35, juice day): events from the v0.1.7 promotion to before the v0.1.8 card",
+ "events": [
+  {
+   "v": 1,
+   "seq": 1293,
+   "ts": "2026-11-27T05:02:18.176Z",
+   "job": "bumper-kart-football-3-20261125-1",
+   "type": "promoted",
+   "packId": "game.bumper_kart_football_3",
+   "version": "0.1.7",
+   "dest": "promoted/game.bumper_kart_football_3@0.1.7"
+  },
+  {
+   "v": 1,
+   "seq": 1295,
+   "ts": "2026-11-27T07:19:32.986Z",
+   "job": "bumper-kart-football-3-20261125-1",
+   "type": "change_requested",
+   "text": "Take out two things the old balance check added with the aerial hits that I never asked for: the rule that makes any bot kart sitting nearly still for a moment reverse and then drive forward, and the stronger sweet-spot bump (put it back to how hard it was before the aerials). Keep everything else, the jumps, the aerials and the air bumps, as it is."
+  },
+  {
+   "v": 1,
+   "seq": 1298,
+   "ts": "2026-11-27T07:19:37.980Z",
+   "job": "bumper-kart-football-3-20261125-1",
+   "type": "reopened",
+   "package": "core",
+   "reason": "change request (event 1295); the Planner names the package: Both changes sit in the root package: the sweet-spot bump strength is set in core's data/tuning.json and kart scripts, and the aerial-era bot unstick rule lives in core's bot brain (scripts/core/brain\n... (90 more characters cut): Take out two things the old balance check added with the aerial hits that I never asked for: the rule that makes any bot kart sitting nearly still for a moment reverse and then drive forward, and the stronger sweet-spot bump (put it back to how hard it was before the aerials). Keep everything else, \n... (51 \n... (20 more characters cut)"
+  },
+  {
+   "v": 1,
+   "seq": 1302,
+   "ts": "2026-11-27T07:21:57.377Z",
+   "job": "bumper-kart-football-3-20261125-1",
+   "type": "note",
+   "package": "core",
+   "round": 19,
+   "text": "- `main.gd` no longer has the per-bot override that forced pinned bot karts to reverse and then drive forward. The `pinned` variable and the `bot.pinned_f` and `bot.pinned_out_f` keys in tuning.json are removed. Bot brains now return their intent unchanged. `brain_core.gd`'s own `stuck_f` back-out stays.\n- `ball_touch.sweet_add` (the key at line 18 of tuning.json) is back from 23 to 20, the contract value. The sweet lift on aerial hits is unchanged.\n- Tofu metrics in the self-check: `lead_change_share` is 0.17, below the 0.3 bound. `possession_median_f` is 13; the player dropped that target. No rule was added for either; the balance is the player's call."
+  },
+  {
+   "v": 1,
+   "seq": 1307,
+   "ts": "2026-11-27T07:24:04.040Z",
+   "job": "bumper-kart-football-3-20261125-1",
+   "type": "note",
+   "package": "core",
+   "round": 19,
+   "text": "[foreman] plan bound lifted, not judged: possession_median_f (the plan's bound: >= 240 and <= 600), on your answer to core's question (event 216): \"C. Keep the ball fully loose, that is what I chose: nobody holds it, it rolls off every touch. Drop the 4-second possession target; a fast back-and-forth ball is fine in bumper football.\""
+  },
+  {
+   "v": 1,
+   "seq": 1311,
+   "ts": "2026-11-27T07:28:33.522Z",
+   "job": "bumper-kart-football-3-20261125-1",
+   "type": "note",
+   "package": "core",
+   "round": 20,
+   "text": "- `lead_change_share` is still 0.1667, under the bound of 0.3. I found no fix this round that worked in a test run. Every other tofu figure is inside its bounds."
+  },
+  {
+   "v": 1,
+   "seq": 1316,
+   "ts": "2026-11-27T07:32:51.957Z",
+   "job": "bumper-kart-football-3-20261125-1",
+   "type": "note",
+   "package": "core",
+   "round": 20,
+   "text": "[foreman] plan bound lifted, not judged: possession_median_f (the plan's bound: >= 240 and <= 600), on your answer to core's question (event 216): \"C. Keep the ball fully loose, that is what I chose: nobody holds it, it rolls off every touch. Drop the 4-second possession target; a fast back-and-forth ball is fine in bumper football.\""
+  },
+  {
+   "v": 1,
+   "seq": 1320,
+   "ts": "2026-11-27T07:35:59.666Z",
+   "job": "bumper-kart-football-3-20261125-1",
+   "type": "note",
+   "package": "core",
+   "round": 21,
+   "text": "- The tofu check's lead_change_share is still 0.17 against a bound of at least 0.3 (seed 1: 6 matches, 1 lead change, 15 goals). Nothing changed this round.\n- The bot rule your change 7 asks to remove is in the teams package's AI, outside my files, and is still there. My own rival's back-out-when-pinned rule only runs in the opening lesson, and I left it as it is."
+  },
+  {
+   "v": 1,
+   "seq": 1330,
+   "ts": "2026-11-27T07:49:29.409Z",
+   "job": "bumper-kart-football-3-20261125-1",
+   "type": "merge",
+   "package": "core",
+   "files": [
+    "data/tuning.json",
+    "scripts/main.gd"
+   ]
+  },
+  {
+   "v": 1,
+   "seq": 1338,
+   "ts": "2026-11-27T08:03:44.083Z",
+   "job": "bumper-kart-football-3-20261125-1",
+   "type": "reopened",
+   "package": "teams",
+   "reason": "its dependency core was changed and merged again, and invariants (V3) now fails on the merged pack: the runner did not finish within 600000 ms and its process tree was killed"
+  },
+  {
+   "v": 1,
+   "seq": 1346,
+   "ts": "2026-11-27T08:08:54.762Z",
+   "job": "bumper-kart-football-3-20261125-1",
+   "type": "note",
+   "package": "teams",
+   "round": 8,
+   "text": "- `shoot.range_max` changed from 40 to 30, and `shoot.angle_max_deg` from 75 to 55: bots shoot from closer and more central spots.\n- Tier `block` changed from 0.25 to 0.17 (rookie) and from 0.55 to 0.37 (pro); all-star stays 0.8.\n- Not verified: invariants (V3) may still time out. Each match usually runs its full 180 s (about 10,800 frames), and the tofu check plays up to 8 matches twice. A real fix needs either a faster scoring rate (only partly moved by this change) or a shorter tofu run in the core's test, which is not mine to edit.\n- Not re-run after the change: lint, smoke, bot_hand_perfect, bot_hand_newcomer.\n- The overlap share measured in bot_teams is 0.063, above the 0.02 bound the core reported against; not addressed."
+  },
+  {
+   "v": 1,
+   "seq": 1354,
+   "ts": "2026-11-27T08:16:58.598Z",
+   "job": "bumper-kart-football-3-20261125-1",
+   "type": "reopened",
+   "package": "show",
+   "reason": "its dependency core was changed and merged again, and invariants (V3) now fails on the merged pack: the runner did not finish within 600000 ms and its process tree was killed"
+  },
+  {
+   "v": 1,
+   "seq": 1366,
+   "ts": "2026-11-27T08:32:07.528Z",
+   "job": "bumper-kart-football-3-20261125-1",
+   "type": "merge",
+   "package": "teams",
+   "files": [
+    "data/ai.json"
+   ]
+  },
+  {
+   "v": 1,
+   "seq": 1373,
+   "ts": "2026-11-27T08:39:34.882Z",
+   "job": "bumper-kart-football-3-20261125-1",
+   "type": "note",
+   "package": "show",
+   "round": 2,
+   "text": "- The core's labels `score_red`, `clock`, `score_mint` and `banner` are emptied every tick with `set_text(\"\")`, not removed with `game.hud.remove_widget`. The core writes them every tick, so removing them would cause errors.\n- `mod_state()` has an extra key, `sunset_ram`: the list of frames where that moment was recorded.\n- The tv layer is redrawn only when what it shows changes. Charger arrow directions are rounded to whole degrees for this.\n- In this round's bot_show run the `sunset_ram` moment was not recorded, because the match did not go to golden goal."
+  },
+  {
+   "v": 1,
+   "seq": 1388,
+   "ts": "2026-11-27T08:51:06.639Z",
+   "job": "bumper-kart-football-3-20261125-1",
+   "type": "merge",
+   "package": "show",
+   "files": [
+    "scripts/show/show.gd"
+   ]
+  }
+ ]
+}

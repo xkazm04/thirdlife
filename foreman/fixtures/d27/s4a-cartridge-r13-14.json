@@ -1,0 +1,245 @@
+{
+ "source": "d25-arsenal .tl/jobs/s4a-arsenal (lane S4-core, juice day), events 1071-1095: the hip-check change, NOT BUILT for want of data/harbour.rules.json, the yes that granted nothing",
+ "plan": [
+  {
+   "id": "base",
+   "title": "Start from the rink_game base",
+   "milestone": "greybox",
+   "deps": [],
+   "scope": [
+    "assets/**",
+    "data/**",
+    "gen/**",
+    "scripts/**",
+    "tests/**"
+   ],
+   "contract": "",
+   "acceptance": [
+    {
+     "level": "V1",
+     "verb": "lint",
+     "args": []
+    },
+    {
+     "level": "V2",
+     "verb": "smoke",
+     "args": []
+    },
+    {
+     "level": "V4",
+     "verb": "bot",
+     "args": [
+      "--test=tests/bot_first_match.gd"
+     ]
+    }
+   ],
+   "kind": "base"
+  },
+  {
+   "id": "cartridge",
+   "title": "Harbour 3 v 3 cartridge",
+   "milestone": "greybox",
+   "deps": [
+    "base"
+   ],
+   "scope": [
+    "data/harbour.cartridge.json",
+    "data/match.json"
+   ],
+   "contract": "",
+   "acceptance": [
+    {
+     "level": "V1",
+     "verb": "lint",
+     "args": []
+    },
+    {
+     "level": "V2",
+     "verb": "smoke",
+     "args": []
+    },
+    {
+     "level": "V4",
+     "verb": "bot",
+     "args": [
+      "--test=tests/bot_first_match.gd"
+     ]
+    },
+    {
+     "level": "V4",
+     "verb": "bot",
+     "args": [
+      "--test=tests/bot_match_hand.gd"
+     ]
+    },
+    {
+     "level": "V4",
+     "verb": "bot",
+     "args": [
+      "--test=tests/bot_toys.gd"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "harbour",
+   "title": "Bubble, arrows, slush, spots, harbour drawing",
+   "milestone": "greybox",
+   "deps": [
+    "base",
+    "cartridge"
+   ],
+   "scope": [
+    "scripts/main.gd",
+    "scripts/harbour.gd",
+    "scripts/harbour_toys.gd",
+    "data/tuning.json",
+    "data/harbour_venue.json",
+    "data/drill_slush100.cartridge.json",
+    "tests/bot_harbour.gd"
+   ],
+   "contract": "",
+   "acceptance": [
+    {
+     "level": "V1",
+     "verb": "lint",
+     "args": []
+    },
+    {
+     "level": "V2",
+     "verb": "smoke",
+     "args": []
+    },
+    {
+     "level": "V4",
+     "verb": "bot",
+     "args": [
+      "--test=tests/bot_harbour.gd"
+     ]
+    },
+    {
+     "level": "V4",
+     "verb": "bot",
+     "args": [
+      "--test=tests/bot_match_hand.gd"
+     ]
+    },
+    {
+     "level": "V4",
+     "verb": "bot",
+     "args": [
+      "--test=tests/bot_toys.gd"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "skin",
+   "title": "Harbour Playmakers skin",
+   "milestone": "tuned",
+   "deps": [
+    "base",
+    "cartridge"
+   ],
+   "scope": [
+    "data/skin.json",
+    "data/harbour_commentary.json"
+   ],
+   "contract": "",
+   "acceptance": [
+    {
+     "level": "V1",
+     "verb": "lint",
+     "args": []
+    },
+    {
+     "level": "V2",
+     "verb": "smoke",
+     "args": []
+    },
+    {
+     "level": "V4",
+     "verb": "bot",
+     "args": [
+      "--test=tests/bot_skin.gd"
+     ]
+    },
+    {
+     "level": "V4",
+     "verb": "bot",
+     "args": [
+      "--test=tests/bot_first_match.gd"
+     ]
+    }
+   ]
+  }
+ ],
+ "events": [
+  {
+   "v": 1,
+   "seq": 1071,
+   "ts": "2026-11-27T04:35:25.411Z",
+   "job": "three-against-three-hockey-20261125-1",
+   "type": "promoted",
+   "packId": "game.three_against_three_hockey",
+   "version": "0.1.23",
+   "dest": "promoted/game.three_against_three_hockey@0.1.23"
+  },
+  {
+   "v": 1,
+   "seq": 1073,
+   "ts": "2026-11-27T07:53:51.492Z",
+   "job": "three-against-three-hockey-20261125-1",
+   "type": "change_requested",
+   "text": "Swap my meteor on F for a hip check: my next check knocks him down twice as long and shoves him 3 m, and it comes back 10 seconds after each use. The rival bots get the same hip check and use it on me when I carry the puck close to them, often and well. Any bot that is not carrying should now and then throw itself in front of a hard shot at its own net to block it."
+  },
+  {
+   "v": 1,
+   "seq": 1076,
+   "ts": "2026-11-27T07:54:12.497Z",
+   "job": "three-against-three-hockey-20261125-1",
+   "type": "reopened",
+   "package": "cartridge",
+   "reason": "change request (event 1073); the Planner names the package: The F-key ability (meteor → hip check, with its knockdown, shove and cooldown), the rival bots' use of it and their shot-blocking all come from the match rules in data/harbour.cartridge.json and data/\n... (58 more characters cut): Swap my meteor on F for a hip check: my next check knocks him down twice as long and shoves him 3 m, and it comes back 10 seconds after each use. The rival bots get the same hip check and use it on me when I carry the puck close to them, often and well. Any bot that is not carrying should now and th\n... (67 \n... (20 more characters cut)"
+  },
+  {
+   "v": 1,
+   "seq": 1082,
+   "ts": "2026-11-27T07:59:51.224Z",
+   "job": "three-against-three-hockey-20261125-1",
+   "type": "note",
+   "package": "cartridge",
+   "round": 13,
+   "text": "- `game.abilities` is now a single entry `{kind hip_check, trigger mode, magnitude 2, cooldown_frames 600}`. It replaces `{kind shotgun, trigger mode, magnitude 2, cooldown_frames 720}`. The on-screen word for the F trick should now read HIP CHECK, not CANNON or METEOR; that text belongs to the skin and drawing packages, which I can't edit.\n- NOT BUILT: rival bots using the hip check (\"often and well\") and bots diving in front of hard shots at their own net. The core only offers these as rules-sidecar switches (`bot_ability_share`, `bot_ability_skill`, `bot_ability_team`, `dive_shot_share`, `dive_reach_m`), not cartridge keys, so they would need a new `data/harbour.rules.json`. That file is outside my scope and my contract rules out a sidecar. The values that would fit the request: `bot_ability_share` 0.7, `bot_ability_skill` 0.8, `bot_ability_team` 1, `dive_shot_share` 0.3. To get this, the Foreman or owner needs to give some package a sidecar file in its scope."
+  },
+  {
+   "v": 1,
+   "seq": 1088,
+   "ts": "2026-11-27T08:10:29.360Z",
+   "job": "three-against-three-hockey-20261125-1",
+   "type": "question",
+   "package": "cartridge",
+   "text": "You asked for rival bots that hip-check you and bots that dive to block shots, and the game can only switch those on with one extra settings file this part of the build isn't allowed to create. Should a later step add that file (rivals hip-check, and sometimes block hard shots), or should the game stay as it is, with only you holding the hip check?"
+  },
+  {
+   "v": 1,
+   "seq": 1091,
+   "ts": "2026-11-27T08:22:22.530Z",
+   "job": "three-against-three-hockey-20261125-1",
+   "type": "answer",
+   "package": "cartridge",
+   "text": "Yes, add that file: the rival bots hip-check me when I carry close to them, often and well, and any bot that is not carrying sometimes dives in front of a hard shot at its own net.",
+   "by": "player"
+  },
+  {
+   "v": 1,
+   "seq": 1095,
+   "ts": "2026-11-27T08:28:55.330Z",
+   "job": "three-against-three-hockey-20261125-1",
+   "type": "note",
+   "package": "cartridge",
+   "round": 14,
+   "text": "- `game.rink.goal_width_m` 2.4 → 2.0 (lowest allowed); new `game.rink.goal_height_m` 1.0. This follows change request 1 and fixes round 13's 22.9 goals a match.\n- `game.skater.goalie.reach_m` 1.8 → 3.0 (highest allowed); `block_height_m` 1.1 → 0.9; new `read_mps` 3.5 and `read_max_m` 1.4.\n- `game.shot.aim_cone_deg` 8 → 11.\n- Measured by my own runs with these bots: bot_first_match (rookie) 11:2, 13 goals in 13634 frames, 72 shots. Before this round's change it was 16:4. bot_match_hand 10:9, 19 goals in 14900 frames. I could not run check-cartridge (the shell allows only the five verify commands), so D2, D3 and D5 were not measured.\n- The rest of request 12 is not met. Rival bots using the hip check and bots diving to block shots need the rules file `data/harbour.rules.json` (keys `bot_ability_share` about 0.7, `bot_ability_team` 1, `bot_ability_skill` 0.8, `dive_shot_share` about 0.3), which also opens the patched core. That file is outside this package's scope (only `data/harbour.cartridge.json` and `data/match.json`), so it was not written. Another package must add it.\n- Kept from earlier rounds, by the change requests: `rules.mode` timer at 10800 frames with MATCH POINT removed (CR6); F is a mode hip_check with magnitude 2 and cooldown 600 (CR12), replacing shield and slow_puck; `ai.body_check` 1 (CR2); `contact.spin_stability` 0.6 and shot charge 45 frames for +10 m/s (CR11)."
+  }
+ ]
+}

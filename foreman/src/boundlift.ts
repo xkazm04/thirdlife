@@ -116,7 +116,11 @@ const PLAY_WORDS = /\b(abilit\w*|power\w*|jump\w*|dunk\w*|hammer\w*|swing\w*|cha
 /** Words that change what a body does even inside a clause about the view ("a camera kick when the hammer launches a robot"). */
 const STRONG_PLAY = /\b(abilit\w*|power\w*|jump\w*|dunk\w*|hammer\w*|swing\w*|charg\w*|dash\w*|launch\w*|knock\w*|tackl\w*|damage\w*|strong\w*|weak\w*|faster|slower|speed\w*|harder|easier|tumbl\w*|shov\w*|push\w*|steal\w*|throw\w*|slam\w*|flip\w*|boost\w*|sprint\w*|cooldown\w*|rules?|aerial\w*|stun\w*)\b/i;
 // "unfair on purpose" asks for a one-sided game: a play change, not a fairness ask (the second real job of lane T)
-const FAIR_WORDS = /\b(fair(er|ness)?|balanc\w*|even(ly)? matched|closer (game|match|rounds?)|too (hard|easy|strong|weak)|overpowered|nerf\w*)\b/i;
+// D27 item 10 (S35's kart copy s35-3A, events 1295-1442: "Take out two things the old balance check added ..." read as a
+// fairness ask, the tofu gate refused the clean-up three times, and teams changed the bots' shooting unasked; 125 min,
+// 5.89M tokens): "balance" counts only as an ask (balance it, rebalance the teams, more balanced), never as the name of a
+// check, a gate or a figure.
+const FAIR_WORDS = /\b(fair(er|ness)?|(re)?balance (it|them|this|that|things|out|the (game|teams?|sides?|match(es)?|rounds?|bots?|rivals?|players?))|(more|better) balanced|balanced (game|match|teams|sides)|more even|even(ly)? matched|closer (game|match|rounds?)|too (hard|easy|strong|weak)|overpowered|nerf\w*)\b/i;
 
 export type ChangeKind = "play" | "view" | "look" | "fair";
 
@@ -238,4 +242,20 @@ export function rowsForChange(jobDir: string, events: readonly JobEvent[], rows:
   if (asked === undefined) return rows;
   const before = readTofuMetrics(jobDir, events.filter((e) => e.seq < asked.seq), test).metrics;
   return splitByChange(asked, rows, now, before).judged;
+}
+
+/**
+ * D27 item 6: the balance lines of a change, one per thing they are about (who wins the test rounds, a hand check's wins,
+ * how long matches run): the newest line of each, in the order the things were first told. Before, only the newest line
+ * of all was shown, so "matches now run longer" was lost behind a later hand-check line (lane T2's robot job).
+ */
+export function balanceLines(lines: readonly string[]): string[] {
+  const newest = new Map<string, string>();
+  for (const l of lines) {
+    const key = l.split(" now ")[0] as string;
+    newest.delete(key);
+    newest.set(key, l);
+  }
+  const order = [...new Set(lines.map((l) => l.split(" now ")[0] as string))];
+  return order.map((k) => newest.get(k) as string);
 }

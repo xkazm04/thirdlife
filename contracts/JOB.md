@@ -578,3 +578,25 @@ first one on the done screen):
   under "Your last change could not be made".
 - `[foreman] balance moved by your change: built as you asked; matches now run longer ...` (lane T2): a bot run in a
   person's play change ran out of its frames and passed when run once more with three times as many (at most 108,000).
+
+### Added 2026-11-27 (juice day, lane T-editor): the rest of a person's change reaches its owner
+
+From the juice day of 27 Nov, in a change since the last promotion:
+- `[foreman] the rivals' part of change request N, for the bots your files drive (<files>): "<words>" ...`: the person's
+  words that tell the rivals what to do, sent to every other package whose files decide for a bot.
+- A builder names each new attack it adds on a line `NEW MOVE: <id>` under `DEVIATIONS:`. A bot test the package's
+  acceptance runs (never the tofu bot) reports it as `bot.result.metrics.moves.<id>` = `{"started": n, "landed": n}`,
+  counted from the game's own contact events. Notes: `[foreman] new move lands in the Foreman's bot run: <id> landed L
+  of S ...` and `[foreman] new move judged at the end: ...`. A new move that never lands sends the round back: `part of
+  your change was NOT made by X: the new move <id> never landed in the Foreman's bot run (...)`.
+- A builder writes what needs a file outside its scope as `NOT DONE: <what the person asked> needs <path>, which is
+  outside my scope: <the exact edit>`. The Foreman sends it once (one hop) to the package that owns the path:
+  `[foreman] the rest of your change, which X did not make (...)`. A "no key" claim is checked against the cartridge
+  catalog and carries its candidate keys.
+- `[foreman] scope widened for this change: X owns the game's cartridge, so it may write its rules sidecar <file> ...`:
+  on a game on a core, the package that owns `data/match.json` also owns `data/<cut>.rules.json` unless another package
+  lists it.
+- Only a fairness request ("make it fairer", "more even", "balance it") is guarded as one; the word "balance" alone is not.
+- What-changed lines: `not asked by you: X changed it when the Foreman's checks sent it back (<why>): <its words>`;
+  `nothing changed in the game[: <why>]` when no game file changed. Create shows every `balance moved` line of the change
+  (the newest per figure), and `Not applied: ...` when a frozen measure undid part of the person's ask.

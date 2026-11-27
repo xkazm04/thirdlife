@@ -485,3 +485,34 @@ on the frame and the figure and Fable on surfaces and nature, looping for 10 hou
   - J4b: the hand layer sent back as one sentence came out about as juicy as the hand version.
   - Exe 6522394: export.sh check PASS; 10 new packs ran 600 frames in it with 0/0 errors; the owner menu has 26 rows.
   - Full tier NOT RUN (disk). Pushed to origin.
+
+### 2026-11-27 day: plan (the sandbox engine past Minecraft and Roblox; owner away 24 h)
+- Owner ~07:50: push main (already on origin 8be26d61), then "use this time to master the sandbox engine, deep research Minecraft/Roblox ... where can outshine those two ... balanced level of freedom ... our graphics and LLM builder". No handshake; Director decides. Plan docs/shifts/2026-11-27-day/PLAN.md.
+- 08:05 lanes: R1 Minecraft+Hytale, R2 Roblox, R3 smart builders + AI, R4 engine scout (research, Opus); LP look polish (Opus, d27-look). RAM 33 GB free, disk 94 GB.
+
+### 2026-11-27 juice day and night: plan (A/B spikes for the five juice-night asks; owner away 24 h)
+- Owner ~08:00: "keep the effort from last night, for decision questions try to create spikes and evaluate both, I will get into this tomorrow and evaluate together". No handshake; last night's carried over (5 Opus, RAM 80 %, editor first, land and push). Plan docs/shifts/2026-11-27-juice-day/PLAN.md. Runs beside the Home session's day shift (claims split in .claude/sessions.json).
+- 08:30 lanes: T-editor (the night's editor queue, lands on main); spikes S1-bots (ask 1), S2-juice (ask 2), S4-core (ask 4), S35-packs (asks 3 and 5), both arms each, held for the owner; queued JB-back (hand juice back as sentences). The full tier on main 8be26d61 runs first (NOT RUN last night). RAM 33 GB free, disk 94 GB.
+- 08:30: research landed e3b1ccc8 (docs/research/sandbox R1-R4, THESIS.md: build it, say what it does, play it; contract BUILD.md M6 rules and runs). 08:40: S6 seam (d27-m6) and DN day/night (d27-night) launched beside LP; P/T/C lanes follow the seam.
+- 09:17 standup: 5 lanes on track (T six items built, real jobs running; spikes running paid arms). CPU 100 %, disk 63 GB; Director's full tier stopped for a quiet window. Push held (Home commits on main).
+- 09:45 standup: LP, S6, DN on track; S6 at home. 126/126, world 9/9, uncapped suite next; RAM 64 %, disk 62 GB.
+- ~10:05: S4-core done: C++ arm A (core patch 0005: bot meteors 1-3/min, dives stop 3 of 10) vs no-C++ arm B (drawn only, 0 dive stops); branches d27-sp-core / -b pushed. JB-back launched.
+- ~10:35: S35-packs done (3A biplane: the freeze kept the old pilot and Create said nothing; 3A karts cleaned in one round; 5A/5B shield both made by Create, plus 5B by hand). 7 spike rows added to the owner menu (33), each 600 f 0/0 in the exe. Slot held open: CPU 100 %.
+- 10:40: S6 seam committed 6690ad32 on d27-m6 (integration branch); Director re-ran fast 5/5, home. 128/128, world_edit 13/13. M6 lanes P, T, C launched (d27-m6-p/t/c); 5 Opus agents running (LP, DN, P, T, C).
+- 10:47 standup: LP silent since 08:33 (asked); DN night good, dusk near-field too magenta (asked for golden hour); P/T/C reading; RAM 55 %, disk 72 GB.
+- ~11:10: T-editor items 1-6 landed (merge 658eb637; merged tree fast 5/5, npm 472/465/0/7, create. 29/0); T goes on with items 7-11. S2-juice done (A auto 29fd49ac, B choice 533c3c10, pushed): the pass gave every run the tell, word, hit-stop and kick, broke nothing; robots B-juicy flew 4.4-4.6 m (hand 3.7-5.4). 6 more menu rows (39), 600 f 0/0 each.
+- 11:17 standup: S4, S35, S2 spikes done (branches pushed), T 1-6 landed, J2nd launched; push held, Home session asked.
+- 11:50 standup: LP stopped (silent 3 h) and resumed by a new agent; T and C landed on d27-m6 (C's CRLF rewrite fixed); Q-C1 lot-overlap fix by the Director; DN and P in their uncapped suites.
+- 12:55 standup: P landed on d27-m6 (game feel confirmed by stills); DN r1 landed; T/C/DN in round 2; LP resumed and producing stills; merged-tree home. running.
+- ~13:05: T-editor items 7-11 landed (merge bd7c07a5; merged: fast 5/5, npm 476/469/0/7, create. 29/0, rink. 49/0 once the lab was built in d25-main); JOB.md notes 2706f2e6; T on round 3 (12-15). Menu 41 rows.
+- 13:17 standup: T on round 3; S1 slow (newcomer hand check loops); JB shield follow-up merged; J2nd biplane harpoon v0.1.6, kart items refused once on the tofu bot (sent to T). Disk 52 GB.
+- 13:22 standup: LP, DN, C done; P r2, T r3, C r2, DN r2, LP r3 on d27-m6; A assemblies running; uncapped suite on the tip running in d27-int.
+- ~13:40: JB-back done: hand juice back as one sentence + one follow-up each; robots v0.1.8 close to hand (flights 3.5-5.0 m vs 3.7-5.4), shield v0.1.9 (charges 12/11/6 a min vs hand 14/15/6; braces rare), Arsenal v0.1.25 (no faceoff meteor, METEOR plate; bots cannot use it). 6 rows (menu 47), 600 f 0/0.
+- 13:44 standup: A building (home. 183/184 re-running), Q playtest started, integration suite 306/1 (k2 timing) so far; 2 finished worktrees removed; disk 49 GB.
+- ~14:30: T-editor items 12-16 landed (merge 4050c51f; merged: fast 5/5, npm 481/474/0/7, create. 29/0): honest land count (J19 rush 9 of 14 by hand, night 0 of 15), YOU ARE ON FIRE, no duplicate rounds. T next: round 4 (kart tofu rerun, 17-21).
+- 14:17: Q playtest (Fable) done: most works and looks good; a newcomer cannot finish most courses (2-high doors stop the walker, 1-block hops fail at a walk, Pad hop traps a walker, land tools refused near the spawn with no cue, hotbar not clickable, presets misfire on slopes, rules invisible in play, lamps locked). A landed (assemblies, Shapes tool; the model ignored assemble: round 2 on the prompt). Fix lanes F1 body, F2 build UX, F3 play UX launched from 98988c51. Director decision (owner away): street_lamp open from the start.
+- 14:43 standup: A r2 landed (model uses assemble), r3 running; F1 proved the door cause and fixed it visitor-only; F2/F3 coded; integration suite 707/4 (timing + rink CLI env).
+- ~15:10: S1-bots done (A 381de1cb + docs 311f348e on d27-sp-bots, pushed): A got karts in 1 sentence (B 3); shield 3 vs 3; half-court A met the bar in 1 sentence but was refused twice ('off balance' read as a fairness ask: T item 22). 7 rows (menu 56), 600 f 0/0. Disk 39 GB.
+- ~15:45: JB-back round 3 (Arsenal v0.1.26 net of cords, no glass in the camera's way; shield v0.1.11 braces 1.8/min vs hand 4.8) and J2nd done (second crazy abilities, all by the editor: karts red shells v0.1.10, biplane harpoon v0.1.8, court alley-oop v0.1.8). Menu 61 rows, 600 f 0/0.
+- 15:20 standup: A r3/r4 and F3 landed, F3-1 applied; integration suite 769/6 (all explained); F1, F2 running; disk 30 GB.
+- ~16:20: T round 4 landed (merge 4c7ce613; merged: fast 5/5 after renaming JB's stray .gd in docs, npm 489/482/0/7, create. 29/0). T next: round 5 (23-28, 25 first). Disk 27 GB.

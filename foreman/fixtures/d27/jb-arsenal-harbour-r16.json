@@ -1,0 +1,216 @@
+{
+ "source": "d25-shield .tl/jobs/three-against-three-hockey-20261125-1 (lane JB-back, juice day), events 1071-1080: the meteor-look change, harbour r16 with NOT DONE lines naming the base's files",
+ "plan": [
+  {
+   "id": "base",
+   "title": "Start from the rink_game base",
+   "milestone": "greybox",
+   "deps": [],
+   "scope": [
+    "assets/**",
+    "data/**",
+    "gen/**",
+    "scripts/**",
+    "tests/**"
+   ],
+   "contract": "",
+   "acceptance": [
+    {
+     "level": "V1",
+     "verb": "lint",
+     "args": []
+    },
+    {
+     "level": "V2",
+     "verb": "smoke",
+     "args": []
+    },
+    {
+     "level": "V4",
+     "verb": "bot",
+     "args": [
+      "--test=tests/bot_first_match.gd"
+     ]
+    }
+   ],
+   "kind": "base"
+  },
+  {
+   "id": "cartridge",
+   "title": "Harbour 3 v 3 cartridge",
+   "milestone": "greybox",
+   "deps": [
+    "base"
+   ],
+   "scope": [
+    "data/harbour.cartridge.json",
+    "data/match.json"
+   ],
+   "contract": "",
+   "acceptance": [
+    {
+     "level": "V1",
+     "verb": "lint",
+     "args": []
+    },
+    {
+     "level": "V2",
+     "verb": "smoke",
+     "args": []
+    },
+    {
+     "level": "V4",
+     "verb": "bot",
+     "args": [
+      "--test=tests/bot_first_match.gd"
+     ]
+    },
+    {
+     "level": "V4",
+     "verb": "bot",
+     "args": [
+      "--test=tests/bot_match_hand.gd"
+     ]
+    },
+    {
+     "level": "V4",
+     "verb": "bot",
+     "args": [
+      "--test=tests/bot_toys.gd"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "harbour",
+   "title": "Bubble, arrows, slush, spots, harbour drawing",
+   "milestone": "greybox",
+   "deps": [
+    "base",
+    "cartridge"
+   ],
+   "scope": [
+    "scripts/main.gd",
+    "scripts/harbour.gd",
+    "scripts/harbour_toys.gd",
+    "data/tuning.json",
+    "data/harbour_venue.json",
+    "data/drill_slush100.cartridge.json",
+    "tests/bot_harbour.gd"
+   ],
+   "contract": "",
+   "acceptance": [
+    {
+     "level": "V1",
+     "verb": "lint",
+     "args": []
+    },
+    {
+     "level": "V2",
+     "verb": "smoke",
+     "args": []
+    },
+    {
+     "level": "V4",
+     "verb": "bot",
+     "args": [
+      "--test=tests/bot_harbour.gd"
+     ]
+    },
+    {
+     "level": "V4",
+     "verb": "bot",
+     "args": [
+      "--test=tests/bot_match_hand.gd"
+     ]
+    },
+    {
+     "level": "V4",
+     "verb": "bot",
+     "args": [
+      "--test=tests/bot_toys.gd"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "skin",
+   "title": "Harbour Playmakers skin",
+   "milestone": "tuned",
+   "deps": [
+    "base",
+    "cartridge"
+   ],
+   "scope": [
+    "data/skin.json",
+    "data/harbour_commentary.json"
+   ],
+   "contract": "",
+   "acceptance": [
+    {
+     "level": "V1",
+     "verb": "lint",
+     "args": []
+    },
+    {
+     "level": "V2",
+     "verb": "smoke",
+     "args": []
+    },
+    {
+     "level": "V4",
+     "verb": "bot",
+     "args": [
+      "--test=tests/bot_skin.gd"
+     ]
+    },
+    {
+     "level": "V4",
+     "verb": "bot",
+     "args": [
+      "--test=tests/bot_first_match.gd"
+     ]
+    }
+   ]
+  }
+ ],
+ "events": [
+  {
+   "v": 1,
+   "seq": 1071,
+   "ts": "2026-11-27T04:35:25.411Z",
+   "job": "three-against-three-hockey-20261125-1",
+   "type": "promoted",
+   "packId": "game.three_against_three_hockey",
+   "version": "0.1.23",
+   "dest": "promoted/game.three_against_three_hockey@0.1.23"
+  },
+  {
+   "v": 1,
+   "seq": 1073,
+   "ts": "2026-11-27T10:33:00.628Z",
+   "job": "three-against-three-hockey-20261125-1",
+   "type": "change_requested",
+   "text": "Make the meteor look and sound like one, NHL Hitz style, and call it METEOR everywhere, not cannon or shotgun. When I light it with F my stick blade burns with flame and sparks; while I hold shoot a ring of fire grows round me and pulses when full, with WINDING UP and the percent in the hint. On release: a white-hot flash, a boom, a camera kick and METEOR! over me; the puck becomes a fireball with a long fire trail, sparks and smoke. Every skater it floors gets a burst of fire, a clang and FLOORED! over him. A meteor goal makes the net bulge back a full metre and the glass shake hard enough to see, with fire and confetti in the mouth. Show METEOR BACK IN and the seconds. No meteor off a faceoff: F lights only a second after the drop."
+  },
+  {
+   "v": 1,
+   "seq": 1076,
+   "ts": "2026-11-27T10:33:08.390Z",
+   "job": "three-against-three-hockey-20261125-1",
+   "type": "reopened",
+   "package": "harbour",
+   "reason": "change request (event 1073); the Planner names the package: The meteor shot's charge ring, hint text, fireball puck, floor bursts, camera kick, net bulge, glass shake, cooldown display and the one-second faceoff lockout are all drawn and run by harbour's scrip\n... (138 more characters cut): Make the meteor look and sound like one, NHL Hitz style, and call it METEOR everywhere, not cannon or shotgun. When I light it with F my stick blade burns with flame and sparks; while I hold shoot a ring of fire grows round me and pulses when full, with WINDING UP and the percent in the hint. On rel\n... (44\n... (22 more characters cut)"
+  },
+  {
+   "v": 1,
+   "seq": 1080,
+   "ts": "2026-11-27T10:36:41.048Z",
+   "job": "three-against-three-hockey-20261125-1",
+   "type": "note",
+   "package": "harbour",
+   "round": 16,
+   "text": "- The meteor is now drawn from the core's snapshot and does not change the game:\n  - **Lit (F):** flame and sparks at the stick blade, using `BladePos`.\n  - **Winding up (shoot held, `ChargeFrames` set):** a ring of fire round the player grows with the wind-up and pulses when full. A full wind-up is `meteor.charge_full_f` 45 in `data/tuning.json`, the same as the cartridge's `charge_frames_max`.\n  - **Release:** a white flash, sparks, a boom (`break` plus a quiet `horn`), a camera kick of 0.25 m and the word METEOR! over the shooter.\n  - **In flight:** the puck becomes a fireball with flame every frame, sparks every other frame and smoke every 3 frames.\n  - **Floored skater:** a burst of fire and sparks, a clang (`hit_metal`) and the word FLOORED! over them.\n  - **Meteor goal:** a flash, fire and confetti in the net mouth, and a camera kick of 0.4 m for 18 frames.\n- The hint slot now reads F: METEOR, METEOR LIT - HOLD SHOOT, WINDING UP n% and METEOR BACK IN n. The opening hint and the trick names, prompts and armed words in `data/tuning.json` now say METEOR instead of CANNON or BUBBLE.\n- Changed values in `harbour.meteor`:\n  - `smoke_scale` 0.8 → 1.1\n  - `stick_y_m` 0.5 → 0.15 (the flame sits at the blade)\n  - `stick_scale` 0.6 → 0.7\n  - `kick_m` 0.15 → 0.25\n  - `goal_flash_scale` 2.0 → 2.5\n  - `goal_kick_m` 0.3 → 0.4\n  - New keys, all in that block: `goal_kick_f`, `charge_full_f`, the `ring_*` and `pulse_*` keys, `release_*`, `boom_*`, `ball_*`, `net_x_m`, `goal_fire_scale`, `goal_confetti_scale`, `word_y_m`, `word_f`, and the five words.\n- Each over-player word (METEOR!, FLOORED!) is a `hud.add_tag` over that player's figure, removed after 50 frames. They are not centre-screen banners.\n- The old moment marks are kept for the bot: `cannon_shot` and `meteor_flatten`. New marks: `meteor_release` and `meteor_goal`.\n- `harbour.report()` gains `\"meteor\"`, which is true while the stick burns or the fireball flies. `tests/bot_harbour.gd` now accepts either the bubble or the lit meteor as the answer to F, because the cartridge has no bubble any more. Its other OWNER lines about the bubble, spots and slush still report unmet targets, as they did before this change.\n- NOT DONE: \"the net bulges back a full metre and the glass shakes\". The net and glass are the base's rink parts, drawn by `scripts/match_view.gd` and the kit's rink, which are outside my scope. Moving them would need an offset added to the net and glass nodes for about 20 frames after a meteor goal. A meteor goal gets the fire, confetti, flash and the hard camera kick instead.\n- NOT DONE: \"F lights only a second after the drop\". This is a rule, not drawing. I found no key for it in CARTRIDGE.md (searched: ability, faceoff, drop, cooldown). The pack's F input goes through `scripts/human_input.gd`, which is outside my scope: it would have to stop sending `bAbility` for 60 frames after `Phase` turns from 3 to 0.\n- Nothing in this change makes a rival bot try or block a meteor; that is the core's AI, which I did not touch."
+  }
+ ]
+}
