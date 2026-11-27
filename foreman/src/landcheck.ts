@@ -14,17 +14,21 @@ import type { GateHost } from "./p10gate.js";
 import type { VerifyResult } from "./verifier.js";
 import { askedChange } from "./boundlift.js";
 import { FOREMAN_NOTE, clip } from "./conduct.js";
-import { NOT_DONE, NOT_MADE, noteLines, ownerOf } from "./halfmade.js";
+import { NOT_MADE, handsOff, noteLines, ownerOf } from "./halfmade.js";
 import { cartridgeOwner } from "./coreowner.js";
 import { NO_KEY } from "./keyfind.js";
 import { QUALITY_ROUNDS } from "./quality_state.js";
 import { tofuOf } from "./tofu.js";
+import { copyDir } from "./scope.js";
+import { movesTestFor, movesTestPath, ownBotTests } from "./movestest.js";
 
 /** Words a person uses for an attack: a move that is meant to land on somebody. */
 export const ATTACK_WORDS = /\b(attack\w*|charg\w*|slam\w*|smash\w*|strik\w*|punch\w*|kick\w*|dunk\w*|meteor|uppercut\w*|ground.?pound\w*|leap\w*|lunge\w*|tackl\w*|bash\w*|throw\w*|hammer\w*|swing\w*|blast\w*|bowl\w*|knock\w*|floor\w*|stomp\w*|shockwave\w*|special move\w*|big moves?|finisher\w*|combo\w*|shoulder.?barge\w*|body.?check\w*)\b/i;
 
 /** The start of the Foreman's note when every new move landed. */
 export const MOVES_LAND = `${FOREMAN_NOTE}new move lands in the Foreman's bot run`;
+/** D27b item 23: the start of the note when a new move is in the game but no bot test counted it (never "NOT made"). */
+export const MOVES_UNCOUNTED = `${FOREMAN_NOTE}new move not counted`;
 
 const ID = /^[a-z][a-z0-9_]*$/;
 
@@ -183,6 +187,11 @@ export function landGate(h: Pick<GateHost, "s" | "pkg" | "dir" | "rel" | "append
   const p = h.pkg(id);
   if (p.round - (p.roundBase ?? 1) >= QUALITY_ROUNDS) {
     const bad = [...v.missing, ...v.unused, ...v.never, ...v.stopped];
+    // D27b item 23: a move no bot counted is not a move that does not land: the person is told it was not measured
+    if (bad.length === v.missing.length && ownBotTests(h.s.plan, h.s.plan.find((x) => x.id === id) as PackageSpec).length === 0) {
+      once(MOVES_UNCOUNTED, `${MOVES_UNCOUNTED} by ${id}: no bot test counted ${bad.join(", ")} after ${p.round - (p.roundBase ?? 1) + 1} rounds (its acceptance runs only the Foreman's tofu bot, and its own ${movesTestPath(id)} reported no count), so the Foreman could not see whether ${bad.length === 1 ? "it lands" : "they land"}. It is not judged as unmade; the rest of the change is kept.`);
+      return undefined;
+    }
     once(`${FOREMAN_NOTE}${NOT_MADE} by ${id}: the new move`, `${FOREMAN_NOTE}${NOT_MADE} by ${id}: the new move${bad.length === 1 ? "" : "s"} ${bad.join(", ")} ${bad.length === 1 ? "does" : "do"} not land in the Foreman's bot run (${said}) after ${p.round - (p.roundBase ?? 1) + 1} rounds; the rest of the change is kept. Say it again (for example "the ${bad[0]} never hits anyone") to have it made.`);
     return undefined;
   }
@@ -192,7 +201,12 @@ export function landGate(h: Pick<GateHost, "s" | "pkg" | "dir" | "rel" | "append
   if (v.stopped.length > 0) parts.push(`${v.stopped.map((m) => lastUse(m, v.counts[m])).join(", ")}: the count must come from a bot that keeps using the move to the end of its run, wherever it can land, and never stops once it has landed; report "last_f" (the frame of its last use) beside started and landed`);
   if (v.never.length > 0) parts.push(`${v.never.map((m) => figure(m, v.counts[m])).join(", ")}: a move that never lands is not made. Find why it misses in the game (its reach against how close the bodies can get, its hit test, its arc, when a bot uses it) and make it land as the person asked`);
   if (v.unused.length > 0) parts.push(`${v.unused.join(", ")} started 0 times: the bot test that counts it must use it where it can land`);
-  if (v.missing.length > 0) parts.push(`no bot test of your package reports ${v.missing.map((m) => `moves.${m}`).join(", ")}: add \`"moves": {"${v.missing[0]}": {"started": <n>, "landed": <n>}}\` to the metrics of a bot test your acceptance runs${own.length > 0 ? ` (${own.join(", ")})` : ""}, count a landing only from the game's own contact events, and let that bot use the move where it can land`);
+  // D27b item 23 (J2nd's biplane copy, events 757-778): core's acceptance runs only the frozen tofu bot, so "a bot test your
+  // acceptance runs" sent it to the tofu bot three times; such a package writes a test of its own, which the Foreman runs here
+  const mine = own.length === 0 ? movesTestPath(id) : undefined;
+  const ranMine = mine === undefined ? undefined : failedMovesRun(h, id, round);
+  if (v.missing.length > 0 && mine !== undefined) parts.push(`no bot test of your package reports ${v.missing.map((m) => `moves.${m}`).join(", ")}. Your acceptance runs no bot test of your own besides the Foreman's tofu bot, which you must never change: write ${mine}, a bot test of your own (it is in your scope for this change and the Foreman runs it in this check with --test=${mine}; you do not add it to pack.json). Make it like the pack's other bot tests (extends Node, with _bot_setup, _bot_tick, _bot_done and _bot_result), let it use the move wherever it can land for its whole run, and put \`"moves": {"${v.missing[0]}": {"started": <n>, "landed": <n>, "last_f": <frame of the last use>}}\` in the metrics of its _bot_result(), a landing counted only from the game's own contact events${ranMine !== undefined ? `. This round's run of ${mine} failed: ${ranMine}` : ""}`);
+  else if (v.missing.length > 0) parts.push(`no bot test of your package reports ${v.missing.map((m) => `moves.${m}`).join(", ")}: add \`"moves": {"${v.missing[0]}": {"started": <n>, "landed": <n>}}\` to the metrics of a bot test your acceptance runs${own.length > 0 ? ` (${own.join(", ")})` : ""}, count a landing only from the game's own contact events, and let that bot use the move where it can land`);
   const summary = `The person asked for a new attack ("${clip(asked.text, 240)}"). In this round's bot runs (${tests.join(", ") || "none"}) ${parts.join("; ")}. Never count a landing the game did not make, and never change the Foreman's tofu bot for it.`;
   const file = h.dir("reports", `${id}-r${round}-move-lands-s${h.s.lastSeq + 1}.json`);
   fs.mkdirSync(path.dirname(file), { recursive: true });
@@ -201,13 +215,56 @@ export function landGate(h: Pick<GateHost, "s" | "pkg" | "dir" | "rel" | "append
   return { verb: "bot", level: "V4", ok: false, summary, reportFile: file, verdictFile: file, flags: [], durationMs: 0 };
 }
 
+/** D27b item 23: the first error of this round's failed run of the package's own moves test, or undefined. */
+function failedMovesRun(h: Pick<GateHost, "dir" | "events">, id: string, round: number): string | undefined {
+  const e = [...h.events].reverse().find((x) => x.type === "verify" && x.package === id && x.round === round && x.verb === "bot" && !x.ok && x.report.includes(`${id}-r${round}-moves`));
+  if (e === undefined || e.type !== "verify") return undefined;
+  try {
+    const r = JSON.parse(fs.readFileSync(h.dir(e.report), "utf8")) as { errors?: { file?: string; line?: number; message?: string }[]; checks?: { id?: string; ok?: boolean; detail?: string }[] };
+    const err = r.errors?.[0];
+    if (err !== undefined) return clip(`${err.file !== undefined ? `${err.file}${err.line !== undefined ? `:${err.line}` : ""}: ` : ""}${err.message ?? ""}`, 400);
+    const chk = r.checks?.find((c) => c.ok === false);
+    return chk !== undefined ? clip(`${chk.id ?? "a check"}: ${chk.detail ?? ""}`, 400) : `see ${e.report}`;
+  } catch {
+    return `see ${e.report}`;
+  }
+}
+
+/**
+ * D27b item 23: before the land check of a round, the package's own moves test (movestest.ts), when the package's
+ * acceptance runs no bot test of its own and its builder wrote one: one bot run on a copy of the workspace whose manifest
+ * lists the test. The run is a logged `verify` of the round (stem <id>-r<round>-moves), so landGate counts it.
+ */
+export async function movesRun(h: Pick<GateHost, "s" | "events" | "dir" | "verifyLogged">, id: string, round: number): Promise<void> {
+  const asked = askedChange(h.events);
+  if (asked === undefined || asked.kind !== "play" || !ATTACK_WORDS.test(asked.text)) return;
+  const spec = h.s.plan.find((p) => p.id === id);
+  const test = spec !== undefined ? movesTestFor(h.s.plan, spec, h.events) : undefined;
+  const ws = h.dir("ws", id);
+  if (test === undefined || !fs.existsSync(path.join(ws, test)) || !fs.existsSync(path.join(ws, "pack.json"))) return;
+  if (namedSince(h.events, id, asked.seq).length === 0 || handsOn(h.s.plan, h.events, id, asked.seq)) return;
+  if (h.events.some((e) => e.type === "verify" && e.package === id && e.round === round && e.report.includes(`${id}-r${round}-moves`))) return; // a resumed round
+  const copy = h.dir("ws", `_moves_${id}`);
+  fs.rmSync(copy, { recursive: true, force: true });
+  copyDir(ws, copy);
+  try {
+    const mf = path.join(copy, "pack.json");
+    const m = JSON.parse(fs.readFileSync(mf, "utf8")) as { tests?: string[] };
+    m.tests = [...new Set([...(m.tests ?? []), test])];
+    fs.writeFileSync(mf, JSON.stringify(m, null, 2) + "\n");
+    await h.verifyLogged({ verb: "bot", args: [`--test=${test}`] }, copy, `${id}-r${round}-moves`, { package: id, round });
+  } finally {
+    fs.rmSync(copy, { recursive: true, force: true });
+  }
+}
+
 /** The start of the note for a move judged by the final bot run instead of its own round. */
 export const WAITS = `${FOREMAN_NOTE}new move judged at the end`;
 
 /** Does a builder of `id` hand part of the change on since event `since` (a NOT DONE line whose files another package owns, or the cartridge's)? */
 export function handsOn(plan: readonly PackageSpec[], events: readonly JobEvent[], id: string, since: number): boolean {
   const cart = cartridgeOwner(plan)?.id;
-  const lines = events.flatMap((e) => (e.type === "note" && e.package === id && e.seq > since && !e.text.startsWith(FOREMAN_NOTE) ? noteLines(e.text) : [])).filter((l) => NOT_DONE.test(l));
+  const lines = events.flatMap((e) => (e.type === "note" && e.package === id && e.seq > since && !e.text.startsWith(FOREMAN_NOTE) ? noteLines(e.text) : [])).filter(handsOff);
   return lines.some((l) => ownerOf(plan, id, l) !== undefined || (cart !== undefined && cart !== id && /cartridge/i.test(l) && !NO_KEY.test(l)));
 }
 
@@ -220,7 +277,7 @@ export function finalLandNotes(h: Pick<GateHost, "s" | "dir" | "events">): { typ
   const asked = askedChange(h.events);
   if (asked === undefined || asked.kind !== "play" || !ATTACK_WORDS.test(asked.text)) return [];
   const since = h.events.filter((e) => e.seq > asked.seq);
-  const judged = new Set(since.flatMap((e) => (e.type === "note" && (e.text.startsWith(MOVES_LAND) || (e.text.startsWith(`${FOREMAN_NOTE}${NOT_MADE} by `) && e.text.includes(": the new move"))) ? [e.package ?? ""] : [])));
+  const judged = new Set(since.flatMap((e) => (e.type === "note" && (e.text.startsWith(MOVES_LAND) || e.text.startsWith(MOVES_UNCOUNTED) || (e.text.startsWith(`${FOREMAN_NOTE}${NOT_MADE} by `) && e.text.includes(": the new move"))) ? [e.package ?? ""] : [])));
   const ids = [...new Set(since.flatMap((e) => (e.type === "note" && e.package !== undefined && !judged.has(e.package) && !e.text.startsWith(FOREMAN_NOTE) && newMovesOf(e.text).length > 0 ? [e.package] : [])))];
   const named = ids.flatMap((id) => namedSince(h.events, id, asked.seq).map((m) => [id, m] as [string, string]));
   if (named.length === 0) return [];

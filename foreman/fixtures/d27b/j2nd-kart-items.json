@@ -1,0 +1,936 @@
+{
+ "from": "d25-kart/.tl/jobs/j2nd/bumper-kart-football-3-20261125-1, events 1295-1365; report = reports/core-r19-bot-s1334.json (ok, outcome, checks, errors)",
+ "plan": [
+  {
+   "id": "core",
+   "title": "Tofu core: karts, verbs, loose ball, one rival",
+   "milestone": "blockout",
+   "deps": [],
+   "scope": [
+    "scripts/main.gd",
+    "scripts/core/**",
+    "data/tuning.json",
+    "data/venue.json",
+    "gen/kart_flat.gd",
+    "tests/bot_tofu.gd",
+    "tests/bot_hand_perfect.gd",
+    "README.md"
+   ],
+   "serves": [
+    "spin_bat_goal",
+    "whirl_turnaround",
+    "sunset_ram"
+   ],
+   "registers": {
+    "capabilities": [
+     "physics",
+     "input",
+     "ui",
+     "audio",
+     "vfx",
+     "camera",
+     "rules",
+     "ai",
+     "ball",
+     "kit",
+     "style"
+    ],
+    "assets": [
+     "gen/kart_flat.gd"
+    ],
+    "tests": [
+     "tests/bot_tofu.gd",
+     "tests/bot_hand_perfect.gd"
+    ],
+    "cameras": [
+     "play"
+    ]
+   },
+   "contract": "Bumper-kart football on flat shapes: p1 (red/cream #c8342c/#f2e6c8) against mint_1 (#8fd9b6, same kart), deck, loose ball, goals. Start from ref/seeds/seed_paddle + seed_drive. Keep lean (about 800 lines). Player decisions win over card and brief: NO spin bat, NEVER carried (no TLBall.hold, spring or anchor), NO named rivals. All numbers below go in data/tuning.json, keys named as written.\nWORLD: data/venue.json (tl.layout/1) = flat deck on floor layer 1 plus kit goal parts scaled to 14 x 4 m. x -22..22, z -36..36; red attacks -z. Board outline (1 m visual, rounded 6 m corners, restitution 0.7) is resolved in scripts/core/deck.gd, no wall bodies. Karts: TLBodies.make cylinder radius 0.9, mass 200, dynamic, lock y rx ry rz, mask 0, visual false, track false; motion, heading, kart-kart and kart-board contacts are script-owned (not TLVehicle). Ball: TLBall planar, radius 1.2, mass_ratio 0.25, restitution 0.7, drag 0.3/s, cap 30; masks only the floor; set_velocity.\nDRIVE: cruise 12, boost 18, accel 14/22, brake 24, reverse 6, turn 3.2/2.4 rad/s; tank 100, burn 33/s; kickoff boost 33, conceding side 66 (tail lamps glow).\nACTIONS: forward W, back S, left A, right D, boost Shift, bump Space, whirl E + right mouse, restart R, skip_lesson Enter.\nBALL TOUCH: states &\"loose\",&\"struck\". Relative normal speed under soft_touch_max 13: ball leaves at kart normal speed + 1 (pushable, rolls free); else restitution 0.7 along centre line.\nVERBS (pose in 3 f, readable by 6): bump 5/7/12, lunge +4 m/s, cone 35 deg, no auto-aim, no cancel; ball +14 m/s along contact line, +20 if contact in first 3 active frames. ram: hold boost, windup 6, active up to 180, recovery 12, cancels into bump/whirl; closing >=14 is a ram. whirl 4/18/24, guard frames 1-18, swats ball 14 m/s tangentially. Bot bump, ram and whirl each start with a 24 f tell (driver rears, pennant whips back).\nCONTACTS (both karts; hit-stop in brackets): touch <6: rebound 0.6, thud [0]. bump flank: victim spinout 75, speed halved, attacker recoils 3 [4]. rear: victim shoved 7 forward, wobble 24, attacker half speed [3]. nose: both rebound 5, snap [3]. clash: both 8 [5]. ram flank/rear: spinout 90, thrown 6, attacker keeps 40% and jolts [8]. ram head-on: both 9, slower spinout 75 [6]. bump/ram into whirl: attacker spinout 75, whirler holds, +10 boost [6]. whiff bump: full recovery, twang. whiff whirl: 24 f no steer, speed x0.6. Teammates only rebound. Spinout brakes 10 m/s2; during it and 90 f after, hits only jolt. Hit-stop is held by the pack on those two karts only; victim visual vibrates, decaying.\nSHAKE: bumps none; ram involving p1 (0.15,10); goal (0.25,18). TLAudio thuds, clang, twang, charge bell, horn, cheer; TLVfx sparks on rams only, confetti on goals; no technical markers. Sweet shot and swat: 4 f hit-stop on kart and ball visual, clang, TLVfx.squash ball.\nPOSES (scripts/core/pose.gd, own, no biped clips): kart_bump (lean back, spring compresses, lunge, wobble), kart_ram (tub squats, nose lifts, hunch; squash on contact), kart_whirl (tilt pirouette, arms high), kart_spinout (rock, head lolls, hands off), kart_wobble, kart_jolt (jerk from blow), goal_wave.\ngen/kart_flat.gd: static generate(ctx) (no-op), static build(team)->Node3D \"Visual\" with nodes Ring (fat black), Tub, Spring, Driver(Head striped helmet, ArmL, ArmR), Pole (3 m), Pennant, TailLampL, TailLampR; each node's meshes sit in a child \"Flat\". p1 has pine_light SelfRing. Ball visual \"BallVisual\": hot seam rim, ground shadow.\nCAMERA view \"play\" (add_view, moved every frame): 8 back (+z) 7 up of p1, look height 1, fov 46, ~4 f lag, heading FIXED toward the far goal, never swings; fade_occluders; p1 about 0.2 of frame.\nRULES: TLRules sides red,mint, score_to_win 3, paused outside live; countdown 180, mirrored spots red [[0,14],[-9,20],[9,26]] (mint negated), centred ball; goal hold 90, bump skips; at 180 s live leader wins else golden; end banner, restart works at once.\nLESSON (match 0): mint_1 shuttles side-on 3 m beside the ball across p1's lane every 6 s until spun once; that first spin lasts 180 f, no throw even from a ram, and leaves the p1-ball-goal line clear (kart 2.5 m off it) so one straight nudge sends the ball goalward. Hints: 'W drive, SHIFT boost, SPACE bump its side', 'now shove the ball home', 'E whirl' at first charge bell. After it mint_1 uses brain_core: attacks ball and p1 in bursts of 3, whirls when a closer is within 9 m, never still over 60 f.\nHUD: labels score_red, clock, score_mint, hint, boost, banner (set_text); ball edge arrow on a TLHudLayer. Avoid variable names starting score/clock/timer/period/lap.\nMODULE SEAM (later packages): for n in teams, show, look: if ctx.root.has_meta(\"kk_mod_\"+n), ctx.load_script(meta).new(); call mod_setup(ctx, game) after core setup, mod_tick(frame) after core logic, mod_state() into state[n], mod_save()/mod_load(d) when present (core implements _pack_save/_pack_load). game = main: ctx, cfg, karts, player, ball{body,pos,vel,state,last_id,last_team,visual}, rules, hud, phase(&\"countdown\",&\"live\",&\"goal_hold\",&\"over\"), golden, tier(0..2), match_index, events, core_scoreboard, core_endcard (true); add_kart(id,team,slot), kart_by_id(id), add_boost(k,v), restart_match(), lesson_active(), far_loop_active() (first 900 live f of match 0; skip_lesson ends both). Kart: id,team,pos,heading,vel,boost,state(&\"drive\",&\"tell\",&\"bump\",&\"ram_windup\",&\"ram\",&\"ram_recover\",&\"whirl\",&\"spinout\",&\"wobble\",&\"goal_wave\"),state_frame,immune,stop,brain,visual. brain.think(kart,game)->{throttle,steer,boost,bump,whirl}. Ids p1,red_2,red_3,mint_1..3. events (cleared each tick) {type: contact{kind: touch,flank,rear,nose,clash,ram_flank,ram_rear,ram_headon,whirl_block,jolt,mate; attacker,victim}, ball_touch{kart,kind: push,bounce,bump,sweet,swat}, whiff{kart,verb}, tell{kart,verb}, possession{team,cause: bumped,spun,whirled,rammed,outraced; from}, goal{team,scorer,own}, countdown_start, kickoff, match_over{winner}}. State: rules snapshot, phase, golden, time_left_s, lesson, karts[], ball{}, events.\nTOFU CHECK: tests/bot_tofu.gd reports metrics feedback_f, skill_spread, skill_variants, idle_max_f, tell_min_f, tells, pressure_waves, lead_change_share, close_rounds, verbs_used, possession_median_f, scrum_share, overlap_share\nBounds, all counted from played frames: feedback_f<=3; skill_spread 0.25..0.95 (bump on ball: sweet/late/angled, >=5 each, outcome ball speed); skill_variants>=3; idle_max_f<=120; tell_min_f>=20; tells>=3; pressure_waves>=2 (180 f window with >=3 attack starts after one with <=1); lead_change_share>=0.3 over >=3 matches; close_rounds>=1 (loser within one point); verbs_used>=3 (bump, ram, whirl, each >=3); possession_median_f 240..600 (side of last touch until other side touches or goal); scrum_share<=0.3 (4+ karts within 5 m of ball); overlap_share<=0.02 (overlap >0.1 m). Also hand, and moments {flank,rear,clash,ram_flank,whirl_block,sweet,goal,spin_bat_goal (flank spin then p1 goal),whirl_turnaround,sunset_ram}; plays the lesson first.\nPLAYER CHECK: tests/bot_hand_perfect.gd fails when the player's kart can no longer drive, touch the ball 5 times, spin a mint kart once and move the ball 30 m goalward in total",
+   "acceptance": [
+    {
+     "level": "V1",
+     "verb": "lint",
+     "args": []
+    },
+    {
+     "level": "V2",
+     "verb": "smoke",
+     "args": []
+    },
+    {
+     "level": "V4",
+     "verb": "bot",
+     "args": [
+      "--test=tests/bot_tofu.gd",
+      "--frames=72000"
+     ]
+    },
+    {
+     "level": "V4",
+     "verb": "bot",
+     "args": [
+      "--test=tests/bot_hand_perfect.gd"
+     ]
+    },
+    {
+     "level": "V3",
+     "verb": "invariants",
+     "args": []
+    }
+   ]
+  },
+  {
+   "id": "teams",
+   "title": "Three against three, utility bots, boost pads",
+   "milestone": "greybox",
+   "deps": [
+    "core"
+   ],
+   "scope": [
+    "scripts/teams/**",
+    "data/ai.json",
+    "data/pads.json",
+    "gen/mod_teams.gd",
+    "tests/bot_teams.gd",
+    "tests/bot_hand_newcomer.gd"
+   ],
+   "serves": [
+    "whirl_turnaround",
+    "spin_bat_goal"
+   ],
+   "registers": {
+    "capabilities": [
+     "ai",
+     "audio",
+     "vfx",
+     "style"
+    ],
+    "assets": [
+     "gen/mod_teams.gd"
+    ],
+    "tests": [
+     "tests/bot_teams.gd",
+     "tests/bot_hand_newcomer.gd"
+    ]
+   },
+   "contract": "Turns the core into 3 v 3 with no goalies. Player decisions: ball is NEVER held, no spin bat or FEED option, rivals are one mint team in identical karts with no names or special habits. Do not edit core files.\nHOOK: gen/mod_teams.gd static generate(ctx) does ctx.root.set_meta(\"kk_mod_teams\",\"scripts/teams/teams.gd\"); also static build_pad(big: bool)->Node3D (flat disc / brass lamp post under 1 m, TLStyle.flat_material). teams.gd: mod_setup(ctx, game), mod_tick(frame), mod_state().\nSETUP: game.add_kart(\"red_2\",\"red\",1), (\"red_3\",\"red\",2), (\"mint_2\",\"mint\",1), (\"mint_3\",\"mint\",2); set kart.brain on all five bots (replaces mint_1's brain_core; the core still drives mint_1 during game.lesson_active()). brain.think(kart, game) -> {throttle: -1..1, steer: -1..1, boost, bump, whirl}; bump/whirl true on the press frame; the core adds the 24 f tell to every bot bump, ram and whirl. While game.far_loop_active() the four other bots drive loops in the far half (z<-12) and never approach the ball.\nAI (copy the structure of engine/packs/hockey/scripts/ai/carrier.gd and roles.gd; weights in data/ai.json): decide every frame, no reaction delay. Roles &\"attacker\",&\"support\",&\"last\" re-sorted by time to ball, 0.3 s hysteresis; commitment bonus 0.15. Options &\"shoot\" = 1.6*shot_chance - 0.3*pressure (veto under 0.08); &\"knock\" (to a mate) = 1.2*lane_safety*openness*(0.5+gain) (veto lane under 0.35); &\"push\" = 0.9*space*(1-pressure) + 0.15; defence &\"pressure\",&\"block\",&\"guard\". Never aim at the own goal. TLSteer.pursue, arrive, separate 6 m unless contesting (keeps scrum_share <= 0.3). Bump the ball to shoot or knock; bump or ram opponents on flank or rear; read a closing attacker and whirl when it is within 9 m (the 24 f tell plus 4 f wind-up must finish before contact). No bot stands still over 60 f.\nMATES: red_2 attacks and drives the goal, red_3 covers; both shoot freely, give way when p1 is about to touch the ball (stay 4 m off p1's nose), and flash TailLamps when open (lane safety*openness over 0.6).\nTIERS read game.tier 0 rookie,1 pro,2 allstar: aim_error_deg 6/3.5/1.5; sweet_chance 0.20/0.50/0.75; whirl_read 0.25/0.50/0.70; allstar also feints (starts a tell, drives off), knocks and blocks lanes more. Mates use pro. Equal speeds, accel and boost on every tier. All randomness ctx.rng.\nPADS data/pads.json: 10 small at x +-11, z -24,-12,0,12,24: give 12, return 4 s; 4 big at (+-18, +-30): give 100, return 10 s, 7 s once either side has 2 goals (match point). Pickup by distance 1.5 m in the plane, game.add_boost(kart, v), capped 100; an empty pad visibly sinks or dims; all return on countdown_start. Sound on pickup. Low bots detour to pads when it costs under 1 s. Append event {type:\"pad\", kart, amount, big} to game.events.\nmod_state(): {roles:{id:role}, option:{id:option}, pads:[{x,z,big,ready}]}.\nTUNE: keep side possession median 4-10 s.\nTESTS: tests/bot_teams.gd (taps skip_lesson at frame 1, plays p1 with a perfect TLHand to the end): ok needs 6 karts, no bot idle over 60 f, every bot tell >= 24 f, at least one shot by each side, a red mate touch, 3 pad pickups, all measured; reports metrics possession_median_f, scrum_share, overlap_share, idle_max_f and moments mate_shot, mint_tell, pad_pickup, whirl_block, goal (first ones within 600 f). tests/bot_hand_newcomer.gd per card.team_possession: a newcomer TLHand plays tier 0; reports result and hand.stats(). bot_hand_perfect (core's) must still pass: player check on tier 0.",
+   "acceptance": [
+    {
+     "level": "V1",
+     "verb": "lint",
+     "args": []
+    },
+    {
+     "level": "V2",
+     "verb": "smoke",
+     "args": []
+    },
+    {
+     "level": "V4",
+     "verb": "bot",
+     "args": [
+      "--test=tests/bot_teams.gd"
+     ]
+    },
+    {
+     "level": "V4",
+     "verb": "bot",
+     "args": [
+      "--test=tests/bot_hand_perfect.gd"
+     ]
+    },
+    {
+     "level": "V4",
+     "verb": "bot",
+     "args": [
+      "--test=tests/bot_hand_newcomer.gd"
+     ]
+    },
+    {
+     "level": "V3",
+     "verb": "invariants",
+     "args": []
+    }
+   ]
+  },
+  {
+   "id": "show",
+   "title": "TV scoreboard, drama, end card, nights",
+   "milestone": "greybox",
+   "deps": [
+    "teams"
+   ],
+   "scope": [
+    "scripts/show/**",
+    "data/show.json",
+    "gen/mod_show.gd",
+    "tests/bot_show.gd"
+   ],
+   "serves": [
+    "sunset_ram"
+   ],
+   "registers": {
+    "capabilities": [
+     "ui",
+     "audio",
+     "vfx",
+     "camera",
+     "rules"
+    ],
+    "assets": [
+     "gen/mod_show.gd"
+    ],
+    "tests": [
+     "tests/bot_show.gd"
+    ]
+   },
+   "contract": "The match as a TV show: screen, sound and stakes. Moves no kart or ball. No spin bat, no carrying, no named rivals.\nHOOK: gen/mod_show.gd static generate(ctx) does ctx.root.set_meta(\"kk_mod_show\",\"scripts/show/show.gd\"). show.gd: mod_setup(ctx, game), mod_tick(frame), mod_state(), mod_save(), mod_load(d). Reads game.events {type: contact, ball_touch, whiff, tell, possession{team,cause,from}, goal{team,scorer,own}, countdown_start, kickoff, match_over{winner}, pad}, game.phase, game.golden, game.rules, game.karts, game.player, game.tier, game.match_index. Writes only game.core_scoreboard=false, game.core_endcard=false, game.tier. Remove core labels score_red, clock, score_mint, banner with game.hud.remove_widget; leave hint and boost.\nBOARD (the player's note: 'a big score board at the top, red score, clock, mint score, like a TV game'): TLHud.add_layer(&\"tv\"), top centre about 760 x 120 units: red plate with large score, centre plate with 3:00 counting down (from game's time_left_s: 180 - rules.seconds_played()), mint plate with large score; pennant name of the night (ROOKIE, PRO, ALL-STAR) under it; 'MATCH POINT' and 'GOLDEN GOAL' strips. Countdown 3, 2, 1 large with beeps; GOAL banner during goal_hold with scorer (YOU, RED, MINT, own goal) and 'SPACE skips'.\nWHY YOU LOST IT: on a possession event that takes the ball from p1's side, one line under the board for 90 f naming the cause: bumped 'Mint bumped it away', spun 'You were spun out', whirled 'Mint whirled it off you', rammed 'Mint rammed you', outraced 'Mint got there first'. Counts are kept for p1.\nCHARGERS: edge arrow on the tv layer for any mint kart in state tell or ram that is off screen (lay.project).\nINTENSITY (data/show.json): calm countdown, kickoff peak (whistle, cheer), loose scramble, quiet breath for the goal hold; match point: a pulse beat (TLAudio.play beep) every 30 f, quickening to 20 f in golden goal; golden goal: horn, cheer, a brief rose screen_fade of at most 0.15, repeated bursts of cheer. Never add hit-stop or extra shake (core owns feel). A sweet bump during golden goal records moment sunset_ram.\nEND CARD: winner, final goals, goals by you, your spin-outs, biggest loss cause with its count and answer, e.g. 'Mint whirled you 5 times: wait out the whirl' (answers per cause in data/show.json), fastest win in seconds, 'R rematch'. Visible within 60 f of match_over; R (core) restarts within 2 s; card clears on countdown_start. A red win raises game.tier by 1 (max 2) before the next match and records fastest win; a loss keeps the tier. mod_save returns {tier, fastest_s}; mod_load restores them.\nmod_state(): {board:{red,mint,time_text,strip}, card:{shown,winner,spinouts,cause,cause_count,text}, night, fastest_s, callout}.\ntests/bot_show.gd: perfect TLHand plays p1 (drive at the ball from the far side of the mint goal, bump) through one match, reads state show, presses restart; ok needs the board text matching rules scores on every sampled frame, a callout after a real loss, the end card with winner and cause, the next countdown within 120 f of restart, tier raised if red won. Reports moments countdown, goal, callout, end_card, sunset_ram.",
+   "acceptance": [
+    {
+     "level": "V1",
+     "verb": "lint",
+     "args": []
+    },
+    {
+     "level": "V2",
+     "verb": "smoke",
+     "args": []
+    },
+    {
+     "level": "V4",
+     "verb": "bot",
+     "args": [
+      "--test=tests/bot_show.gd"
+     ]
+    },
+    {
+     "level": "V4",
+     "verb": "bot",
+     "args": [
+      "--test=tests/bot_hand_perfect.gd"
+     ]
+    },
+    {
+     "level": "V3",
+     "verb": "invariants",
+     "args": []
+    }
+   ]
+  },
+  {
+   "id": "look",
+   "title": "Sunset pier pavilion and painted fairground tubs",
+   "milestone": "art_pass",
+   "deps": [
+    "teams"
+   ],
+   "scope": [
+    "scripts/look/**",
+    "data/pier.json",
+    "data/look.json",
+    "gen/mod_look.gd",
+    "gen/pier/**"
+   ],
+   "serves": [
+    "sunset_ram",
+    "spin_bat_goal"
+   ],
+   "registers": {
+    "capabilities": [
+     "kit",
+     "style",
+     "vfx",
+     "camera"
+    ],
+    "assets": [
+     "gen/mod_look.gd"
+    ]
+   },
+   "contract": "Visual only: no collision that touches play, no state, speed or rule change. All shown in camera \"play\" (steady, behind and above p1, looking at the far goal; do not change it).\nHOOK: gen/mod_look.gd static generate(ctx) does ctx.root.set_meta(\"kk_mod_look\",\"scripts/look/look.gd\"). look.gd: mod_setup(ctx, game) after all karts exist (loads after teams), mod_tick(frame), mod_state() returns {sky_step, lamps_on, lanterns_on}. Geometry lives in gen/pier/*.gd static builders, using kit parts first and TLStyle.flat_material; no own materials, lights, sky or environment.\nKARTS (the player's note, follow it): 'a round fairground tub on a fat black rubber ring, a kid driver in a striped crash helmet, a little pennant on a pole; my team red and cream stripes, theirs mint green'. Each game.karts[i].visual has nodes Ring, Tub, Spring, Driver(Head, ArmL, ArmR), Pole, Pennant, TailLampL, TailLampR, each with meshes in a child \"Flat\". Hide \"Flat\" and add a new child under the same node, so the core's poses keep driving them; never move or rename those nodes. Round glossy tub with red/cream stripes (#c8342c/#f2e6c8) or mint (#8fd9b6) stripes, same shape for both; visible spring nose; kid bust with striped helmet and gloved arms; pole top at 3 m, little pennant clearly above the 2.4 m ball; tail lamps visibly glow when boost at kickoff is 66. Keep SelfRing (pine_light) clear.\nBALL: dress game.ball.visual: huge stitched leather panels, hot-coloured seam rim, ground shadow kept; the stitching rolls with motion; squash by the core must still show.\nPIER (data/pier.json via TLKit.build_layout from look.gd, plus gen/pier): plank deck 72 x 44 m with centre line and circle, 1 m painted boards following the rounded 6 m corner outline exactly, goals 14 x 4 m with nets and team bunting, 4 brass lamps at (+-18,+-30) floor corners, outside the boards: pier edge, railings, sea all round, roof arch ribs (arch_rib), light masts (light_mast), flags, bunting, a few stalls and stands. Arches, masts, flags and anything taller than the boards stand at least 10 m beyond the boards (goals excepted), so the camera never meets them; no pillar on the play surface; nothing hides ball, drivers or pennants.\nSUNSET (the player keeps 'Beat The Sunset'): a far backdrop of sea horizon and sky bands whose colour steps gold -> orange -> rose with rules.seconds_played() at 0, 60, 120 s; the 4 lamps and mast lamps switch to a glowing colour at 90 s; when game.golden, the sky goes dusk and deck-edge lanterns light. Resets on a countdown_start of a new match (game.match_index changes). Step times and colours in data/look.json. Global inked toon style, golden-to-rose mood. No technical markers at impacts.\nBudget: at most 600 physics bodies and 5,000 nodes under the pack; p99 tick under 8 ms: build once, merge static scenery, update only on step changes. The view \"play\" at kickoff must differ clearly from the greybox: striped tubs, planks, boards, sea and sunset.",
+   "acceptance": [
+    {
+     "level": "V1",
+     "verb": "lint",
+     "args": []
+    },
+    {
+     "level": "V2",
+     "verb": "smoke",
+     "args": []
+    },
+    {
+     "level": "V4",
+     "verb": "bot",
+     "args": [
+      "--test=tests/bot_hand_perfect.gd"
+     ]
+    },
+    {
+     "level": "V3",
+     "verb": "invariants",
+     "args": []
+    }
+   ]
+  },
+  {
+   "id": "items",
+   "title": "Rainbow prize boxes and the homing red shell",
+   "milestone": "greybox",
+   "deps": [
+    "core",
+    "teams",
+    "show",
+    "look"
+   ],
+   "scope": [
+    "scripts/items/**",
+    "data/items.json",
+    "gen/mod_items.gd",
+    "tests/bot_items.gd"
+   ],
+   "serves": [
+    "whirl_turnaround",
+    "sunset_ram"
+   ],
+   "registers": {
+    "capabilities": [
+     "input",
+     "ui",
+     "audio",
+     "vfx",
+     "camera",
+     "ai",
+     "style",
+     "kit"
+    ],
+    "assets": [
+     "gen/mod_items.gd"
+    ],
+    "tests": [
+     "tests/bot_items.gd"
+    ]
+   },
+   "contract": "The player's request: floating prize boxes give a homing red shell, F fires it, a hit tumbles a kart; Q jump and E whirl beat it; mint bots use them too. Original look, not any existing game's art: a painted seaside fairground prize box and a glossy red clamshell. Do not edit any kept file. Everything else plays as before. All numbers in data/items.json, keys named as written.\nHOOK: gen/mod_items.gd static generate(ctx) does ctx.root.set_meta(\"kk_mod_items\",\"scripts/items/items.gd\"); static build_box()->Node3D (cube 1.2 m, rainbow striped faces, TLStyle.flat_material colours) and build_shell()->Node3D (red clamshell 0.6 m). WIRE (core, re-opened after this merge): in scripts/main.gd's module seam the names list becomes teams, show, look, items, so items.gd's mod_setup(ctx, game) runs after look, mod_tick(frame) after the core logic each frame, mod_state() into state[\"items\"]. Until the core is wired this package does nothing and the game is unchanged.\nINPUT: mod_setup declares fire_item [KEY_F] and jump [KEY_Q] through ctx.input.declare. Whirl stays the core's E / right mouse.\nBOXES: box_spots [[0,-12],[-12,10],[12,10]] (x,z), float at box_height 1.6 m, bob 0.2 m, spin 2 rad/s. A kart whose centre comes within box_radius 1.8 m (planar; jumping karts too) takes it if it holds no item: box hides, burst confetti small, TLAudio.play beep; returns after box_return_s 8. All boxes return on countdown_start. Hidden during game.lesson_active() and game.far_loop_active().\nHELD SHELL: one item per kart; a held shell spins over the tub at 3.4 m (above pennant level readable over the ball) on the kart's visual, visible to all.\nFIRE (F for p1; bots by brain): one shell alive per kart at a time. Shell leaves the nose at shell_speed 26 m/s, skims at y 0.4, glows red, TLVfx.trail red streak; homes on the nearest opponent kart inside a 70 deg forward cone (none: flies straight), turning at shell_turn 3.0 rad/s; lives shell_life_s 4 or until it hits the boards (pops, dust). Script-owned motion, no physics body; hit test by planar distance shell_hit_radius 1.4 to kart centres. Ignores the ball (passes over).\nHIT (both karts change, never the shooter's team): victim kart.state=&\"spinout\" for shell_spin_f 90, speed set to 0 plus throw 4 m/s along the shell's travel, frees ball as core's spun cause (append event possession cause spun when the victim's team had it). Visual only: visual lifted in a tumble arc to tumble_height 3 m over 40 f with 2 full rolls, landing squash; hit-stop shell_stop_f 8 on victim (kart.stop); TLAudio.play hit_steel (BANG), TLVfx.burst sparks, ctx.cameras.shake 0.25 over 14 frames when p1 is victim or shooter, else 0.1; HUD label shelled centre 'SHELLED!' for 60 f (game.hud.add_label once, set_text). Respect core immunity: during a spin-out and its 90 f after, a shell only jolts (no tumble).\nBEATING IT: jump (Q): jump_f 30 airborne hop of the visual (peak 1.6 m, tub tucks), cooldown 60; kart.jumping true while airborne; shells pass under. Jump does not change the core body. Whirl: a kart in core state whirl within 2.5 m swats the shell away tangentially (it becomes harmless, flies off 20 m/s, fades), clang, whirler gains 10 boost via game.add_boost. Swat records moment shell_swat.\nBOTS (mint and red mates through kart.brain unchanged; items.gd adds its own per-bot item logic): grab a box when it costs under 1.5 s off route; fire when an opponent is in the 70 deg cone within 30 m and lane clear of mates (mint aims at p1 and red mates); on an incoming shell inside 1.0 s: jump or whirl by tier read chance (whirl_read of data/ai.json, rookie 0.25 / pro 0.5 / allstar 0.7), else take it. Bot fire is preceded by a 24 f tell: shell glows bright and rises over the pole. All randomness ctx.rng.\nEVENTS appended to game.events: {type:\"item\", kart, kind: box, fire, hit, jump_dodge, swat, pop}.\nmod_state(): {boxes:[{x,z,ready}], held:{id:bool}, shells:[{owner,x,z,target}], shelled_text, jumping:[ids]}.\ntests/bot_items.gd: perfect TLHand plays p1 (skip_lesson at frame 1). If state has no \"items\" key by frame 60 it ends ok true with summary 'items not wired'. Otherwise: drive to a box, fire at a mint kart, jump (Q) on an incoming shell, whirl on another; ok needs p1 took a box, fired, hit a mint kart once, at least one mint shell fired at red, one jump dodge or swat by anyone, boxes returned after 8 s, never two live shells for one kart, no script error. Reports moments box, fire, shell_hit, jump_dodge, shell_swat (first within 900 f) and metrics hits, dodges, swats. bot_hand_perfect (core) must still pass.",
+   "acceptance": [
+    {
+     "level": "V1",
+     "verb": "lint",
+     "args": []
+    },
+    {
+     "level": "V2",
+     "verb": "smoke",
+     "args": []
+    },
+    {
+     "level": "V4",
+     "verb": "bot",
+     "args": [
+      "--test=tests/bot_items.gd"
+     ]
+    },
+    {
+     "level": "V4",
+     "verb": "bot",
+     "args": [
+      "--test=tests/bot_hand_perfect.gd"
+     ]
+    },
+    {
+     "level": "V3",
+     "verb": "invariants",
+     "args": []
+    }
+   ]
+  }
+ ],
+ "promoted": {
+  "seq": 1293,
+  "type": "promoted",
+  "packId": "game.bumper_kart_football_3",
+  "version": "0.1.7",
+  "dest": "promoted/game.bumper_kart_football_3@0.1.7"
+ },
+ "events": [
+  {
+   "seq": 1295,
+   "type": "change_requested",
+   "text": "Add Mario Kart item boxes: three spinning rainbow boxes float over the deck and come back 8 seconds after a kart drives or jumps through one. A box gives that kart a red shell, shown spinning over its tub so everyone sees it coming. Press F to fire it: the shell glows red, leaves a red streak and skims the planks, homing on the nearest rival kart ahead. A hit blows that kart a few metres up in a spinning tumble with a BANG, sparks, a short freeze, a camera kick and SHELLED! big in the middle of the screen. A shell can be beaten: jump over it with Q, or whirl with E to swat it away. The mint karts grab boxes, fire shells at me and my mates, and jump or whirl when a shell comes at them. One shell at a time."
+  },
+  {
+   "seq": 1301,
+   "type": "reopened",
+   "package": "items",
+   "reason": "change request (event 1295); the Planner adds a package for it (Floating pickup boxes, a homing shell you fire, a hit-and-tumble reaction, dodging shells and bots that use them are a new pickup-and-weapon mechanic that no package's files cover, so it needs a new p\n... (139 more characters cut)): Add Mario Kart item boxes: three spinning rainbow boxes float over the deck and come back 8 seconds after a kart drives or jumps through one. A box gives that kart a red shell, shown spinning over its tub so everyone sees it coming. Press F to fire it: the shell glows red, leaves a red streak and skims\n... (411 more characters cut)"
+  },
+  {
+   "seq": 1302,
+   "type": "package_state",
+   "package": "items",
+   "state": "queued",
+   "round": 1,
+   "detail": "CHANGE REQUEST: Add Mario Kart item boxes: three spinning rainbow boxes float over the deck and come back 8 seconds after a kart drives or jumps through one. A box gives that kart a red shell, shown spinning over its tub so everyone sees it coming. Press F to fire it: the shell glows red, leaves a red streak and skims the planks, homing on the nearest rival kart ahead. A hit blows that kart a few metres up in a spinning tumble with a BANG, sparks, a short freeze, a camera kick and SHELLED! big in the middle of the screen. A shell can be beaten: jump over it with Q, or whirl with E to swat it away. The mint karts grab boxes, fire shells at me and my mates, and jump or whirl when a shell comes at them. One shell at a time."
+  },
+  {
+   "seq": 1303,
+   "type": "change_requested",
+   "package": "core",
+   "text": "[foreman] wire in items (added for change request event 1295; new: items): call it as its contract says, so that \"Add Mario Kart item boxes: three spinning rainbow boxes float over the deck and come back 8 seconds after a kart drives or jumps through one. A box gives that kart a red shell, shown spinning over its tub so everyone sees it coming. Press F to fire it: the shell glows red, leaves a red streak and skims the planks, homing on the nearest rival kart ahead. A hit blows that kart a few metres up in a spinning tumble with a BANG, sparks, a short freeze, a camera kick and SHELLED! big in the middle of the screen. A shell can be beaten: jump over it with Q, or whirl with E to swat it away. The mint karts grab boxes, fire shells at me and my mates, and jump or whirl when a shell comes at them. One shell at a time.\" happens in the game"
+  },
+  {
+   "seq": 1304,
+   "type": "package_state",
+   "package": "items",
+   "state": "running",
+   "round": 1
+  },
+  {
+   "seq": 1306,
+   "type": "note",
+   "package": "items",
+   "round": 1,
+   "text": "- NOT DONE: the player's request for working item boxes and shells needs `scripts/main.gd`, which is outside my scope: in `_pack_setup`, change `for n: String in [\"teams\", \"show\", \"look\"]:` to `for n: String in [\"teams\", \"show\", \"look\", \"items\"]:`.\n- Untested: `items.gd` has never run in a match, because the core does not load it yet. Two guesses need checking once it is wired. First, I assumed a `hit_steel` sound exists, without checking the sound list. Second, bot whirls start with a plain `set_state(&\"whirl\")`. The core's own whirl start may set more than that, and I did not check.\n- Input: only `fire_item` (F) is declared. The core already declares `jump` on Q, so declaring it twice could clash. The Q jump is the core's own hop (`hop_y` and `crouch` in `scripts/core/hop.gd`), not a separate items jump. So there is no `jump_f` 30, peak 1.6 m or cooldown 60 from this package, and no `kart.jumping` field. `mod_state().jumping` lists karts where `k.airborne()` is true.\n- A shell passes under a kart whose `hop_y` is above `jump_clear_m` (0.5 m). A `jump_dodge` event is recorded once per shell per kart.\n- Bot jump dodges start the core's crouch (`k.crouch = hop.crouch_f`), and the core's hop then launches the kart. Bot whirls use `k.set_state(&\"whirl\")`.\n- Bots pick jump or whirl half and half when the tier's `whirl_read` roll succeeds. The roll reads `whirl_read` from `data/items.json` `bot.whirl_read` (0.25 / 0.5 / 0.7), a copy of the values in `data/ai.json`, not that file itself.\n- Bots do not detour to boxes: they take one when their own route crosses it, so the 1.5 s detour rule (`grab_detour_s`) is not used.\n- Bot fire is a 24-frame tell before launch: the held shell rises 1.2 m and grows to 1.5× while pulsing, with a beep.\n- Shell hit on a kart that is spun, flipped, squashed or immune: a jolt only (`jolt_throw` 1.5, `k.jolt` 8), with a rubber thud and no tumble. The shooter's `hit` event is still recorded.\n- Shell hit on a kart that is not immune: spinout for 90 frames, then `k.immune` = 90 + 90. Hit-stop is set on the victim only (`k.stop` 8); the shooter is far away, so there is no attacker freeze. `hurt_by[victim] = [\"shell\", frame]`.\n- Ball loss on a hit: if the victim's team last touched the ball, the shell clears the ball's last touch and appends `{type:\"possession\", team:\"\", cause:\"spun\"}`. The core's own `touched()` would otherwise name the cause later.\n- No `TLHit.react` or `TLHit.down` call: karts are not bipeds, as in the core. The tumble is drawn on the visual after the core's pose each frame: a 3 m arc over 40 frames with 2 rolls, then a squash, dust and a thud on landing.\n- \"SHELLED!\" uses a centre HUD label `shelled` added by items, set for 60 frames and then cleared.\n- Shells and boxes only act while the game is live and neither the lesson nor the far-half loop is running. Live shells are removed outside live play.\n- Shell glow: a flying shell is drawn 1.3× size in the glow colour `#ff6040`, with a red `TLVfx.trail`.\n- Extra values in `data/items.json` that the contract does not name: `box_size`, `held_spin`, `shell_size`, `shell_nose_m`, `shell_cone_deg`, `immune_f`, `jolt_throw`, `land_squash`, `shake_*`, `shelled_*`, `spark_scale`, `jump_clear_m`, `whirl_reach`, `swat_speed`, `swat_fade_f`, `swat_boost`, `trail_*`, `colors`, `bot.*`.\n- `tests/bot_items.gd`: while unwired it ends at frame 60 with ok true. Once wired, it counts \"boxes returned\" when a box stays gone at least 470 frames before coming back. The result carries `metrics.hits`, `dodges`, `swats` and `moves.red_shell`, plus first-frame `moments`.\n- NEW MOVE: red_shell\n- No `params` entries were added to `pack.json`."
+  },
+  {
+   "seq": 1307,
+   "type": "package_state",
+   "package": "items",
+   "state": "verifying",
+   "round": 1
+  },
+  {
+   "seq": 1308,
+   "type": "verify",
+   "package": "items",
+   "round": 1,
+   "level": "V1",
+   "verb": "lint",
+   "ok": true,
+   "report": "reports/items-r1-lint-s1308.json",
+   "exitCode": 0
+  },
+  {
+   "seq": 1309,
+   "type": "verify",
+   "package": "items",
+   "round": 1,
+   "level": "V2",
+   "verb": "smoke",
+   "ok": true,
+   "report": "reports/items-r1-smoke-s1309.json",
+   "exitCode": 0
+  },
+  {
+   "seq": 1310,
+   "type": "verify",
+   "package": "items",
+   "round": 1,
+   "level": "V4",
+   "verb": "bot",
+   "ok": true,
+   "report": "reports/items-r1-bot-s1310.json",
+   "exitCode": 0
+  },
+  {
+   "seq": 1311,
+   "type": "verify",
+   "package": "items",
+   "round": 1,
+   "level": "V4",
+   "verb": "bot",
+   "ok": true,
+   "report": "reports/items-r1-bot-s1311.json",
+   "exitCode": 0
+  },
+  {
+   "seq": 1312,
+   "type": "verify",
+   "package": "items",
+   "round": 1,
+   "level": "V3",
+   "verb": "invariants",
+   "ok": true,
+   "report": "reports/items-r1-invariants-s1312.json",
+   "exitCode": 0
+  },
+  {
+   "seq": 1313,
+   "type": "note",
+   "package": "items",
+   "round": 1,
+   "text": "[foreman] new move judged at the end: red_shell of items waits for the part of the change items handed on; the Foreman's final bot run says whether it lands"
+  },
+  {
+   "seq": 1314,
+   "type": "verify",
+   "round": 1,
+   "level": "V1",
+   "verb": "lint",
+   "ok": true,
+   "report": "reports/items-r1-pack-lint-s1314.json",
+   "exitCode": 0,
+   "after": "items"
+  },
+  {
+   "seq": 1315,
+   "type": "verify",
+   "round": 1,
+   "level": "V2",
+   "verb": "smoke",
+   "ok": true,
+   "report": "reports/items-r1-pack-smoke-s1315.json",
+   "exitCode": 0,
+   "after": "items"
+  },
+  {
+   "seq": 1316,
+   "type": "verify",
+   "round": 1,
+   "level": "V4",
+   "verb": "bot",
+   "ok": true,
+   "report": "reports/items-r1-pack-bot-bot_tofu-s1316.json",
+   "exitCode": 0,
+   "after": "items"
+  },
+  {
+   "seq": 1317,
+   "type": "verify",
+   "round": 1,
+   "level": "V4",
+   "verb": "bot",
+   "ok": true,
+   "report": "reports/items-r1-pack-bot-bot_hand_perfect-s1317.json",
+   "exitCode": 0,
+   "after": "items"
+  },
+  {
+   "seq": 1318,
+   "type": "verify",
+   "round": 1,
+   "level": "V4",
+   "verb": "bot",
+   "ok": true,
+   "report": "reports/items-r1-pack-bot-bot_teams-s1318.json",
+   "exitCode": 0,
+   "after": "items"
+  },
+  {
+   "seq": 1319,
+   "type": "verify",
+   "round": 1,
+   "level": "V4",
+   "verb": "bot",
+   "ok": true,
+   "report": "reports/items-r1-pack-bot-bot_hand_newcomer-s1319.json",
+   "exitCode": 0,
+   "after": "items"
+  },
+  {
+   "seq": 1320,
+   "type": "verify",
+   "round": 1,
+   "level": "V4",
+   "verb": "bot",
+   "ok": true,
+   "report": "reports/items-r1-pack-bot-bot_show-s1320.json",
+   "exitCode": 0,
+   "after": "items"
+  },
+  {
+   "seq": 1321,
+   "type": "verify",
+   "round": 1,
+   "level": "V4",
+   "verb": "bot",
+   "ok": true,
+   "report": "reports/items-r1-pack-bot-bot_items-s1321.json",
+   "exitCode": 0,
+   "after": "items"
+  },
+  {
+   "seq": 1322,
+   "type": "merge",
+   "package": "items",
+   "files": [
+    "data/items.json",
+    "gen/mod_items.gd",
+    "scripts/items/items.gd",
+    "tests/bot_items.gd"
+   ]
+  },
+  {
+   "seq": 1323,
+   "type": "note",
+   "package": "items",
+   "round": 1,
+   "text": "[foreman] part of your change was NOT made by items; it goes on to core, whose files items names: NOT DONE: the player's request for working item boxes and shells needs `scripts/main.gd`, which is outside my scope: in `_pack_setup`, change `for n: String in [\"teams\", \"show\", \"look\"]:` to `for n: String in [\"teams\", \"show\", \"look\", \"items\"]:`."
+  },
+  {
+   "seq": 1324,
+   "type": "change_requested",
+   "package": "core",
+   "text": "[foreman] the rest of your change, which items did not make (\"NOT DONE: the player's request for working item boxes and shells needs `scripts/main.gd`, which is outside my scope: in `_pack_setup`, change `for n: String in [\"teams\", \"show\", \"look\"]:` to `for n: String in [\"teams\", \"show\", \"look\", \"items\"]:`.\"): \"Add Mario Kart item boxes: three spinning rainbow boxes float over the deck and come back 8 seconds after a kart drives or jumps through one. A box gives that kart a red shell, shown spinning over its tub so everyone sees it coming. Press F to fire it: the shell glows red, leaves a red streak and skims the planks, homing on the nearest rival kart ahead. A hit blows that kart a few metres up in a spinning tumble with a BANG, sparks, a short freeze, a camera kick and SHELLED! big in the middle of the screen. A shell can be beaten: jump over it with Q, or whirl with E to swat it away. The mint karts grab boxes, fire shells at me and my mates, and jump or whirl when a shell comes at them. One shell at a time.\""
+  },
+  {
+   "seq": 1325,
+   "type": "package_state",
+   "package": "items",
+   "state": "promoted",
+   "round": 1
+  },
+  {
+   "seq": 1326,
+   "type": "reopened",
+   "package": "core",
+   "reason": "change request (event 1303); the request names the package: [foreman] wire in items (added for change request event 1295; new: items): call it as its contract says, so that \"Add Mario Kart item boxes: three spinning rainbow boxes float over the deck and come back 8 seconds after a kart drives or jumps through one. A box gives that kart a red shell, shown spi\n... (549 more characters cut)"
+  },
+  {
+   "seq": 1327,
+   "type": "package_state",
+   "package": "core",
+   "state": "queued",
+   "round": 19,
+   "detail": "CHANGE REQUEST: [foreman] wire in items (added for change request event 1295; new: items): call it as its contract says, so that \"Add Mario Kart item boxes: three spinning rainbow boxes float over the deck and come back 8 seconds after a kart drives or jumps through one. A box gives that kart a red shell, shown spinning over its tub so everyone sees it coming. Press F to fire it: the shell glows red, leaves a red streak and skims the planks, homing on the nearest rival kart ahead. A hit blows that kart a few metres up in a spinning tumble with a BANG, sparks, a short freeze, a camera kick and SHELLED! big in the middle of the screen. A shell can be beaten: jump over it with Q, or whirl with E to swat it away. The mint karts grab boxes, fire shells at me and my mates, and jump or whirl when a shell comes at them. One shell at a time.\" happens in the game"
+  },
+  {
+   "seq": 1328,
+   "type": "package_state",
+   "package": "core",
+   "state": "running",
+   "round": 19
+  },
+  {
+   "seq": 1330,
+   "type": "note",
+   "package": "core",
+   "round": 19,
+   "text": "- `scripts/main.gd` module list is now `[\"teams\", \"show\", \"look\", \"items\"]` (items is loaded, set up and ticked last). No other core behaviour or value changed.\n- `possession_median_f` measures 23 frames, below 240..600. This follows the player's ruling C: the ball stays fully loose, and the possession target is dropped.\n- NOT DONE: the player asked for a shell hit with a BANG, and it should play without an engine error. That needs `scripts/items/items.gd`, which is outside my scope. The exact edit is on line 280: change `TLAudio.play(\"hit_steel\", at)` to `TLAudio.play(\"hit_metal\", at)` (`\"hit_steel\"` is not a TLAudio preset; the presets are whistle, horn, beep, cheer, engine, nitro, skate, score, break, hit_ice, hit_concrete, hit_metal, hit_wood, hit_rubber, hit_asphalt, hit_grass, hit_dirt, hit_glass, hit_plastic, hit_snow, hit_water, hit_stone, hit_fabric). Until it is fixed, every bot run that sees a shell hit fails on this error."
+  },
+  {
+   "seq": 1331,
+   "type": "package_state",
+   "package": "core",
+   "state": "verifying",
+   "round": 19
+  },
+  {
+   "seq": 1332,
+   "type": "verify",
+   "package": "core",
+   "round": 19,
+   "level": "V1",
+   "verb": "lint",
+   "ok": true,
+   "report": "reports/core-r19-lint-s1332.json",
+   "exitCode": 0
+  },
+  {
+   "seq": 1333,
+   "type": "verify",
+   "package": "core",
+   "round": 19,
+   "level": "V2",
+   "verb": "smoke",
+   "ok": true,
+   "report": "reports/core-r19-smoke-s1333.json",
+   "exitCode": 0
+  },
+  {
+   "seq": 1334,
+   "type": "verify",
+   "package": "core",
+   "round": 19,
+   "level": "V4",
+   "verb": "bot",
+   "ok": false,
+   "report": "reports/core-r19-bot-s1334.json",
+   "exitCode": 1
+  },
+  {
+   "seq": 1335,
+   "type": "package_state",
+   "package": "core",
+   "state": "running",
+   "round": 20
+  },
+  {
+   "seq": 1337,
+   "type": "note",
+   "package": "core",
+   "round": 20,
+   "text": "NOT DONE: a shell hit on a kart has to play a sound the engine knows (Verifier error `TLAudio: unknown preset 'hit_steel'`) needs scripts/items/items.gd, which is outside my scope: at line 280 change `TLAudio.play(\"hit_steel\", at)` to `TLAudio.play(\"hit_metal\", at)`.\nThe bot measured possession at a median of 23 frames, outside the old 240–600 range. You answered earlier that the ball should stay fully loose and that this target is dropped, so I left it as it is."
+  },
+  {
+   "seq": 1338,
+   "type": "package_state",
+   "package": "core",
+   "state": "verifying",
+   "round": 20
+  },
+  {
+   "seq": 1339,
+   "type": "verify",
+   "package": "core",
+   "round": 20,
+   "level": "V1",
+   "verb": "lint",
+   "ok": true,
+   "report": "reports/core-r20-lint-s1339.json",
+   "exitCode": 0
+  },
+  {
+   "seq": 1340,
+   "type": "verify",
+   "package": "core",
+   "round": 20,
+   "level": "V2",
+   "verb": "smoke",
+   "ok": true,
+   "report": "reports/core-r20-smoke-s1340.json",
+   "exitCode": 0
+  },
+  {
+   "seq": 1341,
+   "type": "verify",
+   "package": "core",
+   "round": 20,
+   "level": "V4",
+   "verb": "bot",
+   "ok": false,
+   "report": "reports/core-r20-bot-s1341.json",
+   "exitCode": 1
+  },
+  {
+   "seq": 1342,
+   "type": "package_state",
+   "package": "core",
+   "state": "running",
+   "round": 21
+  },
+  {
+   "seq": 1344,
+   "type": "note",
+   "package": "core",
+   "round": 21,
+   "text": "NOT DONE: the shell hit must make a bang sound without a script error, which needs scripts/items/items.gd, outside my scope: on line 280 change `TLAudio.play(\"hit_steel\", at)` to `TLAudio.play(\"hit_metal\", at)`. The audio presets are whistle, horn, beep, cheer, engine, nitro, skate, score, break and the hit_* family; there is no hit_steel, so hit_metal is the nearest."
+  },
+  {
+   "seq": 1345,
+   "type": "package_state",
+   "package": "core",
+   "state": "verifying",
+   "round": 21
+  },
+  {
+   "seq": 1346,
+   "type": "verify",
+   "package": "core",
+   "round": 21,
+   "level": "V1",
+   "verb": "lint",
+   "ok": true,
+   "report": "reports/core-r21-lint-s1346.json",
+   "exitCode": 0
+  },
+  {
+   "seq": 1347,
+   "type": "verify",
+   "package": "core",
+   "round": 21,
+   "level": "V2",
+   "verb": "smoke",
+   "ok": true,
+   "report": "reports/core-r21-smoke-s1347.json",
+   "exitCode": 0
+  },
+  {
+   "seq": 1348,
+   "type": "verify",
+   "package": "core",
+   "round": 21,
+   "level": "V4",
+   "verb": "bot",
+   "ok": false,
+   "report": "reports/core-r21-bot-s1348.json",
+   "exitCode": 1
+  },
+  {
+   "seq": 1349,
+   "type": "package_state",
+   "package": "core",
+   "state": "running",
+   "round": 22
+  },
+  {
+   "seq": 1351,
+   "type": "note",
+   "package": "core",
+   "round": 22,
+   "text": "NOT DONE: the red shell hit must play a sound the engine knows needs scripts/items/items.gd, which is outside my scope: on line 280 change `TLAudio.play(\"hit_steel\", at)` to `TLAudio.play(\"hit_metal\", at)`. `hit_metal` is in the engine's list of presets.\nThe ball-possession median is about 23 frames, below the old 240..600 bound, because the ball is fully loose as the player chose (answer C)."
+  },
+  {
+   "seq": 1352,
+   "type": "package_state",
+   "package": "core",
+   "state": "verifying",
+   "round": 22
+  },
+  {
+   "seq": 1353,
+   "type": "verify",
+   "package": "core",
+   "round": 22,
+   "level": "V1",
+   "verb": "lint",
+   "ok": true,
+   "report": "reports/core-r22-lint-s1353.json",
+   "exitCode": 0
+  },
+  {
+   "seq": 1354,
+   "type": "verify",
+   "package": "core",
+   "round": 22,
+   "level": "V2",
+   "verb": "smoke",
+   "ok": true,
+   "report": "reports/core-r22-smoke-s1354.json",
+   "exitCode": 0
+  },
+  {
+   "seq": 1355,
+   "type": "verify",
+   "package": "core",
+   "round": 22,
+   "level": "V4",
+   "verb": "bot",
+   "ok": false,
+   "report": "reports/core-r22-bot-s1355.json",
+   "exitCode": 1
+  },
+  {
+   "seq": 1356,
+   "type": "package_state",
+   "package": "core",
+   "state": "promoted",
+   "round": 22,
+   "detail": "re-opened, but no round passed (bot (V4): bot failed: failed checks [smoke.no_script_errors], 1 errors); the files merged before it stay in pack/ and the change was NOT made"
+  },
+  {
+   "seq": 1357,
+   "type": "reopened",
+   "package": "core",
+   "reason": "change request (event 1324); the request names the package: [foreman] the rest of your change, which items did not make (\"NOT DONE: the player's request for working item boxes and shells needs `scripts/main.gd`, which is outside my scope: in `_pack_setup`, change `for n: String in [\"teams\", \"show\", \"look\"]:` to `for n: String in [\"teams\", \"show\", \"look\", \"it\n... (728 more characters cut)"
+  },
+  {
+   "seq": 1358,
+   "type": "package_state",
+   "package": "core",
+   "state": "queued",
+   "round": 23,
+   "detail": "CHANGE REQUEST: [foreman] the rest of your change, which items did not make (\"NOT DONE: the player's request for working item boxes and shells needs `scripts/main.gd`, which is outside my scope: in `_pack_setup`, change `for n: String in [\"teams\", \"show\", \"look\"]:` to `for n: String in [\"teams\", \"show\", \"look\", \"items\"]:`.\"): \"Add Mario Kart item boxes: three spinning rainbow boxes float over the deck and come back 8 seconds after a kart drives or jumps through one. A box gives that kart a red shell, shown spinning over its tub so everyone sees it coming. Press F to fire it: the shell glows red, leaves a red streak and skims the planks, homing on the nearest rival kart ahead. A hit blows that kart a few metres up in a spinning tumble with a BANG, sparks, a short freeze, a camera kick and SHELLED! big in the middle of the screen. A shell can be beaten: jump over it with Q, or whirl with E to swat it away. The mint karts grab boxes, fire shells at me and my mates, and jump or whirl when a shell comes at them. One shell at a time.\""
+  },
+  {
+   "seq": 1359,
+   "type": "package_state",
+   "package": "core",
+   "state": "running",
+   "round": 23
+  },
+  {
+   "seq": 1361,
+   "type": "note",
+   "package": "core",
+   "round": 23,
+   "text": "NOT DONE: the player's request for working item boxes and shells (a shell hit plays a BANG) needs `scripts/items/items.gd`, which is outside my scope: at line 280 change `TLAudio.play(\"hit_steel\", at)` to `TLAudio.play(\"hit_metal\", at)`. `\"hit_steel\"` is not a TLAudio preset, and it is the only script error in the 71,401-frame tofu run."
+  },
+  {
+   "seq": 1362,
+   "type": "package_state",
+   "package": "core",
+   "state": "verifying",
+   "round": 23
+  },
+  {
+   "seq": 1363,
+   "type": "verify",
+   "package": "core",
+   "round": 23,
+   "level": "V1",
+   "verb": "lint",
+   "ok": true,
+   "report": "reports/core-r23-lint-s1363.json",
+   "exitCode": 0
+  },
+  {
+   "seq": 1364,
+   "type": "verify",
+   "package": "core",
+   "round": 23,
+   "level": "V2",
+   "verb": "smoke",
+   "ok": true,
+   "report": "reports/core-r23-smoke-s1364.json",
+   "exitCode": 0
+  },
+  {
+   "seq": 1365,
+   "type": "verify",
+   "package": "core",
+   "round": 23,
+   "level": "V4",
+   "verb": "bot",
+   "ok": false,
+   "report": "reports/core-r23-bot-s1365.json",
+   "exitCode": 1
+  }
+ ],
+ "report": {
+  "verb": "bot",
+  "level": "V4",
+  "ok": false,
+  "outcome": "failed",
+  "checks": [
+   {
+    "id": "smoke.loads",
+    "ok": true,
+    "detail": "pack loaded"
+   },
+   {
+    "id": "smoke.no_script_errors",
+    "ok": false,
+    "detail": "1 errors in 71401 frames"
+   },
+   {
+    "id": "smoke.no_engine_errors",
+    "ok": true,
+    "detail": "0 engine errors"
+   },
+   {
+    "id": "smoke.watchdog",
+    "ok": true,
+    "detail": "no trip in 71401 frames"
+   },
+   {
+    "id": "bot.completed",
+    "ok": true,
+    "detail": "done at frame 71401"
+   },
+   {
+    "id": "bot.ok",
+    "ok": true,
+    "detail": "5 matches; {\"close_rounds\":4,\"feedback_f\":1,\"idle_max_f\":42,\"lead_change_share\":0.4,\"overlap_share\":0.0141939063294651,\"possession_median_f\":23,\"pressure_waves\":25,\"raw\":{\"contacts\":{\"air_block\":1,\"air_flip\":32,\"flank\":49,\"jolt\":36,\"mate\":310,\"nose\":13,\"ram_flank\":3,\"ram_headon\":2,\"ram_rear\":4,\"rear\":28,\"stomp\":14,\"touch\":633,\"whirl_block\":12},\"live_f\":64887,\"matches\":[{\"changed\":false,\"mint\":2,\"red\":1},{\"changed\":true,\"mint\":2,\"red\":1},{\"changed\":false,\"mint\":3,\"red\":2},{\"changed\":false,\"mint\":3,\"red\":1},{\"changed\":true,\"mint\":2,\"red\":3}],\"shot_speed\":{\"angled\":20.5226588249207,\"late\":14.0323499043783,\"sweet\":24.7742306845529},\"shots\":{\"angled\":10,\"late\":9,\"sweet\":7},\"spells\":844,\"verbs\":{\"bump\":129,\"ram\":38,\"whirl\":106}},\"scrum_share\":0.0245041379629202,\"skill_spread\":0.433590891961475,\"skill_variants\":3,\"tell_min_f\":24,\"tells\":3,\"verbs_used\":3}"
+   }
+  ],
+  "errors": [
+   {
+    "kind": "script_error",
+    "file": "scripts/items/items.gd",
+    "line": 280,
+    "message": "TLAudio: unknown preset 'hit_steel' (presets: whistle, horn, beep, cheer, engine, nitro, skate, score, break, hit_ice, hit_concrete, hit_metal, hit_wood, hit_rubber, hit_asphalt, hit_grass, hit_dirt, hit_glass, hit_plastic, hit_snow, hit_water, hit_stone, hit_fabric) [frame 2890]"
+   }
+  ]
+ }
+}

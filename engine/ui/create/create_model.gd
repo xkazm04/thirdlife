@@ -276,6 +276,9 @@ static func change_note(job: Dictionary) -> String:
 	var ended: bool = str(c.get("outcome", "")) == "in flight" and str(job.get("phase", "")) == "done" and str(job.get("job_reason", "")).begins_with("the change was NOT made")
 	if ended or str(c.get("outcome", "")) in ["not made", "failed", "cancelled"]:
 		var why: String = Notes.not_finished(job, int(c.get("seq", 0)))
+		# D27b item 32: a job that failed on a final check says why in its reason ("hand check ... failed ... The change was NOT made")
+		if why.is_empty() and str(c.get("outcome", "")) == "failed" and str(job.get("job_reason", "")).contains("The change was NOT made"):
+			why = JobModel.one_line(str(job.get("job_reason", "")).get_slice(" The change was NOT made", 0), 220)
 		return "Your last change could not be made: \u201c%s\u201d%s" % [JobModel.one_line(str(c["text"]), 60), ("\n" + why) if not why.is_empty() else ""]
 	var kept: String = Notes.measure_note(job, int(c.get("seq", 0)))
 	var lost: String = Notes.not_made_note(job, int(c.get("seq", 0)))   # D27 round 4, item 18

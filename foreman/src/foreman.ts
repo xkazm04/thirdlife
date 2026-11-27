@@ -13,7 +13,7 @@ import { copyDir, hashFile, listFiles, matchesAny, pruneEmptyDirs, snapshot } fr
 import { engineWritable, promotePack, readManifest } from "./promoter.js";
 import { existingText, prepareReference, referenceText } from "./reference.js";
 import { cardBriefSection, cardLimits, cardsPlannerText } from "./cards.js";
-import { packIsLastPromotion, restoreLastPromotion } from "./unmade.js";
+import { dropWorkspaces, earlierUnmade, packIsLastPromotion, restoreLastPromotion } from "./unmade.js"; // D27b items 41, 42
 import { keepMeasures, runHandChecks, sendBackHands } from "./handcheck.js";
 import { PKG_ROOT, REPO_ROOT, stripBom, toPosix } from "./paths.js";
 import { CARRIED_FIELDS, MANIFEST_FILE, PACK_VERSION, kernelApiFor, acceptedCarriedFields, engineKnowsBase, carriedOf, composeManifest, depClosure, dependants, manifestText, mergeCarried, type Carried } from "./manifest.js";
@@ -21,7 +21,7 @@ import { builderFeelSection, servesLine } from "./roomtext.js"; // JOB.md 2026-1
 import { briefText, critic, render, replanPackages, type GenerateCall, type PackageLine, type PlannerInput, type ReplanInput } from "./designer.js";
 import { NEW_PACKAGE, grow, ownerOrNew, wireWaits, type GrowHost } from "./grow.js";
 import { FINAL_NOTE, changedFiles, fastFinal, fastMerge, fastPromotion, mergeNote, removedInRound, roundAcceptance, whatChangedNote } from "./fastchange.js"; // E4b: a data-only change // E4 (24-25 Nov): a change may add a package
-import { removedSince } from "./removal.js"; import { promotionErrors } from "./promogate.js"; import { answeredThisChange, askedAgain, plainQuestion } from "./asktwice.js"; import { longerMatch, tofuGate } from "./tofugate.js"; import { withGrants } from "./scopegrant.js"; import { afterMerge, coreHintOf, foldable } from "./halfmade.js"; import { rivalSplit } from "./rivals.js"; import { finalLandNotes, landGate } from "./landcheck.js"; // D27 items 1 and 4 // H1 (E5e): what a change removed, named; H1d: promotion pictures with script errors refuse
+import { removedSince } from "./removal.js"; import { promotionErrors } from "./promogate.js"; import { answeredThisChange, askedAgain, plainQuestion } from "./asktwice.js"; import { longerMatch, tofuGate } from "./tofugate.js"; import { withGrants } from "./scopegrant.js"; import { afterMerge, coreHintOf, foldable } from "./halfmade.js"; import { rivalSplit } from "./rivals.js"; import { finalLandNotes, landGate, movesRun } from "./landcheck.js"; import { blockedByOwner, ownerWaits, waitsWhy } from "./ownerfix.js"; import { ownTestAnswer } from "./owntest.js"; import { fairChecks, fairText } from "./fairseeds.js"; // D27 items 1 and 4; D27b items 23, 24, 26, 32 // H1 (E5e): what a change removed, named; H1d: promotion pictures with script errors refuse
 import { criticRubric, inReach, phaseLine, phaseStep, replanPhases, stuckText, waitsForVerdict } from "./phases.js"; // JOB.md 2026-11-20: phases
 import { writeGenerateCalls } from "./transcript.js";
 import { botFinish, botMoments, planShots } from "./shots.js";
@@ -170,7 +170,7 @@ export class Foreman {
    * is finished, merged and idle. One that names none and has not been asked about yet is ready to be asked.
    */
   private changeReady(c: { seq?: number; package?: string; text?: string }, running?: ReadonlyMap<string, unknown>): boolean {
-    if (c.text !== undefined && wireWaits(this.s, c.text)) return false; // E4: a wire request waits for the package it wires in
+    if ((c.text !== undefined && wireWaits(this.s, c.text)) || ownerWaits(this.log.events, c)) return false; // E4: a wire request waits for the package it wires in; D27b item 24: so does a package that waits for another one's fix
     // No builder is in flight (the start of a run, or the scheduler has returned): as before P10, whatever state
     // the package is in. `foreman change --package X` on a job that failed on X is how X is asked to try again.
     if (running === undefined) return true;
@@ -874,7 +874,7 @@ export class Foreman {
           break;
         }
       }
-      if (!failure) failure = landGate(this.gateHost, id, round) ?? (await this.serialMerge(() => this.mergeAndGate(id, round))); // D27 item 4: a new attack must land
+      if (!failure) failure = (await movesRun(this.gateHost, id, round), landGate(this.gateHost, id, round)) ?? (await this.serialMerge(() => this.mergeAndGate(id, round))); // D27 item 4: a new attack must land (D27b item 23: counted by its own moves test)
       if (!failure) return;
       if (failure.inconclusive !== undefined) {
         // N3b: no verdict. The round is not lost, the builder gets no feedback for it, and nothing is merged: the
@@ -901,7 +901,7 @@ export class Foreman {
       }
       if (await this.keepAfterCriticRound(id, round, `${failure.verb} (${failure.level}): ${clip(failure.summary, 200)}`)) return;
       if (this.isCriticKitRetry(id, round) && (await this.keepEarlier(id, round, `${failure.verb} (${failure.level}): ${clip(failure.summary, 200)}`))) return;
-      if (round >= this.cap(id) && (await this.keepEarlier(id, round, `${failure.verb} (${failure.level}): ${clip(failure.summary, 200)}`))) return;
+      if ((blockedByOwner(this.gateHost, id, round, failure) || round >= this.cap(id)) && (await this.keepEarlier(id, round, `${waitsWhy(this.log.events, id, round)}${failure.verb} (${failure.level}): ${clip(failure.summary, 200)}`))) return; // D27b item 24: a script error in another package's file goes to its owner
       if (round >= this.cap(id)) {
         this.append({
           type: "package_state",
@@ -1108,7 +1108,7 @@ export class Foreman {
     if (events.some((e) => e.type === "answer" && e.package === id && e.seq > runAt)) return false;
     const before = answeredThisChange(events, id, runAt); // H1d: one question per change, then routing or plain words
     if (before !== undefined && runAt > 0) return askedAgain(this.gateHost, jobCore(this.gateHost), id, round, question, before), true;
-    if (!events.some((e) => e.type === "question" && e.package === id && e.seq > runAt)) this.append({ type: "question", package: id, text: plainQuestion(question) });
+    if (!events.some((e) => e.type === "question" && e.package === id && e.seq > runAt)) for (const q of ownTestAnswer(this.s.plan, id, round, plainQuestion(question)) ?? [{ type: "question", package: id, text: plainQuestion(question) }]) this.append(q as Parameters<JobLog["append"]>[0]); // D27b item 26: a question about the Foreman's own test is the Foreman's
     this.append({ type: "package_state", package: id, state: "blocked", round, cause: "question", detail: clip(question, 200) });
     return true;
   }
@@ -1362,7 +1362,7 @@ export class Foreman {
     const p = this.pkg(id);
     const sentBack = p.roundBase !== undefined || hadCriticRound(roundKinds(this.log.events), id);
     if (!sentBack || (p.mergedFiles ?? []).length === 0) return false;
-    this.append({ type: "package_state", package: id, state: "promoted", round, detail: clip(`re-opened, but no round passed (${why}); the files merged before it stay in pack/ and the change was NOT made`, 500) });
+    this.append({ type: "package_state", package: id, state: "promoted", round, detail: clip(`re-opened, but no round passed (${why}); the files merged before it stay in pack/ and ${why.startsWith("waits for ") ? "the change runs again once that fix is merged" : "the change was NOT made"}`, 500) }); dropWorkspaces(this.gateHost, [id]); // D27b item 41: its unmade round leaves no trace in its workspace
     await this.maybeMilestone(this.spec(id).milestone, id);
     return true;
   }
@@ -1726,7 +1726,7 @@ export class Foreman {
           : "",
       depNotes: this.depNotesText(id),
       timeLimit: `${Math.max(1, Math.round(this.o.builderTimeoutMs / 60_000))} minutes`,
-      feedback: this.feedback(id, round),
+      feedback: `${this.feedback(id, round)}${fairText(this.gateHost, id)}`, // D27b item 32: the measure, per seed
       packContract: this.packContract,
       manifest: this.wsManifestText(id).trimEnd(),
       registers: JSON.stringify(spec.registers ?? {}),
@@ -1756,7 +1756,7 @@ export class Foreman {
 
   private async callBuilder(id: string, spec: PackageSpec, round: number): Promise<RunResult> {
     const ws = this.wsDir(id);
-    const derived = deriveBashAllowlist(this.o.verifier.location, spec.acceptance.map((a) => ({ ...a, args: this.o.verifier.argsFor(a.verb, a.args) })), ws, this.dir("reports", `self-${id}`));
+    const derived = deriveBashAllowlist(this.o.verifier.location, [...spec.acceptance, ...fairChecks(this.gateHost, id)].map((a) => ({ ...a, args: this.o.verifier.argsFor(a.verb, a.args) })), ws, this.dir("reports", `self-${id}`)); // D27b item 32: a fairness tuner may run the hand check
     for (let attempt = 1; ; attempt++) {
       const prompt = this.buildPrompt(id, spec, round, derived.commands);
       const refBefore = fs.existsSync(this.refDir()) ? snapshot(this.refDir()) : undefined;
@@ -1902,7 +1902,7 @@ export class Foreman {
     const errs = promotionErrors(this.gateHost, `promotion${nth}`); // H1d: the game in a window throws script errors
     if (errs !== undefined) return this.endJob("failed", clip(`promotion refused: ${errs}. ${nth > 1 ? `Earlier version v${this.s.promoted?.version ?? "?"} stays the one to play.` : "Nothing was promoted."}`, 900), true), false;
     if (nth > 1) {
-      for (const n of finalLandNotes(this.gateHost)) this.append(n); // D27 item 4: a move handed on is judged by the final bot run
+      for (const n of [...finalLandNotes(this.gateHost), ...earlierUnmade(this.log.events, owner, this.pkg(owner).round)]) this.append(n); // D27 item 4: a move handed on is judged by the final bot run; D27b item 42: an earlier change that ended NOT made is told
       this.append({ type: "note", package: owner, round: this.pkg(owner).round, text: whatChangedNote(this.log.events, this.jobIdentity().version, removedSince(path.resolve(this.jobDir, this.s.promotions.at(-1)?.dest ?? "pack"), this.dir("pack")), changedFiles(path.resolve(this.jobDir, this.s.promotions.at(-1)?.dest ?? "pack"), this.dir("pack"))) }); // E3f: one line for Create; H1: each removal on its own line; D27 11: only files that changed
       if (shots.length > 0) this.append({ type: "note", package: owner, round: this.pkg(owner).round, text: `${FOREMAN_NOTE}pictures of the pack as it is promoted the ${nth}${nth === 2 ? "nd" : nth === 3 ? "rd" : "th"} time (after the change): ${shots.join(", ")}` });
     }

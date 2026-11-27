@@ -24,7 +24,7 @@ export function answeredThisChange(events: readonly JobEvent[], id: string, runA
   for (const e of events) {
     if (e.seq <= reopenAt || e.seq >= runAt) continue;
     if (e.type === "question" && e.package === id) question = e.text;
-    if (e.type === "answer" && e.package === id && question !== undefined) last = { question, answer: e.text };
+    if (e.type === "answer" && e.package === id && question !== undefined && e.by !== "foreman") last = { question, answer: e.text }; // D27b item 26: the Foreman's own answer is not the person's
   }
   return last;
 }

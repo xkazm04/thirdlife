@@ -24,6 +24,8 @@ import path from "node:path";
 import { MEASURE_KEPT } from "./handcheck.js";
 import { NOT_DONE, noteLines, notMadeSince } from "./halfmade.js";
 import { BALANCE_MOVED, balanceLines } from "./boundlift.js";
+import { RULE_NONE } from "./rulelines.js"; // D27b item 28: "RULE: none added" is not a rule
+import { lastUnmadeEnd } from "./unmade.js"; // D27b item 42
 
 /** N27 (lane T): the start of a what-changed line naming a rule the builder added that the person did not ask for. */
 export const UNASKED_RULE = "unasked rule";
@@ -37,7 +39,7 @@ export const HIDDEN_RULE = /^RULE:|\bprobabilit\w*\b|\b\d+\s*(%|percent) chance\
 /** The builders' lines since the last promotion that add a rule nobody asked for (merged packages only). */
 export function unaskedRules(since: readonly JobEvent[]): string[] {
   const merged = new Set(since.flatMap((e) => (e.type === "merge" ? [e.package] : [])));
-  return [...new Set(since.flatMap((e) => (e.type === "note" && merged.has(e.package) && !e.text.startsWith(FOREMAN_NOTE) ? noteLines(e.text).filter((l) => HIDDEN_RULE.test(l) && !NOT_DONE.test(l)) : [])))];
+  return [...new Set(since.flatMap((e) => (e.type === "note" && merged.has(e.package) && !e.text.startsWith(FOREMAN_NOTE) ? noteLines(e.text).filter((l) => HIDDEN_RULE.test(l) && !NOT_DONE.test(l) && !RULE_NONE.test(l)) : [])))];
 }
 
 /** The start of the Foreman's notes about what a data-only change skipped (after FOREMAN_NOTE). */
@@ -118,7 +120,10 @@ export function whatChangedNote(events: readonly JobEvent[], version: string, fo
   let last = -1;
   let was = "";
   for (const e of events) if (e.type === "promoted") [last, was] = [e.seq, e.version];
-  const since = events.filter((e) => e.seq > last);
+  // D27b item 42: a change that ended NOT made since then put pack/ back; this version holds only what came after it
+  // (that earlier change gets its own NOT_MADE note at the promotion: unmade.ts earlierUnmade)
+  const cut = lastUnmadeEnd(events.filter((e) => e.seq > last));
+  const since = events.filter((e) => e.seq > Math.max(last, cut));
   const asked = since.flatMap((e) => (e.type === "change_requested" && !e.text.startsWith(FOREMAN_NOTE) ? [`"${e.text}"`] : []));
   const keys = since.flatMap((e) => (e.type === "note" && e.text.startsWith(`${FOREMAN_NOTE}${CARTRIDGE_DIFF}: `) ? [e.text.slice(`${FOREMAN_NOTE}${CARTRIDGE_DIFF}: `.length).split(" (")[0] ?? ""] : [])).filter(Boolean);
   const listed = [...new Set(since.flatMap((e) => (e.type === "merge" ? e.files : [])))].sort();

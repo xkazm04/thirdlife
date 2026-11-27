@@ -56,7 +56,8 @@ static func run(tree: SceneTree, check: Callable, tmp: String) -> bool:
 		{"type": "promoted", "packId": "game.penguin_push", "version": "0.1.1", "dest": "promoted/game.penguin_push@0.1.1"},
 		{"type": "job_state", "state": "done", "reason": "promoted 0.1.1"}], ["0.1.0", "0.1.1"])
 	var flight: String = _job(jobs.path_join("e4-flight"), [asked, running], ["0.1.0"])
-	var failed: String = _job(jobs.path_join("e4-failed"), [asked, running, {"type": "job_state", "state": "failed", "reason": "the change was NOT made"}], ["0.1.0"])
+	# D27b item 32 (T2-editor's court copy): the Foreman's own hand-off after the person's change, then the job fails on a hand check
+	var failed: String = _job(jobs.path_join("e4-failed"), [asked, running, {"type": "change_requested", "package": "rivals_ai", "text": "[foreman] the rest of your change, which penguin_moves did not make (\"x\"): y"}, {"type": "job_state", "state": "failed", "reason": "hand check of card.x failed, nothing promoted: newcomer: 9 of 20 won; the card asks at least 13 The change was NOT made. pack/ was put back to the last promotion"}], ["0.1.0"])
 	# N27 (lane T): a change built as asked that moved the balance: the Foreman's note (boundlift.ts BALANCE_MOVED), first line shown
 	var moved: String = "[foreman] balance moved by your change: built as you asked; the gulls side now wins 3 of 3 of the Foreman's test rounds (was 1 of 3). Say \"make it fairer\" to tune it.\nfigures (tests/bot_tofu.gd, not judged in this change): close_rounds 0 (was 1)"
 	# D27 item 6: every thing the change moved is shown (the newest line of each), not only the newest note of all
@@ -93,7 +94,7 @@ static func run(tree: SceneTree, check: Callable, tmp: String) -> bool:
 	check.call("create.iterate.model: a change made is version 2 (Play opens @0.1.1); in flight it is building with its words; failed, the first version still plays with a note; the Foreman's own wire request is not the person's",
 		Model.screen_of(jm) == "done" and Model.version_n(jm) == 2 and Model.play_dir(jm).ends_with("@0.1.1") and Model.person_changes(jm).size() == 1 and Model.change_note(jm).is_empty()
 		and Model.screen_of(jf) == "building" and Model.changing(jf) == TEXT
-		and Model.screen_of(jx) == "done" and Model.change_note(jx).begins_with("Your last change could not be made") and Model.play_dir(jx).ends_with("promoted/game.penguin_push")
+		and Model.screen_of(jx) == "done" and Model.change_note(jx).begins_with("Your last change could not be made") and Model.change_note(jx).ends_with("\nhand check of card.x failed, nothing promoted: newcomer: 9 of 20 won; the card asks at least 13") and Model.play_dir(jx).ends_with("promoted/game.penguin_push")
 		and Model.change_note(jb) == "Built as you asked; the gulls side now wins 3 of 3 of the Foreman's test rounds (was 1 of 3). Say \"make it fairer\" to tune it.\nBuilt as you asked; matches now run longer (the Foreman's test needed about 2 times the frames it planned). Say \"make matches shorter\" to tune it."
 		and Model.screen_of(ju) == "done" and Model.changing(ju).is_empty() and Model.change_note(ju).begins_with("Your last change could not be made: “" + TEXT + "”\nThe game's check tests/bot_tofu.gd still fails")
 		and Model.change_note(jk) == "Not applied: a change to tests/support/pilot.gd was undone. The Foreman judges the game by it, so a change may not rewrite it. Nothing in the game changed in this version.\nNot made: penguin_moves could not make it in its own files either and says: NOT DONE: the glass shake.",

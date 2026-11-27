@@ -8,6 +8,7 @@ import type { JobEvent } from "./events.js";
 import type { JobState } from "./joblog.js";
 import { readTofuMetrics, type TofuMetric } from "./tofu.js";
 import { FOREMAN_NOTE, clip } from "./conduct.js";
+import { ruleLinesSince } from "./rulelines.js";
 
 /** The start of the Foreman's note when a person lifted a plan bound. */
 export const LIFTED = `${FOREMAN_NOTE}plan bound lifted`;
@@ -144,7 +145,9 @@ export function askedChange(events: readonly JobEvent[] | undefined): { seq: num
   const first = asks[0];
   if (first === undefined) return undefined;
   const text = asks.map((e) => e.text).join(" / ");
-  return { seq: first.seq, text, kind: changeKind(text) };
+  const kind = changeKind(text);
+  // D27b item 31 (J2nd's biplane copy, events 994-1000): a builder's RULE: line makes a view change a play change
+  return { seq: first.seq, text, kind: kind === "view" && ruleLinesSince(events, first.seq).length > 0 ? "play" : kind };
 }
 
 /** Is `v` inside the row's bound (absent is never inside)? */
