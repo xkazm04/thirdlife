@@ -139,3 +139,125 @@ NEXT THREE
 2. Use P's play_looks.look_of for the build-mode icons so a coin looks like the coin he will meet.
 3. A zone's height and box editable after placing (wheel on a selected zone: unrule, unzone, zone, rule in one batch),
    and a stamp that carries zones and rules (seam Q14).
+==================================================================================================================
+ROUND 2: COURSES TRAVEL (tl.stamp/2 and the TL1- share code), on the integration tip 41df1be6 (contract 13efa0be)
+==================================================================================================================
+
+WHAT A PERSON GETS
+- The stamp tool's box now takes a course: the zones wholly inside the box and the rules naming only those zones.
+  The automatic top reaches the zones' tops too (a finish flag on a tower). The info line reads "... 7 zones 8 rules".
+- Placing a course stamp writes blocks, pieces, zones and rules as ONE batch (one Ctrl+Z), turned with R like the
+  blocks, with the Home's next free ids. The placing ghost now shows the stamp's zones too ('+ Start', '+ Coin 1', ...).
+- Ctrl+C in the stamp tool copies the current stamp's share code to the clipboard; the info line says "copied: a
+  code of N characters". Ctrl+V pastes a code from the clipboard: it is checked like a stamp file and saved with the
+  stamps like an import, made current, "pasted <name> (7 zones, 8 rules)". A bad code shows "paste refused: <why>".
+
+THE FORMAT (stamp_file.gd)
+- from_region: course_of(rules layer, lo, hi) gives `zones` (relative boxes, ids 1.. in the Home's id order, saved
+  keys only) and `rules` (ids 1.., every zone reference rewritten); any zone or rule makes it tl.stamp/2. Without
+  them the stamp is tl.stamp/1 with the v1 keys in the v1 order: the same bytes as before (788 v1 builds the v1 text
+  independently and compares the saved file; 756 stamp.* 4/4 unchanged).
+- validate: a tl.stamp/1 refuses `zones` / `rules` (unknown key); a tl.stamp/2 needs one of them; each zone and rule
+  exactly its saved keys and well formed by rules_check.gd, ids ascending, zone boxes inside the size, every rule
+  naming at least one zone and only the stamp's zones, at most 512 each and 8 counters.
+- ops: each zone box's two corners turned by turn_cell (the blocks' formula) and sorted, moved to the anchor; the
+  rules as `rule` ops with the stamp's ids. placed_ops(build, ...): rules_layer.renumber (read only, unchanged) gives
+  the zones and rules the next free ids and rewrites the references: it fitted as is, no PATCHES needed.
+- code_of: "TL1-" + base64url without padding of PackedByteArray.compress(COMPRESSION_DEFLATE) of the stamp's text
+  (stripped of its newline). Godot's DEFLATE mode writes a zlib stream (RFC 1950: header 0x78, Adler-32 trailer),
+  not raw RFC 1951 deflate: see question R1.
+- from_code (hostile input): length <= 65,536 after trimming spaces, the prefix, the base64url alphabet, a length
+  that is not 1 mod 4, then a zlib header check BEFORE inflating (the engine prints an "ERROR: Decompression failed"
+  line for a stream it cannot inflate: seen in the first run of 788), inflate capped at 8 MB, JSON, validate.
+
+ACCEPTANCE
+- 788 -> HOME stamp-courses ok: MET, 8/8 (engine/tools/selftest.d/788-home-stamp-courses.sh,
+  kernel/world/build/stamp_courses_case.gd):
+  v1        216 blocks and a zone outside the box: tl.stamp/1, keys [schema, name, size, blocks], text and the file's
+            bytes = the v1 form built independently (2604 bytes)
+  v2        the tower course from the Rules tool's presets: 7 zones, 8 rules; a zone half out of the box and a rule
+            naming it left out; ids 1..; door box relative; saved, listed, read back byte for byte (3790 bytes)
+  turns     rots 0-3: 7/7 zone boxes where an independent rotation of the corner cells' centres says, 216 blocks +
+            7 zones + 8 rules in 1 batch, one undo empties the Home
+  renumber  into a Home with zones 1-4 and rules 1-3: zones -> 5..11, rules -> 4..11, every reference to the new
+            zones, the Home's own untouched, 1 batch
+  run       the placed (turned) course over a scripted feet path with rules_run.gd: run_started > 3 x look_taken >
+            run_finished 'Tower'
+  code      1235 characters for a 3790-byte stamp (33 %), base64url without '=', a zlib stream, back byte for byte,
+            spaces and a newline around it accepted
+  refusals  bad prefix, cut short, '+' (not base64url), not a stream, not JSON, an unknown top key, a zone's unknown
+            key, a rule's unknown key, a rule naming zone 99, a v2 with no zones or rules, 65,541 characters: each
+            refused with its reason
+  tool      through build mode: box (top 6 = the finish zone's), G saves tl.stamp/2, Ctrl+C (the info line shows
+            1227 characters), another Home: Ctrl+V pasted 'Stamp 1 (7 zones, 8 rules)', LMB placed 216 blocks, 7
+            zones, 8 rules in one batch
+- Exe (editor binary, a window, this tree): MET.
+  Copy: the round-1 tower course Home (a copy of it), stamp tool, 0, two corner clicks (the floor's near-left block
+  front face and its far-right top), G, Enter, Ctrl+C: "copied: a code of 1226 characters" (tl.stamp/2, size
+  17 x 6 x 9, 216 blocks, 7 zones, 8 rules, 3784 bytes of JSON). The code is in .tl/exe/course.code.txt.
+  Paste: a fresh Home in a new window, Ctrl+V: "pasted Stamp 1 (7 zones, 8 rules)", 1226 characters read from the
+  system clipboard; LMB placed it, a second LMB 25 m to the right placed it again: zones 1-7 and 8-14, rules 1-8 and
+  9-16, every reference in the second copy to zones 8-14 (its start rule names zone 8, its finish zone 14).
+  Capture docs/shifts/2026-11-27-day/lanes/T6-tool/t6-paste.jpg (1440x810, 150 KB): both copies with their zones.
+  The red line in it ("15 of 231 refused: occupied") is a stale refusal from an earlier aim, shown after the cursor
+  left the ground; fixed after the capture (the stamp tool clears its aim reason when the pick is empty).
+  How the scripted aim missed twice before (not a tool fault, but what a person would meet): the ray to a point
+  above sloping ground runs past the 24 m reach and picks nothing; and a ray that hits the rising ground short of the
+  aim point centres the stamp too near the first copy ("56 of 231 refused: occupied"): the refusal is right, but it
+  says only "occupied", not "over your other course".
+
+BOTH RUNS ARE NOT SEPARATE
+- Both copies start the run "Run 1" (the contract keeps the name; records are by name). In play that means one
+  record for two courses: a finish on the right one can beat the best time set on the left one, "plays" counts both,
+  and a person who changes one copy (a harder jump) still races the other copy's best. It reads as one course that
+  happens to exist twice; it stops being honest the moment they differ.
+- Proposal (a contract change, not made): when a placed stamp's start names a run the Home already has, the stamp
+  tool asks once in the name field, "This course's run is called Run 1, like one you have. Keep the name to share its
+  best time, or type a new one", prefilled "Run 1 (2)" and selected: Enter takes the new name, Esc keeps the shared
+  one. The rename is done on the ops before they are applied (still one batch). Alternatively records keyed by the
+  start zone's place, which survives no move; I would not.
+
+GATES (round 2)
+- 788 alone: HOME stamp-courses ok 8/8 (re-run after the last edit).
+- 756 (pieces + stamp.save/turns/item/tool): HOME pieces ok; 765 (command-m5, the stamp name field): ok; 775: ok.
+- selftest home. (foreman `npm run build` first): 150 passed, 0 failed, on the files before the last cosmetic
+  stamp_tool edit (the stale aim reason); 756, 765, 788, 775 re-run after it: ok. One earlier home. run of mine is
+  NOT a result: a run I had stopped with TaskStop kept its Godot children writing into the same report folder, the
+  two runs interleaved ("FAIL home.pieces.hasPASS ...", 137/150); the rerun in a fresh folder is the 150/150.
+- tl check --tier fast: PASS 5/5 (arch 12/12, assets 4/4, cards 3/3, devx.test 230/230, foreman.typecheck).
+- world: PASS 9/9 (278.9 s), the 9 rows identical to main's 25 Nov gate log.
+- Uncapped suite: not run (the Director's).
+
+FILES (round 2)
+Changed: engine/kernel/world/build/stamp_file.gd (539 lines), tools/stamp_tool.gd
+(600 lines: at the cap). New: engine/kernel/world/build/stamp_courses_case.gd (+ .uid),
+engine/tools/selftest.d/788-home-stamp-courses.sh, the lane folder's t6-paste.jpg. All LF as before.
+
+BEHAVIOUR CHANGES
+- A stamp box over zones now saves tl.stamp/2 (before: the zones were silently left behind). A box with no zones is
+  unchanged byte for byte.
+- The stamp tool's automatic top also reaches the zones over the box's columns (a box may come out taller than its
+  blocks).
+- The stamp tool takes Ctrl+C and Ctrl+V. C is also the visitor's slide / fly-down key, so Ctrl+C held while flying
+  also sinks him a little (C reaches the visit as before); V is not used elsewhere.
+- The stamp tool clears an aim's refusal when the cursor leaves the ground.
+
+QUESTIONS FOR THE DIRECTOR (round 2)
+R1 "deflate-compressed": Godot's COMPRESSION_DEFLATE writes a zlib stream (RFC 1950, 2-byte header + Adler-32), not
+   raw deflate (RFC 1951). Python zlib.decompress and Node zlib.inflateSync read it; inflateRawSync does not. Suggest
+   the contract say "zlib (RFC 1950)" so a web or Foreman reader picks the right call.
+R2 A tl.stamp/2 with no zones and no rules is refused ("without them it is tl.stamp/1"), and a tl.stamp/1 with
+   `zones` is refused as an unknown key: one form per content. Say if a v2 reader should accept both.
+R3 A pasted code that is byte-identical to a stamp already saved lands on the same file (StampFile.save's rule), so
+   pasting twice does not make two stamps. A different stamp with the same name gets "<slug>-2".
+R4 A zone name is not unique: two copies give two "Start" and two "Coin 1". The Rules tool's next_name counts names,
+   so a new coin after a paste is "Coin 4"; describe lines of the two copies read the same. Fine for now?
+R5 Run names: see "BOTH RUNS ARE NOT SEPARATE" (a proposal, the contract keeps the name).
+R6 stamp_tool.gd is at 600 lines; the next feature there needs a split (the share code's tool part could move to a
+   stamp_share.gd).
+
+NEXT THREE
+1. The run-name choice on placing (R5), if accepted.
+2. Show the code as text too (a small field with it selected) for a person whose clipboard is elsewhere (a phone, a
+   chat), and a paste field for the same reason.
+3. Play both pasted courses in the visit with lane P's looks and time a person's copy and paste by hand.
