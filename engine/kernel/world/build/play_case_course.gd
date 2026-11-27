@@ -141,8 +141,8 @@ func walk() -> Dictionary:
 	var fwd := Vector3(0, 0, -SPEED)
 	await walk_until(Vector3.ZERO, func() -> bool: return bool(p.get("running")), 10)
 	var looks_n: int = p.get("looks").call("count")
-	if looks_n != 6:
-		bad.append("%d looks made (want 6: pads Start, Switch, Jump, Checkpoint, a coin, a flag)" % looks_n)
+	if looks_n != 8:
+		bad.append("%d looks made (want 8: pads Start, Switch, Jump, Checkpoint, a coin, a flag; lane F3: the Door's frame and the Lava's stripes)" % looks_n)
 	# 1. start, the coin, the wall: blocked at the door
 	var still := [0, v.feet.z]
 	var stopped := await walk_until(fwd, func() -> bool:
@@ -156,7 +156,7 @@ func walk() -> Dictionary:
 		bad.append("to the door: stopped %d at z %.2f, state %s" % [stopped, v.feet.z, str(st)])
 	if not bool(p.get("looks").call("is_hidden", 2)):
 		bad.append("the coin's look is not hidden after it was taken")
-	if str(hl.get("run", "")) != "Tower" or str(hl.get("clock", "")) != hud.call("clock", int(st.frames)) or str(hl.get("counters", "")) != "coins 1":
+	if str(hl.get("run", "")) != "Tower" or str(hl.get("clock", "")) != hud.call("clock", int(st.frames)) or str(hl.get("counters", "")) != "1 coin":
 		bad.append("HUD %s against state %s" % [str(hl), str(st)])
 	var solid_before := ray_hits(Vector3(0, 0.5, 4.5), Vector3(0, 0.5, 0.5))
 	# 2. E elsewhere keeps a game's enter; E on the Switch takes it back and opens the door

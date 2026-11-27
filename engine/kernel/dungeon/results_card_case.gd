@@ -7,7 +7,8 @@ extends SceneTree
 ##            and "Unlocked: bench, light mast, brick" (unlocks.json first_play and paddle_five, met by this end only);
 ##            a key in the first HOLD frames does nothing, one after them closes it and the menu is shown
 ##   again    the same end again: plays 2, wins 2, no "Unlocked" line (nothing newly unlocked)
-##   third    left at 0 the third time: "played 3 times · won 2 · best 5", "Results", "Unlocked: street lamp, plaster"
+##   third    left at 0 the third time: "played 3 times · won 2 · best 5", "Results", "Unlocked: plaster" (lane F3, 27 Nov:
+##            the street lamp is open from the start, unlocks.json)
 ##   none     a counted run (frames > 0, nothing recorded): no card, the menu at once; a click closes a card too
 
 const Dungeon := preload("res://kernel/dungeon/dungeon.gd")
@@ -72,7 +73,7 @@ func run() -> void:
 	var t: Dictionary = await end_of(0, 0)
 	c = await card_of(t, "key")
 	say("third", c.shown and c.closed and c.head == "Results" and c.counts == "played 3 times   ·   won 2   ·   best 5"
-		and c.unlocked == "Unlocked: street lamp, plaster", "trophies %s; card: %s / %s / %s" % [str(t.get("trophies")), c.head, c.counts, c.unlocked])
+		and c.unlocked == "Unlocked: plaster", "trophies %s; card: %s / %s / %s" % [str(t.get("trophies")), c.head, c.counts, c.unlocked])
 	var n: Dictionary = await end_of(0, 30)
 	c = await card_of(n, "key")
 	var file: Dictionary = Trophies.read(home).packs.get("seed.paddle", {})

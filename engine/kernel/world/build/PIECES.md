@@ -62,7 +62,7 @@ tool is picked; a good one leaves the inbox, a bad one stays with its reason in 
 | Rule | When | Grants |
 |---|---|---|
 | first_play | any dungeon played once | bench |
-| three_plays | any dungeon played 3 times | street_lamp, material 12 plaster |
+| three_plays | any dungeon played 3 times | material 12 plaster (the street lamp is open from the start: lane F3, 27 Nov) |
 | hockey_win | Ice hockey won once | watch_tower |
 | paddle_five | 5 scored in one paddle court game | light_mast, material 11 brick |
 | parkour_win | Parkour won once | house |

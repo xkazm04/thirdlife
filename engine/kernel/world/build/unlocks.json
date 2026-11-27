@@ -2,7 +2,7 @@
   "schema": "tl.unlocks/1",
   "rules": [
     {"id": "first_play", "when": {"pack": "*", "plays": 1}, "grant": {"parts": ["bench"]}},
-    {"id": "three_plays", "when": {"pack": "*", "plays": 3}, "grant": {"mats": [12], "parts": ["street_lamp"]}},
+    {"id": "three_plays", "when": {"pack": "*", "plays": 3}, "grant": {"mats": [12]}},
     {"id": "hockey_win", "when": {"pack": "game.ice_hockey_three_against", "wins": 1}, "grant": {"parts": ["watch_tower"]}},
     {"id": "paddle_five", "when": {"pack": "seed.paddle", "best": 5}, "grant": {"mats": [11], "parts": ["light_mast"]}},
     {"id": "parkour_win", "when": {"pack": "game.parkour", "wins": 1}, "grant": {"parts": ["house"]}}

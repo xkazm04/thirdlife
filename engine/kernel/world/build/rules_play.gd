@@ -52,6 +52,8 @@ var sched: Object = null                 # a case's scheduler (kernel/world/tier
 var claimed := 0                         # E presses kept from entering a game (figures)
 var falls := 0                           # respawns after falling out of the world (figures)
 var _use_zones := {}                     # zone id -> true: zones some rule triggers `on: use`
+var _use_rules := {}                     # zone id -> [rule id, ...] in ascending id: the rules E fires there
+var prompt := ""                         # Lane F3: the E prompt shown now ("" none): "open Door 1", "use Lever"
 var _use_rev := -1
 var ghost: RefCounted = null             # play_ghost.gd: the best run's ghost (recorded while a run goes, played on a restart)
 var ghost_key: Callable                  # () -> bool, a case's G; else the keyboard (a display toggle, not a rule input)
@@ -74,6 +76,9 @@ func _init(h: Node) -> void:
 	var b: Variant = host.get("build") if host != null else null
 	doors = PlayDoors.new(b as RefCounted if b is RefCounted else null)
 	looks = PlayLooks.new((b as RefCounted).get("root") if b is RefCounted else null)
+	if b is RefCounted:
+		var hb: RefCounted = b
+		looks.solid = func(c: Vector3i) -> bool: return int(hb.call("code_at", c)) != 0
 	run = RulesRun.new(_rules(), facade, records)
 	ghost = PlayGhost.new()
 
@@ -107,6 +112,7 @@ func tick(at_frame: int) -> void:
 		looks.sync(run.layer)
 		_ground_looks()
 	var cell := RulesRun.feet_cell(feet as Vector3)
+	prompt = use_prompt(cell)
 	var use := use_down()
 	if use and uses_here(cell):
 		claim_enter()
@@ -143,6 +149,7 @@ func _off_reason(feet: Variant) -> String:
 
 func stop(why: String) -> void:
 	_feel_reset()
+	prompt = ""
 	ghost.call("play_stop")
 	ghost.set("recording", false)
 	if running:
@@ -190,15 +197,71 @@ func uses_here(cell: Vector3i) -> bool:
 	if int(l.get("revision")) != _use_rev:
 		_use_rev = int(l.get("revision"))
 		_use_zones.clear()
+		_use_rules.clear()
 		var rules: Dictionary = l.get("rules")
-		for id: int in rules:
+		var ids: Array = rules.keys()
+		ids.sort()
+		for id: int in ids:
 			var w: Dictionary = rules[id].when
 			if str(w.on) == "use":
 				_use_zones[int(w.zone)] = true
+				if not _use_rules.has(int(w.zone)):
+					_use_rules[int(w.zone)] = []
+				(_use_rules[int(w.zone)] as Array).append(id)
 	for z: int in l.call("zones_at", cell):
 		if _use_zones.has(z) and not bool(run.call("is_taken", z)):
 			return true
 	return false
+
+
+## Lane F3 (27 Nov, the playtest's "nothing says E"): what E would do in the feet cell's use zone (the first zone by
+## id that is not taken), as the prompt's words: the first effect of its first rule whose `if` holds now (a door
+## preset's own rule, a lever's): open / close / toggle -> "open <the zone's name>" (or "close" when it is open now),
+## start -> "start <run>", finish -> "finish", launch -> "jump", teleport -> "go to <name>", say -> "read", anything
+## else -> "use <the use zone's name>". "" outside every use zone.
+func use_prompt(cell: Vector3i) -> String:
+	if not uses_here(cell):
+		return ""
+	var l: RefCounted = run.layer
+	var zones: Dictionary = l.get("zones")
+	var rules: Dictionary = l.get("rules")
+	var here: Array = l.call("zones_at", cell)
+	here.sort()
+	for z: int in here:
+		if not _use_rules.has(z) or bool(run.call("is_taken", z)):
+			continue
+		var first := ""
+		for rid: int in _use_rules[z]:
+			var r: Dictionary = rules[rid]
+			var words := _effect_words(r.do[0] if not (r.do as Array).is_empty() else {}, zones, z)
+			if first == "":
+				first = words
+			if bool(run.call("_holds", r.get("if", []))):
+				return words
+		return first
+	return ""
+
+
+func _effect_words(e: Dictionary, zones: Dictionary, use_zone: int) -> String:
+	var zname := func(id: int) -> String:
+		return str(zones[id].get("name", "it")) if zones.has(id) else "it"
+	match str(e.get("do", "")):
+		"open", "toggle":
+			var t := int(e.get("zone", 0))
+			return ("close %s" if bool(run.call("is_open", t)) and str(e.do) == "toggle" else "open %s") % zname.call(t)
+		"close":
+			return "close %s" % zname.call(int(e.get("zone", 0)))
+		"start":
+			return "start %s" % str(e.get("run", "the run"))
+		"finish":
+			return "finish"
+		"launch":
+			return "jump"
+		"teleport":
+			return "go to %s" % zname.call(int(e.get("zone", 0)))
+		"say":
+			return "read"
+	return "use %s" % zname.call(use_zone)
 
 
 ## E is the rules' this frame: the visit's "enter" request of this frame is taken back (kernel/world/tiers.gd answers
@@ -265,6 +328,7 @@ func _hud_tick(at_frame: int) -> void:
 	if hud != null:
 		var l: RefCounted = run.layer
 		hud.call("tick", at_frame, run.call("state"), l.call("counters") if l != null else [])
+		hud.call("set_prompt", prompt)
 
 
 ## A pad or a flag stands on what is under it: a zone's floor cell can hold the terrain's surface (an LLM's start pad
@@ -278,7 +342,7 @@ func _ground_looks() -> void:
 	var nodes: Dictionary = looks.get("nodes")
 	for z: int in nodes:
 		var n: Node3D = nodes[z]
-		if str(looks.get("looks")[z]) == "coin" or not zones.has(z):
+		if str(looks.get("looks")[z]) == "coin" or str(looks.get("looks")[z]) == "door" or not zones.has(z):
 			continue
 		var top := float(zones[z].box[1][1]) + 1.0
 		var g := float((sp as Object).call("ground_at", n.position.x, n.position.z, top))
