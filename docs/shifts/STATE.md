@@ -523,3 +523,4 @@ on the frame and the figure and Fable on surfaces and nature, looping for 10 hou
 - ~17:05: S1 round 2: A after fixes (A2 + T's fixes) reached 'bots use it' in ONE sentence on half-court (promoted, 72.9 min) and shield wall (27.4 min); B not re-run. Menu 65.
 - 16:44 standup: F1 stopped (branch kept, not landed); final list running on d27-m6 (merged with main); disk 18 GB.
 - 16:47: disk crisis over: C: fell to 9 GB (gtai raw AVIs ~80 GB in kiro/gtai-wt); the gtai session deleted them and now deletes each AVI once encoded: C: back to ~97 GB. %TEMP%/claude/46f132430c565ee6 (25 GB, a gravitone-gcloud session) left for the owner. The Director freed 6.8 GB of its own (job captures in finished trees, S1 base copies).
+- 17:17 standup: T round 5 (status asked), S1 r3 B on main's fixes, S2 r2 re-runs, J2nd r2, J2b (shield v0.1.15 volleys). Disk recovered to 105 GB.
