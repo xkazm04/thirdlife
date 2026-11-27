@@ -1,0 +1,156 @@
+LANE DN: DAY AND NIGHT IN THE HOME (27 Nov 2026, Opus, worktree d27-night, branch d27-night from main e3b1ccc8)
+
+WHAT IT DOES
+- The Home now has a clock. A day lasts 86,400 physics frames, which is 24 minutes at 60 Hz. The clock moves the sun
+  (and at night a moon) together with the sky, fog, ambient light, the cel bands' light and shade, the water and the
+  grade. It passes through dawn (06:00), day, dusk (18:00) and night.
+- Noon is the style file's own values, key for key. The style only says how dawn, dusk and night differ from it. The
+  colours hold noon's look from 09:00 to 15:00 and the night's look from 19:12 to 04:48.
+- At the two blue hours (05:24 and 18:36) the light is flat: the lit band takes the shade's colour. The light turns
+  from the sun to the moon there, so the swap is never seen. The light never goes below 4 degrees.
+- Lamps: the kit's lights (street_lamp, house windows, light_mast) are off by day. At dusk they come on one by one:
+  each lamp has its own threshold of 0.05 to 0.30 of the day's lamp strength, taken from where it stands. At dawn they
+  go out the same way.
+- The 48-light cap is now 48 LIGHTS, not 48 pieces. Every 15 physics frames the lamps that are on are sorted by
+  distance to the camera and the 48 nearest get a light node. A live lamp keeps its node unless another lamp is nearer
+  than 0.9 of its distance, so the choice does not flicker at its edge. A newly lit node fades in over 12 frames.
+- Lit pieces are now drawn instanced like every other piece (build/piece_draw.gd). Their kit lights became
+  "sockets" of home/day_lamps.gd.
+- Keys, in build mode only:
+    N  jump to the next of dawn, noon, dusk, night
+    H  hold the clock, or let it run again
+  Neither key collides with build mode, any tool, visit.gd or boot: checked, and case home.daynight.keys asserts it.
+  Neither key does anything while a tool has the keyboard or a text field has focus. While building, a label at the
+  top right reads "18:00  dusk    N next · H hold".
+  The keys are in BUILD.md's key table.
+- Settings: settings.json, schema tl.home-settings/1, in the Home's build folder (user://home, or
+  TL_HOME_BUILD_DIR). It is never written into build.json. Shape:
+    {"schema":"tl.home-settings/1","day":{"frame":0..86399,"cycle":"run"|"hold"}}
+  Unknown keys are errors. A file that cannot be read is never written over. The file is saved on N and H, every
+  3,600 frames while the clock runs, and on quit. A fresh Home starts at noon with the clock running.
+- A game on stage: the clock holds and the look eases to noon over 60 frames. Off the stage the clock runs again.
+  Dungeons are a separate scene with their own look. When the Home goes, TLStyle.load_style of the same file writes the
+  style's own values back.
+
+THE CHOICE ON "NOTHING ELSE CHANGES" (brief item 4): BOTH, AND PROVED
+(a) The cycle is OFF unless a person visits the Home in a window, meaning build mode opened a folder: a person's walk,
+    or a case's open(). Scripted runs, tours and headless runs write nothing and the clock stands at noon.
+    Headless, the landscape grows no Home at all, so there is no clock (home.daynight.off_headless and
+    home.daynight.off).
+(b) The default time, noon, draws exactly today's sun:
+    - Headless: day_look(0.5) equals the file key for key, and its 9 globals are byte-equal to what
+      _register_globals computes (home.daynight.noon).
+    - In a real window: after TLStyle.install, apply_day(noon) leaves 45 of 45 values byte-identical. These are the 9
+      globals, the sun's rotation, colour and energy, the overhead key, the fog, ambient and exposure, every sky
+      parameter, the grade and the water. After night and then noon again, they are still identical
+      (day_case.gd --mode=window: "HOME daynight.window ok 45 values compared, 43 written at noon; differing after
+      noon: []; after night and noon again: []; 32 of them move at night").
+(c) The look pins stay. toon_cel.gdshader, water_cel.gdshader, every sky shader and style.json are untouched. The day
+    section is only in style_crisp.json and is read only by the Home's clock. 610 celsurf, 770 n3 and style.frame.*
+    are in the uncapped selftest below.
+(d) No public API change. The day functions live in engine/style/day/style_day.gd, which is not indexed and not pack
+    API. tl_style.gd only gained "day" in SECTIONS plus its check: 588 lines, under 600. Kernel API stays 1.31;
+    tl arch PASS.
+
+ACCEPTANCE
+1. Captures: MET. Files in this folder: dn-dawn.jpg, dn-noon.jpg, dn-dusk.jpg, dn-night.jpg, dn-lamps-night.jpg, plus
+   dn-lamps-noon.jpg, dn-lamps-dusk.jpg and dn-dusk-2.jpg. All are under 400 KB, 1600x900.
+   - Where taken: the exe path (res://boot/boot.tscn in a window, the Home loaded from TL_HOME_BUILD_DIR, the time
+     held through settings.json; shots.mjs).
+   - Spawn shots: boot's own start, no TL_EXE_START.
+   - Street shots: TL_EXE_START=-178,3,-80,2. The street was put with the piece rules by day_shots.gd
+     (--street=-84,2,-164,2 --spacing=5): 23 street lamps, 2 houses and 2 light masts, 31 lights. Eleven lamps and
+     four houses were refused there: authored structures and game lots.
+   - dn-dusk.jpg is the Director's dusk-2: golden near field, pink sky. The first dusk is kept as dn-dusk-1.jpg and
+     dn-lamps-dusk-1.jpg.
+   Honest judgement against noon:
+   - Night reads as a place: moonlit blue, shapes and fences readable, cut moon shadows, ink kept, warm lit windows.
+   - The light mast's pool is the strongest moment. The street lamps' own pools are subtler: a warm patch under each.
+     They read as a lit street at mid distance but are small near the camera.
+   - Lamps are a reason to build at night. By day they are only props.
+   - Not done: no stars (would need a sky shader change; written in PATCHES-DN.md). The far valley at night is dark
+     olive-blue, readable but plain.
+2. Frame cost: MET, on a loaded machine. Exe path, 1600x900, RTX 4090, vsync off (TL_EXE_FRAMES_TIMES=1), physics
+   frames 600..2400, at the street end with 31 lights within about 90 m, all live at night. Other lanes were running
+   Godot at the same time.
+     noon  (0 lights live):  1800 frames, p50 6.93 ms, p99 17.87 ms, max 106.7 ms
+     night (31 lights live): 1800 frames, p50 6.85 ms, p99 15.03 ms, max 106.7 ms (the same first-frame hitch)
+   (Measured before the lamp templates became data, which changes no per-frame work.) Headless, the lamps' update is p50 60 us and p99 0.7 ms (68 sockets, a choice every 15 frames). day_look costs
+   31 us; it is written every 2 frames while the clock runs.
+3. 776-home-daynight.sh: MET. "HOME daynight ok", 14 of 14:
+   off_headless, off, clock, keys, settings, stage, noon, timeline, sockets, cap (48 live of 78 on, 48 nodes, the
+   farthest live 97.4 m, the nearest not live 97.7 m), follow, dusk (24 of 78 on at 15:50), lift, cost.
+4. Gates:
+   - tl check --tier fast: PASS 5/5 (arch 12/12, assets 4/4, cards 3/3, devx.test 230/230, foreman.typecheck).
+   - tl check --tier full --only world,packs: world PASS 9/9; every game in one world hashes as alone.
+   - packs FAIL 3/4 (145 of 146 verb runs). The one failure is hockey invariants.many_budget: frame p50 1.42 ms
+     against a 1.0 ms budget. Main (d25-main, 016ae991) fails the same check the same way on this machine at the same
+     time: p50 1.495 ms, same state_hash d3398e69. Machine load, not this lane: the lane changes nothing headless.
+   - The first world,packs attempt was killed by my own 25-minute timeout. That is a stopped run, not counted; the
+     numbers above are from the rerun.
+   - Uncapped selftest (bash engine/tools/selftest.sh): "710 passed, 19 failed", 729 cases. Main had 715 (712 passed,
+     3 failed); the 14 new cases are 776. All 14 home.daynight.* passed in it, as did celsurf.*, n3.*, style.frame.*
+     and style.cel.*. The 19 failures:
+     * 3 are main's own: base.lines_undeclared, base.lines_own_6001, feel.pushbox_invariants.
+     * 12 passed when rerun alone through the runner (selftest.sh <filter>, after the full run):
+       - walk.coyote_limit, walk.wall_still, walk.down_brake, celsurf.model_classic, celsurf.pic_key_classic and
+         rig.skater.verbs.oracle: Godot printed nothing during the full run. That was likely my own manual Godot runs in
+         the same project at the time; I stopped doing that.
+       - home.command.ask_foreman, create.go.door, create.go.started, create.go.pitch, create.iterate.path and
+         create.pause.path: foreman/dist was not built in this worktree. I ran npm run build and they pass.
+     * k2.down_invariants: invariants.many_budget p50 1.14 ms against 1.0 ms. Main fails it the same way on this
+       machine now (1.13 ms). Machine load.
+     * rink.playtester_seat and rink.cartridge: the rink CLI and rinklab are not built in this worktree (needs
+       rink.sh build). NOT RUN, environment.
+     * look.skater.shaders_kept: a working-tree guard (git diff HEAD) on style files. This lane changes
+       style_crisp.json (the day section, as the brief allows). It turns PASS when the change is committed, and it is
+       the one expectation this lane moves.
+
+BEHAVIOUR CHANGES (named, with why)
+- Lit pieces (house, street_lamp, light_mast) are no longer built as nodes. Until today the first 48 such pieces
+  placed were nodes whose lights burned day and night; pieces past 48 had no light. Now every lit piece is instanced,
+  and its lights are lit by time and by distance to the camera.
+  - figures().nodes now counts only breakables (crates).
+  - Headless nothing changes, because the kit makes no lights headless.
+- By day the lamps' light pools are gone. The emissive windows still glow as before: the palette's window emit is
+  untouched.
+- Under TL_STYLE=classic (no day section) the lamps burn always, the nearest 48, as before. There is no night.
+- The Home's look moves with the clock for a person's walk. A fresh Home starts at noon, which is today's look; dusk
+  comes after 6 minutes and full night after about 7.
+
+CHANGED FILES
+- New:
+  - engine/style/day/style_day.gd: the look mixer, phases cached per style data, writes onto the rig.
+  - engine/kernel/world/home/day_cycle.gd: the clock, N/H, settings, the label, the stage ease.
+  - engine/kernel/world/home/day_lamps.gd: sockets, the 48 nearest, thresholds, fade.
+  - engine/kernel/world/home/day_case.gd: modes headless, look and window.
+  - engine/kernel/world/home/day_shots.gd: capture helper for a lamp street.
+  - engine/tools/selftest.d/776-home-daynight.sh.
+  - The new scripts' .uid files.
+- Changed:
+  - engine/style/tl_style.gd: "day" added to SECTIONS, plus its check.
+  - engine/style/style_crisp.json: the "day" section only (dawn, dusk, night).
+  - engine/style/STYLE.md: section "Time of day".
+  - engine/kernel/world/home/hook.gd: mounts HomeDay.
+  - engine/kernel/world/build/piece_draw.gd: lit parts instanced, lamp sockets.
+  - engine/kernel/world/build/BUILD.md: N and H in the key table.
+- Docs: PATCHES-DN.md (worktree root); this folder (BRIEF, STANDUP, REPORT, shots.mjs, captures).
+- Not mine: engine/cores/rink/bin/bin/ (untracked) is a nested copy left by the worktree set-up.
+
+FOR THE OWNER: HOW TO SEE IT
+Walk the Home in the exe or the editor binary. Press B, then N to jump to dusk, then N again for night; H holds the
+clock. Build a few street lamps or a house (the piece tool) and walk among them at night.
+Or let it run: dusk arrives 6 minutes after noon.
+
+QUESTIONS FOR THE DIRECTOR
+1. PIECES.md line 11 now describes piece_draw wrongly. It is not my file; the wanted line is in PATCHES-DN.md §1.
+2. Stars in the night sky need sky_cel.gdshader. The exact patch is in PATCHES-DN.md §2 (default 0, pins
+   unaffected). Hand it to LP or approve it for me?
+3. Should the clock also run while walking without ever entering build mode? It does now. Only the keys are
+   build-mode-only, as the brief says.
+
+NEXT THREE THINGS
+1. Stars (PATCHES-DN §2), and a moon disc that reads as a moon: today it is the sky's sun disc in pale blue.
+2. Street lamp pools a little larger and warmer at night: a "night" multiplier per kind, or the kit lamp's
+   omni_range. Today the mast dominates.
+3. The Home's sky "mood" slider in the designer panel (TWO-WORLDS "Sky and mood"), reusing day/style_day.gd look(t).

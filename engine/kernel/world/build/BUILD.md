@@ -233,7 +233,7 @@ A person in the Home presses **B** and builds. `build_mode.gd` is the node; `hot
 | `tools/command_tool.gd` | M4 (`COMMAND.md`): Enter asks, Enter keeps the ghost (one batch by llm), Esc or Backspace reverts. M5 seam: the answer's input ops are expanded (`expand_input`) before the dry run, blocks are drawn as before and every other layer's part under `layer_ghosts` (`preview_nodes(r, ["blocks"])`); the counts name the other kinds applied ("24 blocks, paint 3 cells; 1 refused: occupied": every kind counted, refusals after a `;`, up to 3 reasons); an op naming a locked material, shape or part is refused `locked: <condition>` when shown and at accept |
 | `tools/water_tool.gd` | M5 (water layer): click a hollow and it fills to just under its spill level (one batch; wheel or [ ] the level, 25 cm a notch), the ghost shows cells and level, 2 or RMB drains the body under the cursor; refusals shown red |
 | `tools/path_tool.gd` | M5 (paths layer): LMB a point, RMB / Enter / a click on the last point lays it, Backspace drops a point, 1-6 paint, 0 remove (LMB on a path), wheel or [ ] width 1.5-8 m |
-| `tools/rules_tool.gd` | M6 (rules layer): a stub until lane T lands ("Rules: coming in M6"), after plants and before command in the strip |
+| `tools/rules_tool.gd` | M6 (rules layer, lane T): 1-8 a preset (Start, Checkpoint, Finish, Coin, Door, Jump pad, Hazard, Message): armed, each click or drag places one; or drag a box first (the wheel its top), then 1-8. Each preset is one batch of a zone and its rules (`rules_tool_presets.gd`); the first Start asks the run's name, a Message its text (a field, as the stamp name). With nothing armed a click on a zone selects it: the side card (`rules_tool_card.gd`) lists its rules as `describe` sentences and its knobs ([ ], Shift+[ ], G), Delete or Backspace removes it and its rules (one batch); 0 stops. Zones show in build mode in every tool (`zone_draw.gd`), never in play; the rules layer's `preview_node` is the ghost of a preset and of an LLM answer (775: `rules_tool_case.gd`) |
 | `tools/plant_tool.gd` | M5 (plants layer): the round brush, 1 meadow, 2 flowers, 3 tall grass, 0 or Backspace clear; a held stroke is one `plant` op; 4 trees and 5 bushes scatter `put` ops (`plant_scatter.gd`) as one batch |
 | `build_devices.gd` | the test hook `TL_BUILD_DEVICES` |
 | `hotbar.gd` | bottom centre while building: the tool strip, the current tool's slots, its swatch and info line, save state, the refusal reason, its keys. It reads only the tool interface (`state_of`). Boot's key line names "B  build" while walking and hides itself while building (boot.gd reads the meta `tl_build_mode`) |
@@ -275,9 +275,12 @@ build mode):
 | Ctrl+Z, Ctrl+Y (or Ctrl+Shift+Z) | undo, redo one batch |
 | hold MMB or Alt | look: the mouse is captured and turns the view while held |
 | W A S D, Shift, Space, C, F | as while walking (the visitor walks, jumps, flies). E does not enter a game while building |
+| N | the next of dawn, noon, dusk, night: the Home's clock jumps there (home/day_cycle.gd, lane DN; saved in `settings.json`, schema `tl.home-settings/1`, beside the build file, never in it) |
+| H | hold the Home's clock, or let it run again (a day is 86,400 physics frames: 24 minutes) |
 
 LMB, RMB, the wheel, 1-8, Tab, R and F2 are the blocks tool's: another tool gets them (its `press`, `key`) or ignores
-them. Ctrl+Z, Ctrl+Y, B, Esc, T, Enter, MMB and Alt are the host's and mean the same in every tool.
+them. Ctrl+Z, Ctrl+Y, B, Esc, T, Enter, MMB and Alt are the host's and mean the same in every tool. N and H are the Home's clock's
+(polled by home/day_cycle.gd, not by build mode; nothing while a tool has the keyboard): no tool may take them.
 
 **Tools** (the seam, for M2, M3, M4 and M5). A tool is a RefCounted script in `tools/`, made once by build mode (`TOOLS`,
 in strip order: blocks, sculpt, paint, piece, stamp, water, path, plant, command), duck-typed. The M5 tools

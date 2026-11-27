@@ -14,7 +14,7 @@ extends RefCounted
 ## the 4 x 4 vertices round it the blur (1, 3, 3, 1)^2 / 64 of (paint - ground colour)): the cel shader takes the nearest
 ## land paint per fragment, so painted cells read as fields of the paint with a smooth edge. M5: growth (the plants
 ## layer) pulls the colour toward its green the same way and writes its density into the UV (x tufts, y flowers), and
-## steep edited ground turns to rock (`_rock`). Normals are the valley's tilted by D's gradient (central differences
+## steep edited ground is drawn as rock by the shader per triangle (FACE_FROM_NY). Normals are the valley's tilted by D's gradient (central differences
 ## on the lattice, the same at a rim for both sides). Only drawn under a parent (`root`); colliders: `faces`.
 
 const LandGround := preload("res://kernel/world/build/land_ground.gd")
@@ -28,9 +28,14 @@ const GREEN := ["", "grass", "grass", "grass_dark"]
 const DENSITY := [Vector2.ZERO, Vector2(0.5, 0.35), Vector2(0.3, 1.0), Vector2(1.0, 0.0)]
 const GROWTH_Y := -8.0                   # UV.y of the Home's land: toon_cel reads growth only under -7.5 (other ground: 0)
 const GREEN_K := 0.8                     # how far a fully grown cell's colour goes to its green
-const ROCK_FROM := 0.6                   # slope (rise over run) where the edited ground starts to turn to rock ...
-const ROCK_TO := 0.9                     # ... and is rock (the shader's steep face, normal y 0.74)
-const CLIFF_AT := 1.3                    # steeper still: the rock goes to the cliff paint
+# LP (27 Nov): steep edited ground is rock PER TRIANGLE, drawn by toon_cel.gdshader from the triangle's own plane (its
+# derivatives): rock from a face normal y of FACE_FROM_NY, all rock at FACE_TO_NY, lit as that plane. A vertex no longer
+# carries rock in its colour (M5 pulled it toward rock_warm by the slope of its steepest triangle: the colour then ran
+# half a cell onto the flat top and the shared vertex normal lit the side as level land: a flat pink shape). The colour's
+# alpha is how far rock may show there: 1, less where the ground is painted (the paint was asked for).
+const FACE_FROM_NY := 0.80               # slope 0.75: a raised hill's flank (about 0.6) stays grass
+const FACE_TO_NY := 0.74                 # slope 0.91: a terrace's side is rock
+const ROCK_TO := 0.9                     # (the slope FACE_TO_NY is, rise over run; land_look_case.gd reads it)
 
 var g: RefCounted                        # land_ground.gd
 var store: RefCounted                    # land_store.gd
@@ -275,7 +280,6 @@ func _fill(s: Dictionary, box: Variant) -> void:
 				near[k] = 1
 				gx[k] = (dd[k + 1] - dd[k - 1]) / (2.0 * L)
 				gz[k] = (dd[k + w] - dd[k - w]) / (2.0 * L)
-	_rock(i0, j0, w, h, dd, near, fp, dc, tw, base)
 	var by: PackedFloat32Array = s.by
 	var bc: PackedColorArray = s.bc
 	var bn: PackedVector3Array = s.bn
@@ -314,7 +318,7 @@ func _fill(s: Dictionary, box: Variant) -> void:
 				nrm[k] = bn[k]
 			if w0 * tw[ka] + w1 * tw[k1] + w2 * tw[k2] > 0.0:
 				var c := bc[k] + dc[ka] * w0 + dc[k1] * w1 + dc[k2] * w2
-				col[k] = Color(maxf(c.r, 0.0), maxf(c.g, 0.0), maxf(c.b, 0.0), 1.0)
+				col[k] = Color(maxf(c.r, 0.0), maxf(c.g, 0.0), maxf(c.b, 0.0), 1.0 - clampf(w0 * fp[ka] + w1 * fp[k1] + w2 * fp[k2], 0.0, 1.0))
 				code[k] = g.terrain_code
 				var gd := uvd[ka] * w0 + uvd[k1] * w1 + uvd[k2] * w2
 				uv[k] = Vector2(gd.x, GROWTH_Y - gd.y)
@@ -420,46 +424,3 @@ func _paint_and_growth(i0: int, j0: int, w: int, h: int, dc: PackedColorArray, f
 		if gw[vk] > 0.0:
 			var k := minf(gw[vk], 1.0) * GREEN_K
 			dc[vk] = dc[vk] * (1.0 - k) + (gc[vk] / gw[vk] - bc) * k
-
-
-## Rock where the edited ground is steep: each edited lattice vertex (`near`) takes its slope from the steepest of the six
-## lattice triangles round it (a central difference would halve a one-cell step: a terrace's side read as grass), and
-## its colour goes toward rock_warm (cliff where steeper) by smoothstep(ROCK_FROM, ROCK_TO, slope), less where it is
-## painted (the paint was asked for). The terrain code it then carries makes the cel shader snap it to rock and draw
-## its strata (toon_cel.gdshader "cliff faces").
-func _rock(i0: int, j0: int, w: int, h: int, dd: PackedFloat32Array, near: PackedByteArray, fp: PackedFloat32Array,
-		dc: PackedColorArray, tw: PackedFloat32Array, base: Dictionary) -> void:
-	if store.heights.is_empty():
-		return
-	var hy := PackedFloat32Array()
-	hy.resize(w * h)
-	var have := PackedByteArray()
-	have.resize(w * h)
-	for j: int in range(1, h - 1):
-		for i: int in range(1, w - 1):
-			var k := j * w + i
-			if near[k] == 0:
-				continue
-			for o: int in [k, k - 1, k + 1, k - w, k + w, k - w - 1, k + w + 1]:
-				if have[o] == 0:
-					have[o] = 1
-					hy[o] = g.y((i0 + o % w) * L, (j0 + o / w) * L) + dd[o]
-			var sl := 0.0
-			# the six triangles round k (the split runs (i, j)..(i + 1, j + 1)): cell (i, j) both, (i - 1, j) the upper,
-			# (i, j - 1) the lower, (i - 1, j - 1) both
-			sl = maxf(sl, Vector2(hy[k + 1] - hy[k], hy[k + w + 1] - hy[k + 1]).length())
-			sl = maxf(sl, Vector2(hy[k + w + 1] - hy[k + w], hy[k + w] - hy[k]).length())
-			sl = maxf(sl, Vector2(hy[k] - hy[k - 1], hy[k + w] - hy[k]).length())
-			sl = maxf(sl, Vector2(hy[k + 1] - hy[k], hy[k] - hy[k - w]).length())
-			sl = maxf(sl, Vector2(hy[k - w] - hy[k - w - 1], hy[k] - hy[k - w]).length())
-			sl = maxf(sl, Vector2(hy[k] - hy[k - 1], hy[k - 1] - hy[k - w - 1]).length())
-			sl /= L
-			var r := smoothstep(ROCK_FROM, ROCK_TO, sl) * (1.0 - minf(fp[k], 1.0))
-			if r <= 0.0:
-				continue
-			if not base.has(k):
-				base[k] = g.attrs((i0 + i) * L, (j0 + j) * L)[1]
-			var b: Color = base[k]
-			var rock: Color = g.pigment("rock_warm", (i0 + i) * L, (j0 + j) * L).lerp(g.pigment("cliff", (i0 + i) * L, (j0 + j) * L), smoothstep(ROCK_TO, CLIFF_AT, sl))
-			dc[k] = (b + dc[k]) * (1.0 - r) + rock * r - b
-			tw[k] += r

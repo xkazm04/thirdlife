@@ -8,6 +8,7 @@ extends RefCounted
 ## M5 (lane C): `water`, the measured water (the valley's river and ponds, home/valley.gd `water`, merged with the water
 ## layer's `water_runs`; in a water column `ground` is the bed), and tables of what play has unlocked only (unlocks.gd:
 ## materials 11 brick and 12 plaster once granted, the kit parts without the locked kinds).
+## M6 (lane C): `zones`, `rules` and `rules_room` at the top level (RULES_KEYS), never inside `layers`.
 
 const Blocks := preload("res://kernel/world/build/blocks.gd")
 const Unlocks := preload("res://kernel/world/build/unlocks.gd")
@@ -40,6 +41,10 @@ const MAT_NOTES := {
 }
 const PAINTS := ["grass", "grass_dark", "grass_dry", "dirt", "sand", "stone", "rock_warm", "cliff", "valley"]
 const NOT_YET := "not built yet"
+## M6 (lane C): the ask's top-level rules keys (contracts/BUILD.md "The LLM command bar, M6 additions"), from the rules
+## layer's `ask_part(lo, hi)`: the zones meeting the region, the rules naming them (and those naming none), the room.
+## home_build.gd `read_region` merges the layer's `zones` and `rules` into its read; they are taken out of `layers`.
+const RULES_KEYS := ["zones", "rules", "rules_room"]
 
 
 ## The ask for `sentence` at `cursor` facing `facing` (home_build.gd `rot_facing` of the camera's forward). `build`:
@@ -77,10 +82,16 @@ static func make(build: RefCounted, land: Node, sentence: String, cursor: Vector
 		ask["water"] = water
 	var layers := {}
 	for k: String in read:
-		if not (k in ["min", "max", "blocks"]):
+		if not (k in ["min", "max", "blocks"] or k in RULES_KEYS):
 			layers[k] = read[k]
 	if not layers.is_empty():
 		ask["layers"] = layers
+	var rl: RefCounted = build.layer("rules")
+	if rl != null and rl.has_method("ask_part") and (ask.ops as Array).has("zone"):
+		var part: Dictionary = rl.call("ask_part", lo, hi)
+		for k: String in RULES_KEYS:
+			if part.has(k):
+				ask[k] = part[k]
 	ask["caps"] = {"ops": MAX_OPS, "blocks_left": maxi(0, int(build.blocks.cap_home) - int(build.blocks.total))}
 	return ask
 

@@ -27,11 +27,12 @@ static func _chosen_path() -> String:
 
 
 const _Dio: GDScript = preload("res://style/dio/style_dio.gd")   # diorama night: a style that names a material model
+const _Day: GDScript = preload("res://style/day/style_day.gd")       # lane DN 27 Nov: time of day (the `day` section)
 const SPECIAL: PackedStringArray = ["glass", "water", "holo", "fx_add", "fx_mix"]
 const RIG_NODE: String = "TLStyleRig"
 ## material classes of the drawn surface language (toon.gdshader surface_detail)
 const CLASSES: Dictionary = {"none": 0, "wood": 1, "concrete": 2, "steel": 3, "tarmac": 4, "ground": 5, "rock": 6, "roof": 7, "fabric": 8, "masonry": 9, "clay": 10, "felt": 11}
-const SECTIONS: PackedStringArray = ["name", "sun", "toon", "env", "fog", "sky", "ink", "grade", "holo", "water", "palette", "mat", "detail", "lights", "fx", "figure"]
+const SECTIONS: PackedStringArray = ["name", "sun", "toon", "env", "fog", "sky", "ink", "grade", "holo", "water", "palette", "mat", "detail", "lights", "fx", "figure", "day"]
 const REQUIRED: PackedStringArray = ["sun", "toon", "env", "fog", "sky", "ink", "grade", "palette", "mat"]
 const MAT_KEYS: PackedStringArray = ["class", "dscale", "dk", "emit", "metal", "mottle", "no_hatch", "ice", "dissolve", "sway", "shader", "base_a", "fres_a", "gloss", "fuzz", "chip"]
 ## Numeric parameters are clamped to ranges that were looked at: a bad style file cannot break the look.
@@ -142,6 +143,7 @@ static func check(d: Dictionary) -> PackedStringArray:
 		if not d.has(k) or not (d[k] is Dictionary):
 			out.append("missing section '%s'" % k)
 	out.append_array(preload("res://style/cel/style_cel.gd").check(d))
+	out.append_array(_Day.check(d))
 	if out.size() > 0:
 		return out
 	var pal: Dictionary = d["palette"]
@@ -583,3 +585,4 @@ static func _apply_world(env: Environment, sun: DirectionalLight3D) -> void:
 	# can be seen: the toon shader is `ambient_light_disabled` and writes its own light. Contact shade is drawn by the
 	# ink pass instead (`ink.ao_k`).
 	env.ssao_enabled = false
+

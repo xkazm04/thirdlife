@@ -8,7 +8,7 @@ stamps) and 758 (unlocks) hold this code to it.
 |---|---|
 | `pieces_layer.gd` | the `pieces` layer: put / lift, footprints, the cell and area rules, `pieces` in tl.build/2, read_region |
 | `piece_catalog.gd` | the catalogue v1, knobs and choices, placement, footprint, prototypes (built once per kind + params) |
-| `piece_draw.gd` | MultiMeshes per prototype per 16 m section; light and breakable parts as nodes (cap 48); bodies |
+| `piece_draw.gd` | MultiMeshes per prototype per 16 m section (lit parts too); breakable parts as nodes (cap 48); the lit parts' kit lights as sockets of `home/day_lamps.gd` (the 48 nearest the camera burn when the Home's clock says the lamps are on); bodies |
 | `piece_ghost.gd` | prototypes drawn in holo (red when refused) |
 | `stamp_file.gd` | tl.stamp/1: from a box, validate, turn, ops, files, export / import as a `.tlitem` of kind `stamp` |
 | `unlocks.gd`, `unlocks.json` | the rules and what is locked now, with the condition a person reads |

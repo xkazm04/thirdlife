@@ -281,6 +281,11 @@ jump pad, a coin, a hazard, and a **run** (start, checkpoints, finish) that time
   cell and keys, then every fired rule runs in ascending `id`, each checking its `if` when it fires; an effect sees
   the effects before it in the same frame. A rule fires at most once per frame. The same inputs from the same saved
   Home give the same frames: a run is deterministic.
+- **Settled at the seam (27 Nov, Director)**: a taken zone fires no `enter`, `leave` or `use` until it is back; `if`
+  holds at most 8 conditions; `start`, `finish` and `count` triggers caused by an effect fire on the next frame; a
+  run started by a rule with no zone respawns at the floor of the feet cell it started on; E fires `use` (and does not
+  enter a nearby game) when the feet cell is in a zone that a rule triggers `on: use`. Stamps do not carry zones or
+  rules yet.
 - **Runs are recorded** in `user://home/records.json`:
   `{"schema":"tl.records/1", "runs":{"<run name>":{"plays":<int>, "finishes":<int>, "best_frames":<int>}}}`
   (`best_frames` omitted until the first finish). `plays` counts starts, `finishes` counts finishes. A finish shows a
@@ -295,6 +300,37 @@ jump pad, a coin, a hazard, and a **run** (start, checkpoints, finish) that time
 ```
 
 - Sorted by `id`; omitted when empty; `name` and `if` omitted when absent. zone, unzone, rule and unrule need version 4.
+
+### The best run's ghost (M6, round 2)
+
+- When a finish is a new best, the run's path is kept in `user://home/runs/<slug of the run name>.json`:
+  `{"schema":"tl.run-ghost/1", "run":"<run name>", "frames":<int>, "step":2, "track":"<base64 of float32
+  x, y, z, yaw per sample>", "clips":[[<frame>, "<clip>"], ...]}`: the figure's feet and facing every `step`
+  frames from the start to the finish, and each change of its animation clip. It is written as the build file is
+  (temp, read back, rename) and replaces the earlier best's file. Unknown keys are errors.
+- When that run starts again, a ghost of the figure (the holo look, no collider, no shadow) walks the kept track from
+  frame 0 beside the visitor, so a person races their own best; it vanishes at the track's end. It is drawn only in
+  the visitor's view, never in a pack's space or hash. A key in play hides or shows it for the rest of the visit
+  (not saved; every visit starts with it shown).
+
+### Courses travel: `tl.stamp/2` and the share code (M6, round 2)
+
+```
+{"schema":"tl.stamp/2", ...every tl.stamp/1 key...,
+ "zones": [{"id":<int>, "box":[[x0,y0,z0],[x1,y1,z1]], "look":"...", "name":"..."}, ...],   relative cells, ids local to the stamp
+ "rules": [{"id":<int>, "when":{...}, "if":[...], "do":[...]}, ...]}                         naming the stamp's zone ids
+```
+
+- A stamp box takes the zones whose box lies wholly inside it and every rule that names only those zones (a rule
+  with no zone is not taken). A stamp with no zones and no rules is written as `tl.stamp/1`, byte for byte as before.
+- Placing a `tl.stamp/2` turns and moves the zones as it does the blocks (a box stays a box: its corners turned, then
+  sorted), and writes the zones and rules in the same batch as the blocks, with the next free ids and the rules'
+  references rewritten (as an LLM answer's ids are). A rule `start` whose run name already exists in the Home keeps
+  the name (the records are by name).
+- **The share code** is a stamp as one line of text: `TL1-` followed by the URL-safe base64 (no padding) of the
+  deflate-compressed UTF-8 of the stamp's JSON. Copying a stamp puts its code on the clipboard; pasting a code (Ctrl+V
+  in the stamp tool) checks it as a stamp file is checked (unknown keys and bad shapes refused with a reason) and adds
+  it to the stamps like an import. A code longer than 65,536 characters is refused.
 
 ### The LLM command bar, M6 additions
 
