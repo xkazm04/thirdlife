@@ -496,3 +496,4 @@ on the frame and the figure and Fable on surfaces and nature, looping for 10 hou
 - 08:30: research landed e3b1ccc8 (docs/research/sandbox R1-R4, THESIS.md: build it, say what it does, play it; contract BUILD.md M6 rules and runs). 08:40: S6 seam (d27-m6) and DN day/night (d27-night) launched beside LP; P/T/C lanes follow the seam.
 - 09:17 standup: 5 lanes on track (T six items built, real jobs running; spikes running paid arms). CPU 100 %, disk 63 GB; Director's full tier stopped for a quiet window. Push held (Home commits on main).
 - 09:45 standup: LP, S6, DN on track; S6 at home. 126/126, world 9/9, uncapped suite next; RAM 64 %, disk 62 GB.
+- ~10:40: S4-core done: C++ arm A (core patch 0005: bot meteors 1-3/min, dives stop 3 of 10) vs no-C++ arm B (drawn only, 0 dive stops); branches d27-sp-core / -b pushed. JB-back launched.
