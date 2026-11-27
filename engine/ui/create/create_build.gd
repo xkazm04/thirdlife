@@ -2,6 +2,7 @@ extends "res://ui/create/create_design.gd"
 
 const Dungeons = preload("res://kernel/dungeon/dungeons.gd")
 var juicy: bool = false  # S2-juice arm B: the "make it juicy" card on the change row is picked
+const Juice = preload("res://ui/create/create_juice.gd")
 ## L3 (night of 21 Nov 2026): the Create page, part 3 of 4: the screens of the build (the phase strip, phase done with
 ## Try it / Pass / Hold, done, failed, error) and what their buttons do.
 
@@ -346,28 +347,34 @@ func _done() -> void:
 	title.name = "GameTitle"
 	_place(title, Vector2(0, 334))
 	var note: String = Model.change_note(job)
+	# D27 item 13 (a window still of T2's robot job: four note lines ran under Play and Add to menu): a longer note takes
+	# smaller letters and pushes the buttons and the change box down; one line keeps the old places
+	var below: float = 414.0
 	if not note.is_empty():
-		var nl: Label = _label(note, 20, 700, ORANGE, W, HORIZONTAL_ALIGNMENT_CENTER)
+		var lines: int = 0
+		for l: String in note.split("\n"):
+			lines += 1 + int(l.length() / 118)
+		var px: int = 20 if lines <= 1 else (17 if lines <= 6 else 15)
+		var nl: Label = _label(note, px, 700, ORANGE, W - 80.0, HORIZONTAL_ALIGNMENT_CENTER)
 		nl.name = "ChangeNote"
-		_place(nl, Vector2(0, 380))
+		_place(nl, Vector2(40, 376 if lines > 1 else 380))
+		below = maxf(414.0, 376.0 + lines * (px + 6) + 10)
+	var bh: float = 110.0 if below <= 414.0 else 88.0
 	var offer: bool = Model.juice_of(job) == "offered"  # S2-juice arm B: a move built plain; one click makes it juicy
 	var row_x: float = 150.0 if offer else W * 0.5 - 330
-	var play: Button = _button("Play", "Play", "play", HONEY, Vector2(row_x, 414), Vector2(310, 110), 46)
+	var play: Button = _button("Play", "Play", "play", HONEY, Vector2(row_x, below), Vector2(310, bh), 46)
 	play.pressed.connect(func() -> void: launch(Model.play_dir(job)))
 	_body.add_child(play)
 	# E4: one press puts the game in the main menu's Dungeons (the person's own list, kernel/dungeon/dungeons.gd)
 	var listed: bool = not Dungeons.user_row(job_dir, menu_list).is_empty()
 	var mb: Button = _button("RemoveMenu" if listed else "AddMenu", "In the menu" if listed else "Add to menu", "check" if listed else "plus", GREEN if listed else CREAM,
-		Vector2(row_x + 350, 414), Vector2(310, 110), 30)
+		Vector2(row_x + 350, below), Vector2(310, bh), 30)
 	mb.tooltip_text = "Press to take it out of the menu" if listed else "Show it in the main menu's Dungeons"
 	mb.pressed.connect(remove_from_menu if listed else add_to_menu)
 	_body.add_child(mb)
 	if offer:
-		var jf: Button = _button("JuicyFollowUp", "Juice that move", "power", ORANGE, Vector2(row_x + 660, 414), Vector2(320, 110), 26)
-		jf.tooltip_text = "Give the move you just added a tell, an impact word, a camera kick and a slow beat"
-		jf.pressed.connect(func() -> void: _send(Model.juicy_follow_up(job)))
-		_body.add_child(jf)
-	_change_row(Vector2(150, 572))
+		Juice.follow_up(self, job, Vector2(row_x + 660, below), bh)
+	_change_row(Vector2(150, 572.0 if below <= 414.0 else minf(below + bh + 16.0, H - 84.0)))
 
 
 ## E4: the change box: what should change, in the person's words, then a new playable build (`foreman change`).
@@ -394,13 +401,7 @@ func _change_row(at: Vector2) -> void:
 	var go_b: Button = _button("SendChange", "Change it", "redo", ORANGE, at + Vector2(760, 0), Vector2(220, 80), 28)
 	go_b.pressed.connect(send_change)
 	_body.add_child(go_b)
-	# S2-juice arm B: "make it juicy", a card choice for this change (off until picked; the Foreman runs the pass on it)
-	var jc: Button = _button("JuicyCard", "Make it juicy", "check" if juicy else "power", HONEY_LIGHT if juicy else CREAM, at + Vector2(505, 0), Vector2(240, 80), 22)
-	jc.tooltip_text = "A tell that grows, an impact word, a camera kick, a slow beat on the big moment"
-	jc.pressed.connect(func() -> void: juicy = not juicy; _rebuild())
-	_body.add_child(jc)
-	if juicy:
-		_place(_label("Juicy: a tell that grows, an impact word mid-screen, hit-stop and a camera kick, a slow beat on the big moment", 17, 650, HONEY_LIGHT, W, HORIZONTAL_ALIGNMENT_CENTER), Vector2(0, 666))
+	Juice.card(self, at)  # S2-juice arm B: "make it juicy", a card choice for this change (create_juice.gd)
 
 
 func send_change() -> void:

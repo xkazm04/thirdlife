@@ -1,0 +1,20 @@
+{
+ "source": "d25-shield .tl/jobs/shield-wall-3-v-20261125-1-jb (lane JB-back), change request 866 and the rivals part the Foreman wrote from it (869)",
+ "change": {
+  "v": 1,
+  "seq": 866,
+  "ts": "2026-11-27T11:32:42.548Z",
+  "job": "shield-wall-3-v-20261125-1",
+  "type": "change_requested",
+  "text": "The charge is still rare and rarely lands. Bots should charge an open line several times a minute each, and the charge should bowl over everyone within a step of its line, not only the man straight in front, throwing each one higher than his own head before he lands. Braces are so rare I never see BRACED!: a rival who sees a charge coming at him should turn his raised shield to it most of the time, and the rest step aside."
+ },
+ "part": {
+  "v": 1,
+  "seq": 869,
+  "ts": "2026-11-27T11:32:48.102Z",
+  "job": "shield-wall-3-v-20261125-1",
+  "type": "change_requested",
+  "package": "crew",
+  "text": "[foreman] the rivals' part of change request 866, for the bots your files drive (scripts/crew/mind.gd): \"Bots should charge an open line several times a minute each, and the charge should bowl over everyone within a step of its line, not only the man straight in front, throwing each one higher than his own head before he lands. : a rival who sees a charge coming at him should turn his raised shield to it most of the time, and the rest step aside.\". \"core\" builds the rest of the change (the moves and rules it names) in the same change, and your package runs after its merge: make the bots you drive do what these words say with what it merged. The whole change, for what the words refer to: \"The charge is still rare and rarely lands. Bots should charge an open line several times a minute each, and the charge should bowl over everyone within a step of its line, not only the man straight in front, throwing each one higher than his own head before he lands. Braces are so rare I never see BRACED!: a rival who sees a charge coming at him should turn his raised shield to it most of the time, and the rest step aside.\""
+ }
+}

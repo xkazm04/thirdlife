@@ -1,0 +1,218 @@
+{
+ "source": "d25-arsenal three-against-three-hockey-20261125-1, events 1005, 1008, 1012, 1026 (night of 27 Nov, lane J1)",
+ "plan": [
+  {
+   "id": "base",
+   "title": "Start from the rink_game base",
+   "milestone": "greybox",
+   "deps": [],
+   "scope": [
+    "assets/**",
+    "data/**",
+    "gen/**",
+    "scripts/**",
+    "tests/**"
+   ],
+   "contract": "",
+   "acceptance": [
+    {
+     "level": "V1",
+     "verb": "lint",
+     "args": []
+    },
+    {
+     "level": "V2",
+     "verb": "smoke",
+     "args": []
+    },
+    {
+     "level": "V4",
+     "verb": "bot",
+     "args": [
+      "--test=tests/bot_first_match.gd"
+     ]
+    }
+   ],
+   "kind": "base"
+  },
+  {
+   "id": "cartridge",
+   "title": "Harbour 3 v 3 cartridge",
+   "milestone": "greybox",
+   "deps": [
+    "base"
+   ],
+   "scope": [
+    "data/harbour.cartridge.json",
+    "data/match.json"
+   ],
+   "contract": "",
+   "acceptance": [
+    {
+     "level": "V1",
+     "verb": "lint",
+     "args": []
+    },
+    {
+     "level": "V2",
+     "verb": "smoke",
+     "args": []
+    },
+    {
+     "level": "V4",
+     "verb": "bot",
+     "args": [
+      "--test=tests/bot_first_match.gd"
+     ]
+    },
+    {
+     "level": "V4",
+     "verb": "bot",
+     "args": [
+      "--test=tests/bot_match_hand.gd"
+     ]
+    },
+    {
+     "level": "V4",
+     "verb": "bot",
+     "args": [
+      "--test=tests/bot_toys.gd"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "harbour",
+   "title": "Bubble, arrows, slush, spots, harbour drawing",
+   "milestone": "greybox",
+   "deps": [
+    "base",
+    "cartridge"
+   ],
+   "scope": [
+    "scripts/main.gd",
+    "scripts/harbour.gd",
+    "scripts/harbour_toys.gd",
+    "data/tuning.json",
+    "data/harbour_venue.json",
+    "data/drill_slush100.cartridge.json",
+    "tests/bot_harbour.gd"
+   ],
+   "contract": "",
+   "acceptance": [
+    {
+     "level": "V1",
+     "verb": "lint",
+     "args": []
+    },
+    {
+     "level": "V2",
+     "verb": "smoke",
+     "args": []
+    },
+    {
+     "level": "V4",
+     "verb": "bot",
+     "args": [
+      "--test=tests/bot_harbour.gd"
+     ]
+    },
+    {
+     "level": "V4",
+     "verb": "bot",
+     "args": [
+      "--test=tests/bot_match_hand.gd"
+     ]
+    },
+    {
+     "level": "V4",
+     "verb": "bot",
+     "args": [
+      "--test=tests/bot_toys.gd"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "skin",
+   "title": "Harbour Playmakers skin",
+   "milestone": "tuned",
+   "deps": [
+    "base",
+    "cartridge"
+   ],
+   "scope": [
+    "data/skin.json",
+    "data/harbour_commentary.json"
+   ],
+   "contract": "",
+   "acceptance": [
+    {
+     "level": "V1",
+     "verb": "lint",
+     "args": []
+    },
+    {
+     "level": "V2",
+     "verb": "smoke",
+     "args": []
+    },
+    {
+     "level": "V4",
+     "verb": "bot",
+     "args": [
+      "--test=tests/bot_skin.gd"
+     ]
+    },
+    {
+     "level": "V4",
+     "verb": "bot",
+     "args": [
+      "--test=tests/bot_first_match.gd"
+     ]
+    }
+   ]
+  }
+ ],
+ "events": [
+  {
+   "v": 1,
+   "seq": 1005,
+   "ts": "2026-11-27T04:12:01.439Z",
+   "job": "three-against-three-hockey-20261125-1",
+   "type": "change_requested",
+   "text": "Give me a meteor slapshot on F, instead of the bubble and the green-spot tricks. Press F to light my stick on fire, then hold shoot to wind it up: the longer I hold, the harder it flies, and while I wind up I am easy to knock over. Released, the puck flies twice as fast as a normal shot, trails fire and smoke, and knocks down every skater it passes, rivals, mates and the keeper alike, with a flash, a boom, a short freeze and a camera kick. When it goes in, the net bulges and the glass shakes. It comes back 12 seconds after I use it. The rival bots should try a meteor of their own from distance, and dive in front of mine to block it."
+  },
+  {
+   "v": 1,
+   "seq": 1008,
+   "ts": "2026-11-27T04:12:06.322Z",
+   "job": "three-against-three-hockey-20261125-1",
+   "type": "reopened",
+   "package": "harbour",
+   "reason": "change request (event 1005); the Planner names the package: The meteor slapshot replaces the bubble and spot power-ups, and the harbour package owns those power-ups along with the main game script, the tuning data, the bot test and the drawing code, so the sho\n... (130 more characters cut): Give me a meteor slapshot on F, instead of the bubble and the green-spot tricks. Press F to light my stick on fire, then hold shoot to wind it up: the longer I hold, the harder it flies, and while I wind up I am easy to knock over. Released, the puck flies twice as fast as a normal shot, trails fire\n... (34\n... (22 more characters cut)"
+  },
+  {
+   "v": 1,
+   "seq": 1012,
+   "ts": "2026-11-27T04:13:48.327Z",
+   "job": "three-against-three-hockey-20261125-1",
+   "type": "note",
+   "package": "harbour",
+   "round": 15,
+   "text": "- RULE: not done. This is the part that changes how the match plays: F as a meteor in place of the bubble, coming back 12 seconds after use, with no green-spot tricks. It needs `data/harbour.cartridge.json`, which is outside my scope. The owner of that file needs to make `game.abilities` one `shotgun` entry with trigger `mode`, unlimited charges (charges 0, if the core treats 0 as unlimited) and `cooldown_frames` 720, and remove the two pickup trick entries.\n- RULE: not done, and the cartridge has no key for it. These rules are not buildable as data: winding up longer for a harder shot, being easier to knock over while winding up, flying twice as fast as a normal shot, and knocking down every skater the puck passes, mates and keeper included. On the cartridge, the core's `shotgun` shot uses `magnitude` (now 1.5); 2.0 would come closest to \"twice as fast\". Who it knocks down is decided by the core.\n- RULE: not done. The rival bots trying a meteor from distance and diving in front of yours are bot decisions inside the core. No file in my scope can change them, and the contract forbids bot code.\n- The short freeze is not added. The core's own hit-stop stays, and I held no extra pose frames.\n- The net bulge and glass shake on a meteor goal are drawn as a flash at the puck plus a 0.3 m camera kick. The net and the glass belong to the base's arena, so they do not move.\n- Shake rule widened: the camera now also kicks when any skater is knocked down by the shot in flight, and harder on a goal right after that shot. The old rule was \"only your knockdown or a goal\". The new values are in `data/tuning.json` at `harbour.meteor` (kick_m 0.15, goal_kick_m 0.3, kick_f 10).\n- The bubble, green-spot and hip-check drawing stays, because the match still gives those tricks. New moment kind: `meteor_flatten` (frame list).\n- KIT: none added or removed.\n- Not run: `tests/bot_match_hand.gd`, because time ran out. `main.gd` and the base's match code are unchanged."
+  },
+  {
+   "v": 1,
+   "seq": 1026,
+   "ts": "2026-11-27T04:17:46.452Z",
+   "job": "three-against-three-hockey-20261125-1",
+   "type": "merge",
+   "package": "harbour",
+   "files": [
+    "data/tuning.json",
+    "scripts/harbour_toys.gd"
+   ]
+  }
+ ]
+}
