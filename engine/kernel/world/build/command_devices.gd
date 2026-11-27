@@ -5,6 +5,8 @@ extends RefCounted
 ## ghost shown, answer kept). Kinds:
 ##   say:<sentence>     Enter, the sentence typed, Enter (the bar at the cursor, as a person sends it)
 ##   accept, revert     Enter or Esc on the ghost shown
+##   fix                R on the ghost shown (round 2: a fix ask when the space check found problems; prints command_fix)
+##   settle             Enter on the last ghost: waits until no ask is pending (a fix) and a ghost is shown
 ##   capture:<abs file> the window's last drawn frame as a jpg (png when the name ends in .png)
 ##   state              a `command_state` line          quit   the window's close request (boot ends the world)
 ## Sentences may not hold ";". Nothing runs when the variable is unset.
@@ -56,6 +58,9 @@ func run(frame: int) -> void:
 		if due < 0 or frame < due:
 			continue
 		e[5] = true
+		if str(e[3]) == "settle" and (not (tool.get("pending") as Array).is_empty() or (tool.get("shown") as Dictionary).is_empty()):
+			e[5] = false                  # settle waits for the last ghost: no ask pending (a fix) and one shown
+			continue
 		_do(tool, str(e[3]), str(e[4]), frame)
 
 
@@ -67,8 +72,10 @@ func _do(tool: RefCounted, kind: String, arg: String, frame: int) -> void:
 			if bar != null and bar.call("is_open"):
 				bar.get("line").text = arg
 				tool.call("_on_submitted", arg)
-		"accept":
+		"accept", "settle":
 			tool.call("accept")
+		"fix":
+			print(JSON.stringify({"schema": "tl.view/1", "kind": "command_fix", "sent": str(tool.call("fix")), "frame": frame}, "", false))
 		"revert":
 			tool.call("revert")
 		"capture":

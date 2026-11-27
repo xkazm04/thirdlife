@@ -120,3 +120,86 @@ NEXT THREE
    devices) walking the tower; compare to the replay.
 3. The respawn-on-fall pattern without a big ground zone (Q-C1): teach "a zone of look none under each jump" or a
    rule "every 60 frames if running and feet below y: respawn" once the contract has a height condition.
+
+====================================================================================================================
+ROUND 2 (Director 12:30, on the integration tip 6dd9f0a9). Nothing committed.
+
+ITEMS
+1. The bridge rule (lane LP's patch, its intent applied tight): MET. foreman/prompts/world_edit.md "Water (measured)":
+   the deck at least 1 above the higher bank's ground y AND at least 2 above the water's surface y (the water's top is
+   inside its surface cell, so the underside clears it by 1 m or more); steps start on a dry column (in none of the
+   water's runs) at its own ground y, (deck y + 1) - (that ground y) of them, first on the ground, last meeting the
+   deck; the worked bridge says "3 above the surface 9". +247 bytes.
+2. Fix it: MET. The key is R (not E, not a host key; not N/H of day and night, not 0-8 [ ] G Delete/Backspace of the
+   rules tool; checked on d27-m6 7b34f6dd: R is only the blocks, pieces and stamps tools' own rotate key, and while a
+   ghost is shown the command tool has the keyboard and the host reads no key). Offered only when the space check
+   found something: the hotbar note ends "R: fix it", the hint "R fix it (asks the model again)", the label over the
+   ghost "R: fix it". R sends ONE follow-up ask (same sentence and spot, measured again) with `fix: {ops, findings}`;
+   the ghost stays ("fixing... 0:12"; a second R sends nothing); the corrected answer replaces it, kept only by Enter.
+   The fix is a call: the day's count, llm_calls.jsonl "fix: <sentence>", tl ledger (the replaced call is logged
+   reverted, not failed). Findings now carry cells and distances (command_space.gd `findings`). Fixture: 786.
+3. The fall pattern: MET. world_edit_rules.md: a zone of look none under EACH jump gap, on the floor a miss lands on,
+   just the gap's cells (enter, if running, respawn), never one zone round the course; the worked run has one. +403
+   bytes (the section: 4.26 KB with no zones listed, 4.40 KB on the 785 ask; the caps in the test and in 785 moved
+   from 4 KB to 4 KB + 1 KB as the Director allowed: named here, not loosened beyond the allowance).
+4. Real Opus calls (the editor binary in a window, fresh Homes, devices; the fix device fired at ghost+140 and sent
+   nothing both times because the check found nothing):
+   a. "a small stone bridge with railings across the stream here", cursor on the bed (-254, -4, -26):
+      32.2 s, 18,351 in / 3,280 out tokens, 154 ops = 154 blocks, 0 refused, space check: no warning (533 feet cells,
+      29 ms), 2,025 frames ask -> answer. One batch kept. Deck: cubes at y -1 over all 60 water columns (surface cell
+      -3; the stream's level measured in M5 -2.21 m), so the underside (y -1.0) clears the water by about 1.2 m;
+      2 above the surface cell as the rule asks; banks: west ground -2, east -3 (deck 1 above the higher). Steps: west
+      stairs (rot 3) at x -260 (y -2, on its ground -2) and -259 (y -1, on a cube), east (rot 1) at x -243 (y -2 on a
+      cube at -3, its ground) and -244 (y -1), all on dry columns, 3 wide; piers on both banks and two in the water
+      under the deck; fence railings; corner posts. A walker from the west bank: ground -> step 0.5 -> 0.5 -> deck.
+      Captures: c6-bridge.jpg (kept, from the stream's south), c6-bridge-ghost.jpg.
+   b. the tower sentence again at the same flat spot (-69, 2, 21): 92.5 s, 41,268 / 10,059 tokens, 377 ops (335
+      blocks, 9 zones, 9 rules), 0 refused (the round-1 'game lot' refusal is gone: Q-C1 fix plus the new fall
+      pattern: two 2-cell "Fall" zones on the ground under the gaps instead of one 11 x 9 zone), space check: no
+      warning (536 feet cells, 77 ms). The ghost now shows the zones (T's preview_node: "+ Start", "+ Fall", "+ zone 2",
+      "+ Ledge", "+ High ledge", "+ Finish"): c6-ghost-2.jpg; kept: c6-built-2.jpg. Replay of the kept Home: run
+      "Tower Climb" finished, 3/3 coins, with the estimate's limits (4 m across, 1.2 m up); with hops of at most 2 m
+      across only 1 coin and no finish: this course uses the full-limit jumps, e.g. from (-63, 7, 13) to (-63, 8, 9),
+      4 m across AND 1 m up in one jump (see Q-C6). Fix-it key: not needed in either call.
+
+GATES (round 2)
+- node --test dist/test/world_edit.test.js: 19/19 (17 + 2 new: the bridge rule and the fall pattern; the fix ask's
+  prompt section, its corrected answer taken, a fix with no findings refused). foreman npm test: 467 tests, 461 pass,
+  0 fail, 6 skipped.
+- 785 HOME command-m6 ok 6/6; 786 HOME command-fix ok 4/4 (offer, flow, calls, ledger); 787 HOME command-findings ok
+  3/3 (floating, gap, wall).
+- tl check --tier fast: PASS 5/5 (a first run FAILED arch schema-versions: 786 grepped the string 'tl.ledger/1'; the
+  grep now keys on the calls object, then 12/12).
+- bash engine/tools/selftest.sh home. : "selftest: 149 passed, 0 failed" (the merged tip's 142 + 786's 4 + 787's 3).
+- tl check --tier full --only world: PASS [9/9], 298 s; the hash table is identical to main's .tl/gate-world.log.
+- The uncapped suite: not run (the Director runs it on the merged tree).
+
+FILES (round 2)
+New: engine/kernel/world/build/command_fix_case.gd (extends command_m6_case.gd: `-- fix <calls dir>`, `-- findings`),
+     engine/tools/selftest.d/786-home-command-fix.sh, 787-home-command-findings.sh.
+Changed: tools/command_tool.gd (fix(), _send(), R on the ghost, the replace on arrival, note/hint), command_devices.gd
+     (kinds fix, settle), command_space.gd (findings with cells; gap/wall nearest approach), command_m6_case.gd
+     (cases() and the verdict prefix, so the round-2 case reuses its platform and fixtures), 785 (cap 5 KB),
+     COMMAND.md "Round 2", foreman/prompts/world_edit.md (bridge rule, {{fix}}), world_edit_rules.md (fall pattern),
+     foreman/src/world_edit.ts (askSchema `fix`, fixFacts), world_edit_check.ts (Ask.fix), test/world_edit.test.ts.
+Line endings kept as in git (command_space.gd and command_m6_case.gd are CRLF in git, the rest LF).
+
+BEHAVIOUR CHANGES (round 2)
+- The ask may carry `fix` (only a fix ask). The Foreman refuses a `fix` without findings.
+- The note, hint and ghost label offer R when the check found something; R sends a call.
+- A replaced ghost's call is logged accepted false (the ledger counts it reverted).
+- The prompt: +247 bytes (bridge) +403 bytes (fall), and the fix section on a fix ask only.
+
+QUESTIONS (round 2)
+Q-C5 `fix` is a new optional key of tl.world-edit-ask/1 (Foreman's askSchema, COMMAND.md); the contract's M6 section
+     does not list it. A contract line when the Director next edits BUILD.md, or a different carrier if preferred.
+Q-C6 The estimate takes "1.2 m up" and "4 m across" independently, so one jump of 4 m across AND 1 m up counts; the
+     body's arc (JUMP_V 6.93 m/s, g 24) probably cannot make both at once. The second tower depends on such jumps.
+     Proposal: an arc limit (across allowed shrinking with the height climbed), measured by lane P's body in a window.
+
+NEXT THREE
+1. The arc-based jump limit (Q-C6), checked against lane P's walker.
+2. Feed the findings back inside the Foreman's own retry (a pre-ghost space check on the ask's blocks and ground),
+   so the model fixes space before the person sees the ghost; R stays for what only the exe can see.
+3. Name coins in the prompt's worked run (the second tower's coins were "zone 2..4" in the ghost: names help both the
+   ghost labels and the rule lines).

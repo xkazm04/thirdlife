@@ -52,6 +52,7 @@ export interface Ask {
   zones?: Record<string, unknown>[];
   rules?: Record<string, unknown>[];
   rules_room?: { zones_left: number; rules_left: number; counters: string[] };
+  fix?: { ops: Record<string, unknown>[]; findings: string[] };
   caps: { ops: number; blocks_left: number };
 }
 

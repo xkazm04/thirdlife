@@ -253,7 +253,8 @@ test("world-edit M6: the prompt teaches zones and rules with the measured zones,
     "510 more zones, 511 more rules; counters in use: none"]) assert.ok((f.rules as string).includes(k), k);
   assert.equal(facts(m5ask as never).rules, "", "no zone op offered: no rules section");
   const grown = (facts({ ...m6ask, zones: [], rules: [] } as never).rules as string).length;
-  assert.ok(grown <= 4096 - 64, `the rules section is ${grown} bytes on a Home with no zones (the prompt grows at most 4 KB in all)`);
+  // round 1: at most 4 KB; round 2 (Director 27 Nov 12:30): the fall pattern may add at most 1 KB more
+  assert.ok(grown <= 4096 + 1024 - 64, `the rules section is ${grown} bytes on a Home with no zones (at most 4 KB + 1 KB in all)`);
   const r = worldEditSteps(m6ask, [{ includes: "# Zones and rules", json: course }]);
   assert.equal(r.code, 0, r.error);
   assert.deepEqual(r.result.ops.slice(2), course.ops.slice(1));
@@ -336,4 +337,30 @@ test("world-edit M6: an ask's zones and rules are read in the file's shapes; a m
   assert.match(bad.error, /--in.*zones/);
   const odd = worldEdit({ ...m6ask, rules: [{ id: 7, when: { on: "use", zone: 4 }, do: [], extra: 1 }] }, []);
   assert.equal(odd.code, 2);
+});
+
+// Round 2 (lane C): the bridge rule (from lane LP), the fall pattern, and the fix ask (R on a ghost with findings).
+test("world-edit round 2: the bridge's deck clears the water by 2 cells and its steps are counted; a fall zone under each gap", () => {
+  const prompt = fs.readFileSync(path.join(PKG_ROOT, "prompts", "world_edit.md"), "utf8");
+  for (const k of ["least 2 above the water's surface y", "underside then clears the water by 1 m or more", "(deck y + 1) - (that ground y) steps",
+    "in none of the water's runs", "3 above the surface 9"]) assert.ok(prompt.includes(k), k);
+  const f = facts(m6ask as never);
+  for (const k of ["under EACH jump gap a zone of look none", "Never one zone round the whole", '"name":"Fall"', '{"do":"respawn"}']) assert.ok((f.rules as string).includes(k), k);
+});
+
+test("world-edit round 2: a fix ask carries the earlier ops and the findings into the prompt, and the corrected answer is taken", () => {
+  const earlier = [{ op: "place", at: [100, 14, 50], shape: 1, mat: 1, rot: 0 }];
+  const fixAsk = { ...m6ask, fix: { ops: earlier, findings: ["1 block floats (joined to no block and no ground): (100, 14, 50)"] } };
+  const f = facts(fixAsk as never);
+  assert.match(f.fix as string, /# Fix your earlier answer to this sentence/);
+  assert.ok((f.fix as string).includes("- 1 block floats (joined to no block and no ground): (100, 14, 50)"));
+  assert.ok((f.fix as string).includes('{"op":"place","at":[100,14,50],"shape":1,"mat":1,"rot":0}'));
+  assert.equal(facts(m6ask as never).fix, "", "a first ask has no fix section");
+  const fixed = { note: "The block now stands on a pillar.", ops: [{ op: "fill", from: [100, 10, 50], to: [100, 14, 50], shape: 1, mat: 1, rot: 0 }] };
+  const r = worldEditSteps(fixAsk, [{ includes: "pressed R because the exe's space check found", json: fixed }]);
+  assert.equal(r.code, 0, r.error);
+  assert.equal(r.result.ops.length, 6);                     // the plank at (100, 10, 50) replaced, then 5 stone
+  const bad = worldEdit({ ...m6ask, fix: { ops: earlier, findings: [] } }, []);
+  assert.equal(bad.code, 2, "a fix with no findings is not a fix ask");
+  assert.match(bad.error, /--in.*fix/);
 });

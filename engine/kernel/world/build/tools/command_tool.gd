@@ -53,6 +53,7 @@ var frame := 0
 var asked := 0                          # asks sent, ghosts shown, answers kept (the test hook's anchors count them)
 var ghosts := 0
 var kept := 0
+var fixes := 0                          # round 2: fix asks sent (R on a ghost with findings)
 var said := ""
 var said_red := false
 var _said_at := -SAY_FRAMES
@@ -61,7 +62,7 @@ var _down := {}
 var _dir := ""
 var _latched := false                   # a key that closed the bar or decided a ghost is still held: build mode must
                                         # not read it as a new press (Enter would open the bar again, Esc would leave)
-const KEYS := [KEY_ENTER, KEY_KP_ENTER, KEY_ESCAPE, KEY_BACKSPACE]
+const KEYS := [KEY_ENTER, KEY_KP_ENTER, KEY_ESCAPE, KEY_BACKSPACE, KEY_R]
 
 
 func setup(h: Node) -> void:
@@ -106,6 +107,8 @@ func status() -> Dictionary:
 		info = "\"%s\"  %s" % [shown.answer.note, Answer.counts(shown.preview, int(shown.placed), shown.ops)]
 		if str(shown.get("space", {}).get("line", "")) != "":
 			info += "   check: " + str(shown.space.line)
+			var fixing := pending.filter(func(q: Dictionary) -> bool: return str(q.get("replaces", "")) == str(shown.id))
+			info += ("   fixing... %s" % _clock(frame - int(fixing[0].frame0))) if not fixing.is_empty() else "   R: fix it"
 	elif bar != null and bar.is_open():
 		info = "> type what to build, Enter asks (%s)" % _today()
 	elif frame - _said_at < SAY_FRAMES and not said.is_empty():
@@ -122,7 +125,8 @@ func status() -> Dictionary:
 
 func hint() -> String:
 	if not shown.is_empty():
-		return "Enter keep it   Esc or Backspace revert   W A S D walk round it"
+		var fixable := not (shown.get("space", {}).get("findings", []) as Array).is_empty()
+		return "Enter keep it   %sEsc or Backspace revert   W A S D walk round it" % ("R fix it (asks the model again)   " if fixable else "")
 	if bar != null and bar.is_open():
 		return "Enter ask   Esc close"
 	return "Enter ask   " + KEY_HELP
@@ -201,6 +205,26 @@ func _on_submitted(text: String) -> void:
 
 ## Sends `text` as an ask at `cell` facing `facing`. Returns "" or why it was not sent.
 func send(text: String, cell: Vector3i, facing: int) -> String:
+	return _send(text, cell, facing, {})
+
+
+## R on a ghost the space check found problems in: ONE follow-up ask, the same sentence at the same spot measured again,
+## carrying the answer's ops and the check's findings (`fix`, COMMAND.md "Fix it"); its answer replaces the ghost (still
+## kept only by Enter). A call like any other: the day's cap, the calls log (sentence "fix: <sentence>"). Returns "" or
+## why it was not sent.
+func fix() -> String:
+	if shown.is_empty() or (shown.get("space", {}).get("findings", []) as Array).is_empty():
+		return "nothing to fix: the check found no problem"
+	if pending.any(func(q: Dictionary) -> bool: return str(q.get("replaces", "")) == str(shown.id)):
+		return "a fix is already being asked for"
+	var why := _send(str(shown.sentence), shown.cell, int(shown.facing), {"ops": (shown.answer.ops as Array).duplicate(true),
+		"findings": (shown.space.findings as Array).duplicate()}, str(shown.id))
+	if why == "":
+		fixes += 1
+	return why
+
+
+func _send(text: String, cell: Vector3i, facing: int, fix_of: Dictionary, replaces := "") -> String:
 	_ensure()
 	var why := refusal()
 	if why != "":
@@ -209,6 +233,8 @@ func send(text: String, cell: Vector3i, facing: int) -> String:
 	var ask: Dictionary = Ask.make(host.get("build"), host.get("land"), sentence, cell, facing, Ask.SIZE, Unlocks.new(_dir))
 	if ask.has("error"):
 		return str(ask.error)
+	if not fix_of.is_empty():
+		ask["fix"] = fix_of
 	var cid: String = calls.new_id()
 	var dir := _dir.path_join("llm")
 	DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path(dir))
@@ -223,19 +249,23 @@ func send(text: String, cell: Vector3i, facing: int) -> String:
 	why = link.ask(ask_path, out_path)
 	if why != "":
 		return "the Foreman could not be asked: " + why
-	var rec: Dictionary = calls.write(cid, {"day": calls.today(), "sentence": sentence, "accepted": "pending"})
+	var logged := sentence if replaces == "" else ("fix: " + sentence).left(400)
+	var rec: Dictionary = calls.write(cid, {"day": calls.today(), "sentence": logged, "accepted": "pending"})
 	var m: Node3D = Marker.new()
 	host.add_child(m)
 	m.place_at(cell)
 	m.thinking(0)
-	pending.append({"id": cid, "sentence": sentence, "cell": cell, "facing": facing, "ask": ask_path, "out": out_path,
-		"frame0": frame, "marker": m, "rec": rec})
+	var pend := {"id": cid, "sentence": sentence, "cell": cell, "facing": facing, "ask": ask_path, "out": out_path,
+		"frame0": frame, "marker": m, "rec": rec}
+	if replaces != "":
+		pend["replaces"] = replaces
+	pending.append(pend)
 	asked += 1
-	_say("asked: \"%s\"" % sentence, false)
+	_say(("asked: \"%s\"" % sentence) if replaces == "" else "asked the model to fix it: the ghost stays until the fix comes", false)
 	print(JSON.stringify({"schema": "tl.view/1", "kind": "command_ask", "id": cid, "cell": [cell.x, cell.y, cell.z],
 		"facing": facing, "region": ask.region, "blocks": (ask.blocks as Array).size(), "refused": (ask.get("refused", []) as Array).size(),
 		"ops": ask.ops, "mats": (ask.mats as Array).size(), "parts": (ask.get("parts", []) as Array).size(),
-		"water": (ask.get("water", []) as Array).size(), "bytes": text_ask.length(), "frame": frame}, "", false))
+		"water": (ask.get("water", []) as Array).size(), "bytes": text_ask.length(), "fix": replaces, "frame": frame}, "", false))
 	return ""
 
 
@@ -263,6 +293,10 @@ func tick(f: int) -> void:
 			accept()
 		elif _edge(KEY_ESCAPE) or _edge(KEY_BACKSPACE):
 			revert()
+		elif _edge(KEY_R) and not (shown.get("space", {}).get("findings", []) as Array).is_empty():
+			var why := fix()
+			if why != "":
+				_say(why, true)
 	else:
 		for k: int in KEYS:
 			_down[k] = Input.is_physical_key_pressed(k)
@@ -284,7 +318,13 @@ func _arrive(p: Dictionary) -> void:
 		return
 	pending.erase(p)
 	p["answer"] = r
-	ready.append(p)
+	if p.has("replaces") and not shown.is_empty() and str(shown.id) == str(p.replaces):
+		var old := shown
+		_decided(old, false, old.preview)          # reverted: the ledger counts it so; its fix is logged "fix: <sentence>"
+		_latched = false
+		ready.push_front(p)
+	else:
+		ready.append(p)
 	print(JSON.stringify({"schema": "tl.view/1", "kind": "command_answer", "id": p.id, "ops": (r.ops as Array).size(),
 		"model": r.model, "durationMs": r.durationMs, "tokensIn": r.get("tokensIn", -1), "tokensOut": r.get("tokensOut", -1),
 		"frames": frame - int(p.frame0)}, "", false))
@@ -334,8 +374,7 @@ func _show(p: Dictionary) -> void:
 	space_marks = Space.marks_node(sp.marks)
 	if space_marks != null:
 		host.add_child(space_marks)
-	var note := str(p.answer.note) + ("" if str(sp.line) == "" else "
-check: " + str(sp.line))
+	var note := str(p.answer.note) + ("" if str(sp.line) == "" else "\ncheck: " + str(sp.line) + "   R: fix it")
 	(p.marker as Node3D).call("note", note, top - float((p.cell as Vector3i).y))
 	shown = p
 	ghosts += 1
