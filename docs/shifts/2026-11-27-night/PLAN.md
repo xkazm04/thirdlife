@@ -96,3 +96,15 @@ The queued lanes start when a lane finishes (usually T after its fix lands, or a
 - Launch: cron fa89d459, 03:01 (one-shot).
 - Standups: cron 255048ac, at :47 from 03 to 06 (the scheduler's offset puts the first at 03:51).
 - Verdict: cron f0d5cecd, 07:15 (one-shot).
+
+## Launched (27 Nov 03:02)
+| Lane | Model | Tree / branch | Agent |
+|---|---|---|---|
+| T-tofu | Opus | d25-hard-a / n27-tofu | af6c32593f56a76b4 |
+| J5-karts | Opus | d25-kart / n27-kart | a55a5eefa1ed6d836 |
+| J2-robots | Opus | d25-robot / n27-robot | a539a4c7a3698ff7b |
+| J4-court | Opus | d25-court / n27-court | a863304dd5427ca8b |
+| J11-biplane | Opus | d25-biplane / n27-biplane | a0a6bf02bca11b70c |
+- Queued: J19-shield, then J1-arsenal (when a lane finishes).
+- Machine at launch: RAM 44-46 %, CPU 60 %. Disk: **25 GB free** (down from 110 GB at 00:10, not from this shift's
+  trees). room.sh now also holds heavy steps under 12 GB free.

@@ -4,12 +4,14 @@
 #   bash room.sh          prints one line; exit 0 = room, 1 = no room now
 #   bash room.sh --wait   waits (re-checking every 60 s, at most 45 min) until there is room; exit 0, or 1 after 45 min
 # CPU is the mean of three samples 5 s apart. Never kill anything to make room: wait.
-RAM_MAX=${ROOM_RAM_MAX:-80}; CPU_MAX=${ROOM_CPU_MAX:-100}
+RAM_MAX=${ROOM_RAM_MAX:-80}; CPU_MAX=${ROOM_CPU_MAX:-100}; DISK_MIN_GB=${ROOM_DISK_MIN_GB:-12}
 probe() {
   powershell -NoProfile -c "\$o=Get-CimInstance Win32_OperatingSystem; \$r=[math]::Round(100-100*\$o.FreePhysicalMemory/\$o.TotalVisibleMemorySize); \$c=@(); 1..3 | % { \$c += (Get-CimInstance Win32_Processor | Measure-Object -Property LoadPercentage -Average).Average; Start-Sleep -Seconds 5 }; \$m=[math]::Round((\$c | Measure-Object -Average).Average); \"\$r \$m\"" | tr -d '\r'
 }
 check() {
   read RAM CPU < <(probe)
+  DISK=$(df -BG --output=avail /c | tail -1 | tr -dc 0-9)
+  if [ "$DISK" -lt "$DISK_MIN_GB" ]; then echo "no room: disk ${DISK} GB free on C: (min $DISK_MIN_GB)"; return 1; fi
   if [ "$RAM" -le "$RAM_MAX" ] && [ "$CPU" -le "$CPU_MAX" ]; then echo "room: RAM ${RAM}% (max $RAM_MAX), CPU ${CPU}% (max $CPU_MAX)"; return 0; fi
   echo "no room: RAM ${RAM}% (max $RAM_MAX), CPU ${CPU}% (max $CPU_MAX)"; return 1
 }
