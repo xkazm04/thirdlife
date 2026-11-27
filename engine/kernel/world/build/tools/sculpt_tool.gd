@@ -13,6 +13,7 @@ const MODES := ["raise", "lower", "flatten", "smooth"]
 const RATE_CM := 6.0                     # cm per physics frame at the brush's centre (raise, lower): 3.6 m/s
 const FLATTEN := 0.18                    # of the way to the flat height per frame at the centre
 const SMOOTH := 0.25                     # of the way to the neighbours' mean per frame at the centre
+const ROUND := 0.04                      # raise and lower also move this much of the way to the neighbours' mean (shoulders round)
 const LIMIT_CM := 2400
 const KEY_HELP := "LMB work the ground (Shift: the other way)   1 raise  2 lower  3 flatten  4 smooth   wheel or [ ] brush   Ctrl+Z undo   Ctrl+Y redo   hold MMB or Alt look   T tool   B or Esc leave"
 
@@ -153,7 +154,7 @@ func _work(at: Vector3) -> void:
 	var way := mode
 	if _invert and way < 2:
 		way = 1 - way
-	var list: Array = brush.under(at)
+	var list: Array = brush.under(at, false, way == 2)
 	var r: float = brush.metres()
 	l.begin_asking(Rect2(at.x - r - 6.0, at.z - r - 6.0, 2.0 * r + 12.0, 2.0 * r + 12.0))
 	for e: Array in list:
@@ -166,14 +167,14 @@ func _work(at: Vector3) -> void:
 		var f: float = e[1]
 		var to := now
 		match way:
-			0: to = now + RATE_CM * f
-			1: to = now - RATE_CM * f
+			0, 1:
+				to = now + (RATE_CM if way == 0 else -RATE_CM) * f + (_mean(l, v) - now) * ROUND * f
 			2: to = now + (_flat_cm - now) * minf(1.0, FLATTEN * f)
-			3:
-				var mean := 0.0
-				for o: Vector2i in [Vector2i(1, 0), Vector2i(-1, 0), Vector2i(0, 1), Vector2i(0, -1)]:
-					mean += float(_acc.get(v + o, float(l.cm_at(v + o))))
-				to = now + (mean / 4.0 - now) * minf(1.0, SMOOTH * f)
+			3: to = now + (_mean(l, v) - now) * minf(1.0, SMOOTH * f)
+		var wet: String = l.water_refusal(v, roundi(to)) if way != 0 else ""
+		if wet != "":
+			reason = wet
+			continue
 		var base: int = l.ground().base_cm(v)
 		if absf(to - base) > LIMIT_CM:
 			to = clampf(to, base - LIMIT_CM, base + LIMIT_CM)
@@ -183,6 +184,14 @@ func _work(at: Vector3) -> void:
 		if cm != l.cm_at(v):
 			l.stroke_set(v, cm)
 	l.end_asking()
+
+
+## The mean of the four neighbours of `v` (cm), as the stroke has them now.
+func _mean(l: RefCounted, v: Vector2i) -> float:
+	var mean := 0.0
+	for o: Vector2i in [Vector2i(1, 0), Vector2i(-1, 0), Vector2i(0, 1), Vector2i(0, -1)]:
+		mean += float(_acc.get(v + o, float(l.cm_at(v + o))))
+	return mean / 4.0
 
 
 func tick(_frame: int) -> void:

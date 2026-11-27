@@ -611,6 +611,18 @@ void fragment() {
 			// (in some patches of the meadow the tufts are half as dark; none is lighter than the grass: the board's are all dark)
 			float tlight = step(0.62, vn2(gq * 0.045 + 61.0));
 			c = mix(c, c * mix(vec3(0.46, 0.72, 0.44), vec3(0.66, 0.84, 0.56), tlight), gk.x * gm);
+			// M5 (spark world-sandbox, lane L): growth a person painted on the Home's land (the plant tool). Only the Home's
+			// edited land meshes (kernel/world/build/land_mesh.gd) write UV.y <= -8; every other ground has UV.y > -7.5 (the
+			// valley and the villages write zero), so these terms are all zero there and it draws as before. UV.x = tuft
+			// density (more, smaller and taller tufts), -8 - UV.y = flowers (more of the meadow flowers below).
+			float grow_t = uvv.y < -7.5 ? clamp(uvv.x, 0.0, 1.0) : 0.0;
+			float grow_f = uvv.y < -7.5 ? clamp(-8.0 - uvv.y, 0.0, 1.0) : 0.0;
+			if (grow_t > 0.0) {
+				vec4 gk2 = ground_marks(gq / (max(g_cel2.y, 0.2) * 0.62) + 23.0, away * (1.0 + 0.8 * grow_t)) * fade * flat_k * mfade;
+				vec4 gk3 = ground_marks(gq / (max(g_cel2.y, 0.2) * 0.42) + 57.0, away * (1.0 + 1.3 * grow_t)) * fade * flat_k * mfade;
+				c = mix(c, c * vec3(0.46, 0.72, 0.44), gk2.x * gm * smoothstep(0.05, 0.45, grow_t));
+				c = mix(c, c * vec3(0.52, 0.76, 0.48), gk3.x * gm * smoothstep(0.45, 0.95, grow_t));
+			}
 			c = mix(c, c * 1.30 + 0.03, gk.y * (1.0 - gk.z) * em_k);
 			c = mix(c, c * 0.55, gk.z * 0.9 * em_k);
 			c = mix(c, c * vec3(0.78, 0.70, 0.66), gk.w * em_k * 0.5);
@@ -619,12 +631,12 @@ void fragment() {
 			c = mix(c, c * 0.58, pbl.y * 0.9);
 			// a few meadow flowers: in some cells a loose handful of flat dots (cream, yellow or pink), gone before they
 			// are smaller than a pixel
-			if (g_cel4.y > 0.0) {
+			if (g_cel4.y > 0.0 || grow_f > 0.0) {
 				vec2 fq = gq / 2.6;
 				vec2 fcell = floor(fq);
 				float fh = h21(fcell + 31.7);
-				float fthr = g_cel4.y * 0.30;
-				float fkeep = (1.0 - smoothstep(0.025, 0.07, pxm)) * gm * flat_k;
+				float fthr = g_cel4.y * 0.30 + grow_f * 0.55;   // M5: growth (grow_f is 0 off the Home's land: as before)
+				float fkeep = (1.0 - smoothstep(0.025, 0.07, pxm / (1.0 + 2.5 * grow_f))) * gm * flat_k;   // M5: grown flowers are seen further
 				if (fh < fthr && fkeep > 0.0) {
 					vec2 fl = (fq - fcell) * 2.6;
 					float fd = 1e9;
@@ -632,7 +644,7 @@ void fragment() {
 						vec2 fp = vec2(h21(fcell + 3.3 + float(fk) * 7.1), h21(fcell + 9.1 + float(fk) * 5.3)) * 1.7 + 0.45;
 						fd = min(fd, length(fl - fp));
 					}
-					float fr = 0.05;
+					float fr = 0.05 + 0.09 * grow_f;   // M5: and are bigger
 					float fdot = (1.0 - smoothstep(fr - pxm * 0.7, fr + pxm * 0.7, fd)) * fkeep;
 					float fwhich = fh / fthr;
 					vec3 fcol = fwhich < 0.4 ? vec3(0.96, 0.90, 0.74) : (fwhich < 0.75 ? vec3(1.0, 0.72, 0.10) : vec3(0.95, 0.42, 0.55));

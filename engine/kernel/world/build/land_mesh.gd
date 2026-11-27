@@ -10,20 +10,34 @@ extends RefCounted
 ##   - where the neighbour is edited too, both compute the shared rim from the same function at the same points.
 ## The surface is the valley's (land_ground.gd `attrs`) plus the delta field D: the lattice deltas (a vertex's height
 ## minus the ground's own) interpolated on the lattice's triangles. D is 0 within 3 m of a chunk that is not edited, so
-## an edit never reaches a rim the valley meets. Paint adds a colour delta the same way (each painted cell gives a
-## quarter of (paint - ground colour) to its four corners): the cel shader takes the nearest land paint per fragment,
-## so painted cells read as fields of the paint. Normals are the valley's tilted by D's gradient (central differences
+## an edit never reaches a rim the valley meets. Paint adds a colour delta the same way (M5: each painted cell gives
+## the 4 x 4 vertices round it the blur (1, 3, 3, 1)^2 / 64 of (paint - ground colour)): the cel shader takes the nearest
+## land paint per fragment, so painted cells read as fields of the paint with a smooth edge. M5: growth (the plants
+## layer) pulls the colour toward its green the same way and writes its density into the UV (x tufts, y flowers), and
+## steep edited ground turns to rock (`_rock`). Normals are the valley's tilted by D's gradient (central differences
 ## on the lattice, the same at a rim for both sides). Only drawn under a parent (`root`); colliders: `faces`.
 
 const LandGround := preload("res://kernel/world/build/land_ground.gd")
 const L := 3.0
 const EPS := 0.001                       # metres: lattice and valley lines closer than this are one line
+const BLUR := [0.125, 0.375, 0.375, 0.125]   # a cell's weight on the vertices one before it .. two after it, per axis
+const NAMES := ["grass", "grass_dark", "grass_dry", "dirt", "sand", "stone", "rock_warm", "cliff"]
+# M5 growth ids (plants_layer.gd): 1 meadow, 2 flowers, 3 tall grass. The green it pulls the ground toward, and the
+# density it writes into the mesh's UV (x: more and taller tufts, y: more flowers; toon_cel.gdshader reads both)
+const GREEN := ["", "grass", "grass", "grass_dark"]
+const DENSITY := [Vector2.ZERO, Vector2(0.5, 0.35), Vector2(0.3, 1.0), Vector2(1.0, 0.0)]
+const GROWTH_Y := -8.0                   # UV.y of the Home's land: toon_cel reads growth only under -7.5 (other ground: 0)
+const GREEN_K := 0.8                     # how far a fully grown cell's colour goes to its green
+const ROCK_FROM := 0.6                   # slope (rise over run) where the edited ground starts to turn to rock ...
+const ROCK_TO := 0.9                     # ... and is rock (the shader's steep face, normal y 0.74)
+const CLIFF_AT := 1.3                    # steeper still: the rock goes to the cliff paint
 
 var g: RefCounted                        # land_ground.gd
 var store: RefCounted                    # land_store.gd
 var root: Node3D = null                  # "HomeLand" (null: nothing drawn, faces still made)
 var chunks := {}                         # Vector2i -> state (see `_open`)
 var counters := {"rebuilt": 0, "opened": 0, "closed": 0, "valley_cells_hidden": 0}
+var growth := {}                         # M5: the plants layer's cells (Vector2i -> 1 meadow, 2 flowers, 3 tall grass), read only
 
 
 func _init(ground: RefCounted, s: RefCounted, parent: Node3D) -> void:
@@ -90,7 +104,7 @@ func figures(id: Vector2i) -> Array:
 	var s: Dictionary = chunks[id]
 	var h := HashingContext.new()
 	h.start(HashingContext.HASH_SHA256)
-	for a: Variant in [s.pos, s.col, s.cus, s.idx]:
+	for a: Variant in [s.pos, s.col, s.cus, s.idx, s.uv]:
 		h.update(a.to_byte_array())
 	return [(s.idx as PackedInt32Array).size() / 3, (s.pos as PackedVector3Array).size(), h.finish().hex_encode()]
 
@@ -142,12 +156,15 @@ func _open(id: Vector2i) -> bool:
 			idx.append_array([k, k + 1, k + nx + 1, k, k + nx + 1, k + nx])
 	var pos := PackedVector3Array()
 	var cus := PackedFloat32Array()
+	var uv := PackedVector2Array()
 	pos.resize(nx * nz)
 	cus.resize(nx * nz * 4)
+	uv.resize(nx * nz)
+	uv.fill(Vector2(0.0, GROWTH_Y))
 	var faces := PackedVector3Array()
 	faces.resize(idx.size())
 	var s := {"id": id, "X": X, "Z": Z, "cells": cells, "by": by, "bc": bc, "bn": bn, "bk": bk, "idx": idx, "slot": slot,
-		"ys": by.duplicate(), "nrm": bn.duplicate(), "col": bc.duplicate(), "code": bk.duplicate(), "pos": pos, "cus": cus,
+		"ys": by.duplicate(), "nrm": bn.duplicate(), "col": bc.duplicate(), "code": bk.duplicate(), "pos": pos, "cus": cus, "uv": uv,
 		"faces": faces, "mi": null, "mesh": null}
 	if root != null:
 		var mi := MeshInstance3D.new()
@@ -238,22 +255,12 @@ func _fill(s: Dictionary, box: Variant) -> void:
 				var v := Vector2i(i0 + i, j0 + j)
 				if store.heights.has(v):
 					dd[j * w + i] = float(store.heights[v]) / 100.0 - g.y(v.x * L, v.y * L)
-	if not store.paints.is_empty():
-		var corner_col := {}
-		for j: int in h - 1:
-			for i: int in w - 1:
-				var c := Vector2i(i0 + i, j0 + j)
-				if not store.paints.has(c):
-					continue
-				var name: String = store.paint_at(c)
-				for o: Vector2i in [Vector2i.ZERO, Vector2i(1, 0), Vector2i(0, 1), Vector2i.ONE]:
-					var vk := (j + o.y) * w + (i + o.x)
-					var vx := (c.x + o.x) * L
-					var vz := (c.y + o.y) * L
-					if not corner_col.has(vk):
-						corner_col[vk] = g.attrs(vx, vz)[1]
-					dc[vk] += (g.pigment(name, vx, vz) - (corner_col[vk] as Color)) * 0.25
-					fp[vk] += 0.25
+	var tw := PackedFloat32Array()          # per lattice vertex: how much paint, growth or rock it carries (0: the valley's)
+	tw.resize(w * h)
+	var uvd := PackedVector2Array()         # per lattice vertex: the growth density (x tufts, y flowers), the mesh's UV
+	uvd.resize(w * h)
+	var base := {}                          # lattice vertex k -> the ground's own colour there
+	_paint_and_growth(i0, j0, w, h, dc, fp, tw, uvd, base)
 	# per lattice vertex: an edit at it or a neighbour (`near`), and D's gradient (central differences)
 	var near := PackedByteArray()
 	near.resize(w * h)
@@ -268,6 +275,7 @@ func _fill(s: Dictionary, box: Variant) -> void:
 				near[k] = 1
 				gx[k] = (dd[k + 1] - dd[k - 1]) / (2.0 * L)
 				gz[k] = (dd[k + w] - dd[k - w]) / (2.0 * L)
+	_rock(i0, j0, w, h, dd, near, fp, dc, tw, base)
 	var by: PackedFloat32Array = s.by
 	var bc: PackedColorArray = s.bc
 	var bn: PackedVector3Array = s.bn
@@ -278,6 +286,7 @@ func _fill(s: Dictionary, box: Variant) -> void:
 	var code: PackedInt32Array = s.code
 	var pos: PackedVector3Array = s.pos
 	var cus: PackedFloat32Array = s.cus
+	var uv: PackedVector2Array = s.uv
 	for q: int in range(q0, q1 + 1):
 		var z := Z[q]
 		var lj := clampi(floori(z / L), j0 + 1, j0 + h - 3)
@@ -303,13 +312,16 @@ func _fill(s: Dictionary, box: Variant) -> void:
 			else:
 				ys[k] = by[k]
 				nrm[k] = bn[k]
-			if w0 * fp[ka] + w1 * fp[k1] + w2 * fp[k2] > 0.0:
+			if w0 * tw[ka] + w1 * tw[k1] + w2 * tw[k2] > 0.0:
 				var c := bc[k] + dc[ka] * w0 + dc[k1] * w1 + dc[k2] * w2
 				col[k] = Color(maxf(c.r, 0.0), maxf(c.g, 0.0), maxf(c.b, 0.0), 1.0)
 				code[k] = g.terrain_code
+				var gd := uvd[ka] * w0 + uvd[k1] * w1 + uvd[k2] * w2
+				uv[k] = Vector2(gd.x, GROWTH_Y - gd.y)
 			else:
 				col[k] = bc[k]
 				code[k] = bk[k]
+				uv[k] = Vector2(0.0, GROWTH_Y)
 			pos[k] = Vector3(x, ys[k], z)
 			cus[k * 4] = x
 			cus[k * 4 + 1] = ys[k]
@@ -336,6 +348,7 @@ func _fill(s: Dictionary, box: Variant) -> void:
 	s.code = code
 	s.pos = pos
 	s.cus = cus
+	s.uv = uv
 	s.faces = tri
 	s.filled = true
 	if s.mesh != null:
@@ -346,10 +359,107 @@ func _fill(s: Dictionary, box: Variant) -> void:
 		arr[Mesh.ARRAY_COLOR] = col
 		arr[Mesh.ARRAY_CUSTOM0] = cus
 		arr[Mesh.ARRAY_NORMAL] = nrm
-		var uv := PackedVector2Array()
-		uv.resize(pos.size())
 		arr[Mesh.ARRAY_TEX_UV] = uv
 		var m: ArrayMesh = s.mesh
 		m.clear_surfaces()
 		m.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arr, [], {}, Mesh.ARRAY_CUSTOM_RGBA_FLOAT << Mesh.ARRAY_FORMAT_CUSTOM0_SHIFT)
 		m.surface_set_material(0, TLStyle.material("terrain"))
+
+
+# ------------------------------------------------------------------ paint, growth, rock (M5 lane L)
+## Paint and growth on the lattice window (i0, j0, w x h): each painted or planted cell gives the 4 x 4 vertices round
+## it (one before it to two after it) the weights (1, 3, 3, 1)^2 / 64 (M2 gave its 4 corners 1/4 each: the nearest-paint
+## snap of the cel shader then drew the 3 m cells as a staircase; blurred, the half-way line it snaps at is smooth).
+## `dc` gets the colour delta (paint over the ground's colour, then growth pulls toward its green), `fp` the paint
+## weight, `tw` everything a vertex carries, `uvd` the growth density (x tufts, y flowers), `base` the ground's colour.
+func _paint_and_growth(i0: int, j0: int, w: int, h: int, dc: PackedColorArray, fp: PackedFloat32Array, tw: PackedFloat32Array,
+		uvd: PackedVector2Array, base: Dictionary) -> void:
+	if store.paints.is_empty() and growth.is_empty():
+		return
+	var gw := PackedFloat32Array()
+	gw.resize(w * h)
+	var gc := PackedColorArray()
+	gc.resize(w * h)
+	for j: int in range(-2, h + 1):
+		for i: int in range(-2, w + 1):
+			var c := Vector2i(i0 + i, j0 + j)
+			var pid := int(store.paints.get(c, 0))
+			var gid := int(growth.get(c, 0))
+			if pid == 0 and gid == 0:
+				continue
+			# one pigment per cell (at its middle): the mottle is the valley's noise, 6 %, and the snap takes the paint
+			var cx := (c.x + 0.5) * L
+			var cz := (c.y + 0.5) * L
+			var pp: Color = g.pigment(NAMES[pid - 1], cx, cz) if pid > 0 else Color()
+			var pg: Color = g.pigment(GREEN[gid], cx, cz) if gid > 0 else Color()
+			var dn: Vector2 = DENSITY[gid]
+			for oy: int in 4:
+				var vj := j - 1 + oy
+				if vj < 0 or vj >= h:
+					continue
+				for ox: int in 4:
+					var vi := i - 1 + ox
+					if vi < 0 or vi >= w:
+						continue
+					var wt: float = BLUR[ox] * BLUR[oy]
+					var vk := vj * w + vi
+					if pid > 0:
+						dc[vk] += pp * wt
+						fp[vk] += wt
+					if gid > 0:
+						gw[vk] += wt
+						gc[vk] += pg * wt
+						uvd[vk] += dn * wt
+					tw[vk] += wt
+	for vk: int in w * h:
+		if tw[vk] <= 0.0:
+			continue
+		var bc: Color = g.attrs((i0 + vk % w) * L, (j0 + vk / w) * L)[1]
+		base[vk] = bc
+		dc[vk] -= bc * fp[vk]
+		if gw[vk] > 0.0:
+			var k := minf(gw[vk], 1.0) * GREEN_K
+			dc[vk] = dc[vk] * (1.0 - k) + (gc[vk] / gw[vk] - bc) * k
+
+
+## Rock where the edited ground is steep: each edited lattice vertex (`near`) takes its slope from the steepest of the six
+## lattice triangles round it (a central difference would halve a one-cell step: a terrace's side read as grass), and
+## its colour goes toward rock_warm (cliff where steeper) by smoothstep(ROCK_FROM, ROCK_TO, slope), less where it is
+## painted (the paint was asked for). The terrain code it then carries makes the cel shader snap it to rock and draw
+## its strata (toon_cel.gdshader "cliff faces").
+func _rock(i0: int, j0: int, w: int, h: int, dd: PackedFloat32Array, near: PackedByteArray, fp: PackedFloat32Array,
+		dc: PackedColorArray, tw: PackedFloat32Array, base: Dictionary) -> void:
+	if store.heights.is_empty():
+		return
+	var hy := PackedFloat32Array()
+	hy.resize(w * h)
+	var have := PackedByteArray()
+	have.resize(w * h)
+	for j: int in range(1, h - 1):
+		for i: int in range(1, w - 1):
+			var k := j * w + i
+			if near[k] == 0:
+				continue
+			for o: int in [k, k - 1, k + 1, k - w, k + w, k - w - 1, k + w + 1]:
+				if have[o] == 0:
+					have[o] = 1
+					hy[o] = g.y((i0 + o % w) * L, (j0 + o / w) * L) + dd[o]
+			var sl := 0.0
+			# the six triangles round k (the split runs (i, j)..(i + 1, j + 1)): cell (i, j) both, (i - 1, j) the upper,
+			# (i, j - 1) the lower, (i - 1, j - 1) both
+			sl = maxf(sl, Vector2(hy[k + 1] - hy[k], hy[k + w + 1] - hy[k + 1]).length())
+			sl = maxf(sl, Vector2(hy[k + w + 1] - hy[k + w], hy[k + w] - hy[k]).length())
+			sl = maxf(sl, Vector2(hy[k] - hy[k - 1], hy[k + w] - hy[k]).length())
+			sl = maxf(sl, Vector2(hy[k + 1] - hy[k], hy[k] - hy[k - w]).length())
+			sl = maxf(sl, Vector2(hy[k - w] - hy[k - w - 1], hy[k] - hy[k - w]).length())
+			sl = maxf(sl, Vector2(hy[k] - hy[k - 1], hy[k - 1] - hy[k - w - 1]).length())
+			sl /= L
+			var r := smoothstep(ROCK_FROM, ROCK_TO, sl) * (1.0 - minf(fp[k], 1.0))
+			if r <= 0.0:
+				continue
+			if not base.has(k):
+				base[k] = g.attrs((i0 + i) * L, (j0 + j) * L)[1]
+			var b: Color = base[k]
+			var rock: Color = g.pigment("rock_warm", (i0 + i) * L, (j0 + j) * L).lerp(g.pigment("cliff", (i0 + i) * L, (j0 + j) * L), smoothstep(ROCK_TO, CLIFF_AT, sl))
+			dc[k] = (b + dc[k]) * (1.0 - r) + rock * r - b
+			tw[k] += r

@@ -69,6 +69,7 @@ func ground() -> RefCounted:
 	if not scratch and not g.flat():
 		mesh = LandMesh.new(g, store, land)
 		scatter = LandScatter.new(g, land)
+		scatter.home = ctx.get("home")
 		hook.land = weakref(self)
 	return g
 
@@ -125,6 +126,8 @@ func can_apply(op: Dictionary) -> String:
 			why = _from_check(v, int(e[2]) if e.size() == 4 else null, cm_at(v))
 			if why == "":
 				why = limit_refusal(v, int(e[e.size() - 1]))
+			if why == "":
+				why = water_refusal(v, int(e[e.size() - 1]))
 		elif str(e[2]) != store.paint_at(v):
 			why = "cells: [%d, %d] is '%s', not '%s'" % [v.x, v.y, store.paint_at(v), str(e[2])]
 		if why == "":
@@ -158,6 +161,12 @@ func limit_refusal(v: Vector2i, cm: int) -> String:
 	if absi(cm - base) > LIMIT_CM:
 		return "height limit (24 m from the ground's own %.1f m)" % (base / 100.0)
 	return ""
+
+
+## Why vertex `v` may not go down to `cm`: under the river's water ribbon there (land_protect.gd; "" = it may).
+func water_refusal(v: Vector2i, cm: int) -> String:
+	ground()
+	return str(guard.water_refusal(v, cm, cm_at(v))) if guard != null else ""
 
 
 func fits(rec: Dictionary) -> String:
@@ -280,7 +289,7 @@ func drawn_height_at(x: float, z: float) -> float:
 ## home/hook.gd: where a trunk standing at `foot` stands now (it moves with the ground), or null (its tree is hidden).
 func trunk_foot(foot: Vector3) -> Variant:
 	var d := delta_at(foot.x, foot.z)
-	if absf(d) > LandScatter.HIDE:
+	if absf(d) > LandScatter.HIDE or (scatter != null and scatter.wet(foot.x, foot.z)):
 		return null
 	return foot + Vector3(0.0, d, 0.0)
 
@@ -394,12 +403,36 @@ func chunk_open(id: Vector2i) -> bool:
 			for i: int in range(i0, i1 + 1):
 				if store.heights.has(Vector2i(i, j)):
 					return true
-	if not store.paints.is_empty():
-		for j: int in range(j0 - 1, j1 + 1):
-			for i: int in range(i0 - 1, i1 + 1):
-				if store.paints.has(Vector2i(i, j)):
+	# a painted or planted cell reaches the vertices one cell before it to two after it (land_mesh.gd: the blur)
+	var grown := growth()
+	for d: Dictionary in [store.paints, grown]:
+		if d.is_empty():
+			continue
+		for j: int in range(j0 - 2, j1 + 2):
+			for i: int in range(i0 - 2, i1 + 2):
+				if d.has(Vector2i(i, j)):
 					return true
 	return false
+
+
+## M5: the plants layer's growth per 3 m cell (Vector2i -> id 1 meadow, 2 flowers, 3 tall grass), read only; {} without
+## one. The land mesh draws it (land_mesh.gd: the UV density and the green), so a plant op opens its chunk as paint does.
+func growth() -> Dictionary:
+	var h: Variant = ctx.get("home")
+	var home: RefCounted = (h as WeakRef).get_ref() if h is WeakRef else null
+	var pl: RefCounted = home.call("layer", "plants") if home != null else null
+	var cells: Variant = pl.get("cells") if pl != null else null
+	return cells if cells is Dictionary else {}
+
+
+## M5 (lane W): chunk `chunk`'s scatter and trunks are asked again in `step` (after a flood or a drain).
+func refresh_scatter(chunk: Vector2i) -> void:
+	bodies[chunk] = true
+
+
+## M5: the plants layer changed the growth of cell `c`: its chunk(s) redraw in `step`.
+func touch_growth(c: Vector2i) -> void:
+	_touch_cell(c)
 
 
 ## Redraws at most PER_STEP dirty chunks' meshes (only where they changed), then their bodies and scatter: at most one
@@ -413,6 +446,7 @@ func step(budget: int) -> int:
 		bodies.clear()
 		return 0
 	var all := budget >= 1 << 16
+	mesh.growth = growth()
 	var ids: Array = dirty.keys()
 	ids.sort()
 	var count: int = ids.size() if all else maxi(1, budget * PER_STEP / 4)
@@ -500,6 +534,13 @@ func copy() -> RefCounted:
 	c.guard = guard
 	c.store = store.duplicate_store()
 	return c
+
+
+## M5: its part of a dry run's ghost (land_ghost.gd `of_land`): what the ops sculpt and paint; null when nothing.
+func preview_node(s: Variant) -> Node3D:
+	if not (s is RefCounted) or not bool((s as RefCounted).get("scratch")):
+		return null
+	return (load("res://kernel/world/build/land_ghost.gd") as GDScript).call("of_land", self, s)
 
 
 ## M4's ask: the lattice heights (cm) of the vertices over the box's columns, the painted cells, and the vertices the
