@@ -1,0 +1,20 @@
+#!/bin/bash
+# execlip.sh <pack dir> <keys file> <frames> <out name> [seed] : the exported exe plays the pack as a dungeon in a window with a
+# newcomer's key stream (TL_EXE_KEYS from the file), movie writer; mp4 800 wide crf 32 under .tl/n/r/ (copied from J2nd r2)
+R=C:/Users/kazda/kiro/third-life/.claude/worktrees/d27-newc/.tl/n/r; P="$1"; KF="$2"; N="$3"; OUT="$4"; SEED="${5:-1}"
+EXE=C:/Users/kazda/kiro/third-life/dist/ThirdLife/ThirdLife.exe
+KEYS="$(cat "$KF")"; cp "$KF" $R/$OUT.keys.txt
+AVI="C:/Users/kazda/kiro/third-life/.claude/worktrees/d27-newc/.tl/n/raw/$OUT.avi"; rm -f "$AVI"
+bash C:/Users/kazda/kiro/third-life/.claude/worktrees/d25-main/docs/shifts/2026-11-27-night/tools/room.sh --wait > /dev/null
+d="$(cygpath -u "${TEMP:-/tmp}")"; LOCK="$d/thirdlife_window.lock"
+while ! mkdir "$LOCK" 2>/dev/null; do
+  h="$(cat "$LOCK/pid" 2>/dev/null)"; if [ -n "$h" ] && ! kill -0 "$h" 2>/dev/null; then case "$h" in win:*) tasklist //FI "PID eq ${h#win:}" //NH | grep -q " ${h#win:} " || rm -rf "$LOCK";; *) rm -rf "$LOCK";; esac; continue; fi
+  sleep 2
+done
+echo $$ > "$LOCK/pid"; trap 'rm -rf "$LOCK"' EXIT
+TL_EXE_KEYS="$KEYS" TL_EXE_WINDOW_POS=0,1440 MSYS_NO_PATHCONV=1 MSYS2_ARG_CONV_EXCL='*' "$EXE" --resolution 1280x720 --fixed-fps 60 --write-movie "$AVI" --quit-after "$N" -- "--dungeon=$P" "--seed=$SEED" > "$R/$OUT.stdout.txt" 2>&1
+echo "exit $?"
+rm -rf "$LOCK"; trap - EXIT
+[ -s "$AVI" ] || { echo "FAIL no movie"; tail -8 "$R/$OUT.stdout.txt"; exit 1; }
+ffmpeg -y -loglevel error -i "$AVI" -vf scale=800:-2 -c:v libx264 -pix_fmt yuv420p -crf 32 -r 30 "$R/$OUT.full.mp4" && rm -f "$AVI"
+echo "mp4 $R/$OUT.full.mp4 $(stat -c %s $R/$OUT.full.mp4) bytes; SCRIPT ERROR lines: $(grep -c 'SCRIPT ERROR' $R/$OUT.stdout.txt)"

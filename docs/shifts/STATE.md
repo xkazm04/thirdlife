@@ -549,3 +549,4 @@ on the frame and the figure and Fable on surfaces and nature, looping for 10 hou
 - 19:22: S2 done (3 rounds): the pass works through either arm; output differs by builder variance (about 21-36 runs per arm to tell apart); the lane picks A on the default. Menu 76.
 - 19:27: J2b done (round 3: FLATTENED! filmed; v0.1.30 edge arrow for off-screen rival giants, drawing only, smaller and jumpier than asked). Menu 77.
 - 20:40: J2nd done (round 3): the court cue never reached a promoted version (a failed fairness ask colors later changes; unmade edits leak back from package workspaces); 'make it fairer' with a named target promoted v0.1.9 (newcomer 17 of 20). Menu 78.
+- 21:33: T round 5 landed (merge 5e5da87a over M6; merged: fast 5/5, npm 508/501/0/7, create. 29/0). N-newcomer done: each game's newest ability was missed or misread by a newcomer because of the screen; one sentence each fixed it (robots v0.1.12, shield v0.1.18, Arsenal v0.1.32). Menu 81.
