@@ -14,6 +14,9 @@ extends RefCounted
 ##            slope, SLOPE_FRICTION against it, at most SLOPE_MAX), steerable a little (SLOPE_STEER), until he stands on
 ##            walkable ground again. Walking UP into such ground is refused as before (a wall); walking DOWN onto it
 ##            starts the slide; put at rest on it (a teleport, a game left on a bank) he slides from the first tick.
+##   riser    with `step_risers` (the village visitor only; a pack's TLBiped keeps it off, so its hash stays): a riser of
+##            the Home's blocks up to `step_up` (a stair's step, a slab) is stepped up and down although the round foot
+##            meets its edge (walker_riser.gd); without it a vertical riser stopped him even at 0.125 m.
 ##   slide    a run slide (`slide` asked while grounded and faster than SLIDE_MIN): the speed he has is kept and decays
 ##            by SLIDE_DECEL; a little steering; ends below SLIDE_END or after SLIDE_MAX ticks.
 
@@ -92,6 +95,8 @@ var _jumped: bool = false             # this airtime began with a jump (no coyot
 var _slide_t: int = 0
 var _step_t: int = 0
 var _step_wish: Vector3 = Vector3.ZERO
+var step_risers := false              # lane K (M5): step up risers (walker_riser.gd); set by world_space.gd for the visitor
+const Riser = preload("res://kernel/world/terrain/walker_riser.gd")
 
 
 ## Starts the body at rest, standing (after a teleport: `put`, entering, leaving).
@@ -540,6 +545,7 @@ func _ground_move(from: Vector3, delta: Vector3) -> Dictionary:
 			pos += rest_m
 			rest_m = Vector3.ZERO
 	var pd: Dictionary = _probe_down(pos, up.y + SNAP_DOWN)
+	var edge: RID = sp._res.get_collider_rid(0) if step_risers and bool(pd["hit"]) else RID()   # lane K: what the foot met
 	if not bool(pd["hit"]):
 		pos.y -= up.y                                # nothing within a step: he walked off an edge and falls from here
 		return {"pos": pos, "blocked": hit, "state": "air"}
@@ -562,6 +568,10 @@ func _ground_move(from: Vector3, delta: Vector3) -> Dictionary:
 					ground_n = Vector3.UP
 					return {"pos": landed + sp._res.get_travel(), "blocked": hit, "state": "ground"}
 	var sn: Vector3 = _steep_n(landed)
+	if sn == Vector3.ZERO and step_risers and (not is_nan(Riser.top_ahead(sp, landed, delta, from.y)) if landed.y >= from.y - 0.001
+			else Riser.steps_on(sp, edge) and not is_nan(Riser.floor_under(sp, landed, sp.step_up))):
+		ground_n = Vector3.UP                        # the foot on a step's edge, a top ahead or a tread under: up or down it
+		return {"pos": landed, "blocked": hit, "state": "ground"}
 	if sn == Vector3.ZERO:
 		pos.y -= up.y                                # the round foot met an edge, not a slope: he walks off it and falls
 		return {"pos": pos, "blocked": hit, "state": "air"}

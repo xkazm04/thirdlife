@@ -27,6 +27,11 @@ var bodies := {}                        # chunk -> {"body": RID, "faces": int, "
 var counters := {"sections": 0, "chunks": 0, "section_usec": [], "section_at": [], "chunk_usec": []}
 var keep_times := false                 # record every rebuild's wall-clock usec (measured and reported, never decided on)
 var look: Material = null               # SEAM: drawn in this material instead (preview_mesh.gd: the style's holo)
+## Lane K (M5): a stair collides as drawn, its four 0.25 m steps (the visitor steps up risers: terrain/walker_riser.gd),
+## not as shapes.gd's 45-degree wedge (`info.col`, kept there for a false here). The drawn triangles, wound back to the
+## collider's counter-clockwise-from-outside order; a face its neighbour hides collides no more than it draws.
+var stair_steps := true
+static var _ccw := {}                   # Shapes.Entry instance id * 8 + side -> its drawn triangles, collider winding
 
 
 func _init(blocks: RefCounted, parent: Node3D, space: Object) -> void:
@@ -132,6 +137,7 @@ func arrays(s: Vector2i) -> Dictionary:
 		var c := grid[gi]
 		var e: Shapes.Entry = Shapes.entry(_key(grid, keys, gi, off), Blocks.mat_of(c))
 		var o := Transform3D(Basis.IDENTITY, Vector3(lx, ly + Blocks.Y_MIN, lz))
+		var steps := stair_steps and Blocks.shape_of(c) == Blocks.STAIR
 		for side: int in 7:
 			var nm := 0
 			if side < 6 and e.cover[side] != 0:
@@ -148,9 +154,9 @@ func arrays(s: Vector2i) -> Dictionary:
 						gv.append_array(o * (p[1] as PackedVector3Array)); gn.append_array(p[2]); gcu.append_array(p[3])
 					else:
 						v.append_array(o * (p[1] as PackedVector3Array)); n.append_array(p[2]); cu.append_array(p[3])
-					col.append_array(o * (p[5] as PackedVector3Array))
+					col.append_array(o * (_wound(p[1]) if steps else p[5] as PackedVector3Array))
 				continue
-			var ek: PackedVector3Array = e.cv[side]
+			var ek: PackedVector3Array = _drawn_col(e, side) if steps else e.cv[side]
 			if not ek.is_empty():
 				col.append_array(o * ek)
 			var ev: PackedVector3Array = e.v[side]
@@ -165,6 +171,23 @@ func arrays(s: Vector2i) -> Dictionary:
 		hc.update(part if not part.is_empty() else PackedByteArray([0]))
 	return {"v": v, "n": n, "cu": cu, "gv": gv, "gn": gn, "gcu": gcu, "col": col, "tris": (v.size() + gv.size()) / 3,
 		"hash": hc.finish().hex_encode()}
+
+
+## A stair's drawn triangles on one side in the collider's winding (cached per entry and side).
+static func _drawn_col(e: Shapes.Entry, side: int) -> PackedVector3Array:
+	var k := e.get_instance_id() * 8 + side
+	if not _ccw.has(k):
+		_ccw[k] = _wound(e.v[side])
+	return _ccw[k]
+
+
+## Drawn triangles (Godot's winding, TLMesh.tri) wound back: the second and third corner swapped.
+static func _wound(tris: PackedVector3Array) -> PackedVector3Array:
+	var out := tris.duplicate()
+	for i: int in range(0, out.size() - 2, 3):
+		out[i + 1] = tris[i + 2]
+		out[i + 2] = tris[i + 1]
+	return out
 
 
 func _key(grid: PackedInt32Array, keys: PackedInt32Array, gi: int, off: PackedInt32Array) -> int:
