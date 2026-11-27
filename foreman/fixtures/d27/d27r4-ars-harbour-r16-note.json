@@ -1,0 +1,22 @@
+{
+ "source": "lane T-editor round 4, copy of JB-back Arsenal (v0.1.23), sentence 1073 resent; harbour r16 note, event 1080",
+ "reopened": {
+  "v": 1,
+  "seq": 1076,
+  "ts": "2026-11-27T13:25:41.988Z",
+  "job": "three-against-three-hockey-20261125-1",
+  "type": "reopened",
+  "package": "harbour",
+  "reason": "change request (event 1073); the Planner names the package: The meteor shot's effects, hint text, camera kick, net and glass reactions, cooldown display and the faceoff lockout are all handled by the harbour package's files (scripts/main.gd, scripts/harbour.gd\n... (92 more characters cut): Make the meteor look and sound like one, NHL Hitz style, and call it METEOR everywhere, not cannon or shotgun. When I light it with F my stick blade burns with flame and sparks; while I hold shoot a ring of fire grows round me and pulses when full, with WINDING UP and the percent in the hint. On rel\n... (443\n... (21 more characters cut)"
+ },
+ "event": {
+  "v": 1,
+  "seq": 1080,
+  "ts": "2026-11-27T13:30:22.804Z",
+  "job": "three-against-three-hockey-20261125-1",
+  "type": "note",
+  "package": "harbour",
+  "round": 16,
+  "text": "NEW MOVE: meteor (the core's `shotgun` ability). `tests/bot_harbour.gd` lights it every time it comes back, for the whole run, and reports `metrics.moves.meteor` as {started 5, landed 2, last_f 4392} out of 5640 frames. `started` counts the frames a shot from the human's meteor starts flying (`ShotgunFrames` going above 0). `landed` counts skaters newly down (`IsDown`) while a meteor is flying or in the 30 frames after. Both come from the snapshot, not from the core's contact events.\nRULE: `scripts/main.gd` removes the human's F key from the input sent to the core during a faceoff and for 60 frames after the drop (`harbour.meteor.drop_lock_f`). The player sees the hint METEOR LIGHTS A SECOND AFTER THE DROP until then. The bots' own meteor is not held back.\nNOT DONE: a meteor goal's net bulging back a full metre and the glass shaking hard enough to see. The nets and glass belong to the base's arena, and no file in my scope can move them. A meteor goal does get fire, confetti and a flash in the mouth, a boom and a hard 24-frame camera shake (`goal_kick_m` 0.35, up from 0.3).\nThe camera kicks on a meteor release and on a meteor goal, not only on the human's knockdown or a goal as the contract said. Release: 0.15 m for 10 frames. Goal: 0.35 m for 24 frames.\nThe rival bots trying their own long meteor and diving to block mine are play rules, not drawing; this package does not build them. A rival's meteor gets the same fireball, trail, flash and METEOR! tag, over the rival who shot it.\nIn `data/tuning.json`, `trick_names.shotgun`, `trick_prompts` and `armed_words` now say METEOR, not CANNON. There is a new block of numbers under `harbour.meteor` (ring of fire, fireball, trail, goal effects, tag words, `drop_lock_f` 60).\nThe internal mark names `cannon_shot` and `meteor_flatten` are unchanged, so readers of `harbour.report()` see the same keys. `harbour.report()` also gains `lit` and `f_locked`.\n`tests/bot_harbour.gd` now counts the meteor's lit drawing (`lit`) as the answer to F, along with the bubble. Presses inside the faceoff lock no longer count as the first F. The F feedback measured 0 frames. Its OWNER lines about the bubble, shield bounces, spots and slush stalls remain, because the cartridge no longer has a shield and no real stall was seen: 0 stalls in 10 entries at strength 1.0, and 0 in 10 at 0.7.\nNOT DONE: the base's F plate and commentary still say SHOTGUN and need `data/skin.json`, which is outside my scope. The exact edit is to add the top-level key `\"ability_names\": {\"shotgun\": \"METEOR\"}`. The commentary lines live in `scripts/hud/commentary_lines.gd:410-412`."
+ }
+}

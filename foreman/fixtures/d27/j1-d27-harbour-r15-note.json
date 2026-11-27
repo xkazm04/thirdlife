@@ -1,0 +1,13 @@
+{
+ "source": "lane T-editor d27 copy of J1 job, event 1012 (harbour r15 on the new builder prompt, 27 Nov 08:44)",
+ "event": {
+  "v": 1,
+  "seq": 1012,
+  "ts": "2026-11-27T07:44:59.614Z",
+  "job": "three-against-three-hockey-20261125-1",
+  "type": "note",
+  "package": "harbour",
+  "round": 15,
+  "text": "- NOT DONE: a meteor slapshot on F instead of the bubble and the green-spot tricks, coming back 12 seconds after use, needs `data/harbour.cartridge.json`, which is outside my scope: set `game.abilities` to the single entry `{\"kind\": \"shotgun\", \"trigger\": \"mode\", \"cooldown_frames\": 720, \"magnitude\": 2.0}`. Leave out `charges` so it is unlimited, which means it returns after every cooldown. Remove the shield and pickup entries.\n- NOT DONE: \"hold shoot to wind it up, the longer the harder\" needs `data/harbour.cartridge.json`, which is outside my scope: `game.shot.charge_frames_max` and `game.shot.charge_speed_bonus`, for example 40 and 12 (the Sniper mode's values).\n- NOT DONE: \"while I wind up I am easy to knock over\" needs `data/harbour.cartridge.json`, which is outside my scope: `game.contact.spin_stability` 0.5. Per the catalog this stability cost applies \"with a full shot wind-up\".\n- NOT DONE: the rival bots trying their own meteor from distance, and diving in front of yours to block it. CARTRIDGE.md has no key for either (searched: ability, shotgun, block, dive, bot trick, ai). The bots hold no tricks.\n- NOT DONE: the HUD and skin words for the meteor need `data/skin.json`, which is outside my scope: `\"ability_names\": {\"shotgun\": \"METEOR\"}`, and a tagline about F lighting the stick.\n- The \"short freeze\" is not drawn. The simulation never freezes, and I added no pose hold for the meteor this round.\n- Net bulge is not drawn. A meteor goal shows a glass-shatter (debris) burst and a flash at the net instead.\n- RULE: none added. The meteor knockdowns are the core shotgun's own: it knocks down every skater within 1 m of the shot's path.\n- Camera: the meteor's release and each knockdown it causes add a kick (`kick_m` 0.15, 8 frames). This replaces the contract's \"shake only on your knockdown or a goal\" for the meteor only. The existing goal and human-knockdown shake (0.2 m, 14 frames) is unchanged.\n- NEW MOVE: cannon_shot. It is the core's shotgun, published as the moments `cannon_shot` and `cannon_flat`. `bot_harbour` reports `cannon_shots` 1 and `cannon_flats` 0 in this run. The meteor landed on nobody here, and I did not add a `moves` metric to the bot.\n- The bubble, spot and slush drawing stays in place. Nothing calls it once the cartridge drops the shield.\n- `bot_match_hand` was not run this round, because of the time limit."
+ }
+}

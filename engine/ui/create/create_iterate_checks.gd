@@ -59,7 +59,12 @@ static func run(tree: SceneTree, check: Callable, tmp: String) -> bool:
 	var failed: String = _job(jobs.path_join("e4-failed"), [asked, running, {"type": "job_state", "state": "failed", "reason": "the change was NOT made"}], ["0.1.0"])
 	# N27 (lane T): a change built as asked that moved the balance: the Foreman's note (boundlift.ts BALANCE_MOVED), first line shown
 	var moved: String = "[foreman] balance moved by your change: built as you asked; the gulls side now wins 3 of 3 of the Foreman's test rounds (was 1 of 3). Say \"make it fairer\" to tune it.\nfigures (tests/bot_tofu.gd, not judged in this change): close_rounds 0 (was 1)"
+	# D27 item 6: every thing the change moved is shown (the newest line of each), not only the newest note of all
+	var longer: String = "[foreman] balance moved by your change: built as you asked; matches now run longer (the Foreman's test needed about 2 times the frames it planned). Say \"make matches shorter\" to tune it.\nfigures (tests/bot_tofu.gd): not done within 36000 frames"
+	var older: String = "[foreman] balance moved by your change: built as you asked; the gulls side now wins 2 of 3 of the Foreman's test rounds (was 1 of 3). Say \"make it fairer\" to tune it."
 	var balanced: String = _job(tmp.path_join("e4-balance-jobs").path_join("e4-balance"), [asked, running,
+		{"type": "note", "package": "penguin_moves", "round": 2, "text": older},
+		{"type": "note", "package": "penguin_moves", "round": 2, "text": longer},
 		{"type": "note", "package": "penguin_moves", "round": 3, "text": moved},
 		{"type": "promoted", "packId": "game.penguin_push", "version": "0.1.1", "dest": "promoted/game.penguin_push@0.1.1"},
 		{"type": "job_state", "state": "done", "reason": "promoted 0.1.1"}], ["0.1.0", "0.1.1"])
@@ -67,6 +72,14 @@ static func run(tree: SceneTree, check: Callable, tmp: String) -> bool:
 	var unfinished: String = _job(tmp.path_join("e4-balance-jobs").path_join("e4-unfinished"), [asked, running,
 		{"type": "note", "package": "penguin_moves", "round": 3, "text": "[foreman] change not finished: the game's check tests/bot_tofu.gd still fails (bot failed), and no part of the game is left that can fix it: show: a control run showed it fails without its files too. The earlier version stays the one to play."},
 		{"type": "job_state", "state": "done", "reason": "the change was NOT made: the final verification still fails at bot (V4)"}], ["0.1.0"])
+	# D27 item 9 (S35's biplane: the person asked to restore the test pilot, the freeze undid it): Create says so in words
+	var kept: String = _job(tmp.path_join("e4-balance-jobs").path_join("e4-kept"), [asked, running,
+		{"type": "note", "package": "penguin_moves", "round": 3, "text": "[foreman] measure kept: tests/support/pilot.gd is a measure the Foreman judges by (merged before this round); this round's edit was undone and the round is verified with the measure as merged. Change the game, never the test that measures it."},
+		{"type": "note", "package": "penguin_moves", "round": 3, "text": "[foreman] part of your change was NOT made: penguin_moves could not make it in its own files either and says: NOT DONE: the glass shake."},
+		{"type": "note", "package": "penguin_moves", "round": 3, "text": "[foreman] part of your change was NOT made by penguin_moves; it goes on to rivals_ai, whose files penguin_moves names: x"},
+		{"type": "note", "package": "penguin_moves", "round": 3, "text": "[foreman] what changed in v0.1.1 (since v0.1.0): asked \"x\"; nothing changed in the game: the Foreman kept tests/support/pilot.gd as merged"},
+		{"type": "promoted", "packId": "game.penguin_push", "version": "0.1.1", "dest": "promoted/game.penguin_push@0.1.1"},
+		{"type": "job_state", "state": "done", "reason": "promoted 0.1.1"}], ["0.1.0", "0.1.1"])
 	var list: String = tmp.path_join("e4-dungeons.user.json")
 	DirAccess.remove_absolute(list)
 
@@ -76,13 +89,15 @@ static func run(tree: SceneTree, check: Callable, tmp: String) -> bool:
 	var jx: Dictionary = JobModel.read_job(failed, 0.0)
 	var jb: Dictionary = JobModel.read_job(balanced, 0.0)
 	var ju: Dictionary = JobModel.read_job(unfinished, 0.0)
+	var jk: Dictionary = JobModel.read_job(kept, 0.0)
 	check.call("create.iterate.model: a change made is version 2 (Play opens @0.1.1); in flight it is building with its words; failed, the first version still plays with a note; the Foreman's own wire request is not the person's",
 		Model.screen_of(jm) == "done" and Model.version_n(jm) == 2 and Model.play_dir(jm).ends_with("@0.1.1") and Model.person_changes(jm).size() == 1 and Model.change_note(jm).is_empty()
 		and Model.screen_of(jf) == "building" and Model.changing(jf) == TEXT
 		and Model.screen_of(jx) == "done" and Model.change_note(jx).begins_with("Your last change could not be made") and Model.play_dir(jx).ends_with("promoted/game.penguin_push")
-		and Model.change_note(jb) == "Built as you asked; the gulls side now wins 3 of 3 of the Foreman's test rounds (was 1 of 3). Say \"make it fairer\" to tune it."
-		and Model.screen_of(ju) == "done" and Model.changing(ju).is_empty() and Model.change_note(ju).begins_with("Your last change could not be made: “" + TEXT + "”\nThe game's check tests/bot_tofu.gd still fails"),
-		"made %s v%d %s; flight %s '%s'; failed %s '%s'; balance '%s'; unfinished %s '%s'" % [Model.screen_of(jm), Model.version_n(jm), Model.play_dir(jm), Model.screen_of(jf), Model.changing(jf), Model.screen_of(jx), Model.change_note(jx), Model.change_note(jb), Model.screen_of(ju), Model.change_note(ju)])
+		and Model.change_note(jb) == "Built as you asked; the gulls side now wins 3 of 3 of the Foreman's test rounds (was 1 of 3). Say \"make it fairer\" to tune it.\nBuilt as you asked; matches now run longer (the Foreman's test needed about 2 times the frames it planned). Say \"make matches shorter\" to tune it."
+		and Model.screen_of(ju) == "done" and Model.changing(ju).is_empty() and Model.change_note(ju).begins_with("Your last change could not be made: “" + TEXT + "”\nThe game's check tests/bot_tofu.gd still fails")
+		and Model.change_note(jk) == "Not applied: a change to tests/support/pilot.gd was undone. The Foreman judges the game by it, so a change may not rewrite it. Nothing in the game changed in this version.\nNot made: penguin_moves could not make it in its own files either and says: NOT DONE: the glass shake.",
+		"made %s v%d %s; flight %s '%s'; failed %s '%s'; balance '%s'; unfinished %s '%s'; kept '%s'" % [Model.screen_of(jm), Model.version_n(jm), Model.play_dir(jm), Model.screen_of(jf), Model.changing(jf), Model.screen_of(jx), Model.change_note(jx), Model.change_note(jb), Model.screen_of(ju), Model.change_note(ju), Model.change_note(jk)])
 
 	# the page, as the exe mounts it (a dry door: every command is recorded)
 	var page: Control = CreateScene.instantiate()
@@ -98,6 +113,12 @@ static func run(tree: SceneTree, check: Callable, tmp: String) -> bool:
 		(page.find_child(name, true, false) as BaseButton).pressed.emit()
 	var door: RefCounted = page.get("door")
 
+	# D27 item 13: a note of several lines (the balanced job's two) ends above Play and Add to menu, never under them
+	page.call("show_job", balanced)
+	await tree.process_frame
+	var cn: Label = page.find_child("ChangeNote", true, false) as Label
+	var pl: Control = page.find_child("Play", true, false) as Control
+	var note_clear: bool = cn != null and pl != null and cn.get_line_count() >= 2 and cn.position.y + cn.get_line_count() * cn.get_line_height() <= pl.position.y
 	# 2. done: Play, Add to menu, the change box; a change goes out as `foreman change` and the page shows it being made
 	page.call("show_job", made)
 	var title: String = (page.find_child("GameTitle", true, false) as Label).text
@@ -110,7 +131,7 @@ static func run(tree: SceneTree, check: Callable, tmp: String) -> bool:
 	var sent: Array = (door.get("dry_steps") as Array).slice(base)
 	var changing_shown: bool = page.call("shown_screen") == "building" and has.call("Changing") and (page.find_child("Changing", true, false).find_children("*", "Label", true, false)[0] as Label).text.contains(TEXT)
 	check.call("create.iterate.change: done shows Play, Add to menu and the change box (version 2); an empty change sends nothing; Change it sends foreman change <job> \"<words>\" and the page says Changing: <words>",
-		controls and empty_sent and str(sent) == str([[["change", made, TEXT] + fake]]) and changing_shown, "title '%s'; sent %s; screen %s" % [title, str(sent), str(page.call("shown_screen"))])
+		controls and empty_sent and str(sent) == str([[["change", made, TEXT] + fake]]) and changing_shown and note_clear, "title '%s'; sent %s; screen %s; a 2-line note clear of Play: %s" % [title, str(sent), str(page.call("shown_screen")), str(note_clear)])
 
 	# 3. a change in flight whose Foreman is gone: Changing, and Continue resumes it
 	page.call("show_job", flight)
