@@ -77,8 +77,15 @@ export async function runHandChecks(h: Pick<GateHost, "s" | "dir" | "verifyLogge
     let completed = 0;
     let wins = 0;
     let unread = 0;
-    for (let seed = 1; seed <= hands.seeds; seed++) {
+    // D27 item 25 (J2nd: court's hand check read "19 of 20 finished" as a failure, because seed 7 never began): a seed the
+    // engine never began is not counted; the next seed after the planned ones runs in its place (at most 3 such)
+    let last = hands.seeds;
+    for (let seed = 1; seed <= last; seed++) {
       const vr = await h.verifyLogged({ verb: "bot", args: [`--test=${test}`, `--seed=${seed}`] }, packDir, `final-hand-${c.hand}-seed${seed}`, { round: 1 });
+      if ((vr as { inconclusive?: string }).inconclusive !== undefined && vr.flags.includes("never_started") && last < hands.seeds + 3) {
+        last += 1;
+        continue;
+      }
       const bot = (vr.report as { bot?: { done?: boolean; result?: { won?: unknown } } } | undefined)?.bot;
       if (!bot || bot.done !== true) continue;
       completed += 1;

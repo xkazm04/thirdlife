@@ -1,0 +1,18 @@
+#!/bin/bash
+# clipw.sh <film name> <tests/x.gd> <out name> <frames> [seed] : the ENGINE in a window (this tree's engine, host.tscn worker, the
+# test's hand presses the pack's actions through ctx.input), movie writer, window lock; full mp4 800 wide crf 32 under .tl/n/r
+R=C:/Users/kazda/kiro/third-life/.claude/worktrees/d27-newc; P=$R/.tl/n/film/$1; T="$2"; OUT="$3"; N="$4"; SEED="${5:-1}"
+G="${TL_GODOT:-C:/Users/kazda/kiro/gtai-spike/tools/godot/Godot_v4.7.2-stable_win64_console.exe}"
+RAW=$R/.tl/n/raw; AVI="$RAW/$OUT.avi"; rm -f "$AVI"
+bash C:/Users/kazda/kiro/third-life/.claude/worktrees/d25-main/docs/shifts/2026-11-27-night/tools/room.sh --wait > /dev/null
+d="$(cygpath -u "${TEMP:-/tmp}")"; LOCK="$d/thirdlife_window.lock"
+while ! mkdir "$LOCK" 2>/dev/null; do
+  h="$(cat "$LOCK/pid" 2>/dev/null)"; if [ -n "$h" ] && ! kill -0 "$h" 2>/dev/null; then case "$h" in win:*) tasklist //FI "PID eq ${h#win:}" //NH | grep -q " ${h#win:} " || rm -rf "$LOCK";; *) rm -rf "$LOCK";; esac; continue; fi
+  sleep 2
+done
+echo $$ > "$LOCK/pid"; trap 'rm -rf "$LOCK"' EXIT
+MSYS_NO_PATHCONV=1 MSYS2_ARG_CONV_EXCL='*' "$G" --position 0,1440 --resolution 1280x720 --rendering-driver d3d12 --audio-driver Dummy --fixed-fps 60 --write-movie "$AVI" --path "$R/engine" --quit-after "$N" res://kernel/host/host.tscn -- worker --mode=bot "--pack=$P" "--test=$T" "--frames=$N" "--seed=$SEED" "--report=$RAW/$OUT.report.json" > "$R/.tl/n/r/$OUT.stdout.txt" 2>&1
+rm -rf "$LOCK"; trap - EXIT
+[ -s "$AVI" ] || { echo "FAIL no movie"; tail -5 "$R/.tl/n/r/$OUT.stdout.txt"; exit 1; }
+ffmpeg -y -loglevel error -i "$AVI" -vf scale=800:-2 -c:v libx264 -pix_fmt yuv420p -crf 32 -r 30 "$R/.tl/n/r/$OUT.full.mp4" && rm -f "$AVI"
+echo "mp4 $R/.tl/n/r/$OUT.full.mp4 $(stat -c %s "$R/.tl/n/r/$OUT.full.mp4") bytes; script errors: $(grep -c 'SCRIPT ERROR' "$R/.tl/n/r/$OUT.stdout.txt")"

@@ -170,3 +170,35 @@ test("runner location: TL_GODOT and TL_ENGINE_DIR come from the environment; a .
   assert.deepEqual(runnerLocation("D:/godot/godot.exe", "e"), { exe: "D:/godot/godot.exe", preArgs: [], engineDir: "e" });
   assert.equal(runnerLocation("x/fake-runner.js", "e").exe, process.execPath);
 });
+
+test("D27 item 25 (J2nd, 12:32:57: court's hand check seed 7 printed only \"Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org\" and exited 1 in 1.5 s with no report, the second another job promoted, and was judged a failure): a run the engine never began is tried again, and never judged", async () => {
+  const { root, pack, reports } = goodPack();
+  const { Verifier, NEVER_STARTED } = await import("../verifier.js");
+  const banner = "Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org\r\n\r\n";
+  const body = { schema: "tl.verify/1", verb: "bot", level: "V4", ok: true, outcome: "passed", checks: [], errors: [] };
+  const runner = (fails: number) => {
+    let n = 0;
+    return new Verifier({
+      godot: "godot.exe",
+      engineDir: path.join(root, "engine"),
+      startPausesMs: [0, 0],
+      spawn: async (req) => {
+        n += 1;
+        if (n <= fails) return { exitCode: 1, stdout: banner, stderr: "", timedOut: false, outputCapped: false, durationMs: 1494 };
+        const file = (req.args.find((x) => x.startsWith("--report=")) ?? "").slice("--report=".length);
+        fs.writeFileSync(file, JSON.stringify(body));
+        return { exitCode: 0, stdout: `banner\n${JSON.stringify(body)}\n`, stderr: "", timedOut: false, outputCapped: false, durationMs: 1 };
+      },
+    });
+  };
+  const once = await runner(1).run({ verb: "bot", packDir: pack, reportFile: path.join(reports, "seed7.json") });
+  assert.equal(once.ok, true, "the second try ran and passed");
+  assert.match(once.summary, /the engine did not begin this run 1 time before: run again/);
+  const never = await runner(5).run({ verb: "bot", packDir: pack, reportFile: path.join(reports, "seed7b.json") });
+  assert.equal(never.ok, false);
+  assert.ok(never.flags.includes("never_started"), never.flags.join(","));
+  assert.match(NEVER_STARTED, /^inconclusive: /);
+  // a run that began and failed is judged as before: no retry, no never_started
+  const crash = new Verifier({ godot: "godot.exe", engineDir: path.join(root, "engine"), startPausesMs: [0, 0], spawn: async () => ({ exitCode: 1, stdout: `${banner}SCRIPT ERROR: x\n`, stderr: "", timedOut: false, outputCapped: false, durationMs: 900 }) });
+  assert.ok(!(await crash.run({ verb: "bot", packDir: pack, reportFile: path.join(reports, "c.json") })).flags.includes("never_started"));
+});

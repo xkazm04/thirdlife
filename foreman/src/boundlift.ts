@@ -141,6 +141,10 @@ export function askedChange(events: readonly JobEvent[] | undefined): { seq: num
   let last = -1;
   for (const e of events ?? []) if (e.type === "promoted") last = e.seq;
   if (last < 0) return undefined; // the first build: the tofu stage judges as before
+  // D27 items 33/40 (J2nd's court copy, event 1981: a FAILED "Make it fairer" from before still made the next cue-only
+  // change a fairness change, and the newcomer card guarded it): a change that ended without a promotion (the job done,
+  // failed or cancelled after it) no longer colours the next one; only the asks since that end are the change in flight
+  for (const e of events ?? []) if (e.seq > last && e.type === "job_state" && (e.state === "done" || e.state === "failed" || e.state === "cancelled")) last = e.seq;
   const asks = (events ?? []).flatMap((e) => (e.type === "change_requested" && e.seq > last && !e.text.startsWith(FOREMAN_NOTE) ? [{ seq: e.seq, text: e.text }] : []));
   const first = asks[0];
   if (first === undefined) return undefined;

@@ -1,0 +1,193 @@
+extends Node
+## N-newcomer (counting, FILM COPY ONLY, not a pack test): a NEWCOMER's first match through the pack's key and mouse mapping
+## (after bot_match_hand.gd / bot_first_match.gd, ROOKIE as the front's PLAY NOW), but slower and sloppier: he re-decides
+## his skating every 30 frames (the pack's hand: 12), his cursor sits up to 3 m off what he aims at, 3 in 10 shots he never
+## takes, he checks (right button) a carrier within 2.5 m only half the time. Only what the screen tells him: the front's
+## "LMB SHOOT, RMB PASS / LMB CROSS-CHECK, RMB CHECK", the hint "F: METEOR  Light your stick, then hold shoot to wind up":
+## 60-150 frames after an "F: METEOR" line shows he taps F (3 in 10 missed); lit and carrying, he holds the left button
+## 30-60 frames wherever he is. Counts the core's events (checks, knockdowns, abilities, goals, MEGA starts) by side.
+
+const REACT: int = 30
+const SKATE: Array = [&"k_w", &"k_s", &"k_a", &"k_d"]
+
+var ctx
+var rng := RandomNumberGenerator.new()
+var decided: int = -100000
+var keys: String = ""
+var shot_hold: int = 0
+var tap_left: int = 0
+var tap_right: int = 0
+var jitter := Vector2.ZERO
+var shots: int = 0
+var meteor_shots: int = 0
+var f_presses: int = 0
+var f_at: int = -1
+var carried_frames: int = 0
+var net_x: float = 41.0
+var skip_shot := false
+var was_carrier := false
+var main_node = null
+var seen: Dictionary = {}
+var evlog: Array = []
+var hints: Array = []
+var last_hint := ""
+
+
+func _bot_setup(c) -> void:
+	ctx = c
+	rng.seed = 17
+	var m: Variant = ctx.read_json("match.json")
+	var cart: Variant = ctx.read_json(String((m as Dictionary).get("cartridge", "hockey.regular.cartridge.json"))) if m is Dictionary else null
+	if cart is Dictionary and (cart as Dictionary).get("game") is Dictionary and (cart["game"] as Dictionary).get("rink") is Dictionary:
+		net_x = maxf(4.0, float((cart["game"]["rink"] as Dictionary).get("length_m", 90.0)) * 0.5 - 4.0)
+
+
+func _find_main() -> void:
+	if main_node != null:
+		return
+	for c: Node in ctx.root.get_tree().root.find_children("*", "", true, false):
+		var sc = c.get_script()
+		if sc != null and str(sc.resource_path).ends_with("scripts/main.gd") and c.get("snap") != null:
+			main_node = c
+			return
+
+
+func _who(sn: Dictionary, who: int) -> String:
+	if who == int(sn.get("HumanIndex", 0)):
+		return "me"
+	var sk: Array = sn.get("Skaters", [])
+	if who < 0 or who >= sk.size():
+		return "none"
+	return "mate" if int(sk[who].get("Team", 0)) == int(sk[int(sn.get("HumanIndex", 0))].get("Team", 0)) else "rival"
+
+
+func _count(frame: int) -> void:
+	_find_main()
+	if main_node == null:
+		return
+	var sn: Dictionary = main_node.get("snap")
+	if sn.is_empty() or not sn.has("Skaters"):
+		return
+	for e: Dictionary in sn.get("Events", []):
+		var n: String = str(e.get("Name", ""))
+		if n in ["check", "knockdown", "ability", "goal", "check_landed"]:
+			var key := "%s:%s" % [n, _who(sn, int(e.get("Who", -1)))]
+			seen[key] = int(seen.get(key, 0)) + 1
+			if evlog.size() < 120:
+				evlog.append("%d %s" % [frame, key])
+	for e: Dictionary in sn.get("EffectEvents", []):
+		var n: String = str(e.get("Name", ""))
+		if n == "effect_start":
+			var key := "fx:%s:%s" % [str(e.get("Kind", "")), _who(sn, int(e.get("Who", -1)))]
+			seen[key] = int(seen.get(key, 0)) + 1
+			if evlog.size() < 120:
+				evlog.append("%d %s" % [frame, key])
+	var h: String = str(ctx.root.get_meta(&"rink_hint", ""))
+	if h != last_hint:
+		if h != "" and hints.size() < 40 and not h.begins_with("WINDING"):
+			hints.append("%d %s" % [frame, h])
+		last_hint = h
+
+
+func _keys_toward(s: Dictionary, to: Vector2) -> String:
+	if to.length() < 0.5:
+		return ""
+	var want: Vector2 = to.normalized()
+	var cy: float = deg_to_rad(float(s["cam_yaw"]))
+	var a: float = atan2(want.dot(Vector2(-sin(cy), cos(cy))), want.dot(Vector2(cos(cy), sin(cy))))
+	var a8: float = roundf(a / (PI / 4.0)) * (PI / 4.0)
+	return ("W" if cos(a8) > 0.3 else "") + ("S" if cos(a8) < -0.3 else "") + ("D" if sin(a8) > 0.3 else "") + ("A" if sin(a8) < -0.3 else "")
+
+
+func _bot_tick(frame: int) -> void:
+	if frame == 0:
+		ctx.input.tap(&"level_rookie")
+		return
+	_count(frame)
+	var s: Dictionary = ctx.pack_state()
+	if bool(s.get("over", false)):
+		ctx.input.release_all()
+		return
+	var me := Vector2(float(s["x"]), float(s["y"]))
+	var puck := Vector2(float(s["puck_x"]), float(s["puck_y"]))
+	var carrier: int = int(s["carrier"])
+	var carrying: bool = carrier == int(s["human"])
+	var net := Vector2(net_x if int(s["team"]) == 0 else -net_x, 0.0)
+	var target: Vector2 = puck
+	var aim: Vector2 = puck
+	var sprint: bool = false
+	# F: he reads "F: METEOR" on the hint plate and presses it late
+	if last_hint.begins_with("F: METEOR") and f_at < 0:
+		f_at = frame + rng.randi_range(60, 150)
+	if f_at > 0 and frame >= f_at:
+		if rng.randf() > 0.3:
+			ctx.input.tap(&"k_f")
+			f_presses += 1
+		f_at = -1 if not last_hint.begins_with("F: METEOR") else frame + rng.randi_range(240, 420)
+	var lit: bool = last_hint.begins_with("METEOR LIT") or last_hint.begins_with("WINDING")
+	if carrying and not was_carrier:
+		skip_shot = rng.randf() < 0.3
+	was_carrier = carrying
+	if int(s["phase"]) == 3:
+		target = me
+		if int(s["faceoff"]) <= 1 and tap_left == 0 and rng.randf() < 0.5:
+			tap_left = 2
+	elif carrying:
+		carried_frames += 1
+		target = net
+		aim = net
+		sprint = me.distance_to(net) > 20.0
+		if shot_hold == 0 and lit:
+			shot_hold = rng.randi_range(30, 60)
+			meteor_shots += 1
+		elif shot_hold == 0 and me.distance_to(net) < 12.0 and not skip_shot:
+			shot_hold = rng.randi_range(8, 24)
+	elif carrier >= 0 and me.distance_to(puck) < 2.5 and tap_right == 0 and frame % 20 == 0 and rng.randf() < 0.5:
+		tap_right = 2
+	else:
+		sprint = me.distance_to(puck) > 18.0
+	if frame - decided >= REACT:
+		keys = _keys_toward(s, target - me)
+		decided = frame
+		jitter = Vector2(rng.randf_range(-3.0, 3.0), rng.randf_range(-3.0, 3.0))
+	for i: int in 4:
+		if keys.contains(["W", "S", "A", "D"][i]):
+			ctx.input.press(SKATE[i])
+		else:
+			ctx.input.release(SKATE[i])
+	if sprint:
+		ctx.input.press(&"k_shift")
+	else:
+		ctx.input.release(&"k_shift")
+	var a: Vector2 = aim + jitter
+	ctx.input.set_aim(&"aim", Vector3(a.x, 0.0, a.y), Vector2(640.0 + a.x, 360.0 + a.y))
+	if shot_hold > 0:
+		ctx.input.press(&"m_left")
+		shot_hold -= 1
+		if shot_hold == 0:
+			shots += 1
+			ctx.input.release(&"m_left")
+	elif tap_left > 0:
+		if tap_left == 2:
+			ctx.input.press(&"m_left")
+		else:
+			ctx.input.release(&"m_left")
+		tap_left -= 1
+	else:
+		ctx.input.release(&"m_left")
+	if tap_right > 0:
+		if tap_right == 2:
+			ctx.input.press(&"m_right")
+		else:
+			ctx.input.release(&"m_right")
+		tap_right -= 1
+
+
+func _bot_done() -> bool:
+	return ctx.frame >= ctx.max_frames - 2
+
+
+func _bot_result() -> Dictionary:
+	var s: Dictionary = ctx.pack_state()
+	var score: Array = s["rink"]["score"]
+	return {"ok": true, "summary": "%d frames, score %d:%d, carried %d, shots %d (meteor holds %d), F presses %d; events %s; hints %s; log %s" % [ctx.frame, int(score[0]), int(score[1]), carried_frames, shots, meteor_shots, f_presses, JSON.stringify(seen), str(hints), str(evlog.slice(0, 50))]}

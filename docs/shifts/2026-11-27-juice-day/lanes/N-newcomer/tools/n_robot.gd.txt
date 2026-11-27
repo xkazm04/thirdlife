@@ -1,0 +1,117 @@
+extends Node
+## N-newcomer (counting, FILM COPY ONLY, not a pack test): the pack's NEWCOMER hand (tests/ai_support/play.gd, TLHand
+## "newcomer": its delays and misses), plus only what the screen tells him: once the opening is over the hint line says
+## "Hold F, let go: SMASH", so 60-120 frames later he holds F 40-90 frames and lets go, every 5-8 s, aimed or not. He is
+## never told Q in v0.1.11, so he never presses it. v0.1.12+: when the hint line (the view's `hint_up`) names Q, 60-150
+## frames later he holds Q 26-40 frames and lets go (3 in 10 missed); the hint list he saw is in the result. Counts every hammer / magnet event by side and what happened to him.
+
+var ctx
+var p
+var done := false
+var rng := RandomNumberGenerator.new()
+var opening_end := -1
+var next_f := -1
+var hold := 0
+var seen: Dictionary = {}
+var log: Array = []
+var losses: Dictionary = {}
+var last_loss_seen := ""
+var view_node = null
+var last_hint := ""
+var hints: Array = []
+var q_at := -1
+var q_hold := 0
+var q_tries := 0
+
+
+func _bot_setup(c) -> void:
+	ctx = c
+	rng.seed = 11
+	p = ctx.load_script("tests/ai_support/play.gd").new()
+	p.setup(c, "newcomer")
+
+
+func _find_view() -> void:
+	if view_node != null:
+		return
+	for c: Node in ctx.root.get_tree().root.find_children("*", "", true, false):
+		var sc = c.get_script()
+		if sc != null and str(sc.resource_path).ends_with("scripts/main.gd") and c.get("show") != null:
+			view_node = c.get("show")
+			return
+
+
+func _side(i: int) -> String:
+	return "loose" if i < 0 else ("me" if i == 0 else ("mate" if i < 3 else "rival"))
+
+
+func _bot_tick(frame: int) -> void:
+	p.s = ctx.pack_state()
+	if p.s.is_empty():
+		return
+	for e: Dictionary in p.s["events"]:
+		var k: String = str(e["kind"])
+		if k.begins_with("magnet") or k.begins_with("yank") or k == "yoink" or k.begins_with("hammer") or k == "goal" or k == "loss":
+			var key := "%s:%s" % [k, _side(int(e["a"]))]
+			if k == "loss":
+				key = "loss:%s:%s" % [_side(int(e["a"])), str(e.get("cause", ""))]
+			if k == "yoink" or k == "hammer_hit":
+				key += ">" + _side(int(e.get("b", -1)))
+			seen[key] = int(seen.get(key, 0)) + 1
+			if log.size() < 200:
+				log.append("%d %s" % [frame, key])
+	if opening_end < 0 and not bool(p.s["opening"]):
+		opening_end = frame
+		next_f = frame + rng.randi_range(60, 120)
+	_find_view()
+	if view_node != null:
+		var h: String = str(view_node.get("hint_up"))
+		if h != last_hint:
+			if h != "" and hints.size() < 40:
+				hints.append("%d %s" % [frame, h])
+			last_hint = h
+	if "Q" in last_hint and q_at < 0 and q_hold == 0:
+		q_at = frame + rng.randi_range(60, 150)
+	p.watch()
+	if p.s["state"] == "over":
+		done = true
+		p.hand.release_all()
+		p.hand.tick()
+		return
+	p.play(frame, false)
+	if q_hold > 0:
+		q_hold -= 1
+		if q_hold > 0:
+			p.hand.press(&"magnet")
+		else:
+			p.hand.release(&"magnet")
+			q_at = -1
+	elif q_at > 0 and frame >= q_at and hold == 0:
+		if rng.randf() > 0.3:
+			q_hold = rng.randi_range(26, 40)
+			q_tries += 1
+			p.hand.press(&"magnet")
+		else:
+			q_at = -1
+	if hold > 0:
+		hold -= 1
+		if hold > 0:
+			p.hand.press(&"hammer")
+		else:
+			p.hand.release(&"hammer")
+			next_f = frame + rng.randi_range(300, 480)
+	elif next_f >= 0 and frame >= next_f:
+		hold = rng.randi_range(40, 90)
+		p.hand.press(&"hammer")
+	p.hand.tick()
+
+
+func _bot_done() -> bool:
+	return done or ctx.frame >= 3599
+
+
+func _bot_result() -> Dictionary:
+	var r: Dictionary = p.result("newcomer", true, false)
+	r["ok"] = true
+	r["summary"] = "opening ends at frame %d; Q tries %d; hints %s; events %s; log %s; %s" % [opening_end, q_tries, str(hints), JSON.stringify(seen), str(log.slice(0, 40)), str(r.get("summary", ""))]
+	return r

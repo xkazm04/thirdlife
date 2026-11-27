@@ -21,7 +21,9 @@ export type VerifyFlag =
   | "exit_outcome_disagree"
   | "ok_outcome_disagree"
   | "verb_mismatch"
-  | "exit_code_unknown";
+  | "exit_code_unknown"
+  /** D27 item 25: the engine printed its banner and stopped before the run began, on every try (the machine, not the pack). */
+  | "never_started";
 
 export interface VerifyReport {
   schema: "tl.verify/1";
@@ -59,6 +61,19 @@ export interface VerifierOptions {
   timeoutMs?: number;
   spawn?: SpawnFn;
   env?: NodeJS.ProcessEnv;
+  /** D27 item 25: the pauses before a run that never started is tried again (default 2 s, then 6 s). */
+  startPausesMs?: number[];
+}
+
+/**
+ * D27 item 25 (J2nd, 12:32:57: the second the kart copy promoted, two Godot runs of the OTHER jobs on the same engine/
+ * printed only the Godot banner and exited 1 in about a second, with no report; court's hand check read "19 of 20
+ * finished" as a failure and crews_stakes changed a rule to "fix" it): a run whose output is the engine's banner alone,
+ * with no report, never began. It is tried again; a pack is never judged by it.
+ */
+export function onlyBanner(stdout: string, stderr: string): boolean {
+  const lines = stdout.split(/\r?\n/).map((l) => l.trim()).filter((l) => l.length > 0);
+  return lines.every((l) => /^Godot Engine v/i.test(l)) && stderr.trim().length === 0;
 }
 
 const EXIT_OUTCOME: Record<number, VerifyReport["outcome"]> = { 0: "passed", 1: "failed", 2: "not_run", 3: "watchdog" };
@@ -119,6 +134,7 @@ export class Verifier {
   private readonly timeoutMs: number;
   private readonly spawn: SpawnFn;
   private readonly env: NodeJS.ProcessEnv;
+  private readonly startPausesMs: number[];
 
   constructor(opts: VerifierOptions = {}) {
     const r = resolveRunner(opts.env ?? process.env, opts.engineDir !== undefined ? { engineDir: opts.engineDir } : {});
@@ -127,6 +143,7 @@ export class Verifier {
     this.spawn = opts.spawn ?? runProcess;
     // Pack code runs inside the runner: it gets no key-like variables either (the fence is lint, not a sandbox).
     this.env = withoutSecrets(opts.env ?? process.env, []).env;
+    this.startPausesMs = opts.startPausesMs ?? [2000, 6000];
   }
 
   /**
@@ -153,6 +170,17 @@ export class Verifier {
   }
 
   async run(req: { verb: Verb; args?: string[]; packDir: string; reportFile: string; timeoutMs?: number }): Promise<VerifyResult> {
+    let r = await this.runOnce(req);
+    // D27 item 25: a run the engine never began is tried again after a pause, never judged
+    for (let i = 0; i < this.startPausesMs.length && r.flags.includes("never_started"); i++) {
+      await new Promise<void>((done) => setTimeout(done, this.startPausesMs[i]));
+      const again = await this.runOnce(req);
+      r = again.flags.includes("never_started") ? again : { ...again, summary: `${again.summary} (the engine did not begin this run ${i + 1} time${i === 0 ? "" : "s"} before: run again)` };
+    }
+    return r;
+  }
+
+  private async runOnce(req: { verb: Verb; args?: string[]; packDir: string; reportFile: string; timeoutMs?: number }): Promise<VerifyResult> {
     const packDir = path.resolve(req.packDir);
     const reportFile = path.resolve(req.reportFile);
     const verdictFile = reportFile.replace(/\.json$/i, "") + ".verdict.json";
@@ -232,6 +260,10 @@ export class Verifier {
       }
     }
 
+    if (!proc.spawnError && !proc.timedOut && flags.includes("report_missing") && onlyBanner(proc.stdout, proc.stderr)) {
+      flags.push("never_started");
+      notes.push("the engine printed only its banner and stopped before the run began: the machine, not the pack");
+    }
     const ok = flags.length === 0 && proc.exitCode === 0 && report !== undefined && report.ok === true && report.outcome === "passed";
     if (flags.length === 0 && report && !ok) {
       const failed = report.checks.filter((c) => !c.ok).map((c) => c.id);
@@ -293,3 +325,6 @@ export const critiqueSchema = {
     package: { type: "string" },
   },
 } as const;
+
+/** D27 item 25: the inconclusive verdict of a check the engine never began, after every try (the machine, never the pack). */
+export const NEVER_STARTED = "inconclusive: the engine never began this check (it printed only its banner, on every try): the machine, not the pack";

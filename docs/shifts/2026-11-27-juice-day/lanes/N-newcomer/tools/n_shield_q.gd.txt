@@ -1,0 +1,36 @@
+extends "n_shield.gd"
+## N-newcomer probe (FILM COPY ONLY): the newcomer captain of n_shield.gd, but his Q is pressed on a timer (every 150-260
+## frames once the call bar reads ready), not on a free moment; logs his state at each press and whether a call started.
+
+var probe: Array = []
+var next_q := 500
+var pending := -1
+var pending_state := ""
+
+
+func _bot_tick(frame: int) -> void:
+	var s: Dictionary = ctx.pack_state()
+	var cl: Dictionary = s.get("call", {})
+	var ready: bool = not cl.is_empty() and str(cl["phase"]["crew"]) == "ready"
+	if pending > 0 and n - pending >= 12:
+		probe.append("%d %s -> %s" % [pending, pending_state, "started" if not ready else "nothing"])
+		pending = -1
+	if ready and n >= next_q and pending < 0:
+		var st := ""
+		for f: Dictionary in s.get("fighters", []):
+			if f["id"] == s.get("controlled", ""):
+				st = str(f["state"]) + "/" + str(f["move"])
+		ctx.input.press(&"call")
+		pending = n
+		pending_state = st
+		next_q = n + rng.randi_range(150, 260)
+		n += 1
+		return
+	q_from = 1000000
+	super._bot_tick(frame)
+
+
+func _bot_result() -> Dictionary:
+	var r: Dictionary = super._bot_result()
+	r["summary"] = "Q probe %s; %s" % [str(probe), r["summary"]]
+	return r

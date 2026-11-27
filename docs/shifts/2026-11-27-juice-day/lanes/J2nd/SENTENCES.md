@@ -38,3 +38,6 @@
 
 ## Round 2: court "make it fairer" (sent after the newcomer follow-up)
 > Make it fairer: a newcomer now wins only 11 of 20 matches. Bring it back to about 13 or 14 of 20 without taking away the alley-oops, the steals or the dunks.
+
+## Round 3: court "make it fairer", stronger (sent on the fresh copy after the cue-alone change failed)
+> Make it fairer for a newcomer: he still wins only 11 of 20, and the small tweaks to the first match's rivals have not moved it in three tries. Make the first match's rivals clearly weaker: they miss more of their shots, react later on defence, throw fewer alley-oops and steal fewer of ours, until a newcomer wins about 14 of 20. Keep the C: ALLEY-OOP cue, the glow over my open mate and the steal hint as they are.

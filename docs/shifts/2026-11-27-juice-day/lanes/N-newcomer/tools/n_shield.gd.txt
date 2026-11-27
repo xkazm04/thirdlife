@@ -1,0 +1,198 @@
+extends Node
+## N-newcomer (counting, FILM COPY ONLY, not a pack test): a NEWCOMER captain through TLHand "newcomer" (its delays and
+## misses), pressing only what the screen shows him: the lesson's "Hold RIGHT MOUSE: shield up" (guard, from frame
+## 60-120), its "Now bash: keep holding, click LEFT MOUSE" (attack while guarding, 40-90 frames after it shows), after the
+## lesson a cut when his rival is open (late, 3 in 10 missed), and the key row (Q CALL, F, C, G when it reads READY):
+## one of the lit keys every 5-9 s, whether or not it is the moment. Counts the volley's published state, the core's
+## words, rounds, and what happened to him.
+
+var ctx
+var hand: TLHand
+var rng := RandomNumberGenerator.new()
+var n := 0
+var main_node = null
+var last_wf := 0
+var words: Dictionary = {}
+var word_at: Array = []
+var vlast: Dictionary = {}
+var vlog: Array = []
+var vo: Dictionary = {}
+var guard_from := -1
+var bash_from := -1
+var lesson_step_at: Dictionary = {}
+var lesson_end := -1
+var next_key := 900
+var pressed: Dictionary = {}
+var seen := 0
+var hits_on_me := 0
+var downs_me := 0
+var rounds: Array = []
+var last_round := 0
+var last_hint := ""
+var hints: Array = []
+var q_from := -1
+var g_from := -1
+
+
+func _bot_setup(c) -> void:
+	ctx = c
+	rng.seed = 13
+	hand = TLHand.create(ctx, "newcomer")
+	guard_from = rng.randi_range(60, 120)
+
+
+func _find_main() -> void:
+	if main_node != null:
+		return
+	for c: Node in ctx.root.get_tree().root.find_children("*", "", true, false):
+		var sc = c.get_script()
+		if sc != null and str(sc.resource_path).ends_with("scripts/main.gd") and c.get("contact") != null:
+			main_node = c
+			return
+
+
+func _look() -> void:
+	_find_main()
+	if main_node == null:
+		return
+	var h: String = str(main_node.get("hint_text"))
+	if int(main_node.get("hint_f")) <= 0:
+		h = ""
+	if h != last_hint:
+		if h != "" and hints.size() < 60:
+			hints.append("%d %s" % [n, h])
+		last_hint = h
+	var sh = main_node.get("show")
+	if sh == null:
+		return
+	var wf: int = int(sh.get("word_f"))
+	var w: String = str(sh.get("word"))
+	if wf > last_wf:
+		words[w] = int(words.get(w, 0)) + 1
+		if word_at.size() < 80:
+			word_at.append("%d %s" % [n, w])
+	last_wf = wf
+
+
+func _bot_tick(_frame: int) -> void:
+	n += 1
+	_look()
+	var s: Dictionary = ctx.pack_state()
+	var me: Dictionary = {}
+	var by: Dictionary = {}
+	for f: Dictionary in s.get("fighters", []):
+		by[f["id"]] = f
+		if f["id"] == s.get("controlled", ""):
+			me = f
+	if int(s.get("round", 0)) != last_round:
+		last_round = int(s.get("round", 0))
+		rounds.append("%d round %d" % [n, last_round])
+	for e: Dictionary in s.get("events", []):
+		if int(e["f"]) > seen and e["defender"] == me.get("id"):
+			if not str(e["type"]).begins_with("blocked"):
+				hits_on_me += 1
+			if e["type"] == "knockdown":
+				downs_me += 1
+	for e: Dictionary in s.get("events", []):
+		seen = maxi(seen, int(e["f"]))
+	var lesson: Dictionary = s.get("lesson", {})
+	var step: int = int(lesson.get("step", 0))
+	if bool(lesson.get("on", false)) and not lesson_step_at.has(step):
+		lesson_step_at[step] = n
+		if step == 1:
+			bash_from = n + rng.randi_range(40, 90)
+	if lesson_end < 0 and not bool(lesson.get("on", false)) and n > 10:
+		lesson_end = n
+	vo = s.get("volley", {})
+	if not vo.is_empty():
+		for k in ["thrown", "turtled", "escaped"]:
+			if int(vo[k]) > int(vlast.get(k, 0)):
+				vlog.append("%d %s" % [n, k])
+			vlast[k] = int(vo[k])
+		for side in ["crew", "gulls"]:
+			if int(vo["fired"][side]) > int(vlast.get(side, 0)):
+				vlog.append("%d fired %s" % [n, side])
+			vlast[side] = int(vo["fired"][side])
+	if s.get("state") == "over":
+		hand.release_all()
+		hand.tick()
+		return
+	if me.is_empty() or float(me["hp"]) <= 0.0 or not by.has(me.get("lock", "")):
+		hand.release_all()
+		hand.tick()
+		return
+	var foe: Dictionary = by[me["lock"]]
+	var d := Vector2(float(foe["x"]) - float(me["x"]), float(foe["z"]) - float(me["z"]))
+	var open: bool = foe["state"] in ["REBOUND", "PARRIED", "GUARDBROKEN", "STAGGER", "WALLSPLAT", "RECOVERY"]
+	# the key row: one lit key now and then, whether or not it is the moment (he reads READY, not what it does)
+	# the hint line's "Q: captain's call": he reads it and presses Q late (3 in 10 missed, then tried again 2 s later)
+	if last_hint.begins_with("Q:") and q_from < 0:
+		q_from = n + rng.randi_range(60, 150)
+	if q_from > 0 and n >= q_from:
+		if rng.randf() > 0.3:
+			hand.tap(&"call")
+			pressed[&"call"] = int(pressed.get(&"call", 0)) + 1
+			q_from = 0
+		else:
+			q_from = n + 120
+		hand.tick()
+		return
+	# a hint line that names G (v0.1.17+): he presses G late, 3 in 10 missed
+	if ("G:" in last_hint or "G READY" in last_hint) and g_from < 0:
+		g_from = n + rng.randi_range(60, 150)
+	if g_from > 0 and n >= g_from:
+		if rng.randf() > 0.3:
+			hand.tap(&"volley")
+			pressed[&"volley_hint"] = int(pressed.get(&"volley_hint", 0)) + 1
+		g_from = 0
+		hand.tick()
+		return
+	if g_from == 0 and not ("G:" in last_hint or "G READY" in last_hint):
+		g_from = -1
+	if q_from == 0 and not last_hint.begins_with("Q:"):
+		q_from = -1
+	if n >= next_key and lesson_end > 0:
+		var lit: Array = []
+		if not vo.is_empty() and str(vo["crew"]["phase"]) == "ready":
+			lit.append(&"volley")
+		var cl: Dictionary = s.get("call", {})
+		if not cl.is_empty() and str(cl["phase"]["crew"]) == "ready":
+			lit.append(&"call")
+		lit.append(&"rush")
+		lit.append(&"slam")
+		var k: StringName = lit[rng.randi_range(0, lit.size() - 1)]
+		if rng.randf() > 0.25:
+			hand.tap(k)
+			pressed[k] = int(pressed.get(k, 0)) + 1
+		next_key = n + rng.randi_range(300, 540)
+	elif n >= guard_from:
+		var walk: bool = d.length() > 2.2
+		if open and lesson_end > 0 and n % 12 == 0 and rng.randf() > 0.3:
+			hand.release(&"guard")
+			hand.tap(&"attack")
+		elif not open or lesson_end < 0:
+			if n % 200 < 170:
+				hand.press(&"guard")
+			else:
+				hand.release(&"guard")
+			if bash_from > 0 and n >= bash_from and n % 50 == 0 and lesson_end < 0:
+				hand.tap(&"attack")
+		if walk:
+			var u := d.normalized()
+			hand.set_axis(&"left", &"right", u.x)
+			hand.set_axis(&"forward", &"back", u.y)
+		else:
+			hand.set_axis(&"left", &"right", 0.0)
+			hand.set_axis(&"forward", &"back", 0.0)
+	hand.tick()
+
+
+func _bot_done() -> bool:
+	return n >= ctx.max_frames - 2
+
+
+func _bot_result() -> Dictionary:
+	var vs := "no volley state"
+	if not vo.is_empty():
+		vs = "volleys fired crew %d, gulls %d; men thrown %d, turtled %d, escaped %d" % [int(vo["fired"]["crew"]), int(vo["fired"]["gulls"]), int(vo["thrown"]), int(vo["turtled"]), int(vo["escaped"])]
+	return {"ok": n > 0, "summary": "%d frames; lesson steps %s, lesson ends %d; my presses %s; hits on me %d, my knockdowns %d; %s; vlog %s; rounds %s; words %s; word_at %s; hints %s" % [n, str(lesson_step_at), lesson_end, str(pressed), hits_on_me, downs_me, vs, str(vlog), str(rounds), str(words), str(word_at.slice(0, 30)), str(hints.slice(0, 30))]}
