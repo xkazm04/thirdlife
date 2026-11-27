@@ -39,8 +39,11 @@ export function newMovesOf(note: string): string[] {
       // the ids come first: "NEW MOVE: rush, slam" or "NEW MOVE: cannon_shot. It is the core's shotgun, ..."
       const head = ((tag[1] as string).replace(/\([^()]*\)/g, "").split(/\.(?:\s|$)|:/)[0] ?? "");
       for (const w of head.split(/[,;]|\band\b/)) {
-        const id = w.trim().replace(/`/g, "").split(/[\s(]/)[0] ?? "";
-        if (ID.test(id)) out.push(id);
+        // an id is one word (D27 round 4, JB's Arsenal copy: "NEW MOVE: the meteor (`shotgun`) was added by the cartridge's
+        // round, not by mine" gave the moves "the" and "not")
+        const words = w.trim().replace(/`/g, "").split(/\s+/).filter(Boolean);
+        const id = words[0] ?? "";
+        if (words.length === 1 && ID.test(id)) out.push(id);
       }
       continue;
     }

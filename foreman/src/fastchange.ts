@@ -161,7 +161,8 @@ export function whatChangedNote(events: readonly JobEvent[], version: string, fo
   // the newest first line of each thing it moved, not only the newest of all)
   const moved = files.length === 0 ? [] : balanceLines(since.flatMap((e) => (e.type === "note" && e.text.startsWith(BALANCE_MOVED) ? [(e.text.split("\n")[0] ?? "").slice(FOREMAN_NOTE.length)] : [])));
   const rules = files.length === 0 ? [] : unaskedRules(since).map((l) => `${UNASKED_RULE} (the builder's words; you did not ask for it): ${clip(l.replace(/^RULE:\s*/, ""), 300)}`);
-  const lines = [...new Set([...notMade, ...named, ...unnamed, ...missed, ...moved, ...rules, ...unasked])].map((l) => `\n${l}`).join("");
+  const tests = testsChanged(since, files, linesOf); // D27 item 21: a test the change changed, with why
+  const lines = [...new Set([...notMade, ...named, ...unnamed, ...missed, ...moved, ...rules, ...unasked, ...tests])].map((l) => `\n${l}`).join("");
   return `${`${FOREMAN_NOTE}${WHAT_CHANGED} in v${version}${was !== "" ? ` (since v${was})` : ""}: ${asked.length > 0 ? `asked ${asked.join(", ")}; ` : ""}${made}`.slice(0, 1500)}${lines}`;
 }
 
@@ -204,5 +205,28 @@ export function changedFiles(promotedDir: string, packDir: string): string[] | u
     const a = fs.readFileSync(path.join(packDir, f));
     const b = fs.readFileSync(old);
     return !a.equals(b);
+  });
+}
+
+/** D27 round 4, item 21: the start of the what-changed line for a test file a change changed. */
+export const TEST_CHANGED = "a test was changed";
+const PASS_WORDS = /\b(pass(es|ed|ing)?|fail(s|ed|ing)?|fixed it|less often|more often|so (that )?it (passes|holds)|to make (it|the check) pass)\b/i;
+
+/**
+ * D27 round 4, item 21 (JB-back's shield copy: crew r6 changed how its own tests/bot_crew.gd plays to make a check pass;
+ * it said so, and the freeze does not cover a package's own tests): one line per changed file under tests/, who changed
+ * it and why in its builder's words, "to pass" when the words say a check failed or passed because of it.
+ */
+export function testsChanged(since: readonly JobEvent[], files: readonly string[], linesOf: (id: string) => string[]): string[] {
+  return files.filter((f) => f.startsWith("tests/")).map((f) => {
+    const m = [...since].reverse().find((e) => e.type === "merge" && e.files.includes(f));
+    const pkg = m?.type === "merge" ? m.package : "?";
+    const name = f.split("/").pop() ?? f;
+    const all = linesOf(pkg);
+    const said = all.filter((l) => l.includes(name));
+    // the newest words first: the round that changed the file last
+    const pass = [...said].reverse().find((l) => PASS_WORDS.test(l)) ?? [...all].reverse().find((l) => PASS_WORDS.test(l) && /\b(test|bot|drill|check)\b/i.test(l));
+    const why = pass ?? said.at(-1);
+    return `${TEST_CHANGED}${pass !== undefined ? " to pass" : ""}: ${f} (${pkg})${why !== undefined ? `: ${clip(why, 240)}` : ""}`;
   });
 }

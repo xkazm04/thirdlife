@@ -19,6 +19,8 @@ import { cartridgeOwner } from "./coreowner.js";
 export const NOT_DONE = /\bNOT (DONE|MADE|BUILT)\b|\bnot done here\b|\bbelongs? to another package\b|^(?:RULE:\s*)?[Nn]ot (?:done|made|built)\b|\b[Nn]eeds? `?[\w./*-]+`?,? which (?:is|are) outside (?:of )?my scope\b/;
 /** The start of the Foreman's request for the rest (after FOREMAN_NOTE), and of the note when nobody owns it. */
 export const REST_OF = "the rest of your change";
+/** D27 items 17-18: the start of the Foreman's request (after FOREMAN_NOTE) that sends a NOT DONE about the base's files back to its builder. */
+export const OWN_FILES = "make in your own files the part of your change";
 export const NOT_MADE = "part of your change was NOT made";
 
 /** The lines of a builder's note, without list marks. */
@@ -63,7 +65,25 @@ export function afterMerge(plan: readonly PackageSpec[], events: readonly JobEve
   const named = rest.map((l) => ownerOf(plan, id, l));
   const owners = [...new Set(named.filter((o): o is string => o !== undefined))];
   const toCart = core?.cartridgeOwner !== undefined && core.cartridgeOwner !== id ? core.cartridgeOwner : undefined;
-  const ownerOfLine = (l: string, i: number): string | undefined => named[i] ?? (owners.length === 1 ? owners[0] : undefined) ?? (toCart !== undefined && (/cartridge|\bkeys?\b/i.test(l) || NO_KEY.test(l)) ? toCart : undefined);
+  // D27 round 4, items 17 and 18 (JB-back's Arsenal copy, events 1095-1115: "F lights only a second after the drop" named
+  // the base's scripts/human_input.gd and went to the cartridge, which has no key for it and changed nothing; "the net
+  // bulges and the glass shakes" named the base's scripts/match_view.gd and stayed a note): a line whose files are the
+  // base's (no builder changes the base) goes back once to its own builder, to make it in its own files; only a line that
+  // names no file, and does not already say the catalog was searched, goes to the cartridge's owner
+  const bases = plan.filter((p) => p.kind === "base");
+  const baseOnly = (l: string): boolean => {
+    const ps = pathsIn(l);
+    return ps.length > 0 && ps.every((x) => bases.some((b) => b.scope.includes(x) || matchesAny(b.scope, x.replace(/\/\*\*$/, "/x.gd"))));
+  };
+  const toCartLine = (l: string): boolean => toCart !== undefined && pathsIn(l).length === 0 && !/\bsearched\b/i.test(l) && (/cartridge|\bkeys?\b/i.test(l) || NO_KEY.test(l));
+  // D27 round 4 (the d27 copy of JB's Arsenal, harbour r16, event 1080: "the net bulging ... the glass shaking. The nets and
+  // glass belong to the base's arena, and no file in my scope can move them" named no file and went with the skin's line to
+  // the skin): a line that names no file never joins another package's line. It goes to the cartridge when it is about a
+  // key not yet searched; back to its own builder (its own drawing can do it) unless it says only the core could; else it
+  // stays the person's note.
+  const coreOnly = (l: string): boolean => /\b(inside the core|the core's own|core patch|C\+\+|native code|bots never hold)\b/i.test(l);
+  const ownerOfLine = (l: string, i: number): string | undefined =>
+    named[i] ?? (baseOnly(l) ? id : undefined) ?? (pathsIn(l).length > 0 && owners.length === 1 ? owners[0] : undefined) ?? (toCartLine(l) ? toCart : undefined) ?? (pathsIn(l).length === 0 && !coreOnly(l) && /\b(base|arena|kit|outside my scope|no file)\b/i.test(l) ? id : undefined);
   const groups = new Map<string | undefined, string[]>();
   rest.forEach((l, i) => {
     const o = ownerOfLine(l, i);
@@ -74,9 +94,36 @@ export function afterMerge(plan: readonly PackageSpec[], events: readonly JobEve
   // A round that was itself handed the rest of a change tells the person what it did not make; it sends nothing on.
   const lastPromo = events.reduce((n, e) => (e.type === "promoted" ? e.seq : n), -1);
   const mergedInChange = (evs: readonly JobEvent[], pkg: string): boolean => evs.some((e) => e.type === "merge" && e.package === pkg && e.seq > lastPromo);
-  const hop = request.startsWith(`${FOREMAN_NOTE}${REST_OF}`);
+  const hop = request.startsWith(`${FOREMAN_NOTE}${REST_OF}`) || request.startsWith(`${FOREMAN_NOTE}${OWN_FILES}`);
+  // D27 round 4, item 17 (the d27 copy of JB's Arsenal, run 2, event 1080: harbour sent "F lights only a second after
+  // the drop" to the cartridge, which has no key for it, though harbour's own main.gd can hold the key back): a handed-on
+  // round that cannot make a line in its own files sends it back once to the package that handed it on, to make there
+  const sender = /^\[foreman\] the rest of your change, which (\S+) did not make/.exec(request)?.[1];
+  const backAlready = (pkg: string): boolean => events.some((e) => e.type === "change_requested" && e.package === pkg && e.seq > lastPromo && e.text.startsWith(`${FOREMAN_NOTE}${OWN_FILES}`));
+  const toSender = hop && sender !== undefined && sender !== id && !backAlready(sender);
+  if (toSender) {
+    const back = [...(groups.get(id) ?? []), ...(groups.get(undefined) ?? [])];
+    groups.delete(id);
+    groups.delete(undefined);
+    if (back.length > 0) groups.set(`\u0000${sender}`, back);
+  }
   for (const [owner, lines] of groups) {
     const said = lines.map((l) => clip(l, 400)).join(" / ");
+    if (owner === `\u0000${sender}` && sender !== undefined) {
+      out.push({ type: "note", package: id, round, text: `${FOREMAN_NOTE}${NOT_MADE} by ${id} either; it goes back to ${sender}, which handed it on, to make in its own files: ${said}` });
+      out.push({ type: "change_requested", package: sender, text: clip(`${FOREMAN_NOTE}${OWN_FILES} that you handed on, and ${id} could not make ("${said}"): build it in your own files (wrap or filter the input before it reaches the core, override it, or draw your own), or say plainly that it cannot be made: "${request}"`, 3000) });
+      continue;
+    }
+    if (owner === id) {
+      // D27 items 17-18: the base's files: back to this builder once; a second time it is the person's to hear
+      if (hop) {
+        out.push({ type: "note", package: id, round, text: `${FOREMAN_NOTE}${NOT_MADE}: ${id} could not make it in its own files either and says: ${said}` });
+        continue;
+      }
+      out.push({ type: "note", package: id, round, text: `${FOREMAN_NOTE}${NOT_MADE} by ${id} yet; it goes back to ${id}, because the files it names are the base's, which no package changes: ${said}` });
+      out.push({ type: "change_requested", package: id, text: clip(`${FOREMAN_NOTE}${OWN_FILES} that you marked NOT DONE ("${said}"): the files it names are the base's, which no package changes, so build it in your own files (wrap or filter the input before it reaches the core, override it, or draw your own), or say plainly that it cannot be made: "${request}"`, 3000) });
+      continue;
+    }
     // D27 item 14: a handed-on round may still send a line to a package that has not merged in this change (it has not
     // made its part yet); never back to one that has
     if (owner !== undefined && hop && mergedInChange(events, owner)) {

@@ -62,3 +62,15 @@ static func balance_note(job: Dictionary, seq: int) -> String:
 		var l: String = str(newest[key])
 		lines.append(l.substr(0, 1).to_upper() + l.substr(1))
 	return "\n".join(lines)
+
+## D27 round 4, item 18 (JB-back's Arsenal: "the net bulges ... the glass shakes" was not made, and only a log note said so):
+## each part of the change a builder could not make and nobody took on, as "Not made: ..." (the Foreman's NOT_MADE notes
+## that end there; a part handed on to another package is not one).
+const NOT_MADE := "[foreman] part of your change was NOT made: "
+static func not_made_note(job: Dictionary, seq: int) -> String:
+	var lines: PackedStringArray = []
+	for n: Variant in job.get("notes", []):
+		if n is Dictionary and int((n as Dictionary).get("seq", 0)) > seq and str((n as Dictionary).get("text", "")).begins_with(NOT_MADE):
+			var said: String = str((n as Dictionary)["text"]).substr(NOT_MADE.length())
+			lines.append("Not made: " + JobModel.one_line(said, 200))
+	return "\n".join(lines)

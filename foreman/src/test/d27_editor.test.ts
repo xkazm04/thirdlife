@@ -12,11 +12,14 @@ import { JobLog } from "../joblog.js";
 import { REPO_ROOT } from "../paths.js";
 import { grantedScope, sidecarOf, widenedNote, withGrants } from "../scopegrant.js";
 import { mindFiles, rivalSentences, rivalSplit } from "../rivals.js";
-import { NOT_DONE, NOT_MADE, REST_OF, afterMerge, coreHintOf } from "../halfmade.js";
+import { NOT_DONE, NOT_MADE, OWN_FILES, REST_OF, afterMerge, coreHintOf } from "../halfmade.js";
 import { catalogRows, keyHint, keysFor } from "../keyfind.js";
 import { coreExcerpt, RINK_ROUTE } from "../coreroute.js";
+import { longerMatch, onlyOutOfFrames, tofuTooShort } from "../tofugate.js";
+import type { VerifyResult } from "../verifier.js";
 import { MOVES_LAND, finalLandNotes, judgeLanding, landGate, newMovesOf } from "../landcheck.js";
 import { BALANCE_MOVED, balanceLines, changeKind } from "../boundlift.js";
+import { testsChanged } from "../fastchange.js";
 import { NOT_ASKED, UNASKED_RULE, changedFiles, measureKeptWords, removedInRound, whatChangedNote } from "../fastchange.js";
 
 after(cleanup);
@@ -420,4 +423,123 @@ test("D27 12c (J19's round-3 copy, event 659: \"rush landed 9 of 8 (113 %)\": te
   assert.equal(v.counts["rush"]?.started, 8);
   assert.equal(v.counts["rush"]?.landed, 7, "1 + min(8, 6)");
   assert.equal(v.ok, true, "the player's run used it at frame 4653 of 6000: kept to the end");
+});
+
+// ---------------------------------------------------------------- round 4
+
+test("D27 R4b (J2nd's kart copy, events 1444-1514: core r31's shells made matches longer; the pack test of the tofu bot completed at its 36,000 frames with \"2 matches\" and failed on its own ok, and the merge was refused): in a person's play change the plan's tofu bot gets one rerun with three times the frames, and the person a note", async () => {
+  const j = fixture<{ change: JobEvent & { text: string }; report: Record<string, unknown> }>("j2nd-core-r31-tofu.json");
+  const plan = [{ id: "core", title: "core", milestone: "blockout", deps: [], scope: ["scripts/**", "tests/**"], contract: "TOFU CHECK: tests/bot_tofu.gd reports metrics feedback_f", acceptance: [], registers: { tests: ["tests/bot_tofu.gd"] } }] as unknown as PackageSpec[];
+  const events = [{ seq: 1442, type: "promoted", packId: "game.x", version: "0.1.8", dest: "x" }, j.change] as unknown as JobEvent[];
+  const appended: Record<string, unknown>[] = [];
+  const h = { s: { plan, packages: { core: { round: 31 } } }, events, append: (e: Record<string, unknown>) => (appended.push(e), e as unknown as JobEvent) } as unknown as GateHost;
+  const a = { verb: "bot" as const, args: ["--test=tests/bot_tofu.gd"] };
+  const failed = { verb: "bot", level: "V4", ok: false, report: j.report, summary: "bot failed: failed checks [bot.ok]", reportFile: "r", verdictFile: "r", flags: [], durationMs: 1 } as unknown as VerifyResult;
+  assert.equal(tofuTooShort(plan, a, failed), true, "completed, no script error, only its own ok failed");
+  assert.equal(onlyOutOfFrames(failed), false, "T2's rerun did not take it: the run completed");
+  let asked: string[] = [];
+  const passed = { ...failed, ok: true, summary: "bot passed", report: { bot: { test: "tests/bot_tofu.gd", done: true, frames: 61234, result: { ok: true } } } } as unknown as VerifyResult;
+  const r = await longerMatch(h, a, failed, { package: "core", round: 31 }, async (args) => ((asked = args), passed));
+  assert.deepEqual(asked, ["--test=tests/bot_tofu.gd", "--frames=108000"]);
+  assert.equal(r?.ok, true);
+  assert.match(String(appended[0]?.["text"]), /^\[foreman\] balance moved by your change: built as you asked; matches now run longer \(the Foreman's test fit fewer matches than it plays into its 36000 frames\)/);
+  // a tofu bot that failed with a script error, or another test, or a look change: no rerun
+  const scripted = { ...failed, report: { ...j.report, checks: [...(j.report["checks"] as object[]), { id: "smoke.no_script_errors", ok: false }] } } as unknown as VerifyResult;
+  assert.equal(tofuTooShort(plan, a, scripted), false);
+  assert.equal(tofuTooShort(plan, { verb: "bot", args: ["--test=tests/bot_teams.gd"] }, failed), false);
+});
+
+test("D27 R4 17-18 (JB-back's Arsenal copy, events 1095-1115: \"F lights only a second after the drop\" named the base's scripts/human_input.gd and went to the cartridge, which had no key and changed nothing; \"the net bulges ... the glass shakes\" named the base's scripts/match_view.gd and stayed a note): a NOT DONE about the base's files goes back once to its own builder, to make it in its own files", () => {
+  const jb = fixture<{ plan: PackageSpec[]; events: JobEvent[] }>("jb-arsenal-harbour-r16.json");
+  const request = (jb.events[1] as JobEvent & { text: string }).text;
+  const md = fs.readFileSync(path.join(REPO_ROOT, "engine", "cores", "rink", "CARTRIDGE.md"), "utf8");
+  const core = { cartridgeOwner: "cartridge", rows: catalogRows(md), catalogPath: "ref/cores/rink/CARTRIDGE.md" };
+  const out = afterMerge(jb.plan, jb.events, "harbour", 16, ["scripts/harbour_toys.gd"], request, core);
+  const asked = out.filter((e) => e["type"] === "change_requested");
+  assert.deepEqual(asked.map((e) => e["package"]), ["harbour"], "back to harbour, not to the cartridge");
+  assert.ok(String(asked[0]?.["text"]).startsWith(`[foreman] ${OWN_FILES} that you marked NOT DONE ("NOT DONE: "the net bulges back a full metre and the glass shakes"`), String(asked[0]?.["text"]));
+  assert.match(String(asked[0]?.["text"]), /F lights only a second after the drop/);
+  assert.match(String(asked[0]?.["text"]), /build it in your own files \(wrap or filter the input before it reaches the core, override it, or draw your own\), or say plainly that it cannot be made/);
+  // the second time (the round that was sent back), it is the person's to hear
+  const back = String(asked[0]?.["text"]);
+  const again = afterMerge(jb.plan, [...jb.events.slice(0, 2), { seq: 1120, type: "reopened", package: "harbour", reason: "change request (event 1119); the request names the package: x" }, { seq: 1121, type: "note", package: "harbour", round: 17, text: "- NOT DONE: the glass shake needs `scripts/match_view.gd`, which is outside my scope." }] as unknown as JobEvent[], "harbour", 17, ["scripts/harbour_toys.gd"], back, core);
+  assert.equal(again.filter((e) => e["type"] === "change_requested").length, 0);
+  assert.match(String(again[0]?.["text"]), /^\[foreman\] part of your change was NOT made: harbour could not make it in its own files either and says: NOT DONE: the glass shake/);
+});
+
+test("D27 R4 19 (JB-back's shield copy, event 869: the rivals' copy read \"... before he lands. : a rival who sees ...\", losing \"Braces are so rare I never see BRACED!\"): a sentence ends only at . ! ? before a space or the end", () => {
+  const jb = fixture<{ change: { text: string }; part: { text: string } }>("jb-shield-866.json");
+  assert.match(jb.part.text, /before he lands\. : a rival/, "the live defect");
+  const words = rivalSentences(jb.change.text);
+  assert.ok(words.includes("Braces are so rare I never see BRACED!: a rival who sees a charge coming at him should turn his raised shield to it most of the time, and the rest step aside."), words);
+  assert.doesNotMatch(words, /\. : a rival/);
+  assert.equal(rivalSentences("The rivals charge an open line. Bots slam a crowd! Make it fast."), "The rivals charge an open line. Bots slam a crowd!");
+});
+
+test("D27 R4 20 (JB-back's shield copy: \"merge crew 7 files\" and \"merge rally 8 files\" for rounds that wrote nothing, the pack byte-equal): a package merged before lists only the files that differ from the pack", async () => {
+  const job = tempJob("d27-merge-count");
+  assert.equal((await foremanFor(job, { promoteTo: "job" }).foreman.run()).jobState?.state, "done");
+  const send = async (text: string, steps: FakeStep[]) => {
+    const log = JobLog.open(job.jobDir);
+    log.append({ type: "change_requested", text, package: "paddle_ai" });
+    log.close();
+    const from = readEvents(job.jobDir).at(-1)?.seq ?? 0;
+    const s = await foremanFor(job, { promoteTo: "job", script: scriptWith(steps) }).foreman.run();
+    assert.equal(s.jobState?.state, "done", JSON.stringify(s.jobState));
+    return readEvents(job.jobDir).filter((e) => e.seq > from && e.type === "merge" && e.package === "paddle_ai");
+  };
+  const first = await send("Make the rival paddle faster.", [{ match: { role: "builder", package: "paddle_ai" }, write: { "data/ai.json": "{\"speed\": 2.0}\n" }, text: "Done.\nDEVIATIONS: none" }]);
+  assert.deepEqual(first.map((e) => (e.type === "merge" ? e.files : [])), [["data/ai.json"]]);
+  // a round that finds its work already in place writes nothing: the merge says so
+  const second = await send("Make the rival paddle twice as fast as at first.", [{ match: { role: "builder", package: "paddle_ai" }, text: "No change: the speed is already 2.0.\nDEVIATIONS: none" }]);
+  assert.deepEqual(second.map((e) => (e.type === "merge" ? e.files : [])), [[]], "0 files, not the files merged before");
+});
+
+test("D27 R4 21 (JB-back's shield copy, crew r6, events 798-809: crew changed how its own tests/bot_crew.gd plays, and said so; the freeze does not cover a package's own tests and the card did not mention it): every test the change changed is on the card with its builder's words, \"to pass\" when the words say so", () => {
+  const events = fixture<{ events: JobEvent[] }>("jb-shield-crew-r6.json").events;
+  const card = whatChangedNote(events, "0.1.8").split("\n");
+  assert.ok(card.includes("a test was changed: tests/bot_crew.gd (crew): `tests/bot_crew.gd`: the captain now uses the charge and the slam in normal fighting (not in the lesson or the light-mashing round), which changes this bot's play compared with earlier rounds."), card.join("\n"));
+  // the builder's words in JB-back's report: the check failed, and using the moves less often fixed it
+  const said = [...events, { seq: 810, type: "note", package: "crew", round: 6, text: "- My first run of `tests/bot_crew.gd` had the captain charging and slamming about three times as often. That run failed; using the moves less often fixed it." }] as unknown as JobEvent[];
+  assert.ok(whatChangedNote(said, "0.1.8").split("\n").some((l) => l.startsWith("a test was changed to pass: tests/bot_crew.gd (crew): My first run of `tests/bot_crew.gd` had the captain charging")));
+  // the plan's tofu bot is the Foreman's measure: an edit to it is undone, so it never merges and never shows here
+  assert.equal(testsChanged([], ["data/crew.json"], () => []).length, 0);
+});
+
+test("D27 R4 17b (the d27 copy of JB's Arsenal, harbour r16, event 1080: \"NOT DONE: a meteor goal's net bulging ... The nets and glass belong to the base's arena, and no file in my scope can move them\" named no file and went with the skin's line to the skin): a line that names no file never joins another package's line; its own builder gets it back", () => {
+  const jb = fixture<{ plan: PackageSpec[]; events: JobEvent[] }>("jb-arsenal-harbour-r16.json");
+  const live = fixture<{ reopened: JobEvent; event: JobEvent }>("d27r4-ars-harbour-r16-note.json");
+  const request = (jb.events[1] as JobEvent & { text: string }).text;
+  const events = [jb.events[0], jb.events[1], live.reopened, live.event] as JobEvent[];
+  const out = afterMerge(jb.plan, events, "harbour", 16, ["scripts/main.gd"], request, { cartridgeOwner: "cartridge", rows: [], catalogPath: "x" });
+  const asked = out.filter((e) => e["type"] === "change_requested");
+  const to = (pkg: string) => String(asked.find((e) => e["package"] === pkg)?.["text"] ?? "");
+  assert.match(to("skin"), /ability_names/, "the skin's line goes to the skin");
+  assert.doesNotMatch(to("skin"), /net bulging/, "the net and glass do not");
+  assert.ok(to("harbour").startsWith(`[foreman] ${OWN_FILES} that you marked NOT DONE ("NOT DONE: a meteor goal's net bulging`), to("harbour"));
+  // what only the core could do stays the person's note
+  assert.equal(afterMerge(J1.plan, J1.events, "harbour", 15, ["data/tuning.json"], J1_REQUEST).filter((e) => e["type"] === "change_requested" && e["package"] === "harbour").length, 0);
+});
+
+test("D27 R4 17c (JB-back's Arsenal copy, events 1097-1115: the cartridge, handed \"F lights only a second after the drop\", had no key and named the base's scripts/human_input.gd; the line ended as a note, though harbour's own main.gd could do it, as its r17 later did): a handed-on round that cannot make a line sends it back once to the package that handed it on", () => {
+  const jb = fixture<{ events: JobEvent[] }>("jb-arsenal-cartridge-r13.json");
+  const plan = fixture<{ plan: PackageSpec[] }>("jb-arsenal-harbour-r16.json").plan;
+  const request = (jb.events.find((e) => e.seq === 1097) as JobEvent & { text: string }).text;
+  const out = afterMerge(plan, jb.events.filter((e) => e.seq <= 1105), "cartridge", 13, ["data/harbour.cartridge.json"], request, { cartridgeOwner: "cartridge", rows: [], catalogPath: "x" });
+  const asked = out.filter((e) => e["type"] === "change_requested");
+  assert.deepEqual(asked.map((e) => e["package"]), ["harbour"]);
+  const back = String(asked[0]?.["text"]);
+  assert.ok(back.startsWith(`[foreman] ${OWN_FILES} that you handed on, and cartridge could not make ("NOT DONE: `), back);
+  assert.ok(back.includes("send `bAbility` false") && back.includes("no key in CARTRIDGE.md for"), back);
+  // once: a second back-and-forth is the person's
+  const twice = afterMerge(plan, [...jb.events.filter((e) => e.seq <= 1105), { seq: 1110, type: "change_requested", package: "harbour", text: `[foreman] ${OWN_FILES} that you handed on ...` }] as unknown as JobEvent[], "cartridge", 13, ["data/harbour.cartridge.json"], request, { cartridgeOwner: "cartridge", rows: [], catalogPath: "x" });
+  assert.equal(twice.filter((e) => e["type"] === "change_requested").length, 0);
+});
+
+test("D27 R4 22 (S1's half-court copy, change-not-made-s1679: \"After a shove you stand off balance for a moment\" was read as a fairness ask on S1's tree, which is main from before item 10): a body's balance is play, only a balance ask is fairness", () => {
+  const s1 = fs.readFileSync(path.join(REPO_ROOT, "foreman", "fixtures", "d27", "s1-shove-sentence.txt"), "utf8").replace(/^>\s*/, "").trim();
+  assert.match(s1, /stand off balance for a moment/);
+  assert.equal(changeKind(s1), "play");
+  for (const play of ["After a shove you stand off balance for a moment.", "He loses his balance and falls.", "The skater lost his balance on the ice.", "Add a balance beam over the moat.", "Keep his balance on one skate."]) assert.equal(changeKind(play), "play", play);
+  for (const fair of ["Balance the teams.", "Make it more balanced.", "Rebalance it so a newcomer can win."]) assert.equal(changeKind(fair), "fair", fair);
 });

@@ -1,0 +1,67 @@
+{
+ "source": "d25-kart .tl/jobs/j2nd/bumper-kart-football-3-20261125-1 (lane J2nd, juice day): change request 1444 and the pack test report of core r31 (event 1513)",
+ "change": {
+  "v": 1,
+  "seq": 1444,
+  "ts": "2026-11-27T11:33:52.222Z",
+  "job": "bumper-kart-football-3-20261125-1",
+  "type": "change_requested",
+  "text": "I played v0.1.8 and there are no item boxes at all: the items part was built but never switched on. The core must load it (add items to its list of modules), and the shell hit plays a sound that does not exist (hit_steel): use hit_metal for the BANG. Then make the boxes, the red shells, the tumble, SHELLED! and the mint karts firing, jumping and whirling all work in the match as I asked before."
+ },
+ "report": {
+  "schema": "tl.verify/1",
+  "verb": "bot",
+  "level": "V4",
+  "ok": false,
+  "outcome": "failed",
+  "frames": 35401,
+  "checks": [
+   {
+    "id": "smoke.loads",
+    "ok": true,
+    "detail": "pack loaded"
+   },
+   {
+    "id": "smoke.no_script_errors",
+    "ok": true,
+    "detail": "0 errors in 35401 frames"
+   },
+   {
+    "id": "smoke.no_engine_errors",
+    "ok": true,
+    "detail": "0 engine errors"
+   },
+   {
+    "id": "smoke.watchdog",
+    "ok": true,
+    "detail": "no trip in 35401 frames"
+   },
+   {
+    "id": "bot.completed",
+    "ok": true,
+    "detail": "done at frame 35401"
+   },
+   {
+    "id": "bot.ok",
+    "ok": false,
+    "detail": "2 matches; {\"close_rounds\":2,\"feedback_f\":1,\"idle_max_f\":19,\"lead_change_share\":0.5,\"overlap_share\":0.0185035953384577,\"possession_median_f\":21,\"pressure_waves\":17,\"raw\":{\"contacts\":{\"air_flip\":19,\"flank\":29,\"jolt\":26,\"mate\":155,\"nose\":4,\"ram_flank\":1,\"ram_rear\":2,\"rear\":14,\"stomp\":8,\"touch\":370,\"whirl_block\":7},\"live_f\":32264,\"matches\":[{\"changed\":false,\"mint\":2,\"red\":1},{\"changed\":true,\"mint\":2,\"red\":1}],\"shot_speed\":{\"angled\":21.4397172927856,\"late\":14.0000002384186,\"sweet\":24.7508897781372},\"shots\":{\"angled\":7,\"late\":4,\"sweet\":4},\"spells\":426,\"verbs\":{\"bump\":76,\"ram\":19,\"whirl\":63}},\"scrum_share\":0.0330399206545996,\"skill_spread\":0.0,\"skill_variants\":1,\"tell_min_f\":24,\"tells\":3,\"verbs_used\":3}"
+   }
+  ],
+  "errors": [
+   {
+    "kind": "bot",
+    "file": "tests/bot_tofu.gd",
+    "message": "the bot finished with ok = false: 2 matches; {\"close_rounds\":2,\"feedback_f\":1,\"idle_max_f\":19,\"lead_change_share\":0.5,\"overlap_share\":0.0185035953384577,\"possession_median_f\":21,\"pressure_waves\":17,\"raw\":{\"contacts\":{\"air_flip\":19,\"flank\":29,\"jolt\":26,\"mate\":155,\"nose\":4,\"ram_flank\":1,\"ram_rear\":2,\"rear\":14,\"stomp\":8,\"touch\":370,\"whirl_block\":7},\"live_f\":32264,\"matches\":[{\"changed\":false,\"mint\":2,\"red\":1},{\"changed\":true,\"mint\":2,\"red\":1}],\"shot_speed\":{\"angled\":21.4397172927856,\"late\":14.0000002384186,\"sweet\":24.7508897781372},\"shots\":{\"angled\":7,\"late\":4,\"sweet\":4},\"spells\":426,\"verbs\":{\"bump\":76,\"ram\":19,\"whirl\":63}},\"scrum_share\":0.0330399206545996,\"skill_spread\":0.0,\"skill_variants\":1,\"tell_min_f\":24,\"tells\":3,\"verbs_used\":3}"
+   }
+  ],
+  "bot": {
+   "test": "tests/bot_tofu.gd",
+   "done": true,
+   "frames": 35401,
+   "result": {
+    "ok": false,
+    "summary": "2 matches; {\"close_rounds\":2,\"feedback_f\":1,\"idle_max_f\":19,\"lead_change_share\":0.5,\"overlap_share\":0.0185035953384577,\"possession_median_f\":21,\"pressure_waves\":17,\"raw\":{\"contacts\":{\"air_flip\":19,\"flank\":29,\"jolt\":26,\"mate\":155,\"nose\":4,\"ram_flank\":1,\"ram_rear\":2,\"rear\":14,\"stomp\":8,\"touch\":370,\"wh"
+   }
+  }
+ }
+}

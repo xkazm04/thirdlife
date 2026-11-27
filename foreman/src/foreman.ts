@@ -797,7 +797,7 @@ export class Foreman {
     const mine = all.filter((f) => !(theirs.length > 0 && matchesAny(theirs, f) && fs.existsSync(this.dir("pack", f))));
     const had = new Set(this.pkg(id).mergedFiles ?? []);
     const changed = mine.filter((f) => !(had.has(f) && fs.existsSync(this.dir("pack", f)) && hashFile(this.dir("pack", f)) === hashFile(path.join(ws, f))));
-    return changed.length > 0 ? changed : mine; // nothing differs (a merge redone after a kill): the same list again
+    return changed.length > 0 || had.size > 0 ? changed : mine; // D27 item 20 (JB: "merge crew 7 files", none changed): a re-merge lists only what differs, even none; a first merge redone after a kill, the same list
   }
 
   /** In-scope files the package deleted: they were in the workspace when it was cut and are gone now. */
