@@ -50,6 +50,7 @@ Rules for the pass:
   only: they never change the state hash. Hit-stop and the slow beat are in the simulation and count frames.
 - Put the pass's numbers in the pack's tuning data beside the move's, so a person can change them.
 - Do what is in your scope. For a part outside it, write `JUICE: <part> not done: <whose files>` under DEVIATIONS.
-- End your DEVIATIONS with one checklist line, each part yes / no / small:
+- End the DEVIATIONS of your LAST answer with one checklist line, each part yes / no / small. Write it there again even
+  if an earlier message had it: the Foreman reads only the last answer, and sends a big move back for what it skipped:
   `JUICE: size <small|big|signature> | tell <..> | exaggeration <..> | hit-stop <..> | camera <..> | word <..> |
   particles+sound <..> | slow beat <..> | world answers <..>`.
