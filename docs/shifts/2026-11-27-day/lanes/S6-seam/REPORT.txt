@@ -1,0 +1,103 @@
+S6 SEAM (M6 rules and runs), 27 Nov 2026 day shift. Worktree .claude/worktrees/d27-m6, branch d27-m6 from main e3b1ccc8.
+Nothing committed (lane rules: no git that writes). The hand-off signatures are engine/kernel/world/build/LANES.md.
+
+ACCEPTANCE
+- 773 green with counts: MET. `bash engine/tools/selftest.d/773-home-rules-seam.sh` -> HOME rules-seam ok, 8/8
+  (ops 69 refusals: 57 shape rows + 10 Home-rule rows + 2 caps; undo; files; renumber; region; run; records; play).
+- 754 and 755-767 stay green: MET. `bash engine/tools/selftest.sh home.` -> "selftest: 126 passed, 0 failed"
+  (seam 10, build 8, mode 5, land 10, pieces 7, stamp 4, command 11, command-m5 5, unlocks 4, water 10, paths 10,
+  plants 7, look 6, walker-steps 8, results-card 4, a 5, home 4, rules-seam 8). Every block's count equals its case
+  list. 774 / 775 (stubs) were created after that run started; each run alone: PASS (stub: no case yet).
+- tl check --tier fast: MET, 5/5 PASS (arch 12/12, assets 4/4, cards 3/3, devx.test 230/230, foreman.typecheck).
+- --only world 9/9 equal to main's hashes: MET. PASS world [9/9] (559 s under load); the 9 hashes and frame counts
+  are identical to main's last gate log (/c/Users/kazda/kiro/third-life/.tl/gate-world.log, 25 Nov): diff empty.
+- Uncapped `bash engine/tools/selftest.sh`: NOT MET (a stopped run, never a pass). Under the machine's load (~90
+  Godot processes of other lanes) it reached 160 cases in 70 min (main had 715: ~5 h at that pace); I stopped my own
+  run at the time box (10:31). Of the 160: 159 PASS, 1 FAIL k2.down_invariants = invariants.many_budget, a wall-clock
+  frame budget (p50 1.186 ms over 1.0 ms) of example.down in the host runner: no Home, no build mode, the same kind
+  as main's known feel.pushbox_invariants many_budget fail; read as load, not judged as mine without a quiet rerun.
+  Every block this lane touches (752-767, 773-775) ran in the home. run above and passed.
+- LANES.md names every hand-off signature: MET (sections "The seam's interfaces", "Hand-offs between the lanes").
+
+GATES
+- 773 alone (final files): HOME rules-seam ok, 8/8, no SCRIPT ERROR / ERROR lines in the log.
+- home. : selftest: 126 passed, 0 failed.
+- 754 alone: 10/10, HOME seam ok.
+- foreman world_edit tests: 13/13 (12 before + 1 M6). Whole foreman suite (npm test): 461 tests, 454 pass, 1 fail:
+  explain.test "status is unchanged byte for byte after the move (guard)" (a killed-job status check), which passes
+  alone (explain.test.js 8/8); cli.ts is untouched by this lane: a load flake on a machine running ~90 Godot
+  processes of other lanes, named here, not called green.
+- tl check --tier fast: PASS 5/5. First try FAILED arch schema-versions (a test string "tl.records/2" in
+  rules_case_run.gd read as an undeclared schema); the test string was changed, then 12/12.
+- world: run 1 was stopped by MY OWN outer `timeout 900` (exit 143, nothing judged: NOT a pass); run 2 without it:
+  PASS [9/9], hashes as main.
+
+DELIVERED (files)
+New, engine/kernel/world/build/:
+  rules_check.gd     the shapes of zone/unzone/rule/unrule and their saved forms, canonical key order, describe()
+  rules_layer.gd     the `rules` layer: validate/apply/invert/fits, ids, caps, protection, save/load (tl.build/4
+                     zones, rules), offers, read_region / room / ask_part, renumber (answer ids), preview_node stub
+  rules_run.gd       the runtime: begin / step(frame, feet_cell, use_down) / stop / state / respawn_now, pure
+  rules_facade.gd    the facade interface (8 methods), a no-op base
+  rules_play.gd      the wiring in the visit (lane P owns it from now): on/off rules, E from the visit's TLInput
+  home_records.gd    tl.records/1 read/write (temp, read back, .prev, rename), started / finished -> new best
+  tools/rules_tool.gd  the stub tool ("Rules: coming in M6"), between plants and command
+  rules_case.gd, rules_case_run.gd  the 773 case; all .gd.uid files made by --import
+engine/tools/selftest.d/773-home-rules-seam.sh (the case), 774-home-rules-play.sh, 775-home-rules-tool.sh (stubs, P, T)
+Changed:
+  build_file.gd      tl.build/4: KEYS_V4, MAX_V 4, KEY_V zones/rules 4, OP_V zone/unzone/rule/unrule 4
+  home_build.gd      RulesLayer in LAYER_KINDS; expand_input calls the rules layer's renumber on the whole answer
+  seam_lists.gd      LAYERS + rules, OPS rules, TOOLS + rules (before command), STUB_LINES, M6_EXAMPLES
+  build_mode.gd      the rules tool in TOOLS; play = RulesPlay.new(self) in _ready; play.tick(frames) after
+                     build.step(); play.stop("quit") on exit
+  protect.gd         refusal_box(lo, hi): the blocks' reasons over a zone box (circles, rects, boxes, one space query)
+  blocks_layer.gd    the mask interface: set_mask / masked / clear_masks / masks (marks sections; P draws it)
+  BUILD.md, LANES.md the M6 rows, tl.build/4, the lane map
+  foreman/src/world_edit_check.ts, world_edit.ts, prompts/world_edit.schema.json, src/test/world_edit.test.ts:
+                     wire names only (ASK_OPS + zone/unzone/rule/unrule; answer keys box, look, name, when, if, do;
+                     ask's optional zones, rules, rules_room; shape-only checks), as the M5 seam did. world_edit
+                     tests 13/13 (one new).
+
+BEHAVIOUR CHANGES
+- The build-mode strip has 10 tools (rules between plants and command). 754 `seam.tools` reads seam_lists.gd, so no
+  expectation moved; Shift+T from blocks still lands on command.
+- The ask's `ops` now lists zone, unzone, rule, unrule (the rules layer offers them); Foreman accepts them (wire
+  names) but its prompt does not teach them yet (lane C). While C has not landed, a Home with zones puts `zones` and
+  `rules` inside the ask's `layers` (home_build.read_region merges every layer's read); C moves them top-level.
+- build mode now ticks the rules runtime every physics frame while off; with no rules it returns at once.
+- A Home with zones or rules is written as tl.build/4; a Home without them is written exactly as before (v1/v2/v3
+  byte for byte, held by 754 seam.files / seam.v3 and 773 rules-seam.files).
+
+QUESTIONS FOR THE DIRECTOR (gaps the contract leaves; each is an interpretation, named here, not a silent change)
+Q1  A taken zone fires no enter, leave or use until the run restarts or the visit ends. The contract has no
+    "not taken" condition, so without this a coin rule (enter -> take, add 1) would count again on every re-entry.
+Q2  `if` holds at most 8 conditions (IF_MAX). The contract caps `do` (1-8) but names no cap for `if`.
+Q3  Triggers made by effects (start, finish, a counter reaching `at`) are read as triggers on the NEXT frame:
+    "the triggers are read ... then every fired rule runs" read literally. So "count at 3 -> say" says one frame
+    after the third coin, and "on finish" one frame after the finish. Same-frame would need a second pass.
+Q4  The start zone (the run's respawn until a checkpoint) is the zone of the starting rule's trigger; when the
+    trigger names no zone (count, every, start), the respawn is the floor of the feet cell at the start.
+Q5  `count` fires once per run, and once per visit while no run is going (counters are 0 at a visit's start).
+Q6  "printable": no C0, DEL or C1 control characters; other Unicode is allowed (names, run names, say text).
+Q7  Zone protection (protect.gd refusal_box): game lots, add_box boxes, authored structures and tree trunks by one
+    box query; NOT the visitor (he stands in the start zone he draws) and NOT the cell / area rules of other layers
+    (pieces, land columns), since zones may overlap blocks. A big zone that touches a tree trunk is refused "tree".
+Q8  "In the block grid's bounds": y -16..111 and |x|, |z| <= 100,000 cells (the grid has no x/z limit; paths use
+    100 km).
+Q9  The brief's `expand_input(op)` is `renumber(ops: Array)` on the rules layer: renumbering needs the whole answer
+    (a rule's reference to a zone made in the same answer). home_build.expand_input calls it, so the command tool
+    needs no change. Rule: a `zone`/`rule` op's id is the answer's own and gets the next free id in answer order; a
+    reference to an id no `zone` op of the answer defines names a Home zone and stays; unzone/unrule are never
+    renumbered; an id the answer names twice is refused there.
+Q10 run_finished without records (none given): best_frames = frames, new_best false. Starting a run while one goes
+    restarts it with no run_stopped call; build mode on / a game on stage / quit drops it with run_stopped(why).
+Q11 E is also the visit's "enter a game" key; near a game's gate one press does both (lane P to say what wins).
+Q12 Lane C needs a selftest block: the seam holds 773 (seam), 774 (P), 775 (T) only.
+Q14 A stamp (tl.stamp/1) carries blocks and pieces only: zones and rules in a stamped box are not taken along
+    (the contract names no stamp key for them). A parkour course cannot travel as a stamp yet.
+Q13 The rules stop (and reset) while a game is on stage, not pause: the run going is dropped.
+
+NOT DONE / LEFT TO LANES
+- No mask in the mesher (P), no zone drawing or ghost (T), no prompt or space check (C): by design.
+- The protect.gd space query (authored structure / tree) is not exercised headless (no space); the circle and box
+  reasons are.

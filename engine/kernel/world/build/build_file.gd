@@ -1,10 +1,11 @@
 extends RefCounted
-## WP1 + SEAM: the saved Home (tl.build/1, /2 and /3, contracts/BUILD.md). A directory (the exe's is user://home) holds
+## WP1 + SEAM: the saved Home (tl.build/1, /2, /3 and, since the M6 seam, /4, contracts/BUILD.md). A directory (the exe's is user://home) holds
 ##   build.json    {"v":1,"seed":<Home seed>,"rev":<int>,"chunks":{"<cx>,<cz>":"<base64>"}}, keys in that order; a
 ##                 chunk's value is the base64 of its little-endian int32 pairs (chunk-local cell, code) sorted by cell,
 ##                 the cell lx + 96 * (lz + 96 * (y + 16)) (blocks.gd `chunk_pairs`); empty chunks are left out.
 ##                 tl.build/2 is the same with "v":2 and, after "chunks", the layers' keys "land", "paint", "pieces";
-##                 tl.build/3 adds "water", "paths", "plants" after them (each key only when not empty), in that order
+##                 tl.build/3 adds "water", "paths", "plants" after them, tl.build/4 (M6) "zones", "rules" after those
+##                 (each key only when not empty), in that order
 ##   edits.jsonl   the tl.edit/1 operations since the last compaction, one per line (edit_log.gd writes them)
 ## Every layer (BUILD.md "Layers") saves its own keys (`save_part`) and reads them back (`load_part`). The file is
 ## written at the lowest version that holds every key a layer saves (KEY_V), so a Home of blocks only is v1 byte for
@@ -20,14 +21,15 @@ const EDITS := "edits.jsonl"
 const KEYS := ["v", "seed", "rev", "chunks"]                                    # tl.build/1
 const KEYS_V2 := ["v", "seed", "rev", "chunks", "land", "paint", "pieces"]      # tl.build/2
 const KEYS_V3 := ["v", "seed", "rev", "chunks", "land", "paint", "pieces", "water", "paths", "plants"]   # tl.build/3
-const KEYS_OF := {1: KEYS, 2: KEYS_V2, 3: KEYS_V3}
-const MAX_V := 3                         # the highest version this exe reads and writes
+const KEYS_V4 := ["v", "seed", "rev", "chunks", "land", "paint", "pieces", "water", "paths", "plants", "zones", "rules"]   # tl.build/4 (M6)
+const KEYS_OF := {1: KEYS, 2: KEYS_V2, 3: KEYS_V3, 4: KEYS_V4}
+const MAX_V := 4                         # the highest version this exe reads and writes
 ## The version each saved key needs.
-const KEY_V := {"chunks": 1, "land": 2, "paint": 2, "pieces": 2, "water": 3, "paths": 3, "plants": 3}
+const KEY_V := {"chunks": 1, "land": 2, "paint": 2, "pieces": 2, "water": 3, "paths": 3, "plants": 3, "zones": 4, "rules": 4}
 ## The version each op kind needs in the journal (contracts/BUILD.md "Every operation kind names the file version it
 ## needs"). An op kind not named here needs MAX_V.
 const OP_V := {"place": 1, "remove": 1, "land": 2, "paint": 2, "put": 2, "lift": 2,
-	"flood": 3, "drain": 3, "path": 3, "unpath": 3, "plant": 3}
+	"flood": 3, "drain": 3, "path": 3, "unpath": 3, "plant": 3, "zone": 4, "unzone": 4, "rule": 4, "unrule": 4}
 
 
 ## The file version a journal line of op kind `op` needs.
@@ -49,7 +51,7 @@ static func text_of(layers: Array, home_seed: int, rev: int) -> Dictionary:
 			continue
 		v = maxi(v, int(KEY_V[k]))
 	var text := "{\"v\":%d,\"seed\":%d,\"rev\":%d" % [v, home_seed, rev]
-	for k: String in KEYS_V3.slice(3):
+	for k: String in (KEYS_OF[MAX_V] as Array).slice(3):
 		if parts.has(k):
 			text += ",%s:%s" % [JSON.stringify(k), JSON.stringify(parts[k], "", false)]
 	return {"text": text + "}\n", "v": v}

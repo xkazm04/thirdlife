@@ -1,0 +1,9 @@
+08:27 | state: working | did: read brief, contract M6, seam files | next: tl.build/4, rules_layer.gd | gates: -
+08:37 | state: working | did: tl.build/4, rules_check/layer, rules_run, rules_facade, rules_play wired in build_mode, home_records, blocks mask, foreman wire names (13/13) | next: import, 773 case | gates: foreman world_edit 13/13
+08:48 | state: working | did: 773 rules-seam 8/8 green, 754 green | next: home.* blocks, gates, LANES.md | gates: PASS 773 8/8
+08:56 | state: working | did: LANES.md M6 (P/T/C, hand-off table), BUILD.md M6, stubs 774/775, arch PASS | next: home.* results, world gate, uncapped selftest | gates: arch 12/12 PASS; foreman world_edit 13/13
+08:59 | state: working | did: home. 126 passed 0 failed (773 8/8 incl.) | next: world gate, uncapped selftest | gates: PASS home. 126/126
+09:15 | state: working | did: world gate run 1 killed by my own 15-min timeout under machine load (~90 Godot processes of other lanes), nothing judged | next: world gate rerun (no outer timeout), fast tier | gates: world NOT RUN
+09:25 | state: working | did: world 9/9 world=alone, hashes identical to main's last log (.tl/gate-world.log 25 Nov); fast 5/5 | next: foreman suite, rerun 773, uncapped selftest | gates: PASS world [9/9]; PASS fast 5/5
+09:36 | state: working | did: 773 rerun 8/8; foreman suite 454 pass 1 fail (explain.test status guard, passes alone 8/8: load flake, cli.ts untouched) | next: uncapped selftest | gates: PASS 773 8/8
+10:31 | state: done | did: M6 seam: tl.build/4, rules layer, runtime, facade, records, wiring, stubs 774/775, foreman wire names, LANES.md M6 | next: Director lands; lanes P T C branch from d27-m6 | gates: PASS 773 8/8; PASS home. 126/126; PASS fast 5/5; PASS world 9/9 (= main); uncapped NOT RUN to end (160 of ~715, 1 load FAIL many_budget)

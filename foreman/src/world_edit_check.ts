@@ -17,12 +17,15 @@ export const PLANTS = ["meadow", "flowers", "tall_grass", "valley"];
 export const PATH = { ptsMin: 2, ptsMax: 64, stepMin: 100, stepMax: 4800, widthMin: 150, widthMax: 800 };   // cm
 const LATTICE = 3;
 /** Every op kind an ask's `ops` may name (tl.world-edit-ask/1): the layers' kinds and `pour`, which the exe expands. */
-export const ASK_OPS = ["place", "remove", "land", "paint", "put", "lift", "flood", "pour", "drain", "path", "unpath", "plant"];
+export const ASK_OPS = ["place", "remove", "land", "paint", "put", "lift", "flood", "pour", "drain", "path", "unpath", "plant",
+  "zone", "unzone", "rule", "unrule"];
 /** The kinds besides blocks that pass through with shape checks only (their rules are the exe's layers'), and their keys. */
 const OTHER: Record<string, string[]> = {
   land: ["verts"], paint: ["cells"], put: ["at", "part", "params", "rot", "seed"], lift: ["at", "part", "params", "rot", "seed"],
   flood: ["cells"], drain: ["cells"], plant: ["cells"], pour: ["at"],
   path: ["id", "pts", "width_cm", "paint"], unpath: ["id", "pts", "width_cm", "paint"],
+  zone: ["id", "box", "look", "name"], unzone: ["id", "box", "look", "name"],          // M6 seam: wire names and shapes only
+  rule: ["id", "when", "if", "do"], unrule: ["id", "when", "if", "do"],
 };
 
 export type Cell = [number, number, number];
@@ -43,6 +46,9 @@ export interface Ask {
   parts?: { kind: string; note: string }[];
   layers?: Record<string, unknown>;
   water?: { y: number; runs: [number, number, number][] }[];
+  zones?: Record<string, unknown>[];
+  rules?: Record<string, unknown>[];
+  rules_room?: { zones_left: number; rules_left: number; counters: string[] };
   caps: { ops: number; blocks_left: number };
 }
 
@@ -53,6 +59,7 @@ export interface ModelOp {
   shape?: number; mat?: number; rot?: number; flip?: boolean; walls?: boolean;
   verts?: unknown[]; cells?: unknown[]; part?: string; params?: Record<string, unknown>; seed?: number;
   id?: number; pts?: unknown[]; width_cm?: number; paint?: string;
+  box?: unknown[]; look?: string; name?: string; when?: Record<string, unknown>; if?: unknown[]; do?: unknown[];
 }
 export type EditOp = Record<string, unknown>;
 type Block = [number, number, number, boolean];   // shape, mat, rot, flip
@@ -169,6 +176,18 @@ function otherOp(o: ModelOp, inside: (c: number[]) => boolean, lo: Cell, hi: Cel
     if (o.op === "put" && (typeof o.part !== "string" || !isInt(o.rot))) return "put needs part and rot";
     if (o.op === "put" && !parts.has(o.part as string)) return `the part "${o.part}" is not in the parts table (unknown, or not unlocked yet): use one of ${[...parts].join(", ")}`;
     if (o.op === "put" && ((o.rot as number) < 0 || (o.rot as number) > 3)) return "rot must be 0, 1, 2 or 3";
+    return "";
+  }
+  if (o.op === "zone" || o.op === "unzone") {      // M6 seam: the shapes; the exe's rules layer holds every limit (lane C: more)
+    if (!isInt(o.id) || o.id < 1) return "id must be a positive integer";
+    if (!Array.isArray(o.box) || o.box.length !== 2 || !o.box.every(isCell)) return "box must be [[x0, y0, z0], [x1, y1, z1]] of integers";
+    if (typeof o.look !== "string") return "look must be none, pad, coin or flag";
+    return "";
+  }
+  if (o.op === "rule" || o.op === "unrule") {
+    if (!isInt(o.id) || o.id < 1) return "id must be a positive integer";
+    if (typeof o.when !== "object" || o.when === null || Array.isArray(o.when)) return "when must be one trigger {\"on\": ...}";
+    if (!Array.isArray(o.do) || o.do.length === 0) return "do must be a non-empty list of effects";
     return "";
   }
   if (o.op === "path" || o.op === "unpath") {

@@ -84,6 +84,51 @@ func refusal_area(rect: Rect2, what: String) -> String:
 	return ""
 
 
+## M6 seam: why a zone's cell box `lo`..`hi` (inclusive) may not be there; "" = it may. The blocks' own reasons over
+## the whole box: the circles and rects (as `refusal` reads a cell, over the box's footprint), the boxes, then one
+## query of the box against the visitor's space ("authored structure (<tag>)", "tree"). Not asked: the visitor (a
+## zone may hold him: he stands in the start zone he draws), the cell and area rules (zones may overlap blocks and
+## pieces, and they change no ground).
+func refusal_box(lo: Vector3i, hi: Vector3i) -> String:
+	var rect := Rect2(Vector2(lo.x, lo.z), Vector2(hi.x - lo.x + 1, hi.z - lo.z + 1))
+	for c: Array in circles:
+		var p: Vector2 = (c[0] as Vector2).clamp(rect.position, rect.end)
+		if p.distance_to(c[0]) <= float(c[1]):
+			return c[2]
+	var reach := rect.size.length() * 0.5 + 0.21           # a cell's 0.71 m reach, round the box's half diagonal
+	for r: Array in rects:
+		var local := (rect.get_center() - (r[0] as Vector2)).rotated(float(r[2]))
+		var half: Vector2 = r[1]
+		if absf(local.x) <= half.x + reach and absf(local.y) <= half.y + reach:
+			return r[3]
+	var box := AABB(Vector3(lo) + Vector3.ONE * 0.01, Vector3(hi - lo + Vector3i.ONE) - Vector3.ONE * 0.02)
+	for b: Array in boxes:
+		if (b[0] as AABB).intersects(box):
+			return b[1]
+	if ws == null:
+		return ""
+	var space: RID = ws.get("space")
+	if not space.is_valid():
+		return ""
+	var shape := BoxShape3D.new()
+	shape.size = box.size
+	var q := PhysicsShapeQueryParameters3D.new()
+	q.shape = shape
+	q.collision_mask = 1
+	q.collide_with_areas = false
+	q.transform = Transform3D(Basis.IDENTITY, box.get_center())
+	var body: RID = ws.get("body")
+	q.exclude = [body] if body.is_valid() else []
+	var tags: Dictionary = ws.get("_tags")
+	for hit: Dictionary in PhysicsServer3D.space_get_direct_state(space).intersect_shape(q, 32):
+		var tag := str(tags.get(hit.rid, ""))
+		if tag == "home ground" and int(hit.shape) > 0:
+			return "tree"
+		if not GROUND_TAGS.has(tag) and not tag.begins_with("pad "):
+			return "authored structure (%s)" % (tag if tag != "" else "untagged")
+	return ""
+
+
 ## The walk's game plots and site lots (a boot/village.json document).
 func from_walk(walk: Dictionary) -> void:
 	for p: Variant in walk.get("plots", []):

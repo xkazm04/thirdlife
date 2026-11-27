@@ -35,8 +35,11 @@ export const askSchema = obj({
   parts: { type: "array", minItems: 1, items: obj({ kind: words, note: words }) },
   layers: { type: "object" },
   water: { type: "array", items: obj({ y: int, runs: { type: "array", minItems: 1, items: ints(3) } }) },
+  zones: { type: "array", items: { type: "object" } },       // M6 seam: the wire names (lane C: the shapes)
+  rules: { type: "array", items: { type: "object" } },
+  rules_room: obj({ zones_left: { type: "integer", minimum: 0 }, rules_left: { type: "integer", minimum: 0 }, counters: { type: "array", items: words } }),
   caps: obj({ ops: { type: "integer", minimum: 1 }, blocks_left: { type: "integer", minimum: 0 } }),
-}, ["refused", "paints", "parts", "layers", "water"]);
+}, ["refused", "paints", "parts", "layers", "water", "zones", "rules", "rules_room"]);
 
 export function readAsk(file: string): Ask {
   let value: unknown;

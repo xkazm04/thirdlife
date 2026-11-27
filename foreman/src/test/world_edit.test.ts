@@ -207,3 +207,25 @@ test("world-edit M5: a mat or part not in the ask's tables (locked) is refused, 
   assert.equal(twice.code, 1);
   assert.match(twice.result.error, /after 2 attempts.*"house" is not in the parts table/);
 });
+
+test("expand: the M6 ops pass through with shape checks once the ask offers them; the ask takes zones, rules and rules_room", () => {
+  const m6 = { ...ask, ops: ["place", "remove", "zone", "unzone", "rule", "unrule"],
+    zones: [{ id: 1, box: [[100, 10, 50], [101, 10, 51]], look: "pad" }], rules: [],
+    rules_room: { zones_left: 511, rules_left: 512, counters: [] } } as never;
+  const good = [
+    { op: "zone", id: 1, box: [[100, 10, 50], [102, 12, 52]], look: "coin", name: "Coin" },
+    { op: "rule", id: 1, when: { on: "enter", zone: 1 }, do: [{ do: "take", zone: 1 }, { do: "add", counter: "coins", by: 1 }] }];
+  const r = expand(m6, good);
+  assert.deepEqual(r.problems, []);
+  assert.deepEqual(r.ops, good);
+  const bad = expand(m6, [
+    { op: "zone", id: 0, box: [[100, 10, 50], [102, 12, 52]], look: "pad" },
+    { op: "zone", id: 2, box: [[100, 10, 50]], look: "pad" },
+    { op: "rule", id: 2, when: { on: "enter", zone: 1 }, do: [] },
+    { op: "rule", id: 3, do: [{ do: "finish" }] }]);
+  assert.deepEqual(bad.problems.map((p) => p.replace(/^ops\[\d+\] \((\w+)\): /, "$1: ")), [
+    "zone: id must be a positive integer", "zone: box must be [[x0, y0, z0], [x1, y1, z1]] of integers",
+    "rule: do must be a non-empty list of effects", 'rule: when must be one trigger {"on": ...}']);
+  const ok = worldEdit(m6 as never, [{ note: "A coin.", ops: good }]);
+  assert.equal(ok.code, 0, ok.error);
+});

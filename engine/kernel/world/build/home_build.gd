@@ -7,7 +7,7 @@ extends RefCounted
 ##   edits      edit_log.gd     tl.edit/1 ops, batches, undo/redo, the journal; each op kind goes to its layer
 ##   layers     blocks_layer.gd (place, remove), land_layer.gd (land, paint: M2), pieces_layer.gd (put, lift: M3),
 ##              water_layer.gd (flood, drain; the input op pour), paths_layer.gd (path, unpath), plants_layer.gd
-##              (plant): M5, stubs until their lanes land
+##              (plant): M5; rules_layer.gd (zone, unzone, rule, unrule: M6, the seam's; the runtime is rules_run.gd)
 ##   protect    protect.gd      where a block may not go (and the rules the layers add)
 ## Edits change the store at once; meshes and bodies follow in `step(budget)`, which the owner calls once per physics
 ## frame (time is frames). `dirty` is true from the first change after a save or load until the next save
@@ -27,7 +27,8 @@ const PiecesLayer := preload("res://kernel/world/build/pieces_layer.gd")
 const WaterLayer := preload("res://kernel/world/build/water_layer.gd")
 const PathsLayer := preload("res://kernel/world/build/paths_layer.gd")
 const PlantsLayer := preload("res://kernel/world/build/plants_layer.gd")
-const LAYER_KINDS := [BlocksLayer, LandLayer, PiecesLayer, WaterLayer, PathsLayer, PlantsLayer]   # seam_lists.gd LAYERS
+const RulesLayer := preload("res://kernel/world/build/rules_layer.gd")
+const LAYER_KINDS := [BlocksLayer, LandLayer, PiecesLayer, WaterLayer, PathsLayer, PlantsLayer, RulesLayer]   # seam_lists.gd LAYERS
 const INPUT_OPS := {"pour": "water"}     # ops an LLM answer may carry that a layer's `expand_input` turns into ops
 const REGION_MAX := 128                  # cells per axis `read_region` reads at most
 const HOME_DIR := "user://home"
@@ -38,7 +39,7 @@ var blocks: RefCounted
 var mesh: RefCounted
 var edits: RefCounted
 var protect: RefCounted
-var layers: Array = []                   # blocks, land, pieces, water, paths, plants (edit_log.gd `register`): BUILD.md "Layers"
+var layers: Array = []                   # blocks, land, pieces, water, paths, plants, rules (edit_log.gd `register`): BUILD.md "Layers"
 var ctx := {}                            # what a layer is made with: blocks, mesh, check, protect, space, root, seed, home
 var root: Node3D = null
 var ws: Object = null
@@ -83,7 +84,7 @@ func register(l: RefCounted) -> void:
 			l.add_rules(protect)
 
 
-## The layer called `id` ("blocks", "land", "pieces", "water", "paths", "plants"), or null.
+## The layer called `id` ("blocks", "land", "pieces", "water", "paths", "plants", "rules"), or null.
 func layer(id: String) -> RefCounted:
 	for l: RefCounted in layers:
 		if l.get("id") == id:
@@ -298,9 +299,12 @@ func preview_nodes(r: Dictionary, skip: Array = []) -> Array:
 ## An LLM answer's ops with every input-only op (INPUT_OPS: `pour`) expanded by its layer's `expand_input(op)`
 ## (which answers {"ops": [...]} or {"error"}); every other op passes through unchanged. Returns {"ops": the ops to
 ## preview and apply, "refused": [[index in `ops`, reason], ...] for the input ops that could not be expanded}. An
-## expanded op takes the input op's `author` when it names none.
+## expanded op takes the input op's `author` when it names none. M6 seam: then the rules layer's `renumber` gives the
+## answer's new zones and rules the next free ids and rewrites the answer's references to them (contracts/BUILD.md
+## "Ids in an answer are the answer's own"); an id the answer names twice is refused there.
 func expand_input(ops: Array) -> Dictionary:
 	var out := []
+	var src := []                        # M6: the index in `ops` each op of `out` came from
 	var refused := []
 	var land_before := []                # M5 integration: the answer's land ops so far (a pour fills the land they leave)
 	for i: int in ops.size():
@@ -308,6 +312,7 @@ func expand_input(ops: Array) -> Dictionary:
 		var kind := str((op as Dictionary).get("op", "")) if op is Dictionary else ""
 		if not INPUT_OPS.has(kind):
 			out.append(op)
+			src.append(i)
 			if kind == "land":
 				land_before.append(op)
 			continue
@@ -323,6 +328,14 @@ func expand_input(ops: Array) -> Dictionary:
 			if (op as Dictionary).has("author") and not o.has("author"):
 				o["author"] = op.author
 			out.append(o)
+			src.append(i)
+	var rl := layer("rules")
+	if rl != null and rl.has_method("renumber"):
+		var rn: Dictionary = rl.call("renumber", out)
+		for r: Array in rn.refused:
+			refused.append([src[int(r[0])], r[1]])
+		out = rn.ops
+		refused.sort_custom(func(a: Array, b: Array) -> bool: return int(a[0]) < int(b[0]))
 	return {"ops": out, "refused": refused}
 
 

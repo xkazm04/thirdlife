@@ -5,8 +5,9 @@ extends Node
 ## (home_build.gd `pick`, reaching 24 m past the visitor: `reach`). This node polls keys and buttons once per physics
 ## frame (as TLInput polls; the wheel from its events), owns the cursor, the ghost, the hotbar, undo and redo, saving
 ## and the test hook (build_devices.gd), and hands the rest to the tool: tools/blocks_tool.gd is M1's hand building;
-## sculpt, paint, piece, stamp and command are M2, M3 and M4's; water, path and plant are M5's (stubs until their
-## lanes land). Host keys: B or Esc leave (Esc never quits
+## sculpt, paint, piece, stamp and command are M2, M3 and M4's; water, path and plant are M5's; rules is M6's (a stub
+## until lane T lands). M6 seam: while build mode is off and no game is on stage the Home's rules run, once per physics
+## frame after `build.step()` (`play`, rules_play.gd: lane P's). Host keys: B or Esc leave (Esc never quits
 ## from build mode), T / Shift+T next / previous tool, Enter the command tool, Ctrl+Z undo, Ctrl+Y (Ctrl+Shift+Z)
 ## redo, hold MMB or Alt look. A tool whose `blocks_input()` is true has the keyboard: the host reads no key then.
 ## Saving (user://home or TL_HOME_BUILD_DIR): on leaving, `autosave_frames` after the first unsaved change (never in a
@@ -22,7 +23,8 @@ const TOOLS := [preload("res://kernel/world/build/tools/blocks_tool.gd"), preloa
 	preload("res://kernel/world/build/tools/paint_tool.gd"), preload("res://kernel/world/build/tools/piece_tool.gd"),
 	preload("res://kernel/world/build/tools/stamp_tool.gd"), preload("res://kernel/world/build/tools/water_tool.gd"),
 	preload("res://kernel/world/build/tools/path_tool.gd"), preload("res://kernel/world/build/tools/plant_tool.gd"),
-	preload("res://kernel/world/build/tools/command_tool.gd")]   # strip order; seam_lists.gd TOOLS holds the cases to it
+	preload("res://kernel/world/build/tools/rules_tool.gd"), preload("res://kernel/world/build/tools/command_tool.gd")]   # strip order; seam_lists.gd TOOLS holds the cases to it
+const RulesPlay := preload("res://kernel/world/build/rules_play.gd")
 const SELF := "res://kernel/world/build/build_mode.gd"
 const REACH := 24.0                     # metres the cursor reaches past the camera's distance to the visitor
 const AUTOSAVE_FRAMES := 1800
@@ -51,6 +53,7 @@ var _wheel := 0
 var _holding := 0                       # the mouse button the current tool holds (a drag), 0: none
 var _dirty_at := -1                     # frame of the first unsaved change (-1: none)
 var devices: RefCounted = null          # build_devices.gd: TL_BUILD_DEVICES (a test hook)
+var play: RefCounted = null             # M6: rules_play.gd, the Home's rules while build mode is off (lane P's)
 var _view: Node = null
 var _saved_on_exit := false
 
@@ -114,6 +117,7 @@ func _ready() -> void:
 	build.dirty_changed.connect(_on_dirty)
 	tree_exiting.connect(_on_exit)
 	devices = Devices.new(self, OS.get_environment("TL_BUILD_DEVICES"))
+	play = RulesPlay.new(self)
 
 
 # ------------------------------------------------------------------ the owner's calls
@@ -216,6 +220,7 @@ func _physics_process(_delta: float) -> void:
 		t.tick(frames)
 	_poll()
 	build.step()
+	play.tick(frames)                          # M6: runs the rules only while not active and no game is on stage
 	if _dirty_at >= 0 and frames - _dirty_at >= autosave_frames and _holding == 0:
 		save_now("autosave")
 
@@ -255,6 +260,8 @@ func _on_exit() -> void:
 	_saved_on_exit = true
 	_release()
 	save_now("quit")
+	if play != null:
+		play.stop("quit")
 	build.free_all()
 
 

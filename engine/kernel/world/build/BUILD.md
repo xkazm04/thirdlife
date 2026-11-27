@@ -3,9 +3,9 @@
 Players build in the Home (Wren Valley) with 1 m smart blocks. This directory holds the core: the store, the shapes and
 how they join, the mesher and collider, the edit log with undo and redo, save and load, and protection. It has no input.
 Build mode (WP2) and the LLM command bar (M4) call the API below. The file formats are `contracts/BUILD.md`
-(`tl.edit/1`, `tl.build/1`, since the seam `tl.build/2`, since the M5 seam `tl.build/3`). Selftest block 752 holds this
-code to both texts; 754 holds the seam (layers, tools, v1/v2/v3, preview, `read_region`, the M5 layer interface). Which
-lane owns which file is `LANES.md`.
+(`tl.edit/1`, `tl.build/1`, since the seam `tl.build/2`, since the M5 seam `tl.build/3`, since the M6 seam
+`tl.build/4`). Selftest block 752 holds this code to both texts; 754 holds the seam (layers, tools, v1/v2/v3, preview,
+`read_region`, the M5 layer interface); 773 holds the M6 seam (rules and runs). Which lane owns which file is `LANES.md`.
 
 | File | What it is |
 |---|---|
@@ -21,6 +21,9 @@ lane owns which file is `LANES.md`.
 | `water_layer.gd`, `water_store.gd`, `water_fill.gd`, `water_mesh.gd` | the `water` layer (M5): `flood`, `drain`, the input op `pour` (`expand_input`), `wet_at`, `water_runs`; the cells and levels per 3 m cell (saved `water`), the pour's priority flood to just under the spill level, the still-water drawing per 96 m chunk and its ghost |
 | `paths_layer.gd`, `path_shape.gd`, `path_mesh.gd`, `path_grade.gd` | the `paths` layer (M5): `path`, `unpath`, ids (`next_id`), refusal along the samples (`refusal_of`), the drawing per 96 m chunk (made over frames: `VERTS` vertices a frame), `path_at`, `covers`, the ghost (`preview_node`, `ghost_of`), save `paths`; the spline sampled every metre; the ribbon in the terrain material (the boardwalk for `plank`) and the hologram; the grading land op and `lay(build, op)`: path + grading as one batch |
 | `plants_layer.gd`, `land_ghost.gd` | the `plants` layer (M5): `plant` (growth of 3 m cells: meadow, flowers, tall grass, drawn by the ground's shader through the land mesh's UV, never by instances), `stroke_*`, save `plants`; `land_ghost.gd` draws the ground's part of a dry run (land, paint, plants) for `preview_node` (`LAND.md`) |
+| `rules_check.gd`, `rules_layer.gd` | M6: the `rules` layer: `zone`, `unzone`, `rule`, `unrule` (zones are boxes on the block grid with a look, rules are when / if / do), every shape and refusal of contracts/BUILD.md "Milestone 6" (`rules_check.gd`, static), ids (`next_zone_id`, `next_rule_id`), protected areas (`protect.gd` `refusal_box`), save `zones` and `rules` (tl.build/4), `read_region` / `room` / `ask_part` (the ask's `zones`, `rules`, `rules_room`), `renumber` (an answer's ids), `describe` (a rule as a line) |
+| `rules_run.gd`, `rules_facade.gd`, `rules_play.gd`, `home_records.gd` | M6: the rules running (pure, frame-driven: `begin`, `step(frame, feet_cell, use_down)`, `stop`, `state`), the facade it calls for every effect that touches the world (no-op base; lane P's real one), the wiring in the visit (`build_mode.gd` `play.tick(frames)`: on while build mode is off and no game is on stage), `tl.records/1` (plays, finishes, best, "new best") |
+| `rules_case.gd`, `rules_case_run.gd` | the M6 seam's headless case (773) |
 | `stub_layer.gd` | what a stub layer does (refuses every op "not built yet: <what>", offers nothing, saves nothing); no M5 layer extends it now, 754 and 757 still hold it |
 | `plant_scatter.gd` | M5: `scatter(...)`, the seeded tree and bush `put` ops of a scatter stroke (below): seeded tree and bush `put` ops, skipping paths, water, protected and steep cells |
 | `build_file.gd` | `tl.build/1`, `/2` and `/3`: save (compaction), load (build file, then the journal replayed), `mark_v`, the version tables `KEY_V` and `OP_V` |
@@ -85,7 +88,7 @@ itself, so there is no cycle) and registers them. A layer is a RefCounted script
 
 | Member | What it does |
 |---|---|
-| `id` | `"blocks"`, `"land"`, `"pieces"`, `"water"`, `"paths"`, `"plants"` |
+| `id` | `"blocks"`, `"land"`, `"pieces"`, `"water"`, `"paths"`, `"plants"`, `"rules"` (M6) |
 | `ops() -> PackedStringArray` | the op kinds it owns |
 | `malformed(op, strict) -> String` | "" or why the op is not well-formed (unknown keys first, then its keys, then `author` and `batch`: `op_util.gd` `head` and `tail`). `strict`: a journal line, every required key present |
 | `can_apply(op) -> String` | "" or why the rules refuse a well-formed op now (the store, caps, protection) |
@@ -107,12 +110,20 @@ itself, so there is no cycle) and registers them. A layer is a RefCounted script
 | `expand_input(op) -> Dictionary` (M5, the water layer) | an input-only op (`pour`) as `{"ops": [...]}` or `{"error"}` (a stub layer answers `{"error": "not built yet: water"}`) |
 | `water_runs(lo, hi) -> Array` (M5, the water layer) | the measured water in a cell box, shaped as the ask's `water` key: `[{"y": <cell y of the surface>, "runs": [[z, x0, x1], ...]}]`; `[]` when there is none. `y = floori(level_cm / 100.0)`, as the river's `water_of` rule. command_ask.gd `water_of` writes it into the ask; the river's water is merged there |
 | `wet_at(x, y, z) -> bool` (M5, the water layer, public) | true where a point stands in the player's water; the land's scatter and `plant_scatter.gd` ask it |
+| `renumber(ops) -> Dictionary` (M6, the rules layer) | an LLM answer's `zone` and `rule` ops given the next free ids in answer order, the answer's references to its own zones rewritten (a reference to an id no `zone` op of the answer defines names a Home zone and stays; `unzone` / `unrule` are never renumbered); `{"ops", "refused": [[i, why]]}`. `home_build.expand_input` calls it on the whole answer after the input ops are expanded |
+| `ask_part(lo, hi)`, `room()` (M6, the rules layer) | the ask's `zones` and `rules` (`read_region`: zones meeting the box, rules naming one of them or no zone, each omitted when none) and `rules_room` (`{"zones_left", "rules_left", "counters"}`) |
+| `set_mask(key, lo, hi, hidden)`, `masked(cell)`, `clear_masks()` (M6, the blocks layer) | an open zone's cells: not drawn, not colliding, never saved (lane P makes the mesher honour it; the seam marks the sections) |
 
 A stub layer checks its ops strictly (keys, types, ranges, names, the cells, the points) and refuses to apply them with a
 reason starting `not built yet` (M5: `not built yet: water` / `paths` / `plants`). They offer nothing, save nothing and
 load an absent or empty key only. A lane replaces the file of its stub with the real layer (drop the extends of
 `stub_layer.gd`; add files of its own); see `LANES.md`. Its `malformed` keeps the convention every case relies on:
 `op_util.gd` `head` first (unknown keys), `tail` last (`author`, `batch`; a journal line's missing `batch`).
+
+**tl.build/4 (M6).** `zones` and `rules` after `plants` (`KEYS_V4`, `KEY_V` 4), sorted by id, omitted when empty;
+`zone`, `unzone`, `rule`, `unrule` need version 4 (`OP_V`), so build.json is raised to v4 before the first of them is
+journaled; `MAX_V` is 4. A Home without zones or rules is written as before (v1, v2 or v3, byte for byte: 773
+`rules-seam.files`).
 
 **tl.build/1, /2 or /3.** `build_file.gd` `text_of(layers)` writes the lowest version that holds every saved key
 (`KEY_V`: `chunks` 1; `land`, `paint`, `pieces` 2; `water`, `paths`, `plants` 3), so a Home of blocks only is v1 byte
@@ -222,6 +233,7 @@ A person in the Home presses **B** and builds. `build_mode.gd` is the node; `hot
 | `tools/command_tool.gd` | M4 (`COMMAND.md`): Enter asks, Enter keeps the ghost (one batch by llm), Esc or Backspace reverts. M5 seam: the answer's input ops are expanded (`expand_input`) before the dry run, blocks are drawn as before and every other layer's part under `layer_ghosts` (`preview_nodes(r, ["blocks"])`); the counts name the other kinds applied ("24 blocks, paint 3 cells; 1 refused: occupied": every kind counted, refusals after a `;`, up to 3 reasons); an op naming a locked material, shape or part is refused `locked: <condition>` when shown and at accept |
 | `tools/water_tool.gd` | M5 (water layer): click a hollow and it fills to just under its spill level (one batch; wheel or [ ] the level, 25 cm a notch), the ghost shows cells and level, 2 or RMB drains the body under the cursor; refusals shown red |
 | `tools/path_tool.gd` | M5 (paths layer): LMB a point, RMB / Enter / a click on the last point lays it, Backspace drops a point, 1-6 paint, 0 remove (LMB on a path), wheel or [ ] width 1.5-8 m |
+| `tools/rules_tool.gd` | M6 (rules layer): a stub until lane T lands ("Rules: coming in M6"), after plants and before command in the strip |
 | `tools/plant_tool.gd` | M5 (plants layer): the round brush, 1 meadow, 2 flowers, 3 tall grass, 0 or Backspace clear; a held stroke is one `plant` op; 4 trees and 5 bushes scatter `put` ops (`plant_scatter.gd`) as one batch |
 | `build_devices.gd` | the test hook `TL_BUILD_DEVICES` |
 | `hotbar.gd` | bottom centre while building: the tool strip, the current tool's slots, its swatch and info line, save state, the refusal reason, its keys. It reads only the tool interface (`state_of`). Boot's key line names "B  build" while walking and hides itself while building (boot.gd reads the meta `tl_build_mode`) |
@@ -232,7 +244,9 @@ A person in the Home presses **B** and builds. `build_mode.gd` is the node; `hot
 `BuildMode.mount(landscape, valley)`. The walk (for the game plots) is the landscape's meta `tl_walk` when a test set it,
 else the view's `world.walk` (the way `landscape.gd` reads it). The builder is the meta `tl_build`, the node the meta
 `tl_build_mode`. The node runs at physics priority 150000, after the view (100000: visit `sample`, `steer`, the
-visitor's step) and before boot (200000), and calls `build.step()` there. P3: protection asks the visitor's feet
+visitor's step) and before boot (200000), and calls `build.step()` there. M6: right after it, `play.tick(frames)` (`rules_play.gd`) runs the Home's
+rules while build mode is off and no game is on stage (`rules_run.gd` `begin` when they turn on, `stop` when they turn
+off: a run going is dropped unrecorded, open zones close, coins come back); E is read from the visit's TLInput. P3: protection asks the visitor's feet
 (`protect.visitor_at` reads `view.visitor.feet`; `drive` moves no body).
 
 **Loading and saving.** The Home loads its save when a person walks it: the view's visit reads devices (not a replay)
@@ -250,7 +264,7 @@ build mode):
 | Key | While building |
 |---|---|
 | B, Esc | leave build mode (autosave if unsaved). Esc never quits from build mode: `visit.gd` does not quit while `active` |
-| T, Shift+T | next, previous tool: blocks, sculpt, paint, pieces, stamps, water, paths, plants, command (the hotbar's strip lights the current one; a stub tool says "coming in M<n>", seam_lists.gd `STUB_LINES`) |
+| T, Shift+T | next, previous tool: blocks, sculpt, paint, pieces, stamps, water, paths, plants, rules, command (the hotbar's strip lights the current one; a stub tool says "coming in M<n>", seam_lists.gd `STUB_LINES`) |
 | Enter | the command tool (M4's bar; the stub shows a disabled line). Reserved: no other tool takes it |
 | LMB | place; held and moved: a line of cells, one batch (one undo step) |
 | RMB | remove; held and moved: one batch |

@@ -267,3 +267,46 @@ func read_region(lo: Vector3i, hi: Vector3i) -> Dictionary:
 func free_all() -> void:
 	if mesh != null:
 		mesh.free_all()
+
+
+# ------------------------------------------------------------------ M6: the open zones' mask (lane P draws it)
+## SEAM M6: the cells whose blocks are not drawn and do not collide while a zone is open (contracts/BUILD.md "open"):
+## the store, the saved file and `content_hash` never change. `set_mask(key, lo, hi, hidden)` adds (or with hidden
+## false removes) box `key` (a zone id), inclusive cells, and marks the sections it touches dirty, so the mesh and the
+## chunk's body follow in `step`; `masked(cell)` is true inside any box; `clear_masks()` drops them all (a visit ends).
+## The seam keeps the boxes and marks the sections; lane P makes block_mesh.gd leave masked cells out of the drawing
+## and the collider (LANES.md "M6").
+var masks := {}                         # key -> [lo: Vector3i, hi: Vector3i]
+
+
+func set_mask(key: int, lo: Vector3i, hi: Vector3i, hidden: bool) -> void:
+	if hidden:
+		masks[key] = [lo, hi]
+	elif masks.has(key):
+		masks.erase(key)
+	else:
+		return
+	_touch_box(lo, hi)
+
+
+func masked(cell: Vector3i) -> bool:
+	for k: int in masks:
+		var b: Array = masks[k]
+		var lo: Vector3i = b[0]
+		var hi: Vector3i = b[1]
+		if cell.x >= lo.x and cell.x <= hi.x and cell.y >= lo.y and cell.y <= hi.y and cell.z >= lo.z and cell.z <= hi.z:
+			return true
+	return false
+
+
+func clear_masks() -> void:
+	for k: int in masks.keys():
+		set_mask(k, masks[k][0], masks[k][1], false)
+
+
+func _touch_box(lo: Vector3i, hi: Vector3i) -> void:
+	var a: Vector2i = store.section_of(lo - Vector3i(2, 0, 2))
+	var b: Vector2i = store.section_of(hi + Vector3i(2, 0, 2))
+	for sz in range(a.y, b.y + 1):
+		for sx in range(a.x, b.x + 1):
+			store.dirty[Vector2i(sx, sz)] = true
