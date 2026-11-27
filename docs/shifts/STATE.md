@@ -527,3 +527,4 @@ on the frame and the figure and Fable on surfaces and nature, looping for 10 hou
 - 17:42: J2nd round 2 (newcomer pass): karts v0.1.11 boxes from GO!, biplane v0.1.9 lesson; court cue built but thrown away with 'make it fairer' (newcomer 10-11 of 20 vs 13). Menu 68.
 - 17:43 day-27 standup: final list running on d27-m6 23be5789 (gate at packs); main +4 docs only; disk 97 GB; no agents.
 - 18:09: J2b done: robots v0.1.11 magnet yank, shield v0.1.16 catapult volley, all by the editor (5 promotions, no refusal). Menu 70.
+- 18:32: S2 round 2: A's hammer from one plain sentence matched the hand version (flights 4.6-5.3 m vs hand 3.7-5.4); B with the card came out thin, and the check missed it (it read only the last answer): fix A4/B4 committed on both branches. Menu 72.

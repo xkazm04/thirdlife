@@ -123,3 +123,38 @@ NEXT THREE THINGS
 2. A Foreman check that reads the builder's JUICE: line and sends one more round when a big move has no launch, slow
    beat or follow.
 3. Turn B's card round into "Keep it plain" on top of A, if the owner picks A, and add a "make it plain" follow-up.
+
+ROUND 2 (27 Nov, 15:45-18:20; the Director's brief: both arms on main's editor, the Foreman's juice check, the hammer again)
+- B2 split: arm B's merged create_build.gd went from 608 to 600 lines; the card and follow-up moved to create_juice.gd
+  (+ .uid). Fast 5/5, create. 32/0. Committed by the Director (d27-sp-juice-b).
+- A3 / B3, the Foreman's juice check, committed and pushed (57ddcf32, 06b80f0b):
+  - after the merge of a pass round, a big move whose JUICE: line skipped the launch, the slow beat or the camera
+    follow gets one more round, once;
+  - juicepass.ts juiceGaps/juiceMore, halfmade.ts afterMerge, tests juice 6-7;
+  - fast 5/5 and npm 496/489/0/7 in both trees.
+- The hammer again, J2's exact sentence on fresh v0.1.5 copies (SPIKE.md "After round 2"):
+  - A (auto pass + check): 41 min, 4.26M tokens in, core + brain + show.
+    - Its JUICE line was all yes, and it matches the hand version: hits fly 4.6-5.3 m (hand 3.7-5.4), down 100-110 f
+      (hand 103-138), bots swing 3-6 a minute (hand 5-7).
+    - It has BONK!, a camera that rises with you, and a slow beat.
+  - B (juicy picked + check): 31 min, 3.44M in.
+    - Thin: no word, shake only, no ring, hits fly 1.8-2.3 m.
+    - Its last answer said "Unchanged from my previous answer", so the check had no line to read and sent nothing.
+    - It also publishes no hammer events (emitted before sim.step clears them), so it was measured with a state-based
+      test (bot_hammer_state.gd, calibrated on the hand pack).
+  - Both promoted packs: 3600 frames, 0 script errors on seeds 1, 1, 2, 3, the same hash twice (A2 bcc03b43ec7d4ccc,
+    B2 91ee8d8915159de0).
+  - Clip: clips/r2-robot-hammer-A2-B2-hand-plain-s1.mp4 (800 x 452, crf 32, 29 s). Stills: stills/r2-robot-hammer-t0.02.jpg
+    and -t0.55.jpg, looked at.
+  - Captures deleted after measuring: .tl/spike/clips mp4s and the AVIs.
+- A4 / B4 (NOT committed; for the Director): the check, made to see what B2 hid.
+  - The pass asks for the JUICE line in the LAST answer.
+  - "flight time no", "no flight", "camera small" and "shake only" count as skipped.
+  - A pass round with no line gets a "[foreman] juice pass not checked" note.
+  - The check runs after the hand-off logic, so D27 2's first note stays the hand-off.
+  - Test juice 8 uses B2's and A2's real lines.
+  - Files, each tree: foreman/prompts/juice_pass.md, foreman/src/juicepass.ts, foreman/src/halfmade.ts,
+    foreman/src/test/juicepass.test.ts.
+  - Gates: fast 5/5 in both trees; foreman npm 497 tests, 490 pass, 0 fail, 7 skipped in both.
+- Not done in round 2: B2 was not re-run with A4/B4. That would be the next thing: it shows whether the fixed check
+  rescues a thin pass round.
