@@ -507,3 +507,4 @@ on the frame and the figure and Fable on surfaces and nature, looping for 10 hou
 - ~13:05: T-editor items 7-11 landed (merge bd7c07a5; merged: fast 5/5, npm 476/469/0/7, create. 29/0, rink. 49/0 once the lab was built in d25-main); JOB.md notes 2706f2e6; T on round 3 (12-15). Menu 41 rows.
 - 13:17 standup: T on round 3; S1 slow (newcomer hand check loops); JB shield follow-up merged; J2nd biplane harpoon v0.1.6, kart items refused once on the tofu bot (sent to T). Disk 52 GB.
 - 13:22 standup: LP, DN, C done; P r2, T r3, C r2, DN r2, LP r3 on d27-m6; A assemblies running; uncapped suite on the tip running in d27-int.
+- ~13:40: JB-back done: hand juice back as one sentence + one follow-up each; robots v0.1.8 close to hand (flights 3.5-5.0 m vs 3.7-5.4), shield v0.1.9 (charges 12/11/6 a min vs hand 14/15/6; braces rare), Arsenal v0.1.25 (no faceoff meteor, METEOR plate; bots cannot use it). 6 rows (menu 47), 600 f 0/0.
