@@ -33,14 +33,18 @@ const FWD_CM := 400
 const SAY_FRAMES := 180
 const TEXT := "Hello!"
 const RUN := "Run 1"
+const FEET_LIFT := 0.05                 # rules_run.gd FEET_LIFT: feet on a block's top read as the cell above it
+const FIT_INSET := 0.25                 # metres in from a column's corners where `fit_ground` asks the ground
+const FIT_DIP := 0.5                    # metres under a box's floor (or over its top) the ground may stand and be its
 
 
 ## The ops of preset `kind` on the cell box lo..hi (as drawn; raised to HIGH unless "exact", a door grown through its
 ## wall), as one batch: the zone, then its rules, with the layer's next free ids. `opt`: "run" (start), "text"
 ## (message), "seconds" (door), "thin" (door: 0 x, 2 z, the axis to grow; -1 the thinner of x and z), "exact" (true:
-## the wheel set the top, keep the height drawn).
+## the wheel set the top, keep the height drawn), "stand" (F2: a Callable (x, z, lo_y, hi_y) -> the height a person
+## stands at there, NAN where nobody stands: the box is fitted to that ground, `fit_ground`).
 static func ops(layer: RefCounted, kind: String, lo: Vector3i, hi: Vector3i, opt := {}) -> Array:
-	var b := box_for(kind, lo, hi, int(opt.get("thin", -1)), bool(opt.get("exact", false)))
+	var b := box_for(kind, lo, hi, int(opt.get("thin", -1)), bool(opt.get("exact", false)), opt.get("stand", Callable()))
 	var z: int = layer.next_zone_id()
 	var r: int = layer.next_rule_id()
 	var zone := {"op": "zone", "id": z, "box": [[b[0].x, b[0].y, b[0].z], [b[1].x, b[1].y, b[1].z]], "look": LOOKS[kind],
@@ -53,8 +57,9 @@ static func ops(layer: RefCounted, kind: String, lo: Vector3i, hi: Vector3i, opt
 	return out
 
 
-## The box a preset takes for a drawn box: at least HIGH cells; a door grown one cell each way along its thin axis.
-static func box_for(kind: String, lo: Vector3i, hi: Vector3i, thin := -1, exact := false) -> Array:
+## The box a preset takes for a drawn box: at least HIGH cells; a door grown one cell each way along its thin axis;
+## with `stand` valid, fitted to the ground a person stands on under it (`fit_ground`).
+static func box_for(kind: String, lo: Vector3i, hi: Vector3i, thin := -1, exact := false, stand := Callable()) -> Array:
 	var a := lo
 	var b := hi
 	if not exact:
@@ -65,10 +70,45 @@ static func box_for(kind: String, lo: Vector3i, hi: Vector3i, thin := -1, exact 
 			ax = 0 if (b.x - a.x) <= (b.z - a.z) else 2
 		a[ax] -= 1
 		b[ax] += 1
+	if stand.is_valid():
+		var f := fit_ground(a, b, stand, 1 if exact else int(HIGH.get(kind, 1)))
+		a = f[0]
+		b = f[1]
 	for k in 3:
 		if b[k] - a[k] + 1 > Check.SIDE_MAX:
 			b[k] = a[k] + Check.SIDE_MAX - 1
 	return [a, b]
+
+
+## F2 (27 Nov 2026 day, playtest #6: a Door on a wall read his feet in cell 2 while its zone was cells 3..4; a Jump
+## pad one cell high was walked over with his feet at 2.95, cell 3): the box `a`..`b` fitted to the ground a person
+## stands on under it. In each column, at its centre and four points FIT_INSET in from its corners, `stand` (x, z,
+## a.y, b.y) gives the height his feet are at there (NAN: nobody stands there, a block fills the column inside the
+## box: a wall, the door itself); the cell those feet read (rules_run.gd `feet_cell`: floor(h + FEET_LIFT)) is taken
+## into the box when the ground is within FIT_DIP of it (under its floor: the ground sinks a little under it; over
+## its top: the ground rises into the cell above it), the top kept `high` cells over the highest such cell. Ground
+## farther away is not the box's (a zone on a block floor beside a 1 m drop, a zone up on a tower, a zone dug in):
+## the box is left as drawn there. The fitted box keeps its x and z.
+static func fit_ground(a: Vector3i, b: Vector3i, stand: Callable, high := 1) -> Array:
+	var low := a.y
+	var top := b.y
+	var pts := [Vector2(0.5, 0.5), Vector2(FIT_INSET, FIT_INSET), Vector2(1.0 - FIT_INSET, FIT_INSET),
+		Vector2(FIT_INSET, 1.0 - FIT_INSET), Vector2(1.0 - FIT_INSET, 1.0 - FIT_INSET)]
+	for z: int in range(a.z, b.z + 1):
+		for x: int in range(a.x, b.x + 1):
+			for o: Vector2 in pts:
+				var h := float(stand.call(x + o.x, z + o.y, a.y, b.y))
+				if is_nan(h):
+					continue
+				var f := floori(h + FEET_LIFT)
+				if f < a.y and h < a.y - FIT_DIP:
+					continue
+				if f > b.y and (f > b.y + 1 or h > b.y + 1 + FIT_DIP):
+					continue
+				low = mini(low, f)
+				top = maxi(top, f + high - 1)
+	top = mini(top, low + Check.SIDE_MAX - 1)
+	return [Vector3i(a.x, low, a.z), Vector3i(b.x, top, b.z)]
 
 
 ## The rules of preset `kind` on zone `z`, with ids taken from `ids` in order.

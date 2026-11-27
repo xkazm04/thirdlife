@@ -333,6 +333,7 @@ func skip_case() -> void:
 	var bx := Vector3i(v.x * 3, int(floorf(land.height_at(v.x * 3.0, v.y * 3.0))), v.y * 3)
 	var placed: Dictionary = b.place(bx, Blocks.code(Blocks.CUBE, 1))
 	var before: int = land.cm_at(v)
+	over(Vector3(c.x, land.height_at(c.x, c.y), c.y)); await wait(3)   # F2: 30 m south the clicks fell on the hotbar's slots
 	await click(pts[0])
 	await click(pts[1])
 	await click(pts[1] + Vector2(2.0, 0.0), MOUSE_BUTTON_RIGHT)
@@ -346,7 +347,7 @@ func skip_case() -> void:
 		str(bx), str(last.get("ok")), int(last.get("skipped", 0)), str(last.get("skip_reason", "")), land.cm_at(v), "" if bad.is_empty() else "; BAD " + "; ".join(bad)])
 	await ctrl_tap(KEY_Z)
 	b.undo()                                   # the block
-	b.flush()
+	b.flush(); over(Vector3(site.x, land.height_at(site.x, site.y), site.y)); await wait(3)
 
 
 func undo_case() -> void:

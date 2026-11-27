@@ -67,6 +67,9 @@ var copied := ""                        # the last share code copied
 var page := 0                           # the page shown while no stamp is current (0: Starters when there are any)
 var run_bar: CanvasLayer = null         # command_bar.gd: a placed course's run name (R5)
 var _placing := {}                      # {"ops", "run", "cell"}: a placing waiting for the run name
+var red_ghost := false                  # F2: the block ghost is drawn red now (the stamp would be refused)
+var _red: Material = null
+var _reddened := ""
 
 
 func setup(h: Node) -> void:
@@ -378,7 +381,33 @@ func aim(h: Dictionary, _mode: Dictionary) -> void:
 	elif _checked != k:
 		reason = ""
 	pghost.show_pieces(items, reason != "", k + reason)
+	_redden(reason != "")
 	box_ghost.visible = false
+
+
+## F2 (playtest #7: "the refused ghost is cyan"): the stamp's block ghost turns red while it would be refused, and
+## holo again when it fits. Red is the style's own material for its palette's `hazard_red` (the glass look, alpha
+## blended, its opacity raised in a private copy): the holo look in red is added light and hardly shows on sunlit
+## grass (seen in the window, 27 Nov).
+func _redden(bad: bool) -> void:
+	var k := "%s|%s" % [_drawn, str(bad)]
+	if k == _reddened or preview == null or not is_instance_valid(preview):
+		return
+	_reddened = k
+	if bad and _red == null:
+		_red = TLStyle.material_instance("hazard_red")
+		if _red is ShaderMaterial and not TLStyle.headless():
+			(_red as ShaderMaterial).set_shader_parameter(&"base_a", 0.42)
+			(_red as ShaderMaterial).set_shader_parameter(&"fres_a", 0.3)
+	var stack: Array = [preview.get_node_or_null(^"Added")]
+	while not stack.is_empty():
+		var n: Node = stack.pop_back()
+		if n == null:
+			continue
+		if n is GeometryInstance3D:
+			(n as GeometryInstance3D).material_override = _red if bad else null
+		stack.append_array(n.get_children())
+	red_ghost = bad
 
 
 ## "" or why the current stamp may not be placed at `cell` now: a lock, or the dry run's first refusal.
@@ -398,6 +427,7 @@ func _draw_stamp() -> void:
 		preview.visible = true
 		return
 	_drawn = k
+	_reddened = ""                      # F2: new meshes: `_redden` paints them again
 	var store: RefCounted = Blocks.new(16)
 	store.cap_chunk = 1 << 30
 	store.cap_home = 1 << 30

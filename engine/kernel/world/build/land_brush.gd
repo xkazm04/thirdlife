@@ -28,11 +28,12 @@ func setup(h: Node) -> void:
 	ring.physics_interpolation_mode = Node.PHYSICS_INTERPOLATION_MODE_OFF
 	ring.visible = false
 	_ok = TLStyle.material("holo")
-	_bad = TLStyle.material_instance("holo")
+	# F2 (27 Nov): red is the style's own `hazard_red` material (the glass look, alpha blended, opacity raised in a
+	# private copy): the holo look in red is added light, and a red ring on sunlit grass hardly showed in the window
+	_bad = TLStyle.material_instance("hazard_red")
 	if _bad is ShaderMaterial and not TLStyle.headless():
-		var red := TLStyle.color("hazard_red")
-		(_bad as ShaderMaterial).set_shader_parameter(&"holo", red)
-		(_bad as ShaderMaterial).set_shader_parameter(&"edge", red.lightened(0.4))
+		(_bad as ShaderMaterial).set_shader_parameter(&"base_a", 0.8)
+		(_bad as ShaderMaterial).set_shader_parameter(&"fres_a", 0.2)
 	h.add_child(ring)
 
 
@@ -147,7 +148,11 @@ func show_ring(at: Variant, bad := false) -> void:
 		pts.append(float(s) / SEGMENTS)
 		if not prev.is_empty():
 			# uv: x along the ring, y 0 inner / 1 outer (the holo shader draws its edge lines there)
-			for q: Array in [[prev, 0], [pts, 0], [pts, 1], [prev, 0], [pts, 1], [prev, 1]]:
+			# F2: red (the glass look culls back faces) also the other winding
+			var tris := [[prev, 0], [pts, 0], [pts, 1], [prev, 0], [pts, 1], [prev, 1]]
+			if bad:
+				tris += [[prev, 0], [pts, 1], [pts, 0], [prev, 0], [prev, 1], [pts, 1]]
+			for q: Array in tris:
 				im.surface_set_normal(Vector3.UP)
 				im.surface_set_uv(Vector2(float(q[0][2]), float(q[1])))
 				im.surface_add_vertex(q[0][q[1]])
