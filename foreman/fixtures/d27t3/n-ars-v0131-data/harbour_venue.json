@@ -1,0 +1,19 @@
+{
+  "schema": "tl.layout/1",
+  "name": "harbour",
+  "props": [
+    {"kind": "ground_patch", "p": [0, -0.12, 0], "params": {"size_x": 224, "size_z": 224, "surface": "snow"}},
+    {"kind": "pond", "p": [0, -0.08, -48], "params": {"radius_x": 55, "radius_z": 17, "surface": "water"}},
+    {"kind": "crane", "p": [-48, -34]},
+    {"kind": "crane", "p": [48, -34], "yaw": 180},
+    {"kind": "light_mast", "p": [-44, -27.5], "params": {"height": 9}},
+    {"kind": "light_mast", "p": [44, -27.5], "params": {"height": 9}},
+    {"kind": "light_mast", "p": [-44, 27.5], "params": {"height": 9}},
+    {"kind": "light_mast", "p": [44, 27.5], "params": {"height": 9}},
+    {"kind": "lumber", "p": [-20, 30]},
+    {"kind": "lumber", "p": [18, 31], "yaw": 25, "params": {"layers": 4}},
+    {"kind": "lumber", "p": [45, 23], "yaw": 90},
+    {"kind": "tyre_stack", "p": [0, 29]},
+    {"kind": "tyre_stack", "p": [-45, -6], "yaw": 90}
+  ]
+}

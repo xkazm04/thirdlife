@@ -23,7 +23,7 @@ import { NEW_PACKAGE, grow, ownerOrNew, wireWaits, type GrowHost } from "./grow.
 import { FINAL_NOTE, changedFiles, fastFinal, fastMerge, fastPromotion, mergeNote, removedInRound, roundAcceptance, whatChangedNote } from "./fastchange.js"; // E4b: a data-only change // E4 (24-25 Nov): a change may add a package
 import { removedSince } from "./removal.js"; import { promotionErrors } from "./promogate.js"; import { answeredThisChange, askedAgain, plainQuestion } from "./asktwice.js"; import { longerMatch, tofuGate } from "./tofugate.js"; import { withGrants } from "./scopegrant.js"; import { afterMerge, coreHintOf, foldable } from "./halfmade.js"; import { rivalSplit } from "./rivals.js"; import { finalLandNotes, landGate } from "./landcheck.js"; // D27 items 1 and 4 // H1 (E5e): what a change removed, named; H1d: promotion pictures with script errors refuse
 import { criticRubric, inReach, phaseLine, phaseStep, replanPhases, stuckText, waitsForVerdict } from "./phases.js"; // JOB.md 2026-11-20: phases
-import { writeGenerateCalls } from "./transcript.js";
+import { writeGenerateCalls } from "./transcript.js"; import { playSplit } from "./playsplit.js"; import { readOr, textSplit } from "./textowner.js"; import { narrowedNotes } from "./narrowed.js"; import { botsDone } from "./botsdone.js"; // D27 T3 items 37, 45, 44, 34
 import { botFinish, botMoments, planShots } from "./shots.js";
 import { coreRouteOf, templateOf } from "./templates.js";
 import { CARTRIDGE_INVALID, startFromBase } from "./coreroute.js"; // E3 of 24 Nov: a game on a core starts from the base
@@ -1187,7 +1187,7 @@ export class Foreman {
     fs.mkdirSync(packDir, { recursive: true });
     fs.writeFileSync(path.join(packDir, MANIFEST_FILE), manifest);
     this.append({ type: "merge", package: id, files, ...(removed.length > 0 ? { removed } : {}) });
-    for (const e of afterMerge(this.s.plan, this.log.events, id, round, files, (this.pkg(id).changes ?? []).at(-1), coreHintOf(this.s.plan, jobCore(this.gateHost), (...p) => this.dir(...p)))) this.append(e as Parameters<JobLog["append"]>[0]); // H1f: what a yes widened; H1g: the rest of a half-made change goes on
+    for (const e of afterMerge(this.s.plan, this.log.events, id, round, files, (this.pkg(id).changes ?? []).at(-1), coreHintOf(this.s.plan, jobCore(this.gateHost), (...p) => this.dir(...p)))) this.append(e as Parameters<JobLog["append"]>[0]); for (const e of [...narrowedNotes(this.log.events, id, round), ...botsDone(this.log.events, id, round)]) this.append(e as Parameters<JobLog["append"]>[0]); // H1f: what a yes widened; H1g: the rest of a half-made change goes on; D27 T3 44: a narrowed ask is NOT made; 34: a rivals' part the owner made needs no round
     const starved = this.starvedDetail(id);
     this.append({ type: "package_state", package: id, state: "promoted", round, ...(starved ? { detail: starved } : {}) });
     // N3: a package that was merged before and is merged again has changed under the packages that depend on it.
@@ -1318,7 +1318,7 @@ export class Foreman {
       }
       const sk = c.text.startsWith(FOREMAN_NOTE) ? undefined : skinSplit(this.s.plan, owner, c.text); // H1h: the game's text (title, tagline, names, commentary) goes to the skin's owner
       const text = sk === undefined ? c.text : sk.rest === "" ? ([owner, how] = [sk.to, `${how}; ${sk.why}`], c.text) : (this.append({ type: "change_requested", package: sk.to, text: skinPartText(c.seq, sk.why, sk.skinText) }), (how = `${how}; ${sk.why}`), sk.rest);
-      if (!c.text.startsWith(FOREMAN_NOTE)) for (const r of rivalSplit(this.s.plan, (x) => this.s.packages[x]?.mergedFiles, owner, c.seq, text)) (this.append({ type: "change_requested", package: r.package, text: r.text }), (how = `${how}; ${r.why}`)); // D27 item 1: the rivals' words reach every package that drives a bot
+      const ps = textSplit(this.s.plan, (f) => readOr(this.dir("pack", ...f.split("/"))), owner, c.seq, text) ?? playSplit(this.s.plan, jobCore(this.gateHost), owner, c.seq, text); if (ps !== undefined && !this.changeReady({ ...c, package: ps.owner }, running)) continue; if (ps !== undefined) ([owner, how] = [ps.owner, `${how}; ${ps.why}`], ps.draw !== undefined && this.append({ type: "change_requested", package: ps.draw.package, text: ps.draw.text })); if (!c.text.startsWith(FOREMAN_NOTE)) for (const r of rivalSplit(this.s.plan, (x) => this.s.packages[x]?.mergedFiles, owner, c.seq, text)) (this.append({ type: "change_requested", package: r.package, text: r.text }), (how = `${how}; ${r.why}`)); // D27 item 1: the rivals' words reach every package that drives a bot; D27 T3 items 37, 45: on a core the play goes to the cartridge first, and quoted words to the package whose file holds them
       this.reopen(owner, `${changeReason(c.seq)}; ${how}: ${clip(text, 300)}`, `${CHANGE_ROUND}: ${text}`);
       await cartridgeChange(this.gateHost, owner, this.pkg(owner).round, text); // E3b: on a core, a cartridge diff first (coregate.ts)
       applied += 1;

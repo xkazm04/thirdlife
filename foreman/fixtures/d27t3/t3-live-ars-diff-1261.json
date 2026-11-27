@@ -1,0 +1,125 @@
+{
+ "source": "lane T3 live copy of J2b's Arsenal job (v0.1.27, the MEGA sentence sent once at 22:03): the quick cartridge diff of event 1261 (reports/cartridge-a1-s1261.json structured output) and events 1255-1262",
+ "diff": {
+  "changes": {
+   "game.effects[5]": {
+    "id": "mega",
+    "kind": "custom",
+    "icon": "star",
+    "trigger": "check_landed",
+    "target": "self",
+    "duration_frames": 300,
+    "stack": "refresh",
+    "stats": [
+     {
+      "stat": "skater_mass",
+      "multiply": 2
+     },
+     {
+      "stat": "skater_speed",
+      "multiply": 1.1
+     },
+     {
+      "stat": "skater_turn_rate",
+      "multiply": 0.6
+     },
+     {
+      "stat": "check_speed_min",
+      "multiply": 0.5
+     }
+    ]
+   }
+  },
+  "why": "Any skater who lands a body check goes MEGA for five seconds. That means you, your teal Tide Otters bot mates and the red Crane Gulls bots. A mega skater is twice as heavy and a little faster, and every bump knocks a man flat. He turns wide, so a quick skater can slip past the red giants. After five seconds he goes back to normal. The meteor on F stays as it is. No key can say the white flash, the boing, the pop, the doubled size, the MEGA! and FLATTENED! text, the camera shake or the trembling ice, so a builder has to add those."
+ },
+ "events": [
+  {
+   "v": 1,
+   "seq": 1255,
+   "ts": "2026-11-27T21:03:40.610Z",
+   "job": "three-against-three-hockey-20261125-1",
+   "type": "change_requested",
+   "text": "Add a Mario Kart Mega Mushroom you earn with a big hit, like NHL Hitz: any skater, me or a bot, who lands a body check goes MEGA for five seconds. He flashes white with a boing and balloons to twice his size, with MEGA! big over him (and in the middle of the screen when it is me). While mega he is twice as heavy and a bit faster, every bump knocks a man flat with a thud, FLATTENED! and a little camera shake, and the ice trembles under his strides; but he turns wide, so a quick skater can slip past him. After five seconds he shrinks back with a pop. The rival bots go mega whenever they land a check on me or my mates, so I must dodge their giants, and my bot mates go mega too. Keep the meteor on F as it is."
+  },
+  {
+   "v": 1,
+   "seq": 1256,
+   "ts": "2026-11-27T21:03:40.800Z",
+   "job": "three-against-three-hockey-20261125-1",
+   "type": "job_state",
+   "state": "running",
+   "reason": "reopened by a change request (was done)"
+  },
+  {
+   "v": 1,
+   "seq": 1257,
+   "ts": "2026-11-27T21:03:45.655Z",
+   "job": "three-against-three-hockey-20261125-1",
+   "type": "builder_run",
+   "adapter": "claude-cli",
+   "mode": "generate",
+   "model": "claude-sonnet-5-5",
+   "outcome": "ok",
+   "durationMs": 4398,
+   "tokensIn": 3855,
+   "tokensOut": 340,
+   "tokensCacheRead": 0,
+   "transcript": "reports/planner-a1-s1257.json"
+  },
+  {
+   "v": 1,
+   "seq": 1258,
+   "ts": "2026-11-27T21:03:45.662Z",
+   "job": "three-against-three-hockey-20261125-1",
+   "type": "change_requested",
+   "package": "harbour",
+   "text": "[foreman] the drawing part of change request 1255, for what your files show and play out (scripts/main.gd, scripts/harbour.gd, scripts/harbour_toys.gd, data/tuning.json, data/harbour_venue.json, data/drill_slush100.cartridge.json, ...): \"cartridge\" makes how it plays first, in the game's cartridge (the rules, stats, effects and bots these words ask for: \"Add a Mario Kart Mega Mushroom you earn with a big hit, like NHL Hitz: any skater, me or a bot, who lands a body check goes MEGA for five seconds. While mega he is twice as heavy and a bit faster, every bump knocks a man flat with a thud, FLATTENED! and a little camera shake, and the ice trembles under his strides; but he turns wide, so a quick skater can slip past him. The rival bots go mega whenever they land a check on me or my mates, so I must dodge their giants, and my bot mates go mega too.\"), and your package runs after its merge. Draw what the merged cartridge makes (read its effect ids and the events the core sends for them: never a copy of the rule of your own) and make everything of the change that is seen or heard; a play rule the cartridge has made is not yours to write again or to mark NOT DONE. The whole change: \"Add a Mario Kart Mega Mushroom you earn with a big hit, like NHL Hitz: any skater, me or a bot, who lands a body check goes MEGA for five seconds. He flashes white with a boing and balloons to twice his size, with MEGA! big over him (and in the middle of the screen when it is me). While mega he is twice as heavy and a bit faster, every bump knocks a man flat with a thud, FLATTENED! and a little camera shake, and the ice trembles under his strides; but he turns wide, so a quick skater can slip past him. After five seconds he shrinks back with a pop. The rival bots go mega whenever they land a check on me or my mates, so I must dodge their giants, and my bot mates go mega too. Keep the meteor on F as it is.\""
+  },
+  {
+   "v": 1,
+   "seq": 1259,
+   "ts": "2026-11-27T21:03:45.668Z",
+   "job": "three-against-three-hockey-20261125-1",
+   "type": "reopened",
+   "package": "cartridge",
+   "reason": "change request (event 1255); the Planner names the package: The harbour package owns the power-up and body-check gameplay (scripts/harbour_toys.gd, scripts/main.gd, data/tuning.json), so a mega power-up earned by landing a check belongs there, with its size, w\n... (96 more characters cut); on a game on the rink core how the game plays is the cartridge's, and the words \"Add a Mario Kart Mega Mushroom you earn with a big hit, like NHL Hitz: any skater, me or a bot, who lands a body check goes MEGA for five seconds. While mega he is twice as heavy and a bit faster, every bump knocks a man flat wi\n... (607 more characters cut)"
+  },
+  {
+   "v": 1,
+   "seq": 1260,
+   "ts": "2026-11-27T21:03:45.674Z",
+   "job": "three-against-three-hockey-20261125-1",
+   "type": "package_state",
+   "package": "cartridge",
+   "state": "queued",
+   "round": 14,
+   "detail": "CHANGE REQUEST: Add a Mario Kart Mega Mushroom you earn with a big hit, like NHL Hitz: any skater, me or a bot, who lands a body check goes MEGA for five seconds. He flashes white with a boing and balloons to twice his size, with MEGA! big over him (and in the middle of the screen when it is me). While mega he is twice as heavy and a bit faster, every bump knocks a man flat with a thud, FLATTENED! and a little camera shake, and the ice trembles under his strides; but he turns wide, so a quick skater can slip past him. After five seconds he shrinks back with a pop. The rival bots go mega whenever they land a check on me or my mates, so I must dodge their giants, and my bot mates go mega too. Keep the meteor on F as it is."
+  },
+  {
+   "v": 1,
+   "seq": 1261,
+   "ts": "2026-11-27T21:03:57.631Z",
+   "job": "three-against-three-hockey-20261125-1",
+   "type": "builder_run",
+   "adapter": "claude-cli",
+   "mode": "generate",
+   "model": "claude-sonnet-5-5",
+   "outcome": "ok",
+   "durationMs": 10554,
+   "tokensIn": 16094,
+   "tokensOut": 1079,
+   "tokensCacheRead": 0,
+   "transcript": "reports/cartridge-a1-s1261.json"
+  },
+  {
+   "v": 1,
+   "seq": 1262,
+   "ts": "2026-11-27T21:03:57.645Z",
+   "job": "three-against-three-hockey-20261125-1",
+   "type": "note",
+   "package": "cartridge",
+   "round": 14,
+   "text": "[foreman] cartridge diff not made: it leaves part of the ask unmade, in its own words: \"Any skater who lands a body check goes MEGA for five seconds. That means you, your teal Tide Otters bot mates and the red Crane Gulls bots. A mega skater is twice as heavy and a little faster, and every bump knocks a man flat. He turns wide, so a quick skater can slip past the red giants. After five\n... (235 more characters cut)\": the change goes to the builder"
+  }
+ ]
+}

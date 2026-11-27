@@ -1,0 +1,1559 @@
+{
+ "source": "d27-newc .tl/jobs/robot-soccer-3-v-20261125-1 (lane N-newcomer robots sentence 1), events 1590-1828 (verify events kept only for bot_tofu runs and failures); the used frames of each -longer tofu run read from its report; longerRuns: the job's passing -longer bot_tofu reports (test, done, frames, state_hash) and the failed runs the tests replay (with their checks)",
+ "plan": [
+  {
+   "id": "core",
+   "title": "Tofu pitch, five verbs, tumbles",
+   "milestone": "blockout",
+   "deps": [],
+   "scope": [
+    "scripts/main.gd",
+    "scripts/sim/**",
+    "scripts/view/**",
+    "data/tuning.json",
+    "data/venue.json",
+    "data/opening.json",
+    "data/clips.json",
+    "gen/robot.gd",
+    "tests/bot_player.gd",
+    "tests/bot_tofu.gd",
+    "tests/support/**",
+    "README.md"
+   ],
+   "contract": "3v3 robot football on flat shapes. 15-minute limit: COPY AND ADAPT ref/packs/hockey (scripts/carry.gd, poke.gd, skate.gd, tests/support); start pack plumbing from seed_paddle. Write the opening path and bot_player first. Scripts under 600 lines. Every number below goes in data/tuning.json under the design's names (movement, ball, pass, shot, slide, poke, hop, contact, getup, cover, camera, look, feel, rival, match, level); none as a script constant.\n\nCOORDINATES: metres, x to rival goal line +32, own -32, z +20..-20 (+z screen right). Goals 7 wide, 2.4 high, see-through bars; box 12 deep x 16 wide. data/venue.json (tl.layout/1): flat grey-green ground, painted lines, 0.8 m barrier_wall walls (never fractured), angled corners, ball rebounds.\n\nINPUT: left,right,up,down (A/D/W/S, arrows; up=+x, right=+z), kick (Space, left mouse), quick (E, right mouse), sprint (Shift), rematch (R), drill_reset (no keys; bots: restore opening). 8 f input buffer. Held buttons need a fresh press after possession changes. You are always robot 0.\n\nROBOTS: TLBiped, its rig hidden, with the boxy figure as child; 1.8 m tall, 0.8 wide, TLHit.pushbox radius 0.4. gen/robot.gd: static generate(ctx), static build(team,captain)->Node3D with separate pivot parts (read RIGS.md `bot` first). Dockers: wide orange crate torso, stubby legs, fork on captain Bolt Brenda. scripts/view/figure.gd: play(id: StringName), add_clips(Dictionary); keyframes in data/clips.json. Clips: kick_pass (side-foot, knee high, arms quiet), kick_shot (plant, leg cocked above hip, torso back, arms wide, held while charging; whip to chest), slide, cross_check (forearm jab), jump, tumble_cartwheel (f0-20 up to 1.2 m, one full sideways turn, limbs splayed; f20-26 lands on back, bounces 0.25), sprawl, clamber_up (last 30 f: 10 roll/tuck, 10 hands push, 10 stand, head wobble; compress for short falls), spring_up (kip), react. Never borrow shoot/strike. Flight/spin move visual nodes only; TLHit.down holds state, TLBiped.shove carries the body; get_up_frames 1.\n\nMOVE: cruise 8.5, sprint 10.5; carrier 7.5/9.2; accel 15 (carrier 12); turn 4.5 rad/s (carrier 3.8, sprint 3.0); stop 25; stamina 3 s, refill 25%/s after 30 f.\n\nBALL: states loose, carried, pass, shot; drag 0.5/s + 0.147 m/s2; spring k400 critically damped to blade anchor 0.75 m. Loss only by poke, slide/skittle, intercept, bobble, or sprint+hard turn (swing >0.45 m for 6 f). Pickup 0.9 m, +-70 deg; rel speed <9 clean, 9-14 bobble (keeps 40%, 10 f no pickup), faster deflects. Receiver 1.3 m, +-100 deg, 18 f soft magnet within 2 m. Owner change: old owner and opponents within 2 m no steal 30 f; new owner no poke 12 f. None while down; no own pickup 6 f after kick. Ball into body: deflect, flinch by speed, half speed.\n\nVERBS (anticipation/active/recovery). Pass 4/1/10: tap <=8 f; mate nearest held direction (else facing) within 50 deg, led, arrives 8 m/s, launch 16-24; no mate in cone: ball goes ahead along facing, NEVER backward. Shot 10/1/18: hold >8 f, release; 26-36 m/s over 30 f charge; frames count from release, leg draws back on press. FACING LOCKS while charging (A/D only pick corner). quick cancels charge into hop. Aim: A/D at release and facing within 30 deg of goal centre: 0.6 m inside that post; else along facing, snapping inside post if missing by <=8 deg (16 one-timer); snap vetoed if that line meets cover body (0.45 + ball), never toward cover. One-timer: kick pressed 8 f before to 6 f after arrival; 4 f release, x1.2. Slide 8/24/45 (no ball, kick): 11->7 m/s, ~3.6 m, no steering, cooldown 60. Poke 5/7/12 (no ball, quick): 1.7 m, +-35 deg, cooldown 40, chance 0.65 x front1.0/side0.7/behind0.4 x0.6 if carrier turned in last 10 f. Hop 3/22/14 (ball, quick): ball hops too; slides pass under all 22 airborne f; no air turn; pass buffered from recovery f8; cooldown 30; landing vulnerable. RIVAL TELLS: Docker slide starts with a 30 f deep crouch + rising whine; rival poke 20 f arm draw-back before active; rival shot charges >=20 f.\n\nCONTACTS (both bodies change). Slide into carrier >=6 m/s: cartwheel, down, thrown 40 deg off slide line toward the side its centre was (dead centre screen right) at half slider speed+2; ball along slide line 4 m/s; slider recoils, glides 1 m, up after 18. Slower: both stumble, ball loose. Into non-carrier: TLHit.react 0.7, slider lies 40. Under hop: carrier keeps ball, slider lies 45. Miss: lies 45. Slide v slide: rebound, react 0.7, 30 f. Slide v poke: poker down 60. Poke hit: ball free 4-6 m/s, react 0.3, poker recoils 6. Poke miss: half turn rate 15 f. Walk bump: push apart. Skittle: tumbler >3 m/s hitting anyone: react 0.9, frees ball, tumbler half speed, no chains.\nGET-UP: down 60 f at 6 m/s to 90 at 11. Spring-up: one quick press on down f28-36, up at f48. Risen unfloorable 60 f. Side 2 goals behind rises 15 f sooner, amber chest lamps.\n\nFEEL: knockdowns involving you only: TLHit.impact 3-4 f by force (hold pack counters while stop_left>0), decaying victim visual wobble, shake 0.12 m/12 f. Skittle shake 0.18, goal 0.2 + horn; none on poke/whiff. TLAudio clang by force, landing clatter, clamber servo whine, missed-slide scrape. No words at hits.\n\nCOVER (sim/cover.gd, role &\"cover\", never robot 0): in own box on ball-to-net line 1-2 m out, retargets 14/11/8 f after release (level 0..2), sideways <=4 m/s, saves only by body; may slide at carrier in box.\nMATCH: TLRules to 3; after 4:00 next goal wins; conceder kicks off; 90 f restart, no freeze; end text, rematch restarts <2 s.\nOPENING data/opening.json: no kick-off, clock starts first press. Captain (14,0) facing +x. Docker with ball (19,0) walks 2 m/s, holds 3 m from you rocking/shielding, no hop/pass until first fall; miss resets to 3 m. Cover (30.5,3) WAITS until your first shot releases, then 2 m/s (opening only). Third Docker (-6,8); mates (6,-10),(6,10). Contact ~x17: down 90+4, ball takeable ~f22, hold kick, strike ~f70 scores straight. Hints: \"Space: slide\", then \"Hold Space: shoot\", \"Hold A or D: pick a corner\".\n\nCAMERA `play` (add_view moved each frame): raised so both mates ahead show: 6.5 m back, 5.0 up, fov 58, 4 f lag, aim anchor 7 m ahead, yaw fixed +x, never follows ball; clears own wall; robot ~0.2-0.25 frame height. `overview`: fixed raised side view of rival half (robots >=0.08). Ball visual 0.55 m with hot rim; pine_light ring under you; team ring on carrier after 20 f; hot ring on downed. HUD: score, stamina, one hint, edge arrows for off-screen ball/robots (rival colour differs), radar.\n\nAPI (sim/sim.gd `sim`): robots[0..5] (0 captain,1-2 mates,3-5 Dockers): id, team 0/1, body, figure, role &\"chaser\"|&\"support\"|&\"cover\", state &\"run\"|&\"pass\"|&\"shot_charge\"|&\"shot\"|&\"slide_tell\"|&\"slide\"|&\"poke\"|&\"hop\"|&\"down\"|&\"react\"|&\"taunt\", state_f, has_ball, stamina. ball_state, ball_owner(-1), receiver, ball_pos(), ball_vel(), attack_dir(team), facing(id), can(id,verb), poke_odds(id), scripted(id), curve_level() (0 calm,1 a side at 2,2 match point/next goal), set_lamp(id,on), rules. order(id,{move:Vector2(x,z), sprint:bool, kick:&\"\"|&\"pass\"|&\"shot\"|&\"slide\", target:int, aim:-1|0|1, charge:int, quick:&\"\"|&\"poke\"|&\"hop\"|&\"spring\"}) each frame. events (this frame): {kind,a,b,force,pos,cause}; kinds pass, shot, one_timer, slide_tell, slide_hit, slide_miss, poke_tell, poke_hit, poke_miss, hop, hop_under, pickup, bobble, intercept, deflect, skittle, down, rise, spring_up, save, goal, loss, match_over, restart; loss cause slid|poked|intercepted|own_turn|bobble|skittled.\nMODULES: later gen scripts set ctx.root meta \"mod_ai\", \"mod_show\", \"mod_look\" = script path. main loads each only if has_meta: new(), setup(ctx,sim), tick(frame) (ai before sim.step, others after). Without mod_ai, sim/basic_ai.gd runs robots 1-5 (chaser slides/pokes, carrier drives/shoots/passes, support spreads); scripted robots ignore orders.\n_pack_state: rules.snapshot() + frame, opening, robots[{id,team,pos,facing,state,state_f,has_ball,down_left,role,visual_y,visual_roll}], ball{pos,vel,state,owner}, last_loss.\n\nPLAYER CHECK: tests/bot_player.gd fails when the captain can no longer slide the Docker down, collect the ball and score with a held shot.\nbot_player (perfect TLHand) also asserts during the fall visual_y >=1.0 and a full turn, then visible clamber (overrides TLHit.down); moments slide_hit, cartwheel, clamber, shot, goal within 600 f.\nTOFU CHECK: tests/bot_tofu.gd reports metrics feedback_f, skill_spread, skill_variants, idle_max_f, tell_min_f, tells, pressure_waves, lead_change_share, close_rounds, verbs_used, possession_median_f, scrum_share, overlap_share\nAll counted from played frames, never constants; result {ok,summary,metrics,moments,hand}; TLHand \"sharp\"; presses pass, shot, slide, poke, hop each >=3 times; >=3 matches (rematch) plus drill_reset tries. ok = matches finished and verbs_used 5; bounds are judged by the Foreman:\n- feedback_f <=3: worst frames from a slide press to first visible change.\n- skill_spread 0.25..0.95: (best-worst)/best mean outcome (knockdown frames/advantage) over SLIDE variants only (spacing, angle, timing), >=5 tries each.\n- skill_variants >=3.\n- idle_max_f <=120: longest opponent run with no action (moving with intent, attacking, defending).\n- tell_min_f >=20: fewest frames from tell start to first active over dangerous opponent actions.\n- tells >=3: actions counted.\n- pressure_waves >=2: opponent attack starts per 180 f window; wave = window with >=3 after one with <=1.\n- lead_change_share >=0.3: rounds (>=3) where the lead changed hands.\n- close_rounds >=1: loser within one point.\n- verbs_used >=5.\n- possession_median_f 240..600.\n- scrum_share <=0.3: live frames with >=4 field robots within 5 m of ball.\n- overlap_share <=0.02: live frames with two upright bodies overlapping >0.1 m.\nmoments also: one_timer, hop_under, skittle, poke_hit.",
+   "acceptance": [
+    {
+     "level": "V1",
+     "verb": "lint",
+     "args": []
+    },
+    {
+     "level": "V2",
+     "verb": "smoke",
+     "args": []
+    },
+    {
+     "level": "V4",
+     "verb": "bot",
+     "args": [
+      "--test=tests/bot_player.gd",
+      "--frames=3600"
+     ]
+    },
+    {
+     "level": "V4",
+     "verb": "bot",
+     "args": [
+      "--test=tests/bot_tofu.gd",
+      "--frames=60000"
+     ]
+    },
+    {
+     "level": "V3",
+     "verb": "invariants",
+     "args": []
+    }
+   ],
+   "registers": {
+    "capabilities": [
+     "physics",
+     "input",
+     "ui",
+     "audio",
+     "vfx",
+     "camera",
+     "rules",
+     "ai",
+     "biped",
+     "ball",
+     "kit",
+     "style"
+    ],
+    "assets": [
+     "gen/robot.gd"
+    ],
+    "tests": [
+     "tests/bot_player.gd",
+     "tests/bot_tofu.gd"
+    ],
+    "cameras": [
+     "play",
+     "overview"
+    ]
+   },
+   "serves": [
+    "tackle_and_blast",
+    "skittle_goal",
+    "hop_cross_finish"
+   ]
+  },
+  {
+   "id": "brain",
+   "title": "Team brain and Crate Dockers",
+   "milestone": "blockout",
+   "deps": [
+    "core"
+   ],
+   "scope": [
+    "scripts/ai/**",
+    "data/ai.json",
+    "gen/mod_ai.gd",
+    "tests/bot_hand_newcomer.gd",
+    "tests/bot_hand_perfect.gd",
+    "tests/bot_mash.gd",
+    "tests/ai_support/**"
+   ],
+   "contract": "Scored team AI for robots 1-5: two mates and the one rival team, Crate Dockers (captain Bolt Brenda). There are NO other gangs. Copy and adapt ref/packs/hockey/scripts/ai/{brain,carrier,roles,sense}.gd. All weights and numbers in data/ai.json.\n\nHOOK: gen/mod_ai.gd: static func generate(ctx): ctx.root.set_meta(\"mod_ai\",\"scripts/ai/team_ai.gd\"). team_ai.gd: setup(ctx,sim), tick(frame); it replaces core's basic_ai. Read only sim and sim.events; act only through sim.order(id,{move:Vector2(x,z), sprint, kick:&\"\"|&\"pass\"|&\"shot\"|&\"slide\", target, aim:-1|0|1, charge, quick:&\"\"|&\"poke\"|&\"hop\"|&\"spring\"}). Robot fields: id (0 captain human, 1-2 mates, 3-5 Dockers), team, role (you write &\"chaser\", &\"support\", &\"cover\"), state, state_f, has_ball, stamina. Also sim.ball_state, ball_owner, receiver, ball_pos(), ball_vel(), attack_dir(team), facing(id), can(id,verb), poke_odds(id), scripted(id), set_lamp(id,on). Never order robot 0 or a scripted robot (the opening Docker is core's until its first fall). Core owns verb frames, tells (30 f slide crouch, 20 f poke draw-back, shot charge >=20 f), contacts and the cover robot's goal-line movement: you only assign the role and give cover its pass/slide decisions.\n\nTIMING: every bot re-scores every 4 f, staggered, at once on possession change, incoming pass, loose ball within 3 m, or a hit; +0.15 commitment. An opponent's wind-up/crouch is seen 14/10/6 f after it starts by level 0/1/2 (tuning `level`, default 1). Aim error 6/4/2.5 deg, score noise 0.08/0.05/0.03; easier levels also turn harder (spill ball) and slide hastier. Never extra speed, hidden help, or different moves/cooldowns. Randomness only ctx.rng. Decisions come from scores with vetoes, never chance alone.\n\nCARRIER: SHOOT=1.6xg+0.2 one_timer-0.3 pressure(1-xg), veto xg<0.08, picks corner farther from cover. PASS=1.2 lane_safe*open*(0.5+gain)+0.25 pressure, veto lane_safe<0.35. EARLY_PASS=PASS+0.6 when an opponent facing it closes inside 4.5 m, same veto. CARRY=0.9 space(1-pressure)+0.15-0.2 possession_time. HOP=1.5 slide_seen-0.4 poker_in_reach; veto unless a slide crouch/wind-up aimed at it is seen within 4.5 m, or on cooldown. Inputs as hockey research (xg: distance 4-22 m, angle 0-70, lane block, cover offset).\n\nDEFENDER: SLIDE=1.3 reach(0.5+0.5 committed)-0.5 last_defender; committed = carrier charging, turning hard, landing or recovering; veto beyond 4 m, on cooldown, while a mate slides, or airborne carrier. POKE=poke_odds, veto beyond 1.7 m or below 0.45. JOCKEY=0.55: hold 2.2 m goal-side and outwait; beats others against a fresh carrier with hop ready. A missed slider on the floor raises carrier CARRY and gain. A slide seen from >=2.5 m gets hopped or passed early.\n\nDOCKER HABIT: SLIDE weight 1.4 (slides early), beaten by hop or early pass; pokes still used. All score hop, early pass, slide, poke. Downed Dockers never spring-up.\n\nROLES: sorted by time to ball, 0.3 s hysteresis: chaser presses; support takes best passing spot 6-14 m from carrier (far post when attacking wide); cover stays goal-side and guards net. Captain is never cover. No two mates within 4 m unless contesting; only one robot per side presses (no scrum). No bot idle for 2 s. Mates shoot and drive at goal, never take the ball from robot 0, and when open (lane_safe*open>0.6) call: sim.set_lamp(id,true) + TLAudio beep. A mate arriving at far post one-times your cross.\n\nTUNE for tests/bot_tofu.gd (core's): possession_median_f 240-600, scrum_share <=0.3, idle_max_f <=120, pressure_waves >=2, lead_change_share >=0.3, close_rounds >=1. Quote them in your summary.\n\nBOTS (through TLHand, read ctx.pack_state(), declared actions left,right,up,down,kick,quick,sprint,rematch,drill_reset). tests/bot_hand_newcomer.gd and bot_hand_perfect.gd: play one match to the end; ok = finished, the hand acted, player's side touched the ball and shot at least once (perfect also scores >=1). tests/bot_mash.gd: after the opening, runs at the carrier hammering kick every possible frame, never waiting; ok = it does NOT manage three rival attacks running won plus a goal off them, AND rivals hopped >=1, early-passed >=1 and a mashed missed slide was punished >=1. Each reports moments (hop_under, one_timer, slide_hit, poke_hit, pass, goal), first within 600 f where possible.\n\nPLAYER CHECK: tests/bot_hand_newcomer.gd fails when the human-controlled captain never takes the ball or shoots.",
+   "acceptance": [
+    {
+     "level": "V1",
+     "verb": "lint",
+     "args": []
+    },
+    {
+     "level": "V2",
+     "verb": "smoke",
+     "args": []
+    },
+    {
+     "level": "V4",
+     "verb": "bot",
+     "args": [
+      "--test=tests/bot_player.gd",
+      "--frames=3600"
+     ]
+    },
+    {
+     "level": "V4",
+     "verb": "bot",
+     "args": [
+      "--test=tests/bot_hand_newcomer.gd",
+      "--frames=36000"
+     ]
+    },
+    {
+     "level": "V4",
+     "verb": "bot",
+     "args": [
+      "--test=tests/bot_hand_perfect.gd",
+      "--frames=36000"
+     ]
+    },
+    {
+     "level": "V4",
+     "verb": "bot",
+     "args": [
+      "--test=tests/bot_mash.gd",
+      "--frames=36000"
+     ]
+    },
+    {
+     "level": "V4",
+     "verb": "bot",
+     "args": [
+      "--test=tests/bot_tofu.gd",
+      "--frames=60000"
+     ]
+    },
+    {
+     "level": "V3",
+     "verb": "invariants",
+     "args": []
+    }
+   ],
+   "registers": {
+    "capabilities": [
+     "ai",
+     "input",
+     "audio"
+    ],
+    "assets": [
+     "gen/mod_ai.gd"
+    ],
+    "tests": [
+     "tests/bot_hand_newcomer.gd",
+     "tests/bot_hand_perfect.gd",
+     "tests/bot_mash.gd"
+    ]
+   },
+   "serves": [
+    "tackle_and_blast",
+    "skittle_goal",
+    "hop_cross_finish"
+   ]
+  },
+  {
+   "id": "show",
+   "title": "Cues, match curve, end card",
+   "milestone": "greybox",
+   "deps": [
+    "core",
+    "brain"
+   ],
+   "scope": [
+    "scripts/show/**",
+    "data/show.json",
+    "data/clips_show.json",
+    "gen/mod_show.gd",
+    "tests/bot_show.gd"
+   ],
+   "contract": "Teaching, stakes and reactions on top of the playing match (pillar: a floored robot is your chance; challenge stays readable). Presentation and information only: never order a robot, move the ball or change rules, frames, hit-stop or camera. All numbers and words in data/show.json.\n\nHOOK: gen/mod_show.gd: static func generate(ctx): ctx.root.set_meta(\"mod_show\",\"scripts/show/show.gd\"). show.gd: setup(ctx,sim), tick(frame) after sim.step. Read sim.events [{kind,a,b,force,pos,cause}] (kinds pass, shot, one_timer, slide_tell, slide_hit, slide_miss, poke_tell, poke_hit, poke_miss, hop, hop_under, pickup, bobble, intercept, deflect, skittle, down, rise, spring_up, save, goal, loss, match_over, restart; loss cause slid|poked|intercepted|own_turn|bobble|skittled), sim.robots[i] (id, 0 = you; team; figure; state; has_ball), sim.rules, sim.curve_level() (0,1,2). figure.play(id), figure.add_clips(dict). Core already draws score, stamina, arrows, radar and the opening hints (slide, hold shoot, corner): do not duplicate; use your own TLHud ids prefixed show_.\n\nCUES, one hint line at a time, each once, only at the moment it matters, after the first goal: \"Tap Space: pass\" when a mate calls; \"E: hop the crouch\" on the first Docker slide_tell aimed at you while carrying; \"Press as it arrives: one-timer\" when a pass to you is in flight in the rival box; \"E while down: spring up\" on your first fall. A saved straight shot repeats \"Hold A or D: pick a corner\". No words or symbols at a hit.\n\nCONCEDE/SCORE: scorers play taunt: slow chest-bang (clip chest_bang for Dockers, cheer_pump for your trio) in data/clips_show.json; conceding side sags then trudges back (clips sag, trudge). Plays only during the 90 f restart, without freezing anyone or blocking input; it ends as soon as the robot gets orders to run.\n\nCURVE: level 0 quiet tin-can crowd loop; level 1 louder after a goal at 2; level 2 (match point or next-goal-wins) louder again plus one plain banner \"MATCH POINT\" or \"NEXT GOAL WINS\" for 120 f. Foghorn already on goals in core. Scuff dust (TLVfx.burst dust) marks fresh slides. No shake additions; no bursts on pokes or whiffs. On a loss event for your side, show nothing at the hit; remember the cause.\n\nEND CARD on match_over: score; your tackles (slide_hit by robot 0) and one-timers (yours); the biggest way you lost the ball with its answer: slid \"Slid while carrying: HOP\", poked \"Poked: turn away or pass sooner\", intercepted \"Pass cut out: pick an open mate\", own_turn \"Spilled it: ease off Shift when turning\", bobble \"Bobbled: meet the pass facing it\", skittled \"Skittled: clear the flying robot\"; fastest win kept for the session (also _pack_save is not yours: keep it in the module instance, which survives rematch). Footer \"R: rematch\"; the card clears on restart, which happens in under 2 s. There is one rival team: no unlocks, no ladder. The win line names Bolt Brenda's Crate Dockers.\n\ntests/bot_show.gd (perfect TLHand, actions left,right,up,down,kick,quick,sprint,rematch,drill_reset): plays the opening, then a match to match_over, presses rematch; ok = at least two cues shown, end card text contains score and an answer (or \"no ball lost\"), restart within 120 f, player's side scored or lost a ball. Expose what you show in a state the bot can read: core's _pack_state has no show keys, so the bot reads HUD text via your static-free test hook: bot loads nothing of yours and checks sim state only through pack_state; therefore write the shown cue ids and card text into ctx.root meta \"show_state\" and let the bot read ctx.root.get_meta(\"show_state\"). moments: goal, cue, taunt, end_card (goal and cue within 600 f).\n\nPLAYER CHECK: tests/bot_show.gd fails when the captain can no longer score the opening goal or reach an end card that counts the captain's tackles.",
+   "acceptance": [
+    {
+     "level": "V1",
+     "verb": "lint",
+     "args": []
+    },
+    {
+     "level": "V2",
+     "verb": "smoke",
+     "args": []
+    },
+    {
+     "level": "V4",
+     "verb": "bot",
+     "args": [
+      "--test=tests/bot_player.gd",
+      "--frames=3600"
+     ]
+    },
+    {
+     "level": "V4",
+     "verb": "bot",
+     "args": [
+      "--test=tests/bot_show.gd",
+      "--frames=36000"
+     ]
+    },
+    {
+     "level": "V3",
+     "verb": "invariants",
+     "args": []
+    }
+   ],
+   "registers": {
+    "capabilities": [
+     "ui",
+     "audio",
+     "vfx",
+     "input"
+    ],
+    "assets": [
+     "gen/mod_show.gd"
+    ],
+    "tests": [
+     "tests/bot_show.gd"
+    ]
+   },
+   "serves": [
+    "tackle_and_blast",
+    "hop_cross_finish"
+   ]
+  },
+  {
+   "id": "look",
+   "title": "Scrapyard night cage dressing",
+   "milestone": "art_pass",
+   "deps": [
+    "core"
+   ],
+   "scope": [
+    "scripts/look/**",
+    "data/venue_dress.json",
+    "data/look.json",
+    "gen/mod_look.gd",
+    "gen/dressing.gd"
+   ],
+   "contract": "A bright, cheeky scrapyard night match in the global inked toon style, visibly different in both cameras `play` and `overview` (pillar: tumbles that read; the venue frames them). Visual only: no collision that can touch robots or ball, nothing in state, no rule changes.\n\nHOOK: gen/mod_look.gd: static func generate(ctx): ctx.root.set_meta(\"mod_look\",\"scripts/look/look.gd\"). look.gd: setup(ctx,sim), tick(frame). Read sim.robots[i] (id, 0 = captain; team 0 your trio, 1 Crate Dockers; figure: Node3D with separate pivot parts built by core's gen/robot.gd; state), sim.curve_level() (0 calm, 1 a side at 2 goals, 2 match point or next goal wins), sim.events [{kind,a,b,force,pos}].\n\nVENUE: data/venue_dress.json (tl.layout/1) built with TLKit.build_layout(ctx.read_json(\"venue_dress.json\"), ctx.root). Core already builds pitch 64 x 40 m (x -32..32, z -20..20), lines, 0.8 m walls and goals: do not rebuild them and add no second ground at pitch height. Add outside the walls: stands, crane, light_mast, scoreboard, scaffold, tyre_stack, pallet, crate, sign, flags. Place them ONLY beyond the far end (x > 34) and the sides (|z| > 23); nothing taller than 0.8 m behind own goal line (x < -32) so the camera (6.5 m back, 5.0 up, yaw fixed toward +x) is never blocked; nets stay see-through. Surroundings must show in the play view from the opening (captain at x 14 looking +x): a crane, two light masts and stands beyond the far goal. Keep the floor flat grey-green and darker than the robots, ball rim and rings so they read.\n\nROBOTS: gen/dressing.gd (static generate(ctx) may be empty; static dress(figure, team, captain)) adds child detail to figure parts without moving pivots: your trio blue panels, bolts, visor eyes, chest lamp housing (core's amber comeback lamp must stay visible and unobstructed); Dockers orange crate slats, hazard stripes, forklift fork on captain Bolt Brenda bigger. Detail must follow the parts through tumble_cartwheel and clamber_up. Silhouettes of the two teams stay clearly different. Colours via style palette keys; no hand-made materials or lights; meshes only in gen/ and kit parts first.\n\nCURVE: at sim.curve_level() 2 floodlight lamp faces on the masts brighten (swap to a bright palette colour / scale a visual glow panel) and the crowd in the stands bobs more; level 1 a smaller step. No new lights or environment.\n\nNumbers in data/look.json. Keep node count under budget (whole pack under 5,000 nodes, frame p99 under 8 ms); static props go through the layout so they merge.",
+   "acceptance": [
+    {
+     "level": "V1",
+     "verb": "lint",
+     "args": []
+    },
+    {
+     "level": "V2",
+     "verb": "smoke",
+     "args": []
+    },
+    {
+     "level": "V4",
+     "verb": "bot",
+     "args": [
+      "--test=tests/bot_player.gd",
+      "--frames=3600"
+     ]
+    },
+    {
+     "level": "V3",
+     "verb": "invariants",
+     "args": []
+    }
+   ],
+   "registers": {
+    "capabilities": [
+     "kit",
+     "style"
+    ],
+    "assets": [
+     "gen/dressing.gd",
+     "gen/mod_look.gd"
+    ]
+   },
+   "serves": [
+    "tackle_and_blast",
+    "skittle_goal"
+   ]
+  }
+ ],
+ "events": [
+  {
+   "v": 1,
+   "seq": 411,
+   "ts": "2026-11-25T14:51:23.547Z",
+   "job": "robot-soccer-3-v-20261125-1",
+   "type": "verify",
+   "round": 1,
+   "level": "V4",
+   "verb": "bot",
+   "ok": true,
+   "report": "reports/final-bot-bot_tofu-s411.json",
+   "exitCode": 0
+  },
+  {
+   "v": 1,
+   "seq": 497,
+   "ts": "2026-11-25T15:20:07.911Z",
+   "job": "robot-soccer-3-v-20261125-1",
+   "type": "verify",
+   "round": 1,
+   "level": "V4",
+   "verb": "bot",
+   "ok": true,
+   "report": "reports/final-bot-bot_tofu-s497.json",
+   "exitCode": 0
+  },
+  {
+   "v": 1,
+   "seq": 589,
+   "ts": "2026-11-25T15:42:15.371Z",
+   "job": "robot-soccer-3-v-20261125-1",
+   "type": "verify",
+   "round": 1,
+   "level": "V4",
+   "verb": "bot",
+   "ok": true,
+   "report": "reports/final-bot-bot_tofu-s589.json",
+   "exitCode": 0
+  },
+  {
+   "v": 1,
+   "seq": 681,
+   "ts": "2026-11-25T16:03:12.654Z",
+   "job": "robot-soccer-3-v-20261125-1",
+   "type": "verify",
+   "round": 1,
+   "level": "V4",
+   "verb": "bot",
+   "ok": true,
+   "report": "reports/final-bot-bot_tofu-s681.json",
+   "exitCode": 0
+  },
+  {
+   "v": 1,
+   "seq": 753,
+   "ts": "2026-11-25T16:26:45.877Z",
+   "job": "robot-soccer-3-v-20261125-1",
+   "type": "verify",
+   "round": 2,
+   "level": "V4",
+   "verb": "bot",
+   "ok": false,
+   "report": "reports/brain-r2-pack-bot-bot_tofu-s753.json",
+   "exitCode": 1,
+   "after": "brain"
+  },
+  {
+   "v": 1,
+   "seq": 754,
+   "ts": "2026-11-25T16:27:16.795Z",
+   "job": "robot-soccer-3-v-20261125-1",
+   "type": "verify",
+   "round": 2,
+   "level": "V4",
+   "verb": "bot",
+   "ok": true,
+   "report": "reports/brain-r2-control-bot-bot_tofu-s754.json",
+   "exitCode": 0,
+   "after": "brain"
+  },
+  {
+   "v": 1,
+   "seq": 770,
+   "ts": "2026-11-25T16:40:38.319Z",
+   "job": "robot-soccer-3-v-20261125-1",
+   "type": "verify",
+   "round": 3,
+   "level": "V4",
+   "verb": "bot",
+   "ok": true,
+   "report": "reports/brain-r3-pack-bot-bot_tofu-s770.json",
+   "exitCode": 0,
+   "after": "brain"
+  },
+  {
+   "v": 1,
+   "seq": 785,
+   "ts": "2026-11-25T16:43:56.072Z",
+   "job": "robot-soccer-3-v-20261125-1",
+   "type": "verify",
+   "round": 1,
+   "level": "V4",
+   "verb": "bot",
+   "ok": true,
+   "report": "reports/final-bot-bot_tofu-s785.json",
+   "exitCode": 0
+  },
+  {
+   "v": 1,
+   "seq": 877,
+   "ts": "2026-11-25T17:11:33.529Z",
+   "job": "robot-soccer-3-v-20261125-1",
+   "type": "verify",
+   "round": 1,
+   "level": "V4",
+   "verb": "bot",
+   "ok": true,
+   "report": "reports/final-bot-bot_tofu-s877.json",
+   "exitCode": 0
+  },
+  {
+   "v": 1,
+   "seq": 1004,
+   "ts": "2026-11-27T02:29:53.151Z",
+   "job": "robot-soccer-3-v-20261125-1",
+   "type": "verify",
+   "round": 2,
+   "level": "V4",
+   "verb": "bot",
+   "ok": false,
+   "report": "reports/show-r2-pack-bot-bot_tofu-s1004.json",
+   "exitCode": 1,
+   "after": "show"
+  },
+  {
+   "v": 1,
+   "seq": 1005,
+   "ts": "2026-11-27T02:30:51.407Z",
+   "job": "robot-soccer-3-v-20261125-1",
+   "type": "verify",
+   "round": 2,
+   "level": "V4",
+   "verb": "bot",
+   "ok": false,
+   "report": "reports/show-r2-control-bot-bot_tofu-s1005.json",
+   "exitCode": 1,
+   "after": "show"
+  },
+  {
+   "v": 1,
+   "seq": 1017,
+   "ts": "2026-11-27T02:33:56.108Z",
+   "job": "robot-soccer-3-v-20261125-1",
+   "type": "verify",
+   "round": 1,
+   "level": "V4",
+   "verb": "bot",
+   "ok": false,
+   "report": "reports/final-bot-bot_tofu-s1017.json",
+   "exitCode": 1
+  },
+  {
+   "v": 1,
+   "seq": 1032,
+   "ts": "2026-11-27T02:37:39.521Z",
+   "job": "robot-soccer-3-v-20261125-1",
+   "type": "verify",
+   "round": 3,
+   "level": "V4",
+   "verb": "bot",
+   "ok": false,
+   "report": "reports/show-r3-pack-bot-bot_tofu-s1032.json",
+   "exitCode": 1,
+   "after": "show"
+  },
+  {
+   "v": 1,
+   "seq": 1033,
+   "ts": "2026-11-27T02:38:35.293Z",
+   "job": "robot-soccer-3-v-20261125-1",
+   "type": "verify",
+   "round": 3,
+   "level": "V4",
+   "verb": "bot",
+   "ok": false,
+   "report": "reports/show-r3-control-bot-bot_tofu-s1033.json",
+   "exitCode": 1,
+   "after": "show"
+  },
+  {
+   "v": 1,
+   "seq": 1045,
+   "ts": "2026-11-27T02:41:35.083Z",
+   "job": "robot-soccer-3-v-20261125-1",
+   "type": "verify",
+   "round": 1,
+   "level": "V4",
+   "verb": "bot",
+   "ok": false,
+   "report": "reports/final-bot-bot_tofu-s1045.json",
+   "exitCode": 1
+  },
+  {
+   "v": 1,
+   "seq": 1060,
+   "ts": "2026-11-27T02:45:30.475Z",
+   "job": "robot-soccer-3-v-20261125-1",
+   "type": "verify",
+   "round": 4,
+   "level": "V4",
+   "verb": "bot",
+   "ok": false,
+   "report": "reports/show-r4-pack-bot-bot_tofu-s1060.json",
+   "exitCode": 1,
+   "after": "show"
+  },
+  {
+   "v": 1,
+   "seq": 1061,
+   "ts": "2026-11-27T02:46:25.627Z",
+   "job": "robot-soccer-3-v-20261125-1",
+   "type": "verify",
+   "round": 4,
+   "level": "V4",
+   "verb": "bot",
+   "ok": false,
+   "report": "reports/show-r4-control-bot-bot_tofu-s1061.json",
+   "exitCode": 1,
+   "after": "show"
+  },
+  {
+   "v": 1,
+   "seq": 1073,
+   "ts": "2026-11-27T02:49:46.662Z",
+   "job": "robot-soccer-3-v-20261125-1",
+   "type": "verify",
+   "round": 1,
+   "level": "V4",
+   "verb": "bot",
+   "ok": false,
+   "report": "reports/final-bot-bot_tofu-s1073.json",
+   "exitCode": 1
+  },
+  {
+   "v": 1,
+   "seq": 1088,
+   "ts": "2026-11-27T02:53:38.809Z",
+   "job": "robot-soccer-3-v-20261125-1",
+   "type": "verify",
+   "round": 5,
+   "level": "V4",
+   "verb": "bot",
+   "ok": false,
+   "report": "reports/show-r5-pack-bot-bot_tofu-s1088.json",
+   "exitCode": 1,
+   "after": "show"
+  },
+  {
+   "v": 1,
+   "seq": 1089,
+   "ts": "2026-11-27T02:54:37.121Z",
+   "job": "robot-soccer-3-v-20261125-1",
+   "type": "verify",
+   "round": 5,
+   "level": "V4",
+   "verb": "bot",
+   "ok": false,
+   "report": "reports/show-r5-control-bot-bot_tofu-s1089.json",
+   "exitCode": 1,
+   "after": "show"
+  },
+  {
+   "v": 1,
+   "seq": 1101,
+   "ts": "2026-11-27T02:58:21.956Z",
+   "job": "robot-soccer-3-v-20261125-1",
+   "type": "verify",
+   "round": 1,
+   "level": "V4",
+   "verb": "bot",
+   "ok": false,
+   "report": "reports/final-bot-bot_tofu-s1101.json",
+   "exitCode": 1
+  },
+  {
+   "v": 1,
+   "seq": 1116,
+   "ts": "2026-11-27T03:02:54.302Z",
+   "job": "robot-soccer-3-v-20261125-1",
+   "type": "verify",
+   "round": 6,
+   "level": "V4",
+   "verb": "bot",
+   "ok": false,
+   "report": "reports/show-r6-pack-bot-bot_tofu-s1116.json",
+   "exitCode": 1,
+   "after": "show"
+  },
+  {
+   "v": 1,
+   "seq": 1117,
+   "ts": "2026-11-27T03:04:02.466Z",
+   "job": "robot-soccer-3-v-20261125-1",
+   "type": "verify",
+   "round": 6,
+   "level": "V4",
+   "verb": "bot",
+   "ok": false,
+   "report": "reports/show-r6-control-bot-bot_tofu-s1117.json",
+   "exitCode": 1,
+   "after": "show"
+  },
+  {
+   "v": 1,
+   "seq": 1129,
+   "ts": "2026-11-27T03:07:26.603Z",
+   "job": "robot-soccer-3-v-20261125-1",
+   "type": "verify",
+   "round": 1,
+   "level": "V4",
+   "verb": "bot",
+   "ok": false,
+   "report": "reports/final-bot-bot_tofu-s1129.json",
+   "exitCode": 1
+  },
+  {
+   "v": 1,
+   "seq": 1182,
+   "ts": "2026-11-27T03:42:18.141Z",
+   "job": "robot-soccer-3-v-20261125-1",
+   "type": "verify",
+   "round": 7,
+   "level": "V4",
+   "verb": "bot",
+   "ok": true,
+   "report": "reports/show-r7-pack-bot-bot_tofu-s1182.json",
+   "exitCode": 0,
+   "after": "show"
+  },
+  {
+   "v": 1,
+   "seq": 1193,
+   "ts": "2026-11-27T03:46:00.184Z",
+   "job": "robot-soccer-3-v-20261125-1",
+   "type": "verify",
+   "round": 1,
+   "level": "V4",
+   "verb": "bot",
+   "ok": true,
+   "report": "reports/final-bot-bot_tofu-s1193.json",
+   "exitCode": 0
+  },
+  {
+   "v": 1,
+   "seq": 1288,
+   "ts": "2026-11-27T09:47:56.984Z",
+   "job": "robot-soccer-3-v-20261125-1",
+   "type": "verify",
+   "round": 1,
+   "level": "V4",
+   "verb": "bot",
+   "ok": false,
+   "report": "reports/final-bot-bot_tofu-s1288.json",
+   "exitCode": 1
+  },
+  {
+   "v": 1,
+   "seq": 1289,
+   "ts": "2026-11-27T09:49:07.231Z",
+   "job": "robot-soccer-3-v-20261125-1",
+   "type": "verify",
+   "round": 1,
+   "level": "V4",
+   "verb": "bot",
+   "ok": true,
+   "report": "reports/final-bot-bot_tofu-longer-s1289.json",
+   "exitCode": 0
+  },
+  {
+   "v": 1,
+   "seq": 1384,
+   "ts": "2026-11-27T10:19:12.576Z",
+   "job": "robot-soccer-3-v-20261125-1",
+   "type": "verify",
+   "round": 1,
+   "level": "V4",
+   "verb": "bot",
+   "ok": true,
+   "report": "reports/final-bot-bot_tofu-s1384.json",
+   "exitCode": 0
+  },
+  {
+   "v": 1,
+   "seq": 1477,
+   "ts": "2026-11-27T13:10:53.572Z",
+   "job": "robot-soccer-3-v-20261125-1",
+   "type": "verify",
+   "round": 1,
+   "level": "V4",
+   "verb": "bot",
+   "ok": true,
+   "report": "reports/final-bot-bot_tofu-s1477.json",
+   "exitCode": 0
+  },
+  {
+   "v": 1,
+   "seq": 1597,
+   "ts": "2026-11-27T15:44:23.449Z",
+   "job": "robot-soccer-3-v-20261125-1",
+   "type": "verify",
+   "round": 1,
+   "level": "V4",
+   "verb": "bot",
+   "ok": false,
+   "report": "reports/final-bot-bot_tofu-s1597.json",
+   "exitCode": 1
+  },
+  {
+   "v": 1,
+   "seq": 1598,
+   "ts": "2026-11-27T15:46:05.310Z",
+   "job": "robot-soccer-3-v-20261125-1",
+   "type": "verify",
+   "round": 1,
+   "level": "V4",
+   "verb": "bot",
+   "ok": true,
+   "report": "reports/final-bot-bot_tofu-longer-s1598.json",
+   "exitCode": 0
+  },
+  {
+   "v": 1,
+   "seq": 1599,
+   "ts": "2026-11-27T15:46:05.316Z",
+   "job": "robot-soccer-3-v-20261125-1",
+   "type": "note",
+   "package": "core",
+   "round": 22,
+   "text": "[foreman] balance moved by your change: built as you asked; matches now run longer (the Foreman's test needed about 1.6 times the frames it planned). Say \"make matches shorter\" to tune it.\nfigures (tests/bot_tofu.gd): not done within 36000 frames; done in 57217 of 108000 when run again with more (not judged in this change)"
+  },
+  {
+   "v": 1,
+   "seq": 1644,
+   "ts": "2026-11-27T16:02:40.617Z",
+   "job": "robot-soccer-3-v-20261125-1",
+   "type": "note",
+   "package": "brain",
+   "round": 3,
+   "text": "[foreman] balance moved by your change: built as you asked; a newcomer player now wins 7 of 20 (was 15 of 20). Say \"make it fairer\" to tune it.\nfigures (the card's newcomer hand check, not judged in this change): 7 of 20 wins, the card's bound 13 or more"
+  },
+  {
+   "v": 1,
+   "seq": 1649,
+   "ts": "2026-11-27T16:03:28.873Z",
+   "job": "robot-soccer-3-v-20261125-1",
+   "type": "note",
+   "package": "core",
+   "round": 22,
+   "text": "[foreman] what changed in v0.1.10 (since v0.1.9): asked \"Add a Rocket League Rumble magnet on Q: hold Q and a crackling blue lightning beam locks from my robot's chest onto the ball anywhere within 15 metres, with a blue ring tightening round the ball for a third of a second; let go and the ball is ripped off the ground, even off a rival's feet, and rockets to me in a high arc twice as fast as a shot, knocking over any robot in its path. The robot it was ripped from spins round in sparks, with YOINK! big in the middle of the screen, a zap and a camera kick. A robot that steps into the beam's line breaks it and is zapped, stunned for a second (ZAP!). One yank every 8 seconds, shown as a blue meter over my head. The rival robots yank loose balls and steal mine when I dribble near them, and step into my beam to block it.\"; what you will see, in the builder's words: NEW MOVE: yank — the magnet's pull, published as events `yoink` (a = yanker, b = robot it was ripped from, or -1 for a loose ball), `yank_hit` (a = yanker, b = robot bowled over), `yank_catch`, `magnet_on` and `magnet_za\n... (200 more characters cut) / New input action `magnet` (KEY_Q). New order key `magnet: true`, sent each frame while held. Bots without that order key decide inside `scripts/sim/magnet.gd`; only team 1, never scripted robots, never during the opening\n... (1 more characters cut) / New robot fields: `mg_on`, `mg_f`, `yank`, `yank_y` (the ball's visual arc height, view only), `spin_left`. Cooldown is k\nbalance moved by your change: built as you asked; the share of test rounds where the lead changes hands: now 0, was 0.33. Say \"make it fairer\" to tune it.\nbalance moved by your change: built as you asked; matches now run longer (the Foreman's test needed about 1.6 times the frames it planned). Say \"make matches shorter\" to tune it.\nbalance moved by your change: built as you asked; a newcomer player now wins 7 of 20 (was 15 of 20). Say \"make it fairer\" to tune it.\na test was changed: tests/bot_player.gd (core)"
+  },
+  {
+   "v": 1,
+   "seq": 1650,
+   "ts": "2026-11-27T16:03:28.878Z",
+   "job": "robot-soccer-3-v-20261125-1",
+   "type": "note",
+   "package": "core",
+   "round": 22,
+   "text": "[foreman] pictures of the pack as it is promoted the 11th time (after the change): captures/promotion11-play-f825.png, captures/promotion11-play-f2476.png, captures/promotion11-overview-f825.png, captures/promotion11-overview-f2476.png"
+  },
+  {
+   "v": 1,
+   "seq": 1651,
+   "ts": "2026-11-27T16:03:28.916Z",
+   "job": "robot-soccer-3-v-20261125-1",
+   "type": "promoted",
+   "packId": "game.robot_soccer_3_v",
+   "version": "0.1.10",
+   "dest": "promoted/game.robot_soccer_3_v@0.1.10"
+  },
+  {
+   "v": 1,
+   "seq": 1652,
+   "ts": "2026-11-27T16:03:28.923Z",
+   "job": "robot-soccer-3-v-20261125-1",
+   "type": "job_state",
+   "state": "done",
+   "reason": "pack verified V0 to V4 and promoted under the job directory (promoted/game.robot_soccer_3_v@0.1.10) (promotion 11 of this job; the earlier one is kept)"
+  },
+  {
+   "v": 1,
+   "seq": 1653,
+   "ts": "2026-11-27T16:04:05.173Z",
+   "job": "robot-soccer-3-v-20261125-1",
+   "type": "change_requested",
+   "text": "The yank works and the rivals rip the ball off me often, but it reads small. YOINK! and ZAP! are small white words: make them big fat yellow comic letters in the middle of the screen, like KA-BONK!!. The beam looks like a blue hose lying on the grass: make it a thick, bright, crackling lightning bolt through the air from the robot's chest to the ball, flickering white and blue. The ball arrives in a blink: let it fly in a high arc for about half a second with a blue trail, so everyone sees it go. When a rival yanks the ball off me, pull the camera back for a moment so I see the robot who did it. And my own bot teammates should use the magnet too."
+  },
+  {
+   "v": 1,
+   "seq": 1654,
+   "ts": "2026-11-27T16:04:05.440Z",
+   "job": "robot-soccer-3-v-20261125-1",
+   "type": "job_state",
+   "state": "running",
+   "reason": "reopened by a change request (was done)"
+  },
+  {
+   "v": 1,
+   "seq": 1655,
+   "ts": "2026-11-27T16:04:10.188Z",
+   "job": "robot-soccer-3-v-20261125-1",
+   "type": "builder_run",
+   "adapter": "claude-cli",
+   "mode": "generate",
+   "model": "claude-sonnet-5-5",
+   "outcome": "ok",
+   "durationMs": 4187,
+   "tokensIn": 4209,
+   "tokensOut": 266,
+   "tokensCacheRead": 2156,
+   "transcript": "reports/planner-a1-s1655.json"
+  },
+  {
+   "v": 1,
+   "seq": 1656,
+   "ts": "2026-11-27T16:04:10.196Z",
+   "job": "robot-soccer-3-v-20261125-1",
+   "type": "change_requested",
+   "package": "brain",
+   "text": "[foreman] the rivals' part of change request 1653, for the bots your files drive (data/ai.json, gen/mod_ai.gd, scripts/ai/carrier.gd, scripts/ai/roles.gd, scripts/ai/sense.gd, scripts/ai/team_ai.gd): \"And my own bot teammates should use the magnet too.\". \"core\" builds the rest of the change (the moves and rules it names) in the same change, and your package runs after its merge: make the bots you drive do what these words say with what it merged. The whole change, for what the words refer to: \"The yank works and the rivals rip the ball off me often, but it reads small. YOINK! and ZAP! are small white words: make them big fat yellow comic letters in the middle of the screen, like KA-BONK!!. The beam looks like a blue hose lying on the grass: make it a thick, bright, crackling lightning bolt through the air from the robot's chest to the ball, flickering white and blue. The ball arrives in a blink: let it fly in a high arc for about half a second with a blue trail, so everyone sees it go. When a rival yanks the ball off me, pull the camera back for a moment so I see the robot who did it. And my own bot teammates should use the magnet too.\""
+  },
+  {
+   "v": 1,
+   "seq": 1657,
+   "ts": "2026-11-27T16:04:10.201Z",
+   "job": "robot-soccer-3-v-20261125-1",
+   "type": "reopened",
+   "package": "core",
+   "reason": "change request (event 1653); the Planner names the package: The magnet's flight and timing (scripts/sim/magnet.gd), the beam visual (scripts/view/magnet_look.gd), the YOINK!/ZAP! words (scripts/view/screen.gd) and the camera all belong to core, and core is the\n... (91 more characters cut); the words \"And my own bot teammates should use the magnet too.\" tell the rivals what to do, and \"brain\" drives bots too (data/ai.json, gen/mod_ai.gd, scripts/ai/carrier.gd, scripts/ai/roles.gd, scripts/ai/sense.gd, scripts/ai/team_ai.gd), so they go to it as well: The yank works and the rivals rip the ball o\n... (286 more characters cut)"
+  },
+  {
+   "v": 1,
+   "seq": 1658,
+   "ts": "2026-11-27T16:04:10.206Z",
+   "job": "robot-soccer-3-v-20261125-1",
+   "type": "package_state",
+   "package": "core",
+   "state": "queued",
+   "round": 23,
+   "detail": "CHANGE REQUEST: The yank works and the rivals rip the ball off me often, but it reads small. YOINK! and ZAP! are small white words: make them big fat yellow comic letters in the middle of the screen, like KA-BONK!!. The beam looks like a blue hose lying on the grass: make it a thick, bright, crackling lightning bolt through the air from the robot's chest to the ball, flickering white and blue. The ball arrives in a blink: let it fly in a high arc for about half a second with a blue trail, so everyone sees it go. When a rival yanks the ball off me, pull the camera back for a moment so I see the robot who did it. And my own bot teammates should use the magnet too."
+  },
+  {
+   "v": 1,
+   "seq": 1659,
+   "ts": "2026-11-27T16:04:10.212Z",
+   "job": "robot-soccer-3-v-20261125-1",
+   "type": "reopened",
+   "package": "brain",
+   "reason": "change request (event 1656); the request names the package: [foreman] the rivals' part of change request 1653, for the bots your files drive (data/ai.json, gen/mod_ai.gd, scripts/ai/carrier.gd, scripts/ai/roles.gd, scripts/ai/sense.gd, scripts/ai/team_ai.gd): \"And my own bot teammates should use the magnet too.\". \"core\" builds the rest of the change (the mov\n... (854 more characters cut)"
+  },
+  {
+   "v": 1,
+   "seq": 1660,
+   "ts": "2026-11-27T16:04:10.218Z",
+   "job": "robot-soccer-3-v-20261125-1",
+   "type": "package_state",
+   "package": "brain",
+   "state": "queued",
+   "round": 4,
+   "detail": "CHANGE REQUEST: [foreman] the rivals' part of change request 1653, for the bots your files drive (data/ai.json, gen/mod_ai.gd, scripts/ai/carrier.gd, scripts/ai/roles.gd, scripts/ai/sense.gd, scripts/ai/team_ai.gd): \"And my own bot teammates should use the magnet too.\". \"core\" builds the rest of the change (the moves and rules it names) in the same change, and your package runs after its merge: make the bots you drive do what these words say with what it merged. The whole change, for what the words refer to: \"The yank works and the rivals rip the ball off me often, but it reads small. YOINK! and ZAP! are small white words: make them big fat yellow comic letters in the middle of the screen, like KA-BONK!!. The beam looks like a blue hose lying on the grass: make it a thick, bright, crackling lightning bolt through the air from the robot's chest to the ball, flickering white and blue. The ball arrives in a blink: let it fly in a high arc for about half a second with a blue trail, so everyone sees it go. When a rival yanks the ball off me, pull the camera back for a moment so I see the robot who did it. And my own bot teammates should use the magnet too.\""
+  },
+  {
+   "v": 1,
+   "seq": 1661,
+   "ts": "2026-11-27T16:04:10.238Z",
+   "job": "robot-soccer-3-v-20261125-1",
+   "type": "package_state",
+   "package": "core",
+   "state": "running",
+   "round": 23
+  },
+  {
+   "v": 1,
+   "seq": 1662,
+   "ts": "2026-11-27T16:07:48.880Z",
+   "job": "robot-soccer-3-v-20261125-1",
+   "type": "builder_run",
+   "package": "core",
+   "round": 23,
+   "adapter": "claude-cli",
+   "mode": "edit",
+   "model": "claude-sonnet-5-5",
+   "outcome": "ok",
+   "durationMs": 218439,
+   "tokensIn": 1349825,
+   "tokensOut": 13572,
+   "tokensCacheRead": 1261448,
+   "transcript": "reports/core-r23-builder-s1662.json"
+  },
+  {
+   "v": 1,
+   "seq": 1663,
+   "ts": "2026-11-27T16:07:48.886Z",
+   "job": "robot-soccer-3-v-20261125-1",
+   "type": "note",
+   "package": "core",
+   "round": 23,
+   "text": "- `magnet.min_f` 10 → 30: a yank takes at least 30 frames (half a second) instead of arriving in a blink. `magnet.speed` stays 60, so only yanks of over 30 m are longer.\n- `magnet.arc` 4.0 → 5.5: higher arc. The ball still knocks over only robots it passes below 1.6 m, so it bowls robots near the start and end of the arc.\n- New keys in `magnet`: beam_thick, beam_core, beam_segs, beam_jag, beam_bow, beam_white, trail_n, trail_size, word_size, word_outline, word_color, word_ink, word_pop, word_pop_f, word_start, word_fade_f, word_y, pull, pull_up, pull_frames, pull_look. The old `SEGS` constant in `magnet_look.gd` is now `magnet.beam_segs`.\n- The magnet bot logic now runs for team 0 mates (ids 1 and 2) as well as rivals. Mates never yank from the captain (the yank is never allowed while a teammate holds the ball), and they yank a loose ball only when they are their side's nearest robot to it.\n- The HUD label `&\"magnet_word\"` is removed. The words are drawn on a new TLHudLayer `&\"magnet_words\"`.\n- `show.gd` has two new fields, `pull_left` and `pull_at`, for the camera pull-back. It triggers on a `yoink` event where `b == 0` and the yanker is a rival."
+  },
+  {
+   "v": 1,
+   "seq": 1664,
+   "ts": "2026-11-27T16:07:48.899Z",
+   "job": "robot-soccer-3-v-20261125-1",
+   "type": "package_state",
+   "package": "core",
+   "state": "verifying",
+   "round": 23
+  },
+  {
+   "v": 1,
+   "seq": 1669,
+   "ts": "2026-11-27T16:09:14.966Z",
+   "job": "robot-soccer-3-v-20261125-1",
+   "type": "note",
+   "package": "core",
+   "round": 23,
+   "text": "[foreman] already outside before your change, not judged as its regression: tells (was 2, bound 3 or more)"
+  },
+  {
+   "v": 1,
+   "seq": 1673,
+   "ts": "2026-11-27T16:10:25.449Z",
+   "job": "robot-soccer-3-v-20261125-1",
+   "type": "merge",
+   "package": "core",
+   "files": [
+    "data/tuning.json",
+    "scripts/sim/magnet.gd",
+    "scripts/view/magnet_look.gd",
+    "scripts/view/show.gd"
+   ]
+  },
+  {
+   "v": 1,
+   "seq": 1674,
+   "ts": "2026-11-27T16:10:25.456Z",
+   "job": "robot-soccer-3-v-20261125-1",
+   "type": "package_state",
+   "package": "core",
+   "state": "promoted",
+   "round": 23
+  },
+  {
+   "v": 1,
+   "seq": 1676,
+   "ts": "2026-11-27T16:10:26.266Z",
+   "job": "robot-soccer-3-v-20261125-1",
+   "type": "package_state",
+   "package": "brain",
+   "state": "running",
+   "round": 4
+  },
+  {
+   "v": 1,
+   "seq": 1679,
+   "ts": "2026-11-27T16:11:05.716Z",
+   "job": "robot-soccer-3-v-20261125-1",
+   "type": "verify",
+   "package": "show",
+   "round": 7,
+   "level": "V4",
+   "verb": "bot",
+   "ok": false,
+   "report": "reports/show-r7-reverify-bot-s1679.json",
+   "exitCode": 1
+  },
+  {
+   "v": 1,
+   "seq": 1680,
+   "ts": "2026-11-27T16:11:05.722Z",
+   "job": "robot-soccer-3-v-20261125-1",
+   "type": "reopened",
+   "package": "show",
+   "reason": "its dependency core was changed and merged again, and bot (V4) now fails on the merged pack: bot failed: failed checks [bot.ok], 1 errors"
+  },
+  {
+   "v": 1,
+   "seq": 1681,
+   "ts": "2026-11-27T16:11:05.728Z",
+   "job": "robot-soccer-3-v-20261125-1",
+   "type": "package_state",
+   "package": "show",
+   "state": "queued",
+   "round": 8,
+   "detail": "DEPENDENCY CHANGED: package core, which yours depends on, was changed and merged again after your package was finished. Your acceptance check bot (V4) now fails on the merged pack: bot failed: failed checks [bot.ok], 1 errors"
+  },
+  {
+   "v": 1,
+   "seq": 1686,
+   "ts": "2026-11-27T16:14:06.788Z",
+   "job": "robot-soccer-3-v-20261125-1",
+   "type": "builder_run",
+   "package": "brain",
+   "round": 4,
+   "adapter": "claude-cli",
+   "mode": "edit",
+   "model": "claude-sonnet-5-5",
+   "outcome": "ok",
+   "durationMs": 220352,
+   "tokensIn": 808728,
+   "tokensOut": 5334,
+   "tokensCacheRead": 727349,
+   "transcript": "reports/brain-r4-builder-s1686.json"
+  },
+  {
+   "v": 1,
+   "seq": 1687,
+   "ts": "2026-11-27T16:14:06.794Z",
+   "job": "robot-soccer-3-v-20261125-1",
+   "type": "note",
+   "package": "brain",
+   "round": 4,
+   "text": "- The mates' and rivals' magnet decisions (when to hold, yank or block) stay in core's `scripts/sim/magnet.gd`, which runs after `mod_ai`. `team_ai.gd` sends no `magnet` order key, so core's bot logic decides for robots 1–5. No values in `data/ai.json` or scripts under `scripts/ai/` were changed for this request.\n- `tests/ai_support/play.gd` results gain the field `mate_yanks`, which counts the game's own `yoink` events where `a` is 1 or 2. It is a figure only and is not part of `ok`. No new attack move is added by this package, so there are no NEW MOVE lines."
+  },
+  {
+   "v": 1,
+   "seq": 1688,
+   "ts": "2026-11-27T16:14:06.807Z",
+   "job": "robot-soccer-3-v-20261125-1",
+   "type": "package_state",
+   "package": "brain",
+   "state": "verifying",
+   "round": 4
+  },
+  {
+   "v": 1,
+   "seq": 1696,
+   "ts": "2026-11-27T16:16:48.591Z",
+   "job": "robot-soccer-3-v-20261125-1",
+   "type": "note",
+   "package": "brain",
+   "round": 4,
+   "text": "[foreman] already outside before your change, not judged as its regression: tells (was 2, bound 3 or more)"
+  },
+  {
+   "v": 1,
+   "seq": 1700,
+   "ts": "2026-11-27T16:18:28.815Z",
+   "job": "robot-soccer-3-v-20261125-1",
+   "type": "verify",
+   "round": 4,
+   "level": "V4",
+   "verb": "bot",
+   "ok": false,
+   "report": "reports/brain-r4-pack-bot-bot_tofu-s1700.json",
+   "exitCode": 1,
+   "after": "brain"
+  },
+  {
+   "v": 1,
+   "seq": 1701,
+   "ts": "2026-11-27T16:19:33.593Z",
+   "job": "robot-soccer-3-v-20261125-1",
+   "type": "verify",
+   "round": 4,
+   "level": "V4",
+   "verb": "bot",
+   "ok": true,
+   "report": "reports/brain-r4-pack-bot-bot_tofu-longer-s1701.json",
+   "exitCode": 0,
+   "after": "brain"
+  },
+  {
+   "v": 1,
+   "seq": 1702,
+   "ts": "2026-11-27T16:19:33.597Z",
+   "job": "robot-soccer-3-v-20261125-1",
+   "type": "note",
+   "package": "brain",
+   "round": 4,
+   "text": "[foreman] balance moved by your change: built as you asked; matches now run longer (the Foreman's test needed about 1.1 times the frames it planned). Say \"make matches shorter\" to tune it.\nfigures (tests/bot_tofu.gd): not done within 36000 frames; done in 41149 of 108000 when run again with more (not judged in this change)"
+  },
+  {
+   "v": 1,
+   "seq": 1706,
+   "ts": "2026-11-27T16:20:52.529Z",
+   "job": "robot-soccer-3-v-20261125-1",
+   "type": "merge",
+   "package": "brain",
+   "files": [
+    "tests/ai_support/play.gd"
+   ]
+  },
+  {
+   "v": 1,
+   "seq": 1707,
+   "ts": "2026-11-27T16:20:52.532Z",
+   "job": "robot-soccer-3-v-20261125-1",
+   "type": "package_state",
+   "package": "brain",
+   "state": "promoted",
+   "round": 4
+  },
+  {
+   "v": 1,
+   "seq": 1708,
+   "ts": "2026-11-27T16:20:52.564Z",
+   "job": "robot-soccer-3-v-20261125-1",
+   "type": "package_state",
+   "package": "show",
+   "state": "running",
+   "round": 8
+  },
+  {
+   "v": 1,
+   "seq": 1709,
+   "ts": "2026-11-27T16:21:46.622Z",
+   "job": "robot-soccer-3-v-20261125-1",
+   "type": "builder_run",
+   "package": "show",
+   "round": 8,
+   "adapter": "claude-cli",
+   "mode": "edit",
+   "model": "claude-sonnet-5-5",
+   "outcome": "ok",
+   "durationMs": 53862,
+   "tokensIn": 596992,
+   "tokensOut": 3049,
+   "tokensCacheRead": 524756,
+   "transcript": "reports/show-r8-builder-s1709.json"
+  },
+  {
+   "v": 1,
+   "seq": 1710,
+   "ts": "2026-11-27T16:21:46.626Z",
+   "job": "robot-soccer-3-v-20261125-1",
+   "type": "note",
+   "package": "show",
+   "round": 8,
+   "text": "- The end card also answers core's newer loss causes, which are not in the contract's list: hammered \"Hammered: step away from a raised hammer\", yanked \"Yanked: pass before a magnet locks on\" and zapped \"Zapped: carry the ball clear of a beam\".\n- The `tests/bot_show.gd` end-card check accepts those three answers too.\n- Earlier rounds' differences from the contract were not re-audited this round."
+  },
+  {
+   "v": 1,
+   "seq": 1711,
+   "ts": "2026-11-27T16:21:46.638Z",
+   "job": "robot-soccer-3-v-20261125-1",
+   "type": "package_state",
+   "package": "show",
+   "state": "verifying",
+   "round": 8
+  },
+  {
+   "v": 1,
+   "seq": 1720,
+   "ts": "2026-11-27T16:24:16.429Z",
+   "job": "robot-soccer-3-v-20261125-1",
+   "type": "verify",
+   "round": 8,
+   "level": "V4",
+   "verb": "bot",
+   "ok": false,
+   "report": "reports/show-r8-pack-bot-bot_tofu-s1720.json",
+   "exitCode": 1,
+   "after": "show"
+  },
+  {
+   "v": 1,
+   "seq": 1721,
+   "ts": "2026-11-27T16:25:27.609Z",
+   "job": "robot-soccer-3-v-20261125-1",
+   "type": "verify",
+   "round": 8,
+   "level": "V4",
+   "verb": "bot",
+   "ok": true,
+   "report": "reports/show-r8-pack-bot-bot_tofu-longer-s1721.json",
+   "exitCode": 0,
+   "after": "show"
+  },
+  {
+   "v": 1,
+   "seq": 1726,
+   "ts": "2026-11-27T16:27:02.379Z",
+   "job": "robot-soccer-3-v-20261125-1",
+   "type": "merge",
+   "package": "show",
+   "files": [
+    "data/show.json",
+    "tests/bot_show.gd"
+   ]
+  },
+  {
+   "v": 1,
+   "seq": 1727,
+   "ts": "2026-11-27T16:27:02.382Z",
+   "job": "robot-soccer-3-v-20261125-1",
+   "type": "package_state",
+   "package": "show",
+   "state": "promoted",
+   "round": 8
+  },
+  {
+   "v": 1,
+   "seq": 1732,
+   "ts": "2026-11-27T16:28:53.575Z",
+   "job": "robot-soccer-3-v-20261125-1",
+   "type": "verify",
+   "round": 1,
+   "level": "V4",
+   "verb": "bot",
+   "ok": false,
+   "report": "reports/final-bot-bot_tofu-s1732.json",
+   "exitCode": 1
+  },
+  {
+   "v": 1,
+   "seq": 1733,
+   "ts": "2026-11-27T16:30:06.057Z",
+   "job": "robot-soccer-3-v-20261125-1",
+   "type": "verify",
+   "round": 1,
+   "level": "V4",
+   "verb": "bot",
+   "ok": true,
+   "report": "reports/final-bot-bot_tofu-longer-s1733.json",
+   "exitCode": 0
+  },
+  {
+   "v": 1,
+   "seq": 1782,
+   "ts": "2026-11-27T16:49:22.521Z",
+   "job": "robot-soccer-3-v-20261125-1",
+   "type": "note",
+   "package": "show",
+   "round": 8,
+   "text": "[foreman] what changed in v0.1.11 (since v0.1.10): asked \"The yank works and the rivals rip the ball off me often, but it reads small. YOINK! and ZAP! are small white words: make them big fat yellow comic letters in the middle of the screen, like KA-BONK!!. The beam looks like a blue hose lying on the grass: make it a thick, bright, crackling lightning bolt through the air from the robot's chest to the ball, flickering white and blue. The ball arrives in a blink: let it fly in a high arc for about half a second with a blue trail, so everyone sees it go. When a rival yanks the ball off me, pull the camera back for a moment so I see the robot who did it. And my own bot teammates should use the magnet too.\"; what you will see, in the builder's words: `magnet.min_f` 10 → 30: a yank takes at least 30 frames (half a second) instead of arriving in a blink. `magnet.speed` stays 60, so only yanks of over 30 m are longer. / `magnet.arc` 4.0 → 5.5: higher arc. The ball still knocks over only robots it passes below 1.6 m, so it bowls robots near the start and end of the arc. (and 4 more in its note) / The mates' and rivals' magnet decisions (when to hold, yank or block) stay in core's `scripts/sim/magnet.gd`, which runs after `mod_ai`. `team_ai.gd` sends no `magnet` order key, so core's bot logic decides for robots 1–\n... (92 more characters cut) / `tests/ai_support/play.gd` results gain the field `mate_yanks`, which counts the game's own `yoink` events where `a` is 1 or 2. It is a figur\nbalance moved by your change: built as you asked; matches now run longer (the Foreman's test needed about 1.1 times the frames it planned). Say \"make matches shorter\" to tune it.\nunasked rule (the builder's words; you did not ask for it): The end card also answers core's newer loss causes, which are not in the contract's list: hammered \"Hammered: step away from a raised hammer\", yanked \"Yanked: pass before a magnet locks on\" and zapped \"Zapped: carry the ball clear of a beam\".\nnot asked by you: show changed it when the Foreman's checks sent it back (its dependency core was changed and merged again, and bot (V4) now fails on the merged pack: bot failed: failed checks [bot.ok], 1 errors): The end card also answers core's newer loss causes, which are not in the contract's list: hammered \"Hammered: step away from a raised hammer\", yanked \"Yanked: pass before a magnet locks on\" and zapped \"Zapped: carry the \n... (22 more characters cut) / The `tests/bot_show.gd` end-card check accepts those three answers too. / Earlier rounds' differences from the contract were not re-audited this round.\na test was changed: tests/ai_support/play.gd (brain): `tests/ai_support/play.gd` results gain the field `mate_yanks`, which counts the game's own `yoink` events where `a` is 1 or 2. It is a figure only and is not part of `ok`. No new attack move is added by this package, so there are no NEW MO\n... (9 more characters cut)\na test was changed: tests/bot_show.gd (show): The `tests/bot_show.gd` end-card check accepts those three answers too."
+  },
+  {
+   "v": 1,
+   "seq": 1783,
+   "ts": "2026-11-27T16:49:22.527Z",
+   "job": "robot-soccer-3-v-20261125-1",
+   "type": "note",
+   "package": "show",
+   "round": 8,
+   "text": "[foreman] pictures of the pack as it is promoted the 12th time (after the change): captures/promotion12-play-f825.png, captures/promotion12-play-f2476.png, captures/promotion12-overview-f825.png, captures/promotion12-overview-f2476.png"
+  },
+  {
+   "v": 1,
+   "seq": 1784,
+   "ts": "2026-11-27T16:49:22.568Z",
+   "job": "robot-soccer-3-v-20261125-1",
+   "type": "promoted",
+   "packId": "game.robot_soccer_3_v",
+   "version": "0.1.11",
+   "dest": "promoted/game.robot_soccer_3_v@0.1.11"
+  },
+  {
+   "v": 1,
+   "seq": 1785,
+   "ts": "2026-11-27T16:49:22.576Z",
+   "job": "robot-soccer-3-v-20261125-1",
+   "type": "job_state",
+   "state": "done",
+   "reason": "pack verified V0 to V4 and promoted under the job directory (promoted/game.robot_soccer_3_v@0.1.11) (promotion 12 of this job; the earlier one is kept)"
+  },
+  {
+   "v": 1,
+   "seq": 1786,
+   "ts": "2026-11-27T18:52:29.920Z",
+   "job": "robot-soccer-3-v-20261125-1",
+   "type": "change_requested",
+   "text": "I played my first minute as a newcomer and never found out I have the magnet: nothing on the screen ever says Q. After the opening the blue robots YOINK! the ball off me twice and the hint line only says \"Yanked: pass before the blue ring closes\", and the little blue bar over my robot has no letter, so I think it is their thing, not mine. Teach it like the hammer: after the opening, once my meter is full and the ball is loose or a rival's within reach, put \"Hold Q, let go: YANK IT\" on the hint line (one line at a time, after the hammer's cue), put a big Q on my blue meter that lights when it is full, and when a rival yanks the ball off me say \"YANKED! Hold Q to yank it back\" instead."
+  },
+  {
+   "v": 1,
+   "seq": 1787,
+   "ts": "2026-11-27T18:52:30.227Z",
+   "job": "robot-soccer-3-v-20261125-1",
+   "type": "job_state",
+   "state": "running",
+   "reason": "reopened by a change request (was done)"
+  },
+  {
+   "v": 1,
+   "seq": 1788,
+   "ts": "2026-11-27T18:52:34.764Z",
+   "job": "robot-soccer-3-v-20261125-1",
+   "type": "builder_run",
+   "adapter": "claude-cli",
+   "mode": "generate",
+   "model": "claude-sonnet-5-5",
+   "outcome": "ok",
+   "durationMs": 4209,
+   "tokensIn": 4146,
+   "tokensOut": 384,
+   "tokensCacheRead": 1094,
+   "transcript": "reports/planner-a1-s1788.json"
+  },
+  {
+   "v": 1,
+   "seq": 1789,
+   "ts": "2026-11-27T18:52:34.770Z",
+   "job": "robot-soccer-3-v-20261125-1",
+   "type": "reopened",
+   "package": "core",
+   "reason": "change request (event 1786); the Planner names the package: Core owns the files this change touches: the newcomer teaching and hint line (scripts/sim/first_time.gd, which already teaches the hammer), the magnet rules (scripts/sim/magnet.gd), the blue meter ove\n... (193 more characters cut): I played my first minute as a newcomer and never found out I have the magnet: nothing on the screen ever says Q. After the opening the blue robots YOINK! the ball off me twice and the hint line only says \"Yanked: pass before the blue ring closes\", and the little blue bar over my robot has no letter,\n... (39\n... (22 more characters cut)"
+  },
+  {
+   "v": 1,
+   "seq": 1790,
+   "ts": "2026-11-27T18:52:34.775Z",
+   "job": "robot-soccer-3-v-20261125-1",
+   "type": "package_state",
+   "package": "core",
+   "state": "queued",
+   "round": 24,
+   "detail": "CHANGE REQUEST: I played my first minute as a newcomer and never found out I have the magnet: nothing on the screen ever says Q. After the opening the blue robots YOINK! the ball off me twice and the hint line only says \"Yanked: pass before the blue ring closes\", and the little blue bar over my robot has no letter, so I think it is their thing, not mine. Teach it like the hammer: after the opening, once my meter is full and the ball is loose or a rival's within reach, put \"Hold Q, let go: YANK IT\" on the hint line (one line at a time, after the hammer's cue), put a big Q on my blue meter that lights when it is full, and when a rival yanks the ball off me say \"YANKED! Hold Q to yank it back\" instead."
+  },
+  {
+   "v": 1,
+   "seq": 1791,
+   "ts": "2026-11-27T18:52:34.800Z",
+   "job": "robot-soccer-3-v-20261125-1",
+   "type": "package_state",
+   "package": "core",
+   "state": "running",
+   "round": 24
+  },
+  {
+   "v": 1,
+   "seq": 1792,
+   "ts": "2026-11-27T18:54:26.896Z",
+   "job": "robot-soccer-3-v-20261125-1",
+   "type": "builder_run",
+   "package": "core",
+   "round": 24,
+   "adapter": "claude-cli",
+   "mode": "edit",
+   "model": "claude-sonnet-5-5",
+   "outcome": "ok",
+   "durationMs": 111840,
+   "tokensIn": 1038950,
+   "tokensOut": 7835,
+   "tokensCacheRead": 961701,
+   "transcript": "reports/core-r24-builder-s1792.json"
+  },
+  {
+   "v": 1,
+   "seq": 1793,
+   "ts": "2026-11-27T18:54:26.913Z",
+   "job": "robot-soccer-3-v-20261125-1",
+   "type": "note",
+   "package": "core",
+   "round": 24,
+   "text": "- The magnet cue's conditions (meter full, ball loose or on a rival's feet within `magnet.range`, you not carrying the ball) are checked in `scripts/view/show.gd` and match `magnet.gd` `_ready`. It stops for good after your first `yoink` event (a == 0). This is the same pattern as the hammer's `smashed` flag.\n- The answer for loss cause `yanked` (hint line and end card) changed from \"Yanked: pass before the blue ring closes\" to \"YANKED! Hold Q to yank it back\".\n- New `data/tuning.json` `magnet` keys for the Q label: `q_size` 120, `q_outline` 32, `q_side` 0.4, `q_lit` \"#fff04a\", `q_dim` \"#5a6680\", `q_ink` \"#101830\", `q_pulse` 0.12, `q_pulse_f` 30. No existing values changed.\n- The Q is a Label3D billboard beside the meter, like the existing BONK! labels. No kit parts were removed and no bypass was added.\n- The tofu bot (`tests/bot_tofu.gd`, 60,000 frames) was not run before the time limit."
+  },
+  {
+   "v": 1,
+   "seq": 1794,
+   "ts": "2026-11-27T18:54:26.925Z",
+   "job": "robot-soccer-3-v-20261125-1",
+   "type": "package_state",
+   "package": "core",
+   "state": "verifying",
+   "round": 24
+  },
+  {
+   "v": 1,
+   "seq": 1799,
+   "ts": "2026-11-27T18:55:55.769Z",
+   "job": "robot-soccer-3-v-20261125-1",
+   "type": "note",
+   "package": "core",
+   "round": 24,
+   "text": "[foreman] already outside before your change, not judged as its regression: tells (was 1, bound 3 or more)"
+  },
+  {
+   "v": 1,
+   "seq": 1803,
+   "ts": "2026-11-27T18:56:34.565Z",
+   "job": "robot-soccer-3-v-20261125-1",
+   "type": "merge",
+   "package": "core",
+   "files": [
+    "data/tuning.json",
+    "scripts/view/magnet_look.gd",
+    "scripts/view/show.gd"
+   ]
+  },
+  {
+   "v": 1,
+   "seq": 1804,
+   "ts": "2026-11-27T18:56:34.571Z",
+   "job": "robot-soccer-3-v-20261125-1",
+   "type": "package_state",
+   "package": "core",
+   "state": "promoted",
+   "round": 24
+  },
+  {
+   "v": 1,
+   "seq": 1826,
+   "ts": "2026-11-27T19:04:07.726Z",
+   "job": "robot-soccer-3-v-20261125-1",
+   "type": "verify",
+   "round": 1,
+   "level": "V4",
+   "verb": "bot",
+   "ok": false,
+   "report": "reports/final-bot-bot_tofu-s1826.json",
+   "exitCode": 1
+  },
+  {
+   "v": 1,
+   "seq": 1827,
+   "ts": "2026-11-27T19:05:35.477Z",
+   "job": "robot-soccer-3-v-20261125-1",
+   "type": "verify",
+   "round": 1,
+   "level": "V4",
+   "verb": "bot",
+   "ok": true,
+   "report": "reports/final-bot-bot_tofu-longer-s1827.json",
+   "exitCode": 0
+  },
+  {
+   "v": 1,
+   "seq": 1828,
+   "ts": "2026-11-27T19:05:35.483Z",
+   "job": "robot-soccer-3-v-20261125-1",
+   "type": "note",
+   "package": "core",
+   "round": 24,
+   "text": "[foreman] balance moved by your change: built as you asked; matches now run longer (the Foreman's test needed about 1.1 times the frames it planned). Say \"make matches shorter\" to tune it.\nfigures (tests/bot_tofu.gd): not done within 36000 frames; done in 41149 of 108000 when run again with more (not judged in this change)"
+  }
+ ],
+ "longerRuns": {
+  "reports/final-bot-bot_tofu-longer-s1289.json": {
+   "ok": true,
+   "bot": {
+    "test": "tests/bot_tofu.gd",
+    "done": true,
+    "frames": 42687
+   },
+   "metrics": {
+    "state_hash": "5152605f533ef39390b505cec7468a11640ae731c366d7e0e28ccf0c19079147"
+   }
+  },
+  "reports/final-bot-bot_tofu-longer-s1598.json": {
+   "ok": true,
+   "bot": {
+    "test": "tests/bot_tofu.gd",
+    "done": true,
+    "frames": 57217
+   },
+   "metrics": {
+    "state_hash": "5052ad5f43f45704975318b9a04bb9e21f9ff5b4d835e63076cec00965438124"
+   }
+  },
+  "reports/brain-r4-pack-bot-bot_tofu-longer-s1701.json": {
+   "ok": true,
+   "bot": {
+    "test": "tests/bot_tofu.gd",
+    "done": true,
+    "frames": 41149
+   },
+   "metrics": {
+    "state_hash": "cc8dbc65b254453fda3254b3bcf56dc76d00102c4fb911d02218b25deaf43f13"
+   }
+  },
+  "reports/show-r8-pack-bot-bot_tofu-longer-s1721.json": {
+   "ok": true,
+   "bot": {
+    "test": "tests/bot_tofu.gd",
+    "done": true,
+    "frames": 41149
+   },
+   "metrics": {
+    "state_hash": "cc8dbc65b254453fda3254b3bcf56dc76d00102c4fb911d02218b25deaf43f13"
+   }
+  },
+  "reports/final-bot-bot_tofu-longer-s1733.json": {
+   "ok": true,
+   "bot": {
+    "test": "tests/bot_tofu.gd",
+    "done": true,
+    "frames": 41149
+   },
+   "metrics": {
+    "state_hash": "cc8dbc65b254453fda3254b3bcf56dc76d00102c4fb911d02218b25deaf43f13"
+   }
+  },
+  "reports/final-bot-bot_tofu-s1826.json": {
+   "ok": false,
+   "bot": {
+    "test": "tests/bot_tofu.gd",
+    "done": false,
+    "frames": 36000
+   },
+   "metrics": {
+    "state_hash": "882501420f4f95d620c0bfc8070b555745e4c6e4d81759b17bd002b4228ebfe2"
+   },
+   "checks": [
+    {
+     "id": "smoke.loads",
+     "ok": true,
+     "detail": "pack loaded"
+    },
+    {
+     "id": "smoke.no_script_errors",
+     "ok": true,
+     "detail": "0 errors in 36000 frames"
+    },
+    {
+     "id": "smoke.no_engine_errors",
+     "ok": true,
+     "detail": "0 engine errors"
+    },
+    {
+     "id": "smoke.watchdog",
+     "ok": true,
+     "detail": "no trip in 36000 frames"
+    },
+    {
+     "id": "bot.completed",
+     "ok": false,
+     "detail": "frame_budget: not done within 36000 frames"
+    },
+    {
+     "id": "bot.ok",
+     "ok": false,
+     "detail": "2 matches, verbs 5, presses { \"pass\": 72, \"shot\": 23, \"slide\": 26, \"poke\": 11, \"hop\": 19 }"
+    }
+   ]
+  },
+  "reports/final-bot-bot_tofu-longer-s1827.json": {
+   "ok": true,
+   "bot": {
+    "test": "tests/bot_tofu.gd",
+    "done": true,
+    "frames": 41149
+   },
+   "metrics": {
+    "state_hash": "cc8dbc65b254453fda3254b3bcf56dc76d00102c4fb911d02218b25deaf43f13"
+   }
+  }
+ }
+}

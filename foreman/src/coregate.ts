@@ -25,6 +25,9 @@ import type { RunResult } from "./builder/types.js";
 import { coreRouteOf } from "./templates.js";
 import { isFakeRunner } from "./verbs.js";
 import { FOREMAN_NOTE, clip } from "./conduct.js";
+import { personWords } from "./personwords.js"; // D27 T3 item 38
+import { catalogFor } from "./keyfind.js"; // D27 T3 item 39
+import { drawnElsewhere, playWhy } from "./playsplit.js"; // D27 T3 item 37
 import type { TofuResult, TofuRow } from "./tofu.js";
 import { PKG_ROOT, stripBom, toPosix } from "./paths.js";
 
@@ -173,9 +176,16 @@ const PROMPT = path.join(PKG_ROOT, "prompts", "cartridge-change.md");
 const verdictWord = (r: CoreCheckRun): string => (r.code === 0 ? "ok" : r.code === 1 ? "FAILED" : "not measured");
 
 /** The catalog a diff is written from: CARTRIDGE.md sections 3 and 5 in the job's reference copy. */
-function diffCatalog(h: GateHost, core: CoreRoute): string {
+function diffCatalog(h: GateHost, core: CoreRoute, text = ""): string {
   const file = h.dir("ref", "cores", core.core, "CARTRIDGE.md");
-  return [sectionOf(file, /^## 3\. /), sectionOf(file, /^## 5\. /)].filter(Boolean).join("\n\n") || "(the catalog is not in this job's reference copy: use the keys of the cartridge above)";
+  let found = ""; // D27 T3 item 39: the rows of the full key list the words meet (an effect's trigger, its stats)
+  try {
+    found = text === "" ? "" : catalogFor(fs.readFileSync(file, "utf8"), text);
+  } catch {
+    found = "";
+  }
+  const own = [sectionOf(file, /^## 3\. /), sectionOf(file, /^## 5\. /)].filter(Boolean).join("\n\n");
+  return [own, found !== "" ? `## Rows of the full key list (section 7) that the words of this change meet\n${found}` : ""].filter(Boolean).join("\n\n") || "(the catalog is not in this job's reference copy: use the keys of the cartridge above)";
 }
 
 /**
@@ -203,7 +213,7 @@ export async function cartridgeChange(h: GateHost, owner: string, round: number,
   }
   // E3d: words that name what the game does not have ("the orange team" on a red and blue game) are asked back, in plain
   // words, through the builders' question path (a `question` event on the owner: Create and `foreman answer` reply).
-  const absent = answered ? undefined : absentInChange(text, skin, current);
+  const absent = answered ? undefined : absentInChange(personWords(h.events, text), skin, current); // D27 T3 item 38: only the person's words ask back
   if (absent !== undefined) {
     note(`${CARTRIDGE_ASKED}: "${clip(text, 200)}": ${absent}`);
     h.append({ type: "question", package: owner, text: absent });
@@ -213,7 +223,7 @@ export async function cartridgeChange(h: GateHost, owner: string, round: number,
   const model = h.o.plannerModel ?? h.o.model;
   const before = await coreCheck(h, packFile, text);
   // E3f: a change the measured hand would not feel (easier bots when your side already wins 9 in 10) is answered with the figures.
-  const unseen = answered || before.code === 2 ? undefined : unseenChange(text, before.figures);
+  const unseen = answered || before.code === 2 ? undefined : unseenChange(personWords(h.events, text), before.figures); // D27 T3 item 38: never the Foreman's own words (a catalog row's "easier to land")
   if (unseen !== undefined) {
     note(`${CARTRIDGE_ASKED}: "${clip(text, 200)}": ${unseen}`);
     h.append({ type: "question", package: owner, text: unseen });
@@ -227,7 +237,7 @@ export async function cartridgeChange(h: GateHost, owner: string, round: number,
   let why = "";
   const out = diffFile(h, owner, round);
   for (let attempt = 1; attempt <= 2 && applied === undefined; attempt++) {
-    const vars = { title: h.s.title ?? "", sentence: h.s.sentence ?? "", change: text, file: cart.file, cartridge: JSON.stringify(current, null, 1), catalog: diffCatalog(h, core), teams, measured: `${verdictWord(before)}: ${figuresText(before.figures)}; ${clip(before.summary, 400)}`, refused };
+    const vars = { title: h.s.title ?? "", sentence: h.s.sentence ?? "", change: text, file: cart.file, cartridge: JSON.stringify(current, null, 1), catalog: diffCatalog(h, core, text), teams, measured: `${verdictWord(before)}: ${figuresText(before.figures)}; ${clip(before.summary, 400)}`, refused };
     const res = await generate<{ changes: Record<string, unknown>; why: string }>(h.o.builder, "cartridge", fs.readFileSync(PROMPT, "utf8"), vars, diffSchema, () => [], { ...(model ? { model } : {}), timeoutMs: 5 * 60_000, attempts: 1 });
     h.logGenerateCalls(res.calls, model);
     if (!res.ok) {
@@ -249,7 +259,7 @@ export async function cartridgeChange(h: GateHost, owner: string, round: number,
       note(`${CARTRIDGE_DIFF} not made: the diff changes nothing (${clip(r.changed.join("; "), 200)}): the change goes to the builder`);
       return false;
     }
-    const unmade = r.ok ? diffLeavesUnmade(why, r.changed) : undefined; // D27 item 29
+    const unmade = r.ok ? diffLeavesUnmade(drawnElsewhere(h.events, owner) ? playWhy(why) : why, r.changed) : undefined; // D27 item 29; D27 T3 item 37: the drawing another package makes is not left unmade
     if (unmade !== undefined) {
       note(`${CARTRIDGE_DIFF} not made: ${unmade}: the change goes to the builder`);
       return false;
@@ -312,7 +322,7 @@ function makeDiff(h: GateHost, owner: string, round: number, file: string, d: Pe
   const said = `measured before: ${verdictWord(d.before)} (${figuresText(d.before.figures)}); after: ${verdictWord(d.after)} (${figuresText(d.after.figures)})${d.after.code === 0 ? `; ${clip(d.after.summary, 300)}` : ""}`;
   h.append({ type: "note", package: owner, round, text: `${FOREMAN_NOTE}${CARTRIDGE_DIFF}: ${d.changed.map(compactChange).join("; ")} (${clip(d.why, 200)}); ${said} [report: ${h.rel(report)}]` });
   for (const r of d.removed) h.append({ type: "note", package: owner, round, text: `${FOREMAN_NOTE}${removedNote(r, d.why)}` });
-  const missed = askedFigureMiss(d.change, d.after.figures); // H1d: a figure the person named, against the figure after
+  const missed = askedFigureMiss(personWords(h.events, d.change), d.after.figures); // H1d: a figure the person named, against the figure after (D27 T3 38: the person's words, never the Foreman's)
   if (missed !== undefined) h.append({ type: "note", package: owner, round, text: `${FOREMAN_NOTE}${FIGURE_MISSED}: ${missed}` });
 }
 

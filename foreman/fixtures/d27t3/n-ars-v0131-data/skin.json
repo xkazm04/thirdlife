@@ -1,0 +1,23 @@
+{
+  "schema": "tl.rink.skin/1",
+  "title": "Harbour Playmakers",
+  "tagline": "Grab a trick at the green spots. F uses it.",
+  "about": [
+    "Dusk on the harbour rink. Three against three.",
+    "Three minutes on the clock, most goals wins.",
+    "F: METEOR. Light your stick, then hold shoot: your shot floors everyone.",
+    "Land a body check (RMB) and you go MEGA: twice the size, bump them flat.",
+    "Orange arrows burst you. Blue slush drags the puck.",
+    "Pass early, then shoot the return as it arrives."
+  ],
+  "team_names": ["Tide Otters", "Crane Gulls"],
+  "team_plural": [true, true],
+  "levels": [
+    ["ROOKIE", "First night on the quay? Rookie Gulls are a step slower."],
+    ["PRO", "Know your way round? Pro Gulls hit as a habit."],
+    ["ALL-STAR", "The harbour wall. All-star Gulls hunt the puck. Beat pro first."]
+  ],
+  "commentary": "harbour_commentary.json",
+  "barks": "hud_barks.json",
+  "ability_names": {"shotgun": "METEOR"}
+}

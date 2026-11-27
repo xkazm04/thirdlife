@@ -1,0 +1,33 @@
+{
+ "source": "lane T3 live copy of J2b's Arsenal job: J2b's follow-up (1319) sent word for word on this copy's v0.1.28 (event 1334); harbour r24's note (1356) and the Foreman's false narrowing note (1371) written by the first version of item 44",
+ "events": [
+  {
+   "v": 1,
+   "seq": 1334,
+   "ts": "2026-11-27T21:34:52.389Z",
+   "job": "three-against-three-hockey-20261125-1",
+   "type": "change_requested",
+   "text": "MEGA works and the giants read at once, but four things are wrong. When I go mega the camera stays where it was, so for a second my own giant legs fill the screen: pull the camera back and up while I am mega. FLATTENED! is a small word that piles on top of YOU ARE MEGA!: show FLATTENED! big over the man who goes down, one at a time, with the thud and a little shake. When a rival knocks me down, YOU ARE MEGA! stays on screen while I lie on the ice: take it away the moment I fall, and show his MEGA! big over him instead. And the rival bots go mega only about once a minute: I want to face their giants about twice as often, so they should land their body checks on me and my mates more often."
+  },
+  {
+   "v": 1,
+   "seq": 1356,
+   "ts": "2026-11-27T21:42:04.297Z",
+   "job": "three-against-three-hockey-20261125-1",
+   "type": "note",
+   "package": "harbour",
+   "round": 24,
+   "text": "- Camera while the player is MEGA: the drawn follow view backs off 4 m and rises 2.5 m as the player's figure grows, and settles back as he shrinks. It looks at a point 10 m ahead along the old line of sight, and it is held 0.6 m inside the boards. The core's camera state is unchanged and only the view passed to `ctx.cameras.add_view` moves. The new keys are `harbour.mega.cam_back_m` 4.0, `cam_up_m` 2.5, `cam_look_m` 10.0 and `cam_inside_m` 0.6. The meteor glass test reads this moved eye.\n- MEGA! and FLATTENED! are no longer small `hud.add_tag` tags. They are big black-face words with an outline, drawn on the `harbour_mega` HUD layer (`lay.project`) over the body: MEGA! at 40 pt and FLATTENED! at 44 pt.\n- FLATTENED! now shows one at a time from a queue of up to 3, each for 50 frames. The thud, ice spray and small shake (0.08 m, 8 frames) play when each word appears, not when the knockdown happens. The `mega_flatten` moment is marked then too. The player's own knockdown is still not shaken twice. New keys: `flat_pt` 44, `flat_y_m` 1.4, `flat_f` 50, `flat_queue_max` 3, `word_outline` 5.\n- The centre word `centre_word` changed from \"MEGA!\" to \"YOU ARE MEGA!\", following the rule that words address the player as YOU. It is hidden while a FLATTENED! shows, so the two never stack, and it is cleared the moment the player is down.\n- MEGA! over a rival or a mate shows for `word_f` (75) frames after he grows, and again the whole time the player lies on the ice. No MEGA! tag is drawn over the player's own figure any more; the centre line says it instead. `tag_pt` is 40.\n- The winter scenery (snow sheet, drifts, mast lamps, warehouse, boat) moved unchanged from `harbour_toys.gd` (`winter`/`_warehouse`/`_boat`/`_lamp`) into `scripts/main.gd` (`_winter` and helpers). It is called right after `harbour.setup`, and its colour helper there is `_wcol`. `harbour.gd` no longer calls `back.winter`. I moved it to keep `harbour_toys.gd` under the 600-line limit.\n- The bubble OWNER lines in `bot_harbour` are unchanged from before: the cartridge has no bubble, so those figures stay 0 or -1.\n- The cartridge sets how often the rival bots go mega; nothing in the drawing copies that rule."
+  },
+  {
+   "v": 1,
+   "seq": 1371,
+   "ts": "2026-11-27T21:46:18.445Z",
+   "job": "three-against-three-hockey-20261125-1",
+   "type": "note",
+   "package": "harbour",
+   "round": 24,
+   "text": "[foreman] part of your change was NOT made: harbour made it for fewer cases than you asked: you asked \"When a rival knocks me down, YOU ARE MEGA\", and harbour says (down): \"shows, so the two never stack, and it is cleared the moment the player is down.\""
+  }
+ ]
+}

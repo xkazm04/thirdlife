@@ -1,0 +1,70 @@
+{
+ "source": "d27-newc .tl/jobs/three-against-three-hockey-20261125-1 (a copy of d25-biplane's, with N-newcomer's sentences 1373-1489): every person's change since event 900, and the package the Planner (or the request) named",
+ "asks": [
+  {
+   "seq": 923,
+   "text": "The word SLOW in the purple rings is upside down when I skate back toward my own net. Paint it twice in each ring, once facing each end of the rink, so it reads right from both sides.",
+   "planner": "cartridge"
+  },
+  {
+   "seq": 967,
+   "text": "A change to the picture only: draw the word SLOW twice inside each purple ring, the second copy turned round, so the painted word can be read from both ends of the rink.",
+   "planner": "harbour"
+  },
+  {
+   "seq": 1005,
+   "text": "Give me a meteor slapshot on F, instead of the bubble and the green-spot tricks. Press F to light my stick on fire, then hold shoot to wind it up: the longer I hold, the harder it flies, and while I wind up I am easy to knock over. Released, the puck flies twice as fast as a normal shot, trails fire and smoke, and knocks down every skater it passes, rivals, mates and the keeper alike, with a flash, a boom, a short freeze and a camera kick. When it goes in, the net bulges and the glass shakes. It comes back 12 seconds after I use it. The rival bots should try a meteor of their own from distance, and dive in front of mine to block it.",
+   "planner": "harbour"
+  },
+  {
+   "seq": 1043,
+   "text": "Nothing changed in the match. Change the rules of the match in the game's own settings, not the drawing: F holds one trick, the shotgun shot at twice the speed (magnitude 2), and it comes back 12 seconds after each use. It replaces the bubble and the three green-spot tricks. Let a held shot charge: full after 45 frames, with 10 m/s more speed at full charge. A skater winding up a shot stands at 0.6 of his stability, so a check knocks him over while he winds up.",
+   "planner": "cartridge"
+  },
+  {
+   "seq": 1073,
+   "text": "Make the meteor look and sound like one, NHL Hitz style, and call it METEOR everywhere, not cannon or shotgun. When I light it with F my stick blade burns with flame and sparks; while I hold shoot a ring of fire grows round me and pulses when full, with WINDING UP and the percent in the hint. On release: a white-hot flash, a boom, a camera kick and METEOR! over me; the puck becomes a fireball with a long fire trail, sparks and smoke. Every skater it floors gets a burst of fire, a clang and FLOORED! over him. A meteor goal makes the net bulge back a full metre and the glass shake hard enough to see, with fire and confetti in the mouth. Show METEOR BACK IN and the seconds. No meteor off a faceoff: F lights only a second after the drop.",
+   "planner": "harbour"
+  },
+  {
+   "seq": 1141,
+   "text": "Three things are still wrong. I can still light the meteor at a faceoff and score straight off the drop, so ignore my F key until a second after each drop. The plate in the corner still says SHOTGUN; call it METEOR there too. And on a meteor goal the net and the glass do not move at all: draw a net bag and glass panes of your own that bulge back and rattle big enough to see from my camera.",
+   "planner": "harbour"
+  },
+  {
+   "seq": 1179,
+   "text": "On a meteor goal the net bulges back as a solid white box, and from my camera I cannot see the glass move at all. Make it look like a real net of cords that the puck drives a metre back and that swings back after, and make the glass panes over that end bow out and wobble far enough to see from where I stand. And when the camera swings behind my own net a big pale glass pane lies across the view: the glass must never come between the camera and the ice.",
+   "planner": "harbour"
+  },
+  {
+   "seq": 1217,
+   "text": "The glass wobble never shows: when I score a meteor I am always close to that end, and the glass is hidden then. After every meteor goal show the panes over that end bowing out and wobbling, however close I am, big enough to see from my camera; only hide a single pane while it actually stands between the camera and the ice.",
+   "planner": "harbour"
+  },
+  {
+   "seq": 1255,
+   "text": "Add a Mario Kart Mega Mushroom you earn with a big hit, like NHL Hitz: any skater, me or a bot, who lands a body check goes MEGA for five seconds. He flashes white with a boing and balloons to twice his size, with MEGA! big over him (and in the middle of the screen when it is me). While mega he is twice as heavy and a bit faster, every bump knocks a man flat with a thud, FLATTENED! and a little camera shake, and the ice trembles under his strides; but he turns wide, so a quick skater can slip past him. After five seconds he shrinks back with a pop. The rival bots go mega whenever they land a check on me or my mates, so I must dodge their giants, and my bot mates go mega too. Keep the meteor on F as it is.",
+   "planner": "harbour"
+  },
+  {
+   "seq": 1319,
+   "text": "MEGA works and the giants read at once, but four things are wrong. When I go mega the camera stays where it was, so for a second my own giant legs fill the screen: pull the camera back and up while I am mega. FLATTENED! is a small word that piles on top of YOU ARE MEGA!: show FLATTENED! big over the man who goes down, one at a time, with the thud and a little shake. When a rival knocks me down, YOU ARE MEGA! stays on screen while I lie on the ice: take it away the moment I fall, and show his MEGA! big over him instead. And the rival bots go mega only about once a minute: I want to face their giants about twice as often, so they should land their body checks on me and my mates more often.",
+   "planner": "harbour"
+  },
+  {
+   "seq": 1373,
+   "text": "When a rival goes MEGA where my camera cannot see him, I never know a giant is coming: half the time it happens behind me or across the ice. While any rival is mega and off my screen, show a big orange arrow at the edge of the screen pointing at him, with MEGA! and how many metres away he is on it, pulsing faster as he gets closer. When he comes back on screen, drop the arrow and keep his MEGA! big over his head until he shrinks. Do not move my camera for it: I want to keep my eyes on my own play.",
+   "planner": "harbour"
+  },
+  {
+   "seq": 1411,
+   "text": "I played my first minute as a newcomer and the game told me wrong things about my two crazy moves. The HOME screen still says \"F pops your bubble: checks bounce off, pokes do not\", but F is the METEOR now, so I expect a bubble. Then 10 seconds in YOU ARE MEGA! fills the screen and nothing says why: nobody told me a landed body check makes me MEGA. Make the HOME text tell the truth (\"F: METEOR. Light your stick, then hold shoot: your shot floors everyone.\" and \"Land a body check (RMB) and you go MEGA: twice the size, bump them flat.\"), put \"RMB CHECK: GO MEGA\" in the controls panel without the puck, and when MEGA starts on me say \"YOUR CHECK MADE YOU MEGA: BUMP THEM FLAT\" on the hint plate for a few seconds; when a rival goes MEGA, \"HIS CHECK MADE HIM MEGA: KEEP AWAY\".",
+   "planner": "harbour"
+  },
+  {
+   "seq": 1489,
+   "text": "The MEGA lines work: I see \"YOUR CHECK MADE YOU MEGA\" and \"RMB CHECK: GO MEGA\" in the panel now. One thing is broken on the HOME screen: the two new lines are too long for the ONE MATCH card, so they run past its right edge and are cut off (\"...your shot floors everyone.\" and \"bump them\" sticks out of the card, \"flat.\" is gone). Make every line of the ONE MATCH card fit inside the card (shorter words or wrapped onto two lines, the card growing taller if it must), for example \"F: METEOR. Light your stick, hold shoot:\" / \"your shot floors everyone.\" and \"Land a body check (RMB): you go MEGA,\" / \"twice the size. Bump them flat.\" Change nothing in the match.",
+   "planner": "harbour"
+  }
+ ]
+}

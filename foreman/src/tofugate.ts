@@ -17,6 +17,7 @@ import { courtOf, judgeTofu, readTofuMetrics, tofuMetricsFor, tofuOf } from "./t
 import { QUALITY_ROUNDS } from "./quality_state.js";
 import { BALANCE_MOVED, BALANCE_SKIPPED, LIFTED, alreadyOutNote, askedChange, balanceMovedNote, balanceSkippedNote, liftedNote, splitByChange, withLifts } from "./boundlift.js";
 import { FOREMAN_NOTE } from "./conduct.js";
+import { LONGER_BEFORE, judgedLongerLine, longerBefore, longerBeforeNote, priorLonger, reportReader, roundTold, type LongerRun } from "./longernote.js"; // D27 T3 items 43, 35
 
 /** The words a round gets when the plan's tofu bot passed with metrics out of the plan's bounds; undefined otherwise. */
 export function tofuGate(h: Pick<GateHost, "s" | "pkg" | "dir" | "rel" | "append" | "events">, id: string, a: Pick<Acceptance, "verb" | "args">, vr: VerifyResult): VerifyResult | undefined {
@@ -80,18 +81,18 @@ export function onlyOutOfFrames(vr: Pick<VerifyResult, "ok" | "verb" | "report">
 }
 
 /** The person's note when their change made the bot's matches outrun its frames (first line for Create). */
-export function longerNote(test: string, had: number, used: number | undefined, given: number, short = false): string {
+export function longerNote(test: string, had: number, used: number | undefined, given: number, short = false, prior?: LongerRun): string {
   if (short) return `${BALANCE_MOVED}: built as you asked; matches now run longer (the Foreman's test fit fewer matches than it plays into its ${had} frames). Say "make matches shorter" to tune it.
 figures (${test}): done in ${had} frames with too few matches for its own check; passed when run again with ${given} frames (${used ?? "?"} used; not judged in this change)`;
   const times = used !== undefined ? Math.round((used / had) * 10) / 10 : undefined;
-  return `${BALANCE_MOVED}: built as you asked; matches now run longer${times !== undefined ? ` (the Foreman's test needed about ${times} times the frames it planned)` : ""}. Say "make matches shorter" to tune it.\nfigures (${test}): not done within ${had} frames; done in ${used ?? "?"} of ${given} when run again with more (not judged in this change)`;
+  return `${BALANCE_MOVED}: built as you asked; matches now run longer${times !== undefined ? ` (the Foreman's test needed about ${times} times the frames it planned${prior !== undefined ? `; ${prior.frames} before your change` : ""})` : ""}. Say "make matches shorter" to tune it.\nfigures (${test}): not done within ${had} frames; done in ${used ?? "?"} of ${given} when run again with more (not judged in this change)`;
 }
 
 /**
  * The run again with more frames, in a person's play change, when `vr` failed only for frames; undefined otherwise (the
  * caller keeps `vr`). `rerun` runs the same verb with the given args (logged as a verify event by the caller).
  */
-export async function longerMatch(h: Pick<GateHost, "events" | "append" | "s">, a: Pick<Acceptance, "verb" | "args">, vr: VerifyResult, where: { package?: string; round: number; after?: string }, rerun: (args: string[]) => Promise<VerifyResult>): Promise<VerifyResult | undefined> {
+export async function longerMatch(h: Pick<GateHost, "events" | "append" | "s"> & Partial<Pick<GateHost, "dir">>, a: Pick<Acceptance, "verb" | "args">, vr: VerifyResult, where: { package?: string; round: number; after?: string }, rerun: (args: string[]) => Promise<VerifyResult>): Promise<VerifyResult | undefined> {
   const asked = askedChange(h.events);
   const short = tofuTooShort(h.s.plan, a, vr); // D27 (b): the tofu bot completed but its own ok wanted more matches
   if (asked === undefined || asked.kind !== "play" || !(onlyOutOfFrames(vr) || short)) return undefined;
@@ -104,9 +105,17 @@ export async function longerMatch(h: Pick<GateHost, "events" | "append" | "s">, 
   if (!again.ok) return onlyOutOfFrames(again) ? { ...again, summary: `${again.summary}. It was not done with ${given} frames either (three times the ${had} it plans): a match that does not end` } : again;
   const used = (again.report as { bot?: { frames?: unknown } } | undefined)?.bot?.frames;
   const owner = where.package ?? where.after ?? h.s.plan.find((p) => (p.registers?.tests ?? []).includes(test))?.id ?? h.s.plan[0]?.id;
-  const said = (h.events ?? []).some((e) => e.type === "note" && e.seq > asked.seq && e.text.startsWith(BALANCE_MOVED) && e.text.includes("matches now run longer") && e.text.includes(`figures (${test}):`));
-  if (owner !== undefined && !said) h.append({ type: "note", package: owner, round: where.package !== undefined ? where.round : h.s.packages[owner]?.round ?? where.round, text: longerNote(test, had, typeof used === "number" ? used : undefined, given, short) });
-  return { ...again, summary: `${again.summary} (run again with ${given} frames: the person's change made its matches longer)` };
+  const said = (h.events ?? []).some((e) => e.type === "note" && e.seq > asked.seq && ((e.text.startsWith(BALANCE_MOVED) && e.text.includes("matches now run longer") && e.text.includes(`figures (${test}):`)) || (e.text.startsWith(`${FOREMAN_NOTE}${LONGER_BEFORE}`) && e.text.includes(test))));
+  const n = typeof used === "number" ? used : undefined;
+  const round = where.package !== undefined ? where.round : h.s.packages[owner ?? ""]?.round ?? where.round;
+  // D27 T3 item 43: matches that ran as long before the change (the newest longer run of the test before it) are not the change's
+  const prior = h.dir !== undefined ? priorLonger(h.events, test, asked.seq, reportReader(h.dir)) : undefined;
+  const before = longerBefore(prior, n);
+  const hash = (again.report as { metrics?: { state_hash?: unknown } } | undefined)?.metrics?.state_hash;
+  if (owner !== undefined && !said) h.append({ type: "note", package: owner, round, text: before && prior !== undefined && n !== undefined ? longerBeforeNote(test, had, prior, n, typeof hash === "string" ? hash : undefined) : longerNote(test, had, n, given, short, prior) });
+  // D27 T3 item 35: every round the longer run decided says so, not only the first of the change
+  else if (owner !== undefined && !roundTold(h.events, owner, round, test)) h.append({ type: "note", package: owner, round, text: judgedLongerLine(test, had, given, n) });
+  return { ...again, summary: `${again.summary} (run again with ${given} frames: ${before ? "its matches ran this long before the person's change too" : "the person's change made its matches longer"})` };
 }
 
 /**

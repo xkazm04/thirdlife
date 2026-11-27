@@ -1,0 +1,227 @@
+{
+ "source": "d27-newc .tl/jobs/shield-wall-3-v-20261125-1-jb (lane N-newcomer shield sentence 2): events 1500-1530 (verify events left out) and the promotion before",
+ "events": [
+  {
+   "v": 1,
+   "seq": 1461,
+   "ts": "2026-11-27T17:05:29.754Z",
+   "job": "shield-wall-3-v-20261125-1",
+   "type": "promoted",
+   "packId": "game.shield_wall_3_v",
+   "version": "0.1.16",
+   "dest": "promoted/game.shield_wall_3_v@0.1.16"
+  },
+  {
+   "v": 1,
+   "seq": 1502,
+   "ts": "2026-11-27T19:20:27.869Z",
+   "job": "shield-wall-3-v-20261125-1",
+   "type": "note",
+   "package": "volley",
+   "round": 5,
+   "text": "[foreman] what changed in v0.1.17 (since v0.1.16): asked \"I played my first minute as a newcomer and never met the catapult: \"G 10\" sits small and grey at the right edge and never counts down, because in round 1 it waits for my captain's call, and nothing tells me that, so I think it is broken. Put G in the key row with the others (RMB, LMB, Q, F, C, G) and let it count down from the first live frame, lesson over or not; while it is locked say so on the key (\"G: after your Q call\") and light it with \"G READY: CATAPULT\" when it is ready, with the hint line saying \"G: call the catapult on them\" once. When the gulls' red circles land under me, put \"RED CIRCLE: step out, or hold RIGHT MOUSE over your head\" on the hint line, so I learn the answer the first time it happens.\"; what you will see, in the builder's words: The cooldown now counts down from the first live frame of a round for both crews, even during the lesson and before the first captain's call in round 1. A volley still cannot be fired until that call has sounded and the \n... (227 more characters cut) / The `volley` label (bottom_right) still exists but is now always empty. The G readiness is drawn as a sixth key on a new HUD layer, `volley_key`. Its position comes from the core's `data/tuning.json` `plate` values: x is\n... (173 more characters cut) / `state().volley.label` still reads \"G READY\" or \"G <seconds>\"; the bot checks this. (and 2 more in its note); files: data/volley.json, scripts/volley/mod.gd, scripts/voll"
+  },
+  {
+   "v": 1,
+   "seq": 1503,
+   "ts": "2026-11-27T19:20:27.877Z",
+   "job": "shield-wall-3-v-20261125-1",
+   "type": "note",
+   "package": "volley",
+   "round": 5,
+   "text": "[foreman] pictures of the pack as it is promoted the 18th time (after the change): captures/promotion18-play-f2250.png, captures/promotion18-play-f6751.png, captures/promotion18-side-f2250.png, captures/promotion18-side-f6751.png"
+  },
+  {
+   "v": 1,
+   "seq": 1504,
+   "ts": "2026-11-27T19:20:27.928Z",
+   "job": "shield-wall-3-v-20261125-1",
+   "type": "promoted",
+   "packId": "game.shield_wall_3_v",
+   "version": "0.1.17",
+   "dest": "promoted/game.shield_wall_3_v@0.1.17"
+  },
+  {
+   "v": 1,
+   "seq": 1505,
+   "ts": "2026-11-27T19:20:27.935Z",
+   "job": "shield-wall-3-v-20261125-1",
+   "type": "job_state",
+   "state": "done",
+   "reason": "pack verified V0 to V4 and promoted under the job directory (promoted/game.shield_wall_3_v@0.1.17) (promotion 18 of this job; the earlier one is kept)"
+  },
+  {
+   "v": 1,
+   "seq": 1506,
+   "ts": "2026-11-27T19:42:04.507Z",
+   "job": "shield-wall-3-v-20261125-1",
+   "type": "change_requested",
+   "text": "The G key and the red-circle hint work now, thank you. But my catapult still waits for my captain's call in round 1, and as a newcomer I am knocked down or being hit most of the time: when I press Q then, nothing happens, no sound, no word, so I press it again later and again nothing, and the G key keeps saying \"after your Q call\". Keep my Q press: if I press Q while I am down, stunned or mid-move, light the Q key with \"CALL WHEN UP\" and blow the horn the moment I am free again (the call bar must still be ready); and if the call cannot start for any other reason, say why on the hint line for a second (\"CALL NOT READY\", \"CALL: STAND UP FIRST\")."
+  },
+  {
+   "v": 1,
+   "seq": 1507,
+   "ts": "2026-11-27T19:42:04.734Z",
+   "job": "shield-wall-3-v-20261125-1",
+   "type": "job_state",
+   "state": "running",
+   "reason": "reopened by a change request (was done)"
+  },
+  {
+   "v": 1,
+   "seq": 1508,
+   "ts": "2026-11-27T19:42:08.190Z",
+   "job": "shield-wall-3-v-20261125-1",
+   "type": "builder_run",
+   "adapter": "claude-cli",
+   "mode": "generate",
+   "model": "claude-sonnet-5-5",
+   "outcome": "ok",
+   "durationMs": 3142,
+   "tokensIn": 4263,
+   "tokensOut": 175,
+   "tokensCacheRead": 2156,
+   "transcript": "reports/planner-a1-s1508.json"
+  },
+  {
+   "v": 1,
+   "seq": 1509,
+   "ts": "2026-11-27T19:42:08.197Z",
+   "job": "shield-wall-3-v-20261125-1",
+   "type": "reopened",
+   "package": "rally",
+   "reason": "change request (event 1506); the Planner names the package: The captain's call Q input is handled in rally's scripts/rally/call.gd. That includes when the call can start, holding a press until the player is free, playing the horn and showing the \"CALL WHEN UP\"\n... (108 more characters cut): The G key and the red-circle hint work now, thank you. But my catapult still waits for my captain's call in round 1, and as a newcomer I am knocked down or being hit most of the time: when I press Q then, nothing happens, no sound, no word, so I press it again later and again nothing, and the G key \n... (35\n... (22 more characters cut)"
+  },
+  {
+   "v": 1,
+   "seq": 1510,
+   "ts": "2026-11-27T19:42:08.202Z",
+   "job": "shield-wall-3-v-20261125-1",
+   "type": "package_state",
+   "package": "rally",
+   "state": "queued",
+   "round": 4,
+   "detail": "CHANGE REQUEST: The G key and the red-circle hint work now, thank you. But my catapult still waits for my captain's call in round 1, and as a newcomer I am knocked down or being hit most of the time: when I press Q then, nothing happens, no sound, no word, so I press it again later and again nothing, and the G key keeps saying \"after your Q call\". Keep my Q press: if I press Q while I am down, stunned or mid-move, light the Q key with \"CALL WHEN UP\" and blow the horn the moment I am free again (the call bar must still be ready); and if the call cannot start for any other reason, say why on the hint line for a second (\"CALL NOT READY\", \"CALL: STAND UP FIRST\")."
+  },
+  {
+   "v": 1,
+   "seq": 1511,
+   "ts": "2026-11-27T19:42:08.241Z",
+   "job": "shield-wall-3-v-20261125-1",
+   "type": "package_state",
+   "package": "rally",
+   "state": "running",
+   "round": 4
+  },
+  {
+   "v": 1,
+   "seq": 1512,
+   "ts": "2026-11-27T19:45:31.279Z",
+   "job": "shield-wall-3-v-20261125-1",
+   "type": "builder_run",
+   "package": "rally",
+   "round": 4,
+   "adapter": "claude-cli",
+   "mode": "edit",
+   "model": "claude-sonnet-5-5",
+   "outcome": "ok",
+   "durationMs": 202848,
+   "tokensIn": 1052094,
+   "tokensOut": 7307,
+   "tokensCacheRead": 961161,
+   "transcript": "reports/rally-r4-builder-s1512.json"
+  },
+  {
+   "v": 1,
+   "seq": 1513,
+   "ts": "2026-11-27T19:45:31.301Z",
+   "job": "shield-wall-3-v-20261125-1",
+   "type": "note",
+   "package": "rally",
+   "round": 4,
+   "text": "- Q press handling (change request): if the call bar is not full, the hint line shows \"CALL NOT READY\" for 60 frames (hint priority 8) with a `beep`. If it is full and the captain is not free, the press is kept for up to 600 frames and the call starts on the first frame the captain is free (`call.gd` `queued_f`, public, read by `mod.gd`). The hint says \"CALL: STAND UP FIRST\" when the captain is in KNOCKDOWN, GETUP or WALLSPLAT, otherwise \"CALL WHEN UP\". The kept press is dropped if the bar is no longer full, the captain falls, or a call is already running.\n- While a press is kept, the call label reads \"READY  CALL WHEN UP\". The Q key stays lit because core's show.gd lights it whenever the label contains \"READY\".\n- New block in `data/rally.json`: `press` = {say_f 60, hint_p 8, beep_db -6, queue_max_f 600, and the three hint texts}. No existing values changed.\n- NOT DONE: showing \"CALL WHEN UP\" on the Q key itself needs scripts/show.gd, which is outside my scope. The exact edit: at line 84, replace the Q key's fixed sub-label `\"CALL\"` with `(\"CALL WHEN UP\" if \"WHEN UP\" in str(g.hud.text_of(&\"call\")) else \"CALL\")`.\n- No bot test presses Q while the captain is down, so the kept press is not checked by any run. A person should try it by hand."
+  },
+  {
+   "v": 1,
+   "seq": 1514,
+   "ts": "2026-11-27T19:45:31.320Z",
+   "job": "shield-wall-3-v-20261125-1",
+   "type": "package_state",
+   "package": "rally",
+   "state": "verifying",
+   "round": 4
+  },
+  {
+   "v": 1,
+   "seq": 1524,
+   "ts": "2026-11-27T19:48:59.771Z",
+   "job": "shield-wall-3-v-20261125-1",
+   "type": "merge",
+   "package": "rally",
+   "files": [
+    "data/rally.json",
+    "scripts/rally/call.gd",
+    "scripts/rally/mod.gd"
+   ]
+  },
+  {
+   "v": 1,
+   "seq": 1525,
+   "ts": "2026-11-27T19:48:59.779Z",
+   "job": "shield-wall-3-v-20261125-1",
+   "type": "note",
+   "package": "rally",
+   "round": 4,
+   "text": "[foreman] part of your change was NOT made by rally; it goes on to core, whose files rally names: NOT DONE: showing \"CALL WHEN UP\" on the Q key itself needs scripts/show.gd, which is outside my scope. The exact edit: at line 84, replace the Q key's fixed sub-label `\"CALL\"` with `(\"CALL WHEN UP\" if \"WHEN UP\" in str(g.hud.text_of(&\"call\")) else \"CALL\")`."
+  },
+  {
+   "v": 1,
+   "seq": 1526,
+   "ts": "2026-11-27T19:48:59.784Z",
+   "job": "shield-wall-3-v-20261125-1",
+   "type": "change_requested",
+   "package": "core",
+   "text": "[foreman] the rest of your change, which rally did not make (\"NOT DONE: showing \"CALL WHEN UP\" on the Q key itself needs scripts/show.gd, which is outside my scope. The exact edit: at line 84, replace the Q key's fixed sub-label `\"CALL\"` with `(\"CALL WHEN UP\" if \"WHEN UP\" in str(g.hud.text_of(&\"call\")) else \"CALL\")`.\"): \"The G key and the red-circle hint work now, thank you. But my catapult still waits for my captain's call in round 1, and as a newcomer I am knocked down or being hit most of the time: when I press Q then, nothing happens, no sound, no word, so I press it again later and again nothing, and the G key keeps saying \"after your Q call\". Keep my Q press: if I press Q while I am down, stunned or mid-move, light the Q key with \"CALL WHEN UP\" and blow the horn the moment I am free again (the call bar must still be ready); and if the call cannot start for any other reason, say why on the hint line for a second (\"CALL NOT READY\", \"CALL: STAND UP FIRST\").\""
+  },
+  {
+   "v": 1,
+   "seq": 1527,
+   "ts": "2026-11-27T19:48:59.790Z",
+   "job": "shield-wall-3-v-20261125-1",
+   "type": "package_state",
+   "package": "rally",
+   "state": "promoted",
+   "round": 4
+  },
+  {
+   "v": 1,
+   "seq": 1528,
+   "ts": "2026-11-27T19:49:00.694Z",
+   "job": "shield-wall-3-v-20261125-1",
+   "type": "reopened",
+   "package": "core",
+   "reason": "change request (event 1526); the request names the package: [foreman] the rest of your change, which rally did not make (\"NOT DONE: showing \"CALL WHEN UP\" on the Q key itself needs scripts/show.gd, which is outside my scope. The exact edit: at line 84, replace the Q key's fixed sub-label `\"CALL\"` with `(\"CALL WHEN UP\" if \"WHEN UP\" in str(g.hud.text_of(&\"call\n... (675 more characters cut)"
+  },
+  {
+   "v": 1,
+   "seq": 1529,
+   "ts": "2026-11-27T19:49:00.701Z",
+   "job": "shield-wall-3-v-20261125-1",
+   "type": "package_state",
+   "package": "core",
+   "state": "queued",
+   "round": 23,
+   "detail": "CHANGE REQUEST: [foreman] the rest of your change, which rally did not make (\"NOT DONE: showing \"CALL WHEN UP\" on the Q key itself needs scripts/show.gd, which is outside my scope. The exact edit: at line 84, replace the Q key's fixed sub-label `\"CALL\"` with `(\"CALL WHEN UP\" if \"WHEN UP\" in str(g.hud.text_of(&\"call\")) else \"CALL\")`.\"): \"The G key and the red-circle hint work now, thank you. But my catapult still waits for my captain's call in round 1, and as a newcomer I am knocked down or being hit most of the time: when I press Q then, nothing happens, no sound, no word, so I press it again later and again nothing, and the G key keeps saying \"after your Q call\". Keep my Q press: if I press Q while I am down, stunned or mid-move, light the Q key with \"CALL WHEN UP\" and blow the horn the moment I am free again (the call bar must still be ready); and if the call cannot start for any other reason, say why on the hint line for a second (\"CALL NOT READY\", \"CALL: STAND UP FIRST\").\""
+  },
+  {
+   "v": 1,
+   "seq": 1530,
+   "ts": "2026-11-27T19:49:00.731Z",
+   "job": "shield-wall-3-v-20261125-1",
+   "type": "package_state",
+   "package": "core",
+   "state": "running",
+   "round": 23
+  }
+ ]
+}

@@ -1,0 +1,845 @@
+{
+ "source": "d25-biplane .tl/jobs/three-against-three-hockey-20261125-1 (lane J2b round 2: MEGA), events 1250-1350 (passing verify events left out); plan from its state.json",
+ "plan": [
+  {
+   "id": "base",
+   "kind": "base",
+   "title": "Start from the rink_game base",
+   "milestone": "greybox",
+   "deps": [],
+   "scope": [
+    "assets/**",
+    "data/**",
+    "gen/**",
+    "scripts/**",
+    "tests/**"
+   ],
+   "contract": "Start from the base: the Foreman copies engine/templates/rink_game/ (the job's ref/base/rink_game/) into the pack whole, as it is: a working game on the rink core (ctx.cores.open(\"rink\", <cartridge>)). No builder runs for this package. Later packages change the game by editing the base's data: the cartridge (data/<name>.cartridge.json), the skin (data/skin.json), an optional rules sidecar (data/<name>.rules.json); a file a later package's scope names is that package's from then on. The base's bots: tests/bot_match_hand.gd, tests/bot_first_match.gd, tests/bot_skin.gd, tests/bot_toys.gd.\nPLAYER CHECK: tests/bot_match_hand.gd fails when the human's skater never carried the puck or took no shot",
+   "acceptance": [
+    {
+     "level": "V1",
+     "verb": "lint",
+     "args": []
+    },
+    {
+     "level": "V2",
+     "verb": "smoke",
+     "args": []
+    },
+    {
+     "level": "V4",
+     "verb": "bot",
+     "args": [
+      "--test=tests/bot_first_match.gd"
+     ]
+    }
+   ],
+   "registers": {
+    "capabilities": [
+     "audio",
+     "input",
+     "camera",
+     "kit",
+     "style",
+     "ui"
+    ],
+    "assets": [
+     "gen/tj_rink.gd"
+    ],
+    "tests": [
+     "tests/bot_match_hand.gd",
+     "tests/bot_first_match.gd",
+     "tests/bot_skin.gd",
+     "tests/bot_toys.gd"
+    ],
+    "cameras": [
+     "follow",
+     "top"
+    ]
+   }
+  },
+  {
+   "id": "cartridge",
+   "title": "Harbour 3 v 3 cartridge",
+   "milestone": "greybox",
+   "deps": [
+    "base"
+   ],
+   "scope": [
+    "data/harbour.cartridge.json",
+    "data/match.json"
+   ],
+   "serves": [
+    "shield_bounce",
+    "slush_trap",
+    "arrow_breakaway"
+   ],
+   "contract": "Write data/harbour.cartridge.json (tj.cartridge/1): copy the base's data/hockey.regular.cartridge.json, set id \"harbour-playmakers\", title \"Harbour Playmakers\", and change only the keys below. Nearest thirdjam modes to read: Pond (rink, passing keys) and Arsenal (abilities, pickups, zones) in ref/cores/rink/modes/. data/match.json: cartridge \"harbour.cartridge.json\", difficulty \"rookie\". Keep the base's regular cartridge file. No .rules.json sidecar, no core patch.\n\nTEAMS (3 v 3; keep the base's team ids and order). Blue colour_hex #1FB5A8: player (-1.5,0), support (-4,-8), back (-18,0). Orange #E8622C: chaser (1.5,0) = WINCH, support (6,-8) = GULL, back (18,0) = BREAKWATER.\n\nRINK: game.rink.length_m 60, width_m 30, corner_radius_m 3.75, goals the base's. game.rink.zones, exactly 8, these ids (the drawing package relies on them), visible true:\n- arrow-a (-10,-9), arrow-b (10,-9), arrow-c (-10,9), arrow-d (10,9): shape rect, w 6, d 3, kind fast_ice, strength 0\n- ring-west (-10,0), ring-east (10,0): circle r 3.5, slow_ice, strength 0.7\n- spot-north (0,-9), spot-south (0,9): circle r 1, boost_only\n\ngame.effects: four effects with id arrow-a..arrow-d: trigger zone_enter, zone = own id, target self, duration_frames 75, stack refresh, stats skater_speed multiply 1.35 and skater_accel multiply 2. Plus id second-wind: trigger director, target own_team, duration_frames 480, stats skater_speed multiply 1.12.\n\ngame.pickups: {kind speed, zone spot-north, magnitude 1.1, duration_frames 60} and {kind precision, zone spot-south, magnitude 1.5, duration_frames 120}; both spawn_every_frames 180, max_on_ice 1.\n\ngame.abilities, in this order, each cooldown_frames 180: shield (trigger mode, charges 1, duration_frames 240); shield (pickup, charges 1, duration_frames 240); slow_puck (pickup, charges 1, duration_frames 60, magnitude 0.75). D1: you start holding one shield; once spent either spot grants one random pickup entry; none while holding. If the validator or core refuses the three-entry pool or it never grants slow_puck, ship mode shield plus pickup shield only and say so in your report as 'OWNER: shield pickup only'.\n\ngame.rules: mode first_to, score_to_win 5, penalties false. hooks: {id tide-turns, when on_goal, team conceding, then [apply_modifier kind second-wind frames 480; announce text \"TIDE TURNS\"]}; {id match-point, when on_score_reached, team scoring, score.at_least 4, then [announce text \"MATCH POINT\"]}. At 4-4 the next goal wins by first_to.\n\nOTHER LINES: game.shot.one_timer.window_frames 20; game.stick.reception_m 3; game.skater.pass_lead_frames 20; game.ai.yield_margin_m 0; game.ai.body_check 0.6; game.contact.bot_check_windup_frames 12 (the rival's tell); game.look.tier l2_night, trim_colour_hex #FFA23A; game.camera mode third_person, distance_m 7, height_m 4, look_ahead_m 5, fov_deg 70, lag_frames 4.\n\nFEEL (effective values; keep the base's key or core default, write the key only where the effective value differs): skater speed 11, accel 12, turn_rate 5, carry_speed_mult 0.92, free_speed_mult 1.15; shot.cooldown_frames 24; stick.take_grace_frames 30 (poke grace); contact.momentum true (bump keeps both in control; stumble costs half speed, control, maybe puck, and the attacker pays speed; knockdown downs the victim, attacker slowed); a missed check glides open; a missed poke locks the human's stick; pokes beat the shield; a body shields the puck. All other press frames stay the core's. ai.speed_scale unchanged: difficulty never adds hidden speed; catch-up is only second-wind. Do not set pass_speed.\n\nCHECK AND REPORT (numbers, with the hand that measured them): bash engine/tools/rink.sh check-cartridge data/harbour.cartridge.json. D5: also run it on a scratch copy (outside data/) at length_m 70, width_m 35 and report completed passes and match length for both; ship 60 x 30. Report at rookie any warning, goals a match, match length, knockdowns, passes a minute. D3 tuning allows ring strength 0.5 to 1 and slow_puck magnitude 0.7 to 0.9, and D2 allows body_check up to 1; ship the values above (the later drill measures them, including strength 1.0).",
+   "acceptance": [
+    {
+     "level": "V1",
+     "verb": "lint",
+     "args": []
+    },
+    {
+     "level": "V2",
+     "verb": "smoke",
+     "args": []
+    },
+    {
+     "level": "V4",
+     "verb": "bot",
+     "args": [
+      "--test=tests/bot_first_match.gd"
+     ]
+    },
+    {
+     "level": "V4",
+     "verb": "bot",
+     "args": [
+      "--test=tests/bot_match_hand.gd"
+     ]
+    },
+    {
+     "level": "V4",
+     "verb": "bot",
+     "args": [
+      "--test=tests/bot_toys.gd"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "harbour",
+   "title": "Bubble, arrows, slush, spots, harbour drawing",
+   "milestone": "greybox",
+   "deps": [
+    "base",
+    "cartridge"
+   ],
+   "scope": [
+    "scripts/main.gd",
+    "scripts/harbour.gd",
+    "scripts/harbour_toys.gd",
+    "data/tuning.json",
+    "data/harbour_venue.json",
+    "data/drill_slush100.cartridge.json",
+    "tests/bot_harbour.gd"
+   ],
+   "serves": [
+    "shield_bounce",
+    "slush_trap",
+    "arrow_breakaway"
+   ],
+   "registers": {
+    "capabilities": [
+     "physics",
+     "input",
+     "ui",
+     "audio",
+     "vfx",
+     "camera",
+     "kit"
+    ],
+    "tests": [
+     "tests/bot_harbour.gd"
+    ]
+   },
+   "contract": "Presentation-only drawing over the base. Read the core's snapshot() (ref/cores/rink/SNAPSHOT.md); never call a core setter, never move a core body, never change the core hash. main.gd gets only a small hook (setup, tick after the base has posed the figures). Do not touch skating, puck, contact, bot or camera code, and keep rink_toys drawing (bot_toys). Visual shapes: TLBodies.make with {layer 0, mask 0, track false}, pooled, hidden via visible; no materials, no meshes of your own; under 600 bodies. Every number is a key in data/tuning.json under \"harbour\" (keep any existing keys), read at start. Zone ids come from the cartridge: arrow-a..d, ring-west/east, spot-north (speed), spot-south (precision). Build in this order, flat shapes first; if time runs short cut scenery props, never feel.\n\n1 BUBBLE: while the human's shield is active, three crossed hoops of small cyan beads around the holder, visible within 3 frames of F, active 240 frames from frame 1. Slow puck armed or running: a small glow ring of beads on the puck. On a blocked check, cross-check or lift: beads flare, TLVfx.burst sparks, TLAudio.play(\"hit_rubber\"), both figure poses hold 8 frames, the attacker's visual node recoils 0.4 m away, decaying to exactly 0 over 12 frames. Move the whole figure visual together so nothing detaches; the simulation never freezes. Detect from snapshot events; only if none exist, require centre distance under 0.85 m AND the rival closing or in its check pose while shield is active. Never flare on proximity alone. Unused bubble fades quietly: no burst.\n\n2 HINT AND PROMPT: base HUD hint stays from the skin. Show 'F: BUBBLE NOW' only while the human carries, holds a shield and WINCH (orange chaser) is within prompt_range_m 5 closing over prompt_closing_mps 2.\n\n3 ARROWS: double-headed chevrons over each strip; on a skater entering, flash along the crosser's velocity, TLVfx.trail for 75 frames, burst ice_spray, TLAudio.play(\"nitro\").\n\n4 BLUE ICE: raised slush rim and flecks on both rings; puck entering bursts splash; puck under 6 m/s inside glints and snaps (one short sound per stall).\n\n5 SPOTS: bobbing green buoy when loaded, dim ring when empty. Use snapshot pickup list/events if present; else infer from the 180-frame spawn timer plus skater crossings. On the human's grant a HUD tag at the spot names the trick, 'BUBBLE' or 'SLOW PUCK', 90 frames (from the held ability change). spots.state_mode \"inferred\" or \"plain\"; plain = neutral beacons with no loaded state.\n\n6 GULL ROLE GEAR (each distinct in silhouette, follows its figure) and HUD tags: WINCH a back drum with hook, GULL a long beak visor, BREAKWATER wide block shoulders.\n\n7 CONTACT FEEL: figures stay the core's pawn and clips (body_check, cross_check and so on; no TLHit). Pose hold 3 to 8 frames on attacker and victim scaled by force; every press answered within 3 frames; victim flinches, stumbles or falls and attacker slows as the core says; rival tell at least 12 frames. ctx.cameras.shake(0.2, 14) only on the human's knockdown or a goal, nothing on bumps or whiffs (remove or gate other shakes reachable from main.gd; never add a duplicate). Camera numbers are the cartridge's; contacts never move it. Goals keep the base horn, crowd and banner.\n\n8 HARBOUR: after the arena part is built, hide barn, stands, benches, boxes; keep rink surfaces, boards, nets and light. data/harbour_venue.json (tl.layout/1): flat terrain or ground below the ice level, TLKit crane x2, light_mast x4, pond (still water), lumber, tyre_stack, all at least 12 m outside the boards (|x| >= 42 or |z| >= 27).\n\nDRILL BOT tests/bot_harbour.gd: plays through TLHand \"regular\" using ctx.input only for the pack match: F at the first drop, skates a strip, visits spots, passes, shoots, pokes and checks. PLAYER CHECK: tests/bot_harbour.gd fails when the player's F no longer raises the bubble or the player's skater can no longer reach an arrow strip. ok = bubble drawn within 3 frames of F, an arrow burst by the player, venue hidden, run complete. It reports moments {shield_bounce, slush_trap, arrow_breakaway, shield_up, spot_take} as frame lists (absent events stay empty; get shield_up and arrow within 600 frames) and metrics: feedback_f, prompt_first_f (target <= 900), openings and winch_bubble_by_1800 (target 8 of 10 faceoffs), shield_checks/crosses/lifts, shield_falls and non-poke strips (0), poke_steals, spot_matches/spot_takes (19 of 20, else set plain), slush_entries, stalls under 6 m/s, otter_collects, armed_feeds_received (targets 7 of 10), arrow_speed and slush_speed measured, passes, gull_idle_max_f (<= 120). D3: the bot also opens data/drill_slush100.cartridge.json (the game's cartridge with both rings strength 1.0) and the game cartridge as private bot-run cores (ctx.cores.open), tests 1.0 first, and reports stalls for both. Each missed or unmeasured target goes into the summary as 'OWNER: ...' with the number (including 'no real stall seen'); missed AI targets do not fail ok and are never faked.",
+   "acceptance": [
+    {
+     "level": "V1",
+     "verb": "lint",
+     "args": []
+    },
+    {
+     "level": "V2",
+     "verb": "smoke",
+     "args": []
+    },
+    {
+     "level": "V4",
+     "verb": "bot",
+     "args": [
+      "--test=tests/bot_harbour.gd"
+     ]
+    },
+    {
+     "level": "V4",
+     "verb": "bot",
+     "args": [
+      "--test=tests/bot_match_hand.gd"
+     ]
+    },
+    {
+     "level": "V4",
+     "verb": "bot",
+     "args": [
+      "--test=tests/bot_toys.gd"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "skin",
+   "title": "Harbour Playmakers skin",
+   "milestone": "tuned",
+   "deps": [
+    "base",
+    "cartridge"
+   ],
+   "scope": [
+    "data/skin.json",
+    "data/harbour_commentary.json"
+   ],
+   "serves": [
+    "shield_bounce",
+    "arrow_breakaway"
+   ],
+   "contract": "Edit data/skin.json (schema tl.rink.skin/1; unknown keys are errors; read scripts/hud/skin.gd for the keys). title \"Harbour Playmakers\"; tagline \"F: bubble. Green spots reload it.\" (the first-minute hint); team_names \"the Tide Otters\" for the blue #1FB5A8 side and \"the Crane Gulls\" for the orange #E8622C side, in the key order skin.gd expects (set team_plural plural if the key applies). Colours come only from the cartridge. HOME's lines speak of a dusk harbour rink, three against three, first to five; level row stays rookie, pro, all_star. Keep the base's end card (score and team names, R rematches within 2 s) and its mouse prompts for shoot, pass, poke and check.\n\nOptional if time allows: data/harbour_commentary.json in the base bank format (scripts/hud/commentary_lines.gd rows), a copy of the builtin lines with a few orange-team lines naming Winch (the chaser, hits hard and straight), Gull (waits for passes) and Breakwater (guards the crease), plus goal cheers and barks; point skin.json at it. Use only events and kinds the bank already supports, and do not claim a skater did something the event cannot know. No line promises a dropped slow field: the blue rings are painted and never move, and the F slow puck crawls then wakes.",
+   "acceptance": [
+    {
+     "level": "V1",
+     "verb": "lint",
+     "args": []
+    },
+    {
+     "level": "V2",
+     "verb": "smoke",
+     "args": []
+    },
+    {
+     "level": "V4",
+     "verb": "bot",
+     "args": [
+      "--test=tests/bot_skin.gd"
+     ]
+    },
+    {
+     "level": "V4",
+     "verb": "bot",
+     "args": [
+      "--test=tests/bot_first_match.gd"
+     ]
+    }
+   ]
+  }
+ ],
+ "events": [
+  {
+   "v": 1,
+   "seq": 1251,
+   "ts": "2026-11-27T14:34:06.320Z",
+   "job": "three-against-three-hockey-20261125-1",
+   "type": "note",
+   "package": "harbour",
+   "round": 19,
+   "text": "[foreman] what changed in v0.1.27 (since v0.1.26): asked \"The glass wobble never shows: when I score a meteor I am always close to that end, and the glass is hidden then. After every meteor goal show the panes over that end bowing out and wobbling, however close I am, big enough to see from my camera; only hide a single pane while it actually stands between the camera and the ice.\"; what you will see, in the builder's words: `data/tuning.json` `harbour.meteor.bag.camera_clear_m` (12) is removed. Two new keys replace it: `camera_near_m` 0.6 and `camera_lateral_m` 0.4. The 12 m distance check that hid the whole end is gone; each pane is tested\n... (31 more characters cut) / `scripts/main.gd` `_present` now calls `harbour.back.set_eye(eye)` after the follow view is set, so the drawing knows where the camera is. It changes no core state. The panes use the camera position from the last drawn f\n... (23 more characters cut) / `tick_goals(h, f, hx, hz = 0.0)` has a new optional parameter `hz`, the human skater's z. (and 1 more in its note); files: data/tuning.json, scripts/harbour_toys.gd, scripts/main.gd"
+  },
+  {
+   "v": 1,
+   "seq": 1252,
+   "ts": "2026-11-27T14:34:06.326Z",
+   "job": "three-against-three-hockey-20261125-1",
+   "type": "note",
+   "package": "harbour",
+   "round": 19,
+   "text": "[foreman] pictures of the pack as it is promoted the 28th time (after the change): captures/promotion28-follow-f3673.png, captures/promotion28-follow-f11018.png, captures/promotion28-top-f3673.png, captures/promotion28-top-f11018.png"
+  },
+  {
+   "v": 1,
+   "seq": 1253,
+   "ts": "2026-11-27T14:34:06.373Z",
+   "job": "three-against-three-hockey-20261125-1",
+   "type": "promoted",
+   "packId": "game.three_against_three_hockey",
+   "version": "0.1.27",
+   "dest": "promoted/game.three_against_three_hockey@0.1.27"
+  },
+  {
+   "v": 1,
+   "seq": 1254,
+   "ts": "2026-11-27T14:34:06.379Z",
+   "job": "three-against-three-hockey-20261125-1",
+   "type": "job_state",
+   "state": "done",
+   "reason": "pack verified V0 to V4 and promoted under the job directory (promoted/game.three_against_three_hockey@0.1.27) (promotion 28 of this job; the earlier one is kept)"
+  },
+  {
+   "v": 1,
+   "seq": 1255,
+   "ts": "2026-11-27T17:17:03.143Z",
+   "job": "three-against-three-hockey-20261125-1",
+   "type": "change_requested",
+   "text": "Add a Mario Kart Mega Mushroom you earn with a big hit, like NHL Hitz: any skater, me or a bot, who lands a body check goes MEGA for five seconds. He flashes white with a boing and balloons to twice his size, with MEGA! big over him (and in the middle of the screen when it is me). While mega he is twice as heavy and a bit faster, every bump knocks a man flat with a thud, FLATTENED! and a little camera shake, and the ice trembles under his strides; but he turns wide, so a quick skater can slip past him. After five seconds he shrinks back with a pop. The rival bots go mega whenever they land a check on me or my mates, so I must dodge their giants, and my bot mates go mega too. Keep the meteor on F as it is."
+  },
+  {
+   "v": 1,
+   "seq": 1256,
+   "ts": "2026-11-27T17:17:03.377Z",
+   "job": "three-against-three-hockey-20261125-1",
+   "type": "job_state",
+   "state": "running",
+   "reason": "reopened by a change request (was done)"
+  },
+  {
+   "v": 1,
+   "seq": 1257,
+   "ts": "2026-11-27T17:17:08.884Z",
+   "job": "three-against-three-hockey-20261125-1",
+   "type": "builder_run",
+   "adapter": "claude-cli",
+   "mode": "generate",
+   "model": "claude-sonnet-5-5",
+   "outcome": "ok",
+   "durationMs": 5161,
+   "tokensIn": 3855,
+   "tokensOut": 385,
+   "tokensCacheRead": 1094,
+   "transcript": "reports/planner-a1-s1257.json"
+  },
+  {
+   "v": 1,
+   "seq": 1258,
+   "ts": "2026-11-27T17:17:08.892Z",
+   "job": "three-against-three-hockey-20261125-1",
+   "type": "reopened",
+   "package": "harbour",
+   "reason": "change request (event 1255); the Planner names the package: The check-triggered giant power-up is a new power-up effect on the ice, so it belongs in the harbour package. That package owns the power-up code (scripts/harbour_toys.gd), the game loop and existing \n... (79 more characters cut): Add a Mario Kart Mega Mushroom you earn with a big hit, like NHL Hitz: any skater, me or a bot, who lands a body check goes MEGA for five seconds. He flashes white with a boing and balloons to twice his size, with MEGA! big over him (and in the middle of the screen when it is me). While mega he is t\n... (414\n... (21 more characters cut)"
+  },
+  {
+   "v": 1,
+   "seq": 1259,
+   "ts": "2026-11-27T17:17:08.897Z",
+   "job": "three-against-three-hockey-20261125-1",
+   "type": "package_state",
+   "package": "harbour",
+   "state": "queued",
+   "round": 20,
+   "detail": "CHANGE REQUEST: Add a Mario Kart Mega Mushroom you earn with a big hit, like NHL Hitz: any skater, me or a bot, who lands a body check goes MEGA for five seconds. He flashes white with a boing and balloons to twice his size, with MEGA! big over him (and in the middle of the screen when it is me). While mega he is twice as heavy and a bit faster, every bump knocks a man flat with a thud, FLATTENED! and a little camera shake, and the ice trembles under his strides; but he turns wide, so a quick skater can slip past him. After five seconds he shrinks back with a pop. The rival bots go mega whenever they land a check on me or my mates, so I must dodge their giants, and my bot mates go mega too. Keep the meteor on F as it is."
+  },
+  {
+   "v": 1,
+   "seq": 1260,
+   "ts": "2026-11-27T17:17:08.930Z",
+   "job": "three-against-three-hockey-20261125-1",
+   "type": "package_state",
+   "package": "harbour",
+   "state": "running",
+   "round": 20
+  },
+  {
+   "v": 1,
+   "seq": 1261,
+   "ts": "2026-11-27T17:20:29.758Z",
+   "job": "three-against-three-hockey-20261125-1",
+   "type": "builder_run",
+   "package": "harbour",
+   "round": 20,
+   "adapter": "claude-cli",
+   "mode": "edit",
+   "model": "claude-sonnet-5-5",
+   "outcome": "ok",
+   "durationMs": 200694,
+   "tokensIn": 1507436,
+   "tokensOut": 12348,
+   "tokensCacheRead": 1425901,
+   "transcript": "reports/harbour-r20-builder-s1261.json"
+  },
+  {
+   "v": 1,
+   "seq": 1262,
+   "ts": "2026-11-27T17:20:29.771Z",
+   "job": "three-against-three-hockey-20261125-1",
+   "type": "note",
+   "package": "harbour",
+   "round": 20,
+   "text": "- RULE: MEGA is drawing only. Any landed body check by any skater sets that skater's MEGA, read from the victim's `ContactOutcome > 0` and `ContactBy`, not a cross-check. That includes a rival checking another rival. A player sees the double-size figure, the white flash, MEGA! and FLATTENED!, but contacts are still decided by the core's normal momentum law.\n- NOT DONE: \"twice as heavy and a bit faster, every bump knocks a man flat, turns wide\" needs `data/harbour.cartridge.json` or its rules sidecar `data/harbour.rules.json`, which are outside my scope. It needs a per-skater modifier that starts on a landed check, about 300 frames long: mass ×2, speed ×1.1, turn rate ×0.6, every contact he makes counted as a knockdown, for bots and the human alike. I found no cartridge key for a modifier that starts on a check. The rules hooks' `apply_modifier` works per team, and I did not check whether there is a check trigger, so the cartridge owner must search CARTRIDGE.md for one or write the sidecar.\n- Sounds: there is no boing or pop preset. The boing uses `hit_rubber`, the thud `break` and the pop `beep`. They're named in `harbour.mega` so they can be swapped.\n- The centre-screen word says \"YOU ARE MEGA!\" for the player, following the words rule. Other skaters get \"MEGA!\" as a tag over them.\n- The MEGA scale is applied to the core's figure node, which is drawing only. To stop the size compounding when the base holds a pose, it sets the scale to the figure's own scale before MEGA times the MEGA size each frame, rather than multiplying the current one.\n- `tests/bot_harbour.gd` does not report MEGA yet. `harbour.marks` records `mega_on`, `mega_flatten` and `mega_off`, but none of them are in the bot's moments or metrics.\n- No NEW MOVE: MEGA adds no attack of its own. It changes how the core's existing body check looks.\n- Values added in `harbour.mega`: frames 300, scale 2.0, grow_f 12, shrink_f 10, flat_shake_m 0.08, flat_shake_f 8, tremble_every_f 9, word_f 70. No existing value was changed."
+  },
+  {
+   "v": 1,
+   "seq": 1263,
+   "ts": "2026-11-27T17:20:29.789Z",
+   "job": "three-against-three-hockey-20261125-1",
+   "type": "package_state",
+   "package": "harbour",
+   "state": "verifying",
+   "round": 20
+  },
+  {
+   "v": 1,
+   "seq": 1276,
+   "ts": "2026-11-27T17:24:42.389Z",
+   "job": "three-against-three-hockey-20261125-1",
+   "type": "merge",
+   "package": "harbour",
+   "files": [
+    "data/tuning.json",
+    "scripts/harbour.gd",
+    "scripts/harbour_toys.gd"
+   ]
+  },
+  {
+   "v": 1,
+   "seq": 1277,
+   "ts": "2026-11-27T17:24:42.449Z",
+   "job": "three-against-three-hockey-20261125-1",
+   "type": "note",
+   "package": "harbour",
+   "round": 20,
+   "text": "[foreman] part of your change was NOT made by harbour; it goes on to cartridge, whose files harbour names: NOT DONE: \"twice as heavy and a bit faster, every bump knocks a man flat, turns wide\" needs `data/harbour.cartridge.json` or its rules sidecar `data/harbour.rules.json`, which are outside my scope. It needs a per-skater modifier that starts on a landed check, about 300 frames long: mass ×2, speed ×1.1, turn rate ×0.6, every contact he makes counted as a knockdown, for bots and the human alike. I f\n... (242 more characters cut) (the catalog has candidate keys for what harbour called missing: the catalog (ref/cores/rink/CARTRIDGE.md) has keys that may be exactly that: game.contact.bump_ratio (number 0..1 Impulse over stability under this is a bump: both keep their feet and their control.); game.contact.cross_any_man (boolean The cross-check is a hit on any man in front (lane A209, track F1, the night): a human skater's pressed cross-ch); skater.turn_rate (how sharply he turns 1..12 (5) lateral_grip); game.skater.turn_rate (number 1..12 Turn speed in radians per second. 5); game.contact.check_cooldown_restart (boolean A mashed button lands nothing: true = a check press inside the cooldown (check_cooldown_frames) starts the coold); contact.check_reach_m (the check turns onto the nearest man within this reach: easier to land (Cage, Bruisers 2)))"
+  },
+  {
+   "v": 1,
+   "seq": 1278,
+   "ts": "2026-11-27T17:24:42.455Z",
+   "job": "three-against-three-hockey-20261125-1",
+   "type": "change_requested",
+   "package": "cartridge",
+   "text": "[foreman] the rest of your change, which harbour did not make (\"NOT DONE: \"twice as heavy and a bit faster, every bump knocks a man flat, turns wide\" needs `data/harbour.cartridge.json` or its rules sidecar `data/harbour.rules.json`, which are outside my scope. It needs a per-skater modifier that starts on a landed check, about 300 frames long: mass ×2, speed ×1.1, turn rate ×0.6, every contact he makes counted as a knockdown, for bots and the human alike. I f\n... (242 more characters cut)\"): harbour said the cartridge has no key for part of it, but the catalog (ref/cores/rink/CARTRIDGE.md) has keys that may be exactly that: game.contact.bump_ratio (number 0..1 Impulse over stability under this is a bump: both keep their feet and their control.); game.contact.cross_any_man (boolean The cross-check is a hit on any man in front (lane A209, track F1, the night): a human skater's pressed cross-ch); skater.turn_rate (how sharply he turns 1..12 (5) lateral_grip); game.skater.turn_rate (number 1..12 Turn speed in radians per second. 5); game.contact.check_cooldown_restart (boolean A mashed button lands nothing: true = a check press inside the cooldown (check_cooldown_frames) starts the coold); contact.check_reach_m (the check turns onto the nearest man within this reach: easier to land (Cage, Bruisers 2)): read those rows before you say a key is missing. \"Add a Mario Kart Mega Mushroom you earn with a big hit, like NHL Hitz: any skater, me or a bot, who lands a body check goes MEGA for five seconds. He flashes white with a boing and balloons to twice his size, with MEGA! big over him (and in the middle of the screen when it is me). While mega he is twice as heavy and a bit faster, every bump knocks a man flat with a thud, FLATTENED! and a little camera shake, and the ice trembles under his strides; but he turns wide, so a quick skater can slip past him. After five seconds he shrinks back with a pop. The rival bots go mega whenever they land a check on me or my mates, so I must dodge their giants, and my bot mates go mega too. Keep the meteor on F as it is.\""
+  },
+  {
+   "v": 1,
+   "seq": 1279,
+   "ts": "2026-11-27T17:24:42.459Z",
+   "job": "three-against-three-hockey-20261125-1",
+   "type": "package_state",
+   "package": "harbour",
+   "state": "promoted",
+   "round": 20
+  },
+  {
+   "v": 1,
+   "seq": 1280,
+   "ts": "2026-11-27T17:24:42.465Z",
+   "job": "three-against-three-hockey-20261125-1",
+   "type": "reopened",
+   "package": "cartridge",
+   "reason": "change request (event 1278); the request names the package: [foreman] the rest of your change, which harbour did not make (\"NOT DONE: \"twice as heavy and a bit faster, every bump knocks a man flat, turns wide\" needs `data/harbour.cartridge.json` or its rules sidecar `data/harbour.rules.json`, which are outside my scope. It needs a per-skater modifier that st\n... (1786 more characters cut)"
+  },
+  {
+   "v": 1,
+   "seq": 1281,
+   "ts": "2026-11-27T17:24:42.470Z",
+   "job": "three-against-three-hockey-20261125-1",
+   "type": "package_state",
+   "package": "cartridge",
+   "state": "queued",
+   "round": 14,
+   "detail": "CHANGE REQUEST: [foreman] the rest of your change, which harbour did not make (\"NOT DONE: \"twice as heavy and a bit faster, every bump knocks a man flat, turns wide\" needs `data/harbour.cartridge.json` or its rules sidecar `data/harbour.rules.json`, which are outside my scope. It needs a per-skater modifier that starts on a landed check, about 300 frames long: mass ×2, speed ×1.1, turn rate ×0.6, every contact he makes counted as a knockdown, for bots and the human alike. I f\n... (242 more characters cut)\"): harbour said the cartridge has no key for part of it, but the catalog (ref/cores/rink/CARTRIDGE.md) has keys that may be exactly that: game.contact.bump_ratio (number 0..1 Impulse over stability under this is a bump: both keep their feet and their control.); game.contact.cross_any_man (boolean The cross-check is a hit on any man in front (lane A209, track F1, the night): a human skater's pressed cross-ch); skater.turn_rate (how sharply he turns 1..12 (5) lateral_grip); game.skater.turn_rate (number 1..12 Turn speed in radians per second. 5); game.contact.check_cooldown_restart (boolean A mashed button lands nothing: true = a check press inside the cooldown (check_cooldown_frames) starts the coold); contact.check_reach_m (the check turns onto the nearest man within this reach: easier to land (Cage, Bruisers 2)): read those rows before you say a key is missing. \"Add a Mario Kart Mega Mushroom you earn with a big hit, like NHL Hitz: any skater, me or a bot, who lands a body \n... (602 more characters cut)"
+  },
+  {
+   "v": 1,
+   "seq": 1282,
+   "ts": "2026-11-27T17:25:36.789Z",
+   "job": "three-against-three-hockey-20261125-1",
+   "type": "note",
+   "package": "cartridge",
+   "round": 14,
+   "text": "[foreman] change asked back: \"[foreman] the rest of your change, which harbour did not make (\"NOT DONE: \"twice as heavy and a bit faster, every bump knocks a man flat, turns wide\" needs `data/harbour.cartridge.json` or its rules s\n... (1886 more characters cut)\": Your side already wins 10 of 10 at rookie, 10 of 10 at pro, 10 of 10 at all star (thirdjam's regular playtester on your seat), so weaker bots would hardly show. Did you mean something else that feels too strong (their speed, their checks, a bigger rink), or should the bots be weaker still? Say which, and the change is made."
+  },
+  {
+   "v": 1,
+   "seq": 1283,
+   "ts": "2026-11-27T17:25:36.794Z",
+   "job": "three-against-three-hockey-20261125-1",
+   "type": "question",
+   "package": "cartridge",
+   "text": "Your side already wins 10 of 10 at rookie, 10 of 10 at pro, 10 of 10 at all star (thirdjam's regular playtester on your seat), so weaker bots would hardly show. Did you mean something else that feels too strong (their speed, their checks, a bigger rink), or should the bots be weaker still? Say which, and the change is made."
+  },
+  {
+   "v": 1,
+   "seq": 1284,
+   "ts": "2026-11-27T17:25:36.801Z",
+   "job": "three-against-three-hockey-20261125-1",
+   "type": "package_state",
+   "package": "cartridge",
+   "state": "blocked",
+   "round": 14,
+   "cause": "question",
+   "detail": "Your side already wins 10 of 10 at rookie, 10 of 10 at pro, 10 of 10 at all star (thirdjam's regular playtester on your seat), so weaker bots would hardly show. Did you mean something else that feels \n... (125 more characters cut)"
+  },
+  {
+   "v": 1,
+   "seq": 1285,
+   "ts": "2026-11-27T17:25:36.817Z",
+   "job": "three-against-three-hockey-20261125-1",
+   "type": "job_state",
+   "state": "paused",
+   "reason": "waiting for answers: cartridge"
+  },
+  {
+   "v": 1,
+   "seq": 1286,
+   "ts": "2026-11-27T17:26:37.762Z",
+   "job": "three-against-three-hockey-20261125-1",
+   "type": "answer",
+   "package": "cartridge",
+   "text": "No, I did not ask for weaker bots. I asked for MEGA: any skater, a bot or me, who lands a body check becomes a giant for five seconds: twice as heavy, a bit faster, turning wide, and every man he bumps is knocked flat. That is a timed boost on the skater who lands the check; the bots must get it from their own checks too. Keep the bots' level as it is.",
+   "by": "player"
+  },
+  {
+   "v": 1,
+   "seq": 1287,
+   "ts": "2026-11-27T17:26:38.359Z",
+   "job": "three-against-three-hockey-20261125-1",
+   "type": "job_state",
+   "state": "running",
+   "reason": "resumed (was paused)"
+  },
+  {
+   "v": 1,
+   "seq": 1288,
+   "ts": "2026-11-27T17:26:38.781Z",
+   "job": "three-against-three-hockey-20261125-1",
+   "type": "package_state",
+   "package": "cartridge",
+   "state": "running",
+   "round": 14
+  },
+  {
+   "v": 1,
+   "seq": 1289,
+   "ts": "2026-11-27T17:26:49.708Z",
+   "job": "three-against-three-hockey-20261125-1",
+   "type": "builder_run",
+   "adapter": "claude-cli",
+   "mode": "generate",
+   "model": "claude-sonnet-5-5",
+   "outcome": "ok",
+   "durationMs": 10578,
+   "tokensIn": 14989,
+   "tokensOut": 1072,
+   "tokensCacheRead": 0,
+   "transcript": "reports/cartridge-a1-s1289.json"
+  },
+  {
+   "v": 1,
+   "seq": 1290,
+   "ts": "2026-11-27T17:26:49.713Z",
+   "job": "three-against-three-hockey-20261125-1",
+   "type": "note",
+   "package": "cartridge",
+   "round": 14,
+   "text": "[foreman] cartridge diff not made: no key says it (No cartridge key can do this, so a builder needs to add it. The keys the Foreman suggested (game.contact.bump_ratio, game.contact.cross_any_man, game.contact.check_cooldown_restart, contact.check_reac\n... (708 more characters cut)): the change goes to the builder"
+  },
+  {
+   "v": 1,
+   "seq": 1291,
+   "ts": "2026-11-27T17:29:10.197Z",
+   "job": "three-against-three-hockey-20261125-1",
+   "type": "builder_run",
+   "package": "cartridge",
+   "round": 14,
+   "adapter": "claude-cli",
+   "mode": "edit",
+   "model": "claude-sonnet-5-5",
+   "outcome": "ok",
+   "durationMs": 140365,
+   "tokensIn": 408400,
+   "tokensOut": 4315,
+   "tokensCacheRead": 358754,
+   "transcript": "reports/cartridge-r14-builder-s1291.json"
+  },
+  {
+   "v": 1,
+   "seq": 1292,
+   "ts": "2026-11-27T17:29:10.204Z",
+   "job": "three-against-three-hockey-20261125-1",
+   "type": "note",
+   "package": "cartridge",
+   "round": 14,
+   "text": "- Added effect `mega` to `game.effects` (now 6 entries): trigger `check_landed`, target `self`, `duration_frames` 300, stack `refresh`, kind `custom`, icon `star`; stats `skater_mass` ×2, `skater_speed` ×1.1, `skater_turn_rate` ×0.6, `check_speed_min` ×0.25. It starts for the human and bots of both teams. The drawing package reads it as the active effect id `mega` to draw MEGA!, the size, the flash and FLATTENED!.\n- Partly built: \"every bump knocks a man flat\" is approximated by `check_speed_min` ×0.25 together with mass ×2 under the core's momentum law. The searched keys `game.contact.bump_ratio` and `game.contact.stability_mps` are match-wide, not per skater, and effect stats can't change them, so contacts other than a landed check still follow the normal bump, stumble or knockdown law.\n- Not measured: how often MEGA starts or floors anyone. No bot I can run counts it, and `rink.sh check-cartridge` is outside the commands I'm allowed to run.\n- No other value changed. Bots' level and `ai.*` are as before. No rules sidecar was written."
+  },
+  {
+   "v": 1,
+   "seq": 1293,
+   "ts": "2026-11-27T17:29:10.220Z",
+   "job": "three-against-three-hockey-20261125-1",
+   "type": "package_state",
+   "package": "cartridge",
+   "state": "verifying",
+   "round": 14
+  },
+  {
+   "v": 1,
+   "seq": 1301,
+   "ts": "2026-11-27T17:32:46.703Z",
+   "job": "three-against-three-hockey-20261125-1",
+   "type": "merge",
+   "package": "cartridge",
+   "files": [
+    "data/harbour.cartridge.json"
+   ]
+  },
+  {
+   "v": 1,
+   "seq": 1302,
+   "ts": "2026-11-27T17:32:46.710Z",
+   "job": "three-against-three-hockey-20261125-1",
+   "type": "package_state",
+   "package": "cartridge",
+   "state": "promoted",
+   "round": 14
+  },
+  {
+   "v": 1,
+   "seq": 1303,
+   "ts": "2026-11-27T17:32:46.713Z",
+   "job": "three-against-three-hockey-20261125-1",
+   "type": "note",
+   "package": "cartridge",
+   "round": 14,
+   "text": "[foreman] data-only change (data/harbour.cartridge.json): the pack tests, the re-verification of harbour, skin and the milestone's re-look are skipped (their files did not change; the measured check and this round's acceptance played the new data)"
+  },
+  {
+   "v": 1,
+   "seq": 1315,
+   "ts": "2026-11-27T17:38:31.908Z",
+   "job": "three-against-three-hockey-20261125-1",
+   "type": "note",
+   "package": "cartridge",
+   "round": 14,
+   "text": "[foreman] what changed in v0.1.28 (since v0.1.27): asked \"Add a Mario Kart Mega Mushroom you earn with a big hit, like NHL Hitz: any skater, me or a bot, who lands a body check goes MEGA for five seconds. He flashes white with a boing and balloons to twice his size, with MEGA! big over him (and in the middle of the screen when it is me). While mega he is twice as heavy and a bit faster, every bump knocks a man flat with a thud, FLATTENED! and a little camera shake, and the ice trembles under his strides; but he turns wide, so a quick skater can slip past him. After five seconds he shrinks back with a pop. The rival bots go mega whenever they land a check on me or my mates, so I must dodge their giants, and my bot mates go mega too. Keep the meteor on F as it is.\"; what you will see, in the builder's words: RULE: MEGA is drawing only. Any landed body check by any skater sets that skater's MEGA, read from the victim's `ContactOutcome > 0` and `ContactBy`, not a cross-check. That includes a rival checking another rival. A pla\n... (137 more characters cut) / Sounds: there is no boing or pop preset. The boing uses `hit_rubber`, the thud `break` and the pop `beep`. They're named in `harbour.mega` so they can be swapped. (and 5 more in its note) / Added effect `mega` to `game.effects` (now 6 entries): trigger `check_landed`, target `self`, `duration_frames` 300, stack `refresh`, kind `custom`, icon `star`; stats `skater_mass` ×2, `skater_speed` ×1.1, `skater_turn_\n... (195 more char\npart of your change was NOT made by harbour; it went on to cartridge, which made it; cartridge's files harbour names: NOT DONE: \"twice as heavy and a bit faster, every bump knocks a man flat, turns wide\" needs `data/harbour.cartridge.json` or its rules sidecar `data/harbour.rules.json`, which are outside my scope. It needs a per-skater modifier that starts on a landed check, about 300 frames long: mass ×2, speed ×1.1, turn rate ×0.6, every contact he makes counted as a knockdown, for bots and the human alike. I f\n... (242 more characters cut) (the catalog has candidate keys for what harbour called missing: the catalog (ref/cores/rink/CARTRIDGE.md) has keys that may be exactly that: game.contact.bump_ratio (number 0..1 Impulse over stability under this is a bump: both keep their feet and their control.); game.contact.cross_any_man (boolean The cross-check is a hit on any man in front (lane A209, track F1, the night): a human skater's pressed cross-ch); skater.turn_rate (how sharply he turns 1..12 (5) lateral_grip); game.skater.turn_rate (number 1..12 Turn speed in radians per second. 5); game.contact.check_cooldown_restart (boolean A mashed button lands nothing: true = a check press inside the cooldown (check_cooldown_frames) starts the coold); contact.check_reach_m (the check turns onto the nearest man within this reach: easier to land (Cage, Bruisers 2)))\nunasked rule (the builder's words; you did not ask for it): MEGA is drawing only. Any landed body check by any skater sets that skater's MEGA, read from the victim's `ContactOutcome > 0` and `ContactBy`, not a cross-check. That includes a rival checking another rival. A player sees the double-size figure, the white flash, MEGA! and FLATTENED!, but contacts a\n... (51 more characters cut)"
+  },
+  {
+   "v": 1,
+   "seq": 1316,
+   "ts": "2026-11-27T17:38:31.914Z",
+   "job": "three-against-three-hockey-20261125-1",
+   "type": "note",
+   "package": "cartridge",
+   "round": 14,
+   "text": "[foreman] pictures of the pack as it is promoted the 29th time (after the change): captures/promotion29-follow-f3462.png, captures/promotion29-follow-f10385.png, captures/promotion29-top-f3462.png, captures/promotion29-top-f10385.png"
+  },
+  {
+   "v": 1,
+   "seq": 1317,
+   "ts": "2026-11-27T17:38:31.961Z",
+   "job": "three-against-three-hockey-20261125-1",
+   "type": "promoted",
+   "packId": "game.three_against_three_hockey",
+   "version": "0.1.28",
+   "dest": "promoted/game.three_against_three_hockey@0.1.28"
+  },
+  {
+   "v": 1,
+   "seq": 1318,
+   "ts": "2026-11-27T17:38:31.968Z",
+   "job": "three-against-three-hockey-20261125-1",
+   "type": "job_state",
+   "state": "done",
+   "reason": "pack verified V0 to V4 and promoted under the job directory (promoted/game.three_against_three_hockey@0.1.28) (promotion 29 of this job; the earlier one is kept)"
+  },
+  {
+   "v": 1,
+   "seq": 1319,
+   "ts": "2026-11-27T17:42:33.148Z",
+   "job": "three-against-three-hockey-20261125-1",
+   "type": "change_requested",
+   "text": "MEGA works and the giants read at once, but four things are wrong. When I go mega the camera stays where it was, so for a second my own giant legs fill the screen: pull the camera back and up while I am mega. FLATTENED! is a small word that piles on top of YOU ARE MEGA!: show FLATTENED! big over the man who goes down, one at a time, with the thud and a little shake. When a rival knocks me down, YOU ARE MEGA! stays on screen while I lie on the ice: take it away the moment I fall, and show his MEGA! big over him instead. And the rival bots go mega only about once a minute: I want to face their giants about twice as often, so they should land their body checks on me and my mates more often."
+  },
+  {
+   "v": 1,
+   "seq": 1320,
+   "ts": "2026-11-27T17:42:33.413Z",
+   "job": "three-against-three-hockey-20261125-1",
+   "type": "job_state",
+   "state": "running",
+   "reason": "reopened by a change request (was done)"
+  },
+  {
+   "v": 1,
+   "seq": 1321,
+   "ts": "2026-11-27T17:42:38.010Z",
+   "job": "three-against-three-hockey-20261125-1",
+   "type": "builder_run",
+   "adapter": "claude-cli",
+   "mode": "generate",
+   "model": "claude-sonnet-5-5",
+   "outcome": "ok",
+   "durationMs": 4256,
+   "tokensIn": 3911,
+   "tokensOut": 284,
+   "tokensCacheRead": 2156,
+   "transcript": "reports/planner-a1-s1321.json"
+  },
+  {
+   "v": 1,
+   "seq": 1322,
+   "ts": "2026-11-27T17:42:38.019Z",
+   "job": "three-against-three-hockey-20261125-1",
+   "type": "reopened",
+   "package": "harbour",
+   "reason": "change request (event 1319); the Planner names the package: Harbour owns everything this change touches: the camera that should pull back while you are mega, the FLATTENED! and MEGA! banners with the thud and shake, the bots' body-check rate in scripts/main.gd\n... (95 more characters cut): MEGA works and the giants read at once, but four things are wrong. When I go mega the camera stays where it was, so for a second my own giant legs fill the screen: pull the camera back and up while I am mega. FLATTENED! is a small word that piles on top of YOU ARE MEGA!: show FLATTENED! big over the\n... (396\n... (21 more characters cut)"
+  },
+  {
+   "v": 1,
+   "seq": 1323,
+   "ts": "2026-11-27T17:42:38.023Z",
+   "job": "three-against-three-hockey-20261125-1",
+   "type": "package_state",
+   "package": "harbour",
+   "state": "queued",
+   "round": 21,
+   "detail": "CHANGE REQUEST: MEGA works and the giants read at once, but four things are wrong. When I go mega the camera stays where it was, so for a second my own giant legs fill the screen: pull the camera back and up while I am mega. FLATTENED! is a small word that piles on top of YOU ARE MEGA!: show FLATTENED! big over the man who goes down, one at a time, with the thud and a little shake. When a rival knocks me down, YOU ARE MEGA! stays on screen while I lie on the ice: take it away the moment I fall, and show his MEGA! big over him instead. And the rival bots go mega only about once a minute: I want to face their giants about twice as often, so they should land their body checks on me and my mates more often."
+  },
+  {
+   "v": 1,
+   "seq": 1324,
+   "ts": "2026-11-27T17:42:38.057Z",
+   "job": "three-against-three-hockey-20261125-1",
+   "type": "package_state",
+   "package": "harbour",
+   "state": "running",
+   "round": 21
+  },
+  {
+   "v": 1,
+   "seq": 1325,
+   "ts": "2026-11-27T17:45:08.058Z",
+   "job": "three-against-three-hockey-20261125-1",
+   "type": "builder_run",
+   "package": "harbour",
+   "round": 21,
+   "adapter": "claude-cli",
+   "mode": "edit",
+   "model": "claude-sonnet-5-5",
+   "outcome": "ok",
+   "durationMs": 149867,
+   "tokensIn": 831353,
+   "tokensOut": 10155,
+   "tokensCacheRead": 760894,
+   "transcript": "reports/harbour-r21-builder-s1325.json"
+  },
+  {
+   "v": 1,
+   "seq": 1326,
+   "ts": "2026-11-27T17:45:08.064Z",
+   "job": "three-against-three-hockey-20261125-1",
+   "type": "note",
+   "package": "harbour",
+   "round": 21,
+   "text": "- `harbour.mega` in `data/tuning.json` gains new keys: `flat_word_f` 60, `flat_pt` 72, `flat_hex` \"#FFE14A\", `big_pt` 64, `cam_blend_f` 20, `cam_back_m` 3.5, `cam_up_m` 2.0, `cam_look_m` 8.0. No existing value changed.\n- The MEGA! and FLATTENED! words are no longer HUD tags (`hud.add_tag`). They are drawn on the `harbour_mega` HUD layer, at the projected screen point above the figure.\n- `main.gd` `_present` moves the follow view's eye back and up while the human is mega (presentation only; `cam.gd` and its state are unchanged). This goes against the contract line \"Camera numbers are the cartridge's\", because the player asked for it.\n- A skater who is down (`KnockFrames` > 0) is never counted as the checker. A skater who is already mega does not get a new MEGA start from another check.\n- A human who is knocked down while mega has their mega cut to the shrink time, so the drawn MEGA ends early. The core's `mega` effect may still be running.\n- NOT DONE: \"the rival bots should land their body checks on me and my mates more often (about twice as many giants)\" needs `data/harbour.cartridge.json`, which is outside my scope: raise `game.ai.body_check` from 0.6 to 0.9. The bots then check more often, and their MEGA (`check_landed`) starts more often."
+  },
+  {
+   "v": 1,
+   "seq": 1327,
+   "ts": "2026-11-27T17:45:08.078Z",
+   "job": "three-against-three-hockey-20261125-1",
+   "type": "package_state",
+   "package": "harbour",
+   "state": "verifying",
+   "round": 21
+  },
+  {
+   "v": 1,
+   "seq": 1340,
+   "ts": "2026-11-27T17:48:53.816Z",
+   "job": "three-against-three-hockey-20261125-1",
+   "type": "merge",
+   "package": "harbour",
+   "files": [
+    "data/tuning.json",
+    "scripts/harbour_toys.gd",
+    "scripts/main.gd"
+   ]
+  },
+  {
+   "v": 1,
+   "seq": 1341,
+   "ts": "2026-11-27T17:48:53.825Z",
+   "job": "three-against-three-hockey-20261125-1",
+   "type": "note",
+   "package": "harbour",
+   "round": 21,
+   "text": "[foreman] part of your change was NOT made by harbour; it goes on to cartridge, whose files harbour names: NOT DONE: \"the rival bots should land their body checks on me and my mates more often (about twice as many giants)\" needs `data/harbour.cartridge.json`, which is outside my scope: raise `game.ai.body_check` from 0.6 to 0.9. The bots then check more often, and their MEGA (`check_landed`) starts more often."
+  },
+  {
+   "v": 1,
+   "seq": 1342,
+   "ts": "2026-11-27T17:48:53.829Z",
+   "job": "three-against-three-hockey-20261125-1",
+   "type": "change_requested",
+   "package": "cartridge",
+   "text": "[foreman] the rest of your change, which harbour did not make (\"NOT DONE: \"the rival bots should land their body checks on me and my mates more often (about twice as many giants)\" needs `data/harbour.cartridge.json`, which is outside my scope: raise `game.ai.body_check` from 0.6 to 0.9. The bots then check more often, and their MEGA (`check_landed`) starts more often.\"): \"MEGA works and the giants read at once, but four things are wrong. When I go mega the camera stays where it was, so for a second my own giant legs fill the screen: pull the camera back and up while I am mega. FLATTENED! is a small word that piles on top of YOU ARE MEGA!: show FLATTENED! big over the man who goes down, one at a time, with the thud and a little shake. When a rival knocks me down, YOU ARE MEGA! stays on screen while I lie on the ice: take it away the moment I fall, and show his MEGA! big over him instead. And the rival bots go mega only about once a minute: I want to face their giants about twice as often, so they should land their body checks on me and my mates more often.\""
+  },
+  {
+   "v": 1,
+   "seq": 1343,
+   "ts": "2026-11-27T17:48:53.833Z",
+   "job": "three-against-three-hockey-20261125-1",
+   "type": "package_state",
+   "package": "harbour",
+   "state": "promoted",
+   "round": 21,
+   "detail": "starved_stalls 2 (794 ms) in 1 check run(s) of this round: the machine held the processor back; the engine's limits count processor time, so nothing failed for it"
+  },
+  {
+   "v": 1,
+   "seq": 1344,
+   "ts": "2026-11-27T17:48:53.838Z",
+   "job": "three-against-three-hockey-20261125-1",
+   "type": "reopened",
+   "package": "cartridge",
+   "reason": "change request (event 1342); the request names the package: [foreman] the rest of your change, which harbour did not make (\"NOT DONE: \"the rival bots should land their body checks on me and my mates more often (about twice as many giants)\" needs `data/harbour.cartridge.json`, which is outside my scope: raise `game.ai.body_check` from 0.6 to 0.9. The bots the\n... (772 more characters cut)"
+  },
+  {
+   "v": 1,
+   "seq": 1345,
+   "ts": "2026-11-27T17:48:53.841Z",
+   "job": "three-against-three-hockey-20261125-1",
+   "type": "package_state",
+   "package": "cartridge",
+   "state": "queued",
+   "round": 15,
+   "detail": "CHANGE REQUEST: [foreman] the rest of your change, which harbour did not make (\"NOT DONE: \"the rival bots should land their body checks on me and my mates more often (about twice as many giants)\" needs `data/harbour.cartridge.json`, which is outside my scope: raise `game.ai.body_check` from 0.6 to 0.9. The bots then check more often, and their MEGA (`check_landed`) starts more often.\"): \"MEGA works and the giants read at once, but four things are wrong. When I go mega the camera stays where it was, so for a second my own giant legs fill the screen: pull the camera back and up while I am mega. FLATTENED! is a small word that piles on top of YOU ARE MEGA!: show FLATTENED! big over the man who goes down, one at a time, with the thud and a little shake. When a rival knocks me down, YOU ARE MEGA! stays on screen while I lie on the ice: take it away the moment I fall, and show his MEGA! big over him instead. And the rival bots go mega only about once a minute: I want to face their giants about twice as often, so they should land their body checks on me and my mates more often.\""
+  },
+  {
+   "v": 1,
+   "seq": 1346,
+   "ts": "2026-11-27T17:49:03.363Z",
+   "job": "three-against-three-hockey-20261125-1",
+   "type": "builder_run",
+   "adapter": "claude-cli",
+   "mode": "generate",
+   "model": "claude-sonnet-5-5",
+   "outcome": "ok",
+   "durationMs": 7998,
+   "tokensIn": 14640,
+   "tokensOut": 740,
+   "tokensCacheRead": 2164,
+   "transcript": "reports/cartridge-a1-s1346.json"
+  },
+  {
+   "v": 1,
+   "seq": 1347,
+   "ts": "2026-11-27T17:50:54.834Z",
+   "job": "three-against-three-hockey-20261125-1",
+   "type": "note",
+   "package": "cartridge",
+   "round": 15,
+   "text": "[foreman] cartridge diff: game.contact.bot_check_windup_frames: 12 -> 6 (The red Crane Gulls now wind up their body checks in half the time, so more of their hits land before you or your teal Tide Otters mates skate clear, and you face their MEGA giants more often. Their e\n... (459 more characters cut)); measured before: ok (rookie_wins_of_10 10, pro_wins_of_10 10, pro_goals_a_match 17.5, pro_minutes 4.1, pro_play_minutes 2.9, pro_carry_s 0.8, pro_loose_share 0.32, pro_shots 62.9, pro_passes_completed 2.6, pro_speed_mean 10.1, pro_changes_min 25.7, pro_human_touches_min 15.4, pro_knockdowns 32, all_star_wins_of_10 10, idle_wins_of_16 0, skate_only_wins_of_16 2); after: ok (rookie_wins_of_10 10, pro_wins_of_10 10, pro_goals_a_match 19.4, pro_minutes 4.2, pro_play_minutes 3, pro_carry_s 0.8, pro_loose_share 0.35, pro_shots 66.1, pro_passes_completed 2.1, pro_speed_mean 10, pro_changes_min 25.9, pro_human_touches_min 15, pro_knockdowns 35, all_star_wins_of_10 10, idle_wins_of_16 0, skate_only_wins_of_16 1); measured, warnings: trivial at all_star: thirdjam's regular playtester won every match; a goal flood at rookie (18 a match); a goal flood at pro (19.4 a match); a goal flood at all_star (19.4 a match); toy: the fast-ice zones (4): worth about nothing, pro 78 of 80 wins with it, 76 without (+3 points\n... (303 more characters cut) [report: reports/cartridge-r15-diff-s1347.json]"
+  },
+  {
+   "v": 1,
+   "seq": 1348,
+   "ts": "2026-11-27T17:50:54.879Z",
+   "job": "three-against-three-hockey-20261125-1",
+   "type": "package_state",
+   "package": "cartridge",
+   "state": "running",
+   "round": 15
+  },
+  {
+   "v": 1,
+   "seq": 1349,
+   "ts": "2026-11-27T17:50:54.897Z",
+   "job": "three-against-three-hockey-20261125-1",
+   "type": "package_state",
+   "package": "cartridge",
+   "state": "verifying",
+   "round": 15
+  }
+ ]
+}
