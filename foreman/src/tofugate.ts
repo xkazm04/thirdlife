@@ -6,14 +6,17 @@
 // round, with the rows in words, and nothing is merged. Two such rounds at most (the look's revise budget, QUALITY_ROUNDS);
 // after them the round merges and the milestone look judges the same bounds and holds the job for the person, as before,
 // so a bound the game cannot meet still reaches the person instead of spending builder rounds to the cap.
+// N27 (night of 27 Nov, lane T): in a person's change since the last promotion, the rows the change moves are a note to
+// the person and never a refusal; the rows it did not touch still guard, as a regression (boundlift.ts splitByChange).
 import fs from "node:fs";
 import path from "node:path";
 import type { Acceptance } from "./events.js";
 import type { GateHost } from "./p10gate.js";
 import type { VerifyResult } from "./verifier.js";
-import { courtOf, judgeTofu, tofuMetricsFor, tofuOf } from "./tofu.js";
+import { courtOf, judgeTofu, readTofuMetrics, tofuMetricsFor, tofuOf } from "./tofu.js";
 import { QUALITY_ROUNDS } from "./quality_state.js";
-import { LIFTED, liftedNote, withLifts } from "./boundlift.js";
+import { BALANCE_MOVED, BALANCE_SKIPPED, LIFTED, alreadyOutNote, askedChange, balanceMovedNote, balanceSkippedNote, liftedNote, splitByChange, withLifts } from "./boundlift.js";
+import { FOREMAN_NOTE } from "./conduct.js";
 
 /** The words a round gets when the plan's tofu bot passed with metrics out of the plan's bounds; undefined otherwise. */
 export function tofuGate(h: Pick<GateHost, "s" | "pkg" | "dir" | "rel" | "append" | "events">, id: string, a: Pick<Acceptance, "verb" | "args">, vr: VerifyResult): VerifyResult | undefined {
@@ -27,12 +30,26 @@ export function tofuGate(h: Pick<GateHost, "s" | "pkg" | "dir" | "rel" | "append
   // H1h: a bound the person lifted (a card choice, an answer) is not judged; said once a round when it would have failed
   const all = tofuMetricsFor(h.s.brief?.concept?.template, h.s.brief?.design?.verbs.length, courtOf(h.s.brief));
   const { rows, lifted } = withLifts(h.s, h.events, all);
-  const judged = judgeTofu(metrics, rows, t.test);
+  // N27 (lane T): in a person's change the rows it moves are a note to the person, not a refusal (boundlift.ts)
+  const asked = askedChange(h.events);
+  let judgedRows = rows;
+  if (asked !== undefined) {
+    const before = readTofuMetrics(h.dir(), (h.events ?? []).filter((e) => e.seq < asked.seq), t.test).metrics;
+    const split = splitByChange(asked, rows, metrics, before);
+    judgedRows = split.judged;
+    const once = (start: string, text: string): void => {
+      if (!(h.events ?? []).some((e) => e.type === "note" && e.package === id && e.round === p.round && e.text.startsWith(start))) h.append({ type: "note", package: id, round: p.round, text });
+    };
+    if (split.moved.length > 0) once(BALANCE_MOVED, balanceMovedNote(split.moved, metrics, before, t.test));
+    if (split.skipped.length > 0) once(BALANCE_SKIPPED, balanceSkippedNote(split.skipped, metrics, t.test));
+    if (split.before.length > 0) once(`${FOREMAN_NOTE}already outside`, alreadyOutNote(split.before, before));
+  }
+  const judged = judgeTofu(metrics, judgedRows, t.test);
   const wouldFail = [...lifted.keys()].filter((id) => judgeTofu(metrics, all.filter((r) => r.id === id), t.test).rows.some((r) => !r.ok));
   if (wouldFail.length > 0 && !(h.events ?? []).some((e) => e.type === "note" && e.package === id && e.round === p.round && e.text.startsWith(LIFTED))) h.append({ type: "note", package: id, round: p.round, text: liftedNote(new Map([...lifted].filter(([k]) => wouldFail.includes(k))), all) });
   if (judged.ok) return undefined;
   const out = judged.rows.filter((r) => !r.ok).map((r) => `${r.id} ${r.value ?? "absent"} (the plan's bound: ${r.want})`);
-  const summary = `${t.test} answered ok, but the Foreman judges its metrics against the plan's tofu bounds and ${out.length} ${out.length === 1 ? "is" : "are"} outside them: ${out.join("; ")}. A bot's own ok is not the check: change the game until the figures it counts are inside the bounds (never the bot's ok, never the counting).`;
+  const summary = `${t.test} answered ok, but the Foreman judges its metrics against the plan's tofu bounds and ${out.length} ${out.length === 1 ? "is" : "are"} outside them: ${out.join("; ")}. A bot's own ok is not the check: change the game until the figures it counts are inside the bounds (never the bot's ok, never the counting).${asked !== undefined ? ` These rows were inside their bounds before the person's change and the change did not ask to move them: keep what the person asked and put these back; never add a rule nobody asked for (a probability, a multiplier, a comeback) to pass them.` : ""}`;
   // The judgement is a failed check of its own (the next round's feedback reads the round's failed verify event).
   const file = h.dir("reports", `${id}-r${p.round}-tofu-bounds-s${h.s.lastSeq + 1}.json`);
   fs.mkdirSync(path.dirname(file), { recursive: true });

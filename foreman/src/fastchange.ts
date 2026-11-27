@@ -20,6 +20,22 @@ import { FOREMAN_NOTE, clip } from "./conduct.js";
 import { CARTRIDGE_DIFF, FIGURE_MISSED } from "./coregate.js";
 import { REMOVED, entriesText, type Removal } from "./removal.js";
 import { NOT_DONE, noteLines, notMadeSince } from "./halfmade.js";
+import { BALANCE_MOVED } from "./boundlift.js";
+
+/** N27 (lane T): the start of a what-changed line naming a rule the builder added that the person did not ask for. */
+export const UNASKED_RULE = "unasked rule";
+/**
+ * N27: a builder's line that adds a rule nobody asked for: its own `RULE:` line (builder.md), or the words the 25 Nov
+ * builders used for the hidden ones (G19: "with probability 0.8", "do 2.0 times damage", "new comeback rule not in the
+ * contract", "nothing on screen announces it").
+ */
+export const HIDDEN_RULE = /^RULE:|\bprobabilit\w*\b|\b\d+\s*(%|percent) chance\b|\bmultipl(ied|ier|iers)\b|\bcomeback\b|\brubber[- ]?band\w*|\bcatch[- ]?up\b|\bhandicap\w*|\bnot in the contract\b|\b(nobody|no one) asked\b|\bnothing (new )?on screen (announces|explains|shows)\b|\bhidden (rule|bonus|boost)\b|\b\d+(\.\d+)?\s*(x|times)\s+(the\s+)?(damage|harder|faster|speed|stronger)\b/i;
+
+/** The builders' lines since the last promotion that add a rule nobody asked for (merged packages only). */
+export function unaskedRules(since: readonly JobEvent[]): string[] {
+  const merged = new Set(since.flatMap((e) => (e.type === "merge" ? [e.package] : [])));
+  return [...new Set(since.flatMap((e) => (e.type === "note" && merged.has(e.package) && !e.text.startsWith(FOREMAN_NOTE) ? noteLines(e.text).filter((l) => HIDDEN_RULE.test(l) && !NOT_DONE.test(l)) : [])))];
+}
 
 /** The start of the Foreman's notes about what a data-only change skipped (after FOREMAN_NOTE). */
 export const DATA_ONLY = "data-only change";
@@ -117,6 +133,9 @@ export function whatChangedNote(events: readonly JobEvent[], version: string, fo
   const missed = files.length === 0 ? [] : since.flatMap((e) => (e.type === "note" && e.text.startsWith(`${FOREMAN_NOTE}${FIGURE_MISSED}: `) ? [e.text.slice(FOREMAN_NOTE.length)] : []));
   // H1g: what the builders say they did not make, on its own line (and where it went), so "asked" never reads as all made
   const notMade = files.length === 0 ? [] : notMadeSince(since);
-  const lines = [...new Set([...notMade, ...named, ...unnamed, ...missed])].map((l) => `\n${l}`).join("");
+  // N27: the balance the person's change moved (the newest note's first line) and every rule they did not ask for, each on its own line
+  const moved = files.length === 0 ? [] : since.flatMap((e) => (e.type === "note" && e.text.startsWith(BALANCE_MOVED) ? [(e.text.split("\n")[0] ?? "").slice(FOREMAN_NOTE.length)] : [])).slice(-1);
+  const rules = files.length === 0 ? [] : unaskedRules(since).map((l) => `${UNASKED_RULE} (the builder's words; you did not ask for it): ${clip(l.replace(/^RULE:\s*/, ""), 300)}`);
+  const lines = [...new Set([...notMade, ...named, ...unnamed, ...missed, ...moved, ...rules])].map((l) => `\n${l}`).join("");
   return `${`${FOREMAN_NOTE}${WHAT_CHANGED} in v${version}${was !== "" ? ` (since v${was})` : ""}: ${asked.length > 0 ? `asked ${asked.join(", ")}; ` : ""}${made}`.slice(0, 1500)}${lines}`;
 }

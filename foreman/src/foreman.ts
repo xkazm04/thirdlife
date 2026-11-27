@@ -14,7 +14,7 @@ import { engineWritable, promotePack, readManifest } from "./promoter.js";
 import { existingText, prepareReference, referenceText } from "./reference.js";
 import { cardBriefSection, cardLimits, cardsPlannerText } from "./cards.js";
 import { packIsLastPromotion, restoreLastPromotion } from "./unmade.js";
-import { runHandChecks, sendBackHands } from "./handcheck.js";
+import { keepMeasures, runHandChecks, sendBackHands } from "./handcheck.js";
 import { PKG_ROOT, REPO_ROOT, stripBom, toPosix } from "./paths.js";
 import { CARRIED_FIELDS, MANIFEST_FILE, PACK_VERSION, kernelApiFor, acceptedCarriedFields, engineKnowsBase, carriedOf, composeManifest, depClosure, dependants, manifestText, mergeCarried, type Carried } from "./manifest.js";
 import { builderFeelSection, servesLine } from "./roomtext.js"; // JOB.md 2026-11-21: builders read the design
@@ -858,6 +858,7 @@ export class Foreman {
       if (skipBuilder) this.recordNote(id, round, this.loggedAnswer(id, round));
       if (skipBuilder && this.raiseQuestion(id, round, this.loggedAnswer(id, round))) return;
       const dropped = this.dropOutOfScope(id);
+      keepMeasures(this.gateHost, id, round, this.wsDir(id)); // N27: the plan's tofu bot is the Foreman's once merged
       const details = [skipBuilder && resumed ? "resumed" : "", dropped.length > 0 ? listDetail("dropped out-of-scope files", dropped) : ""].filter(Boolean);
       this.append({ type: "package_state", package: id, state: "verifying", round, ...(details.length > 0 ? { detail: details.join("; ") } : {}) });
       skipBuilder = false;

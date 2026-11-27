@@ -57,6 +57,12 @@ static func run(tree: SceneTree, check: Callable, tmp: String) -> bool:
 		{"type": "job_state", "state": "done", "reason": "promoted 0.1.1"}], ["0.1.0", "0.1.1"])
 	var flight: String = _job(jobs.path_join("e4-flight"), [asked, running], ["0.1.0"])
 	var failed: String = _job(jobs.path_join("e4-failed"), [asked, running, {"type": "job_state", "state": "failed", "reason": "the change was NOT made"}], ["0.1.0"])
+	# N27 (lane T): a change built as asked that moved the balance: the Foreman's note (boundlift.ts BALANCE_MOVED), first line shown
+	var moved: String = "[foreman] balance moved by your change: built as you asked; the gulls side now wins 3 of 3 of the Foreman's test rounds (was 1 of 3). Say \"make it fairer\" to tune it.\nfigures (tests/bot_tofu.gd, not judged in this change): close_rounds 0 (was 1)"
+	var balanced: String = _job(tmp.path_join("e4-balance-jobs").path_join("e4-balance"), [asked, running,
+		{"type": "note", "package": "penguin_moves", "round": 3, "text": moved},
+		{"type": "promoted", "packId": "game.penguin_push", "version": "0.1.1", "dest": "promoted/game.penguin_push@0.1.1"},
+		{"type": "job_state", "state": "done", "reason": "promoted 0.1.1"}], ["0.1.0", "0.1.1"])
 	var list: String = tmp.path_join("e4-dungeons.user.json")
 	DirAccess.remove_absolute(list)
 
@@ -64,11 +70,13 @@ static func run(tree: SceneTree, check: Callable, tmp: String) -> bool:
 	var jm: Dictionary = JobModel.read_job(made, 0.0)
 	var jf: Dictionary = JobModel.read_job(flight, 0.0)
 	var jx: Dictionary = JobModel.read_job(failed, 0.0)
+	var jb: Dictionary = JobModel.read_job(balanced, 0.0)
 	check.call("create.iterate.model: a change made is version 2 (Play opens @0.1.1); in flight it is building with its words; failed, the first version still plays with a note; the Foreman's own wire request is not the person's",
 		Model.screen_of(jm) == "done" and Model.version_n(jm) == 2 and Model.play_dir(jm).ends_with("@0.1.1") and Model.person_changes(jm).size() == 1 and Model.change_note(jm).is_empty()
 		and Model.screen_of(jf) == "building" and Model.changing(jf) == TEXT
-		and Model.screen_of(jx) == "done" and Model.change_note(jx).begins_with("Your last change could not be made") and Model.play_dir(jx).ends_with("promoted/game.penguin_push"),
-		"made %s v%d %s; flight %s '%s'; failed %s '%s'" % [Model.screen_of(jm), Model.version_n(jm), Model.play_dir(jm), Model.screen_of(jf), Model.changing(jf), Model.screen_of(jx), Model.change_note(jx)])
+		and Model.screen_of(jx) == "done" and Model.change_note(jx).begins_with("Your last change could not be made") and Model.play_dir(jx).ends_with("promoted/game.penguin_push")
+		and Model.change_note(jb) == "Built as you asked; the gulls side now wins 3 of 3 of the Foreman's test rounds (was 1 of 3). Say \"make it fairer\" to tune it.",
+		"made %s v%d %s; flight %s '%s'; failed %s '%s'; balance '%s'" % [Model.screen_of(jm), Model.version_n(jm), Model.play_dir(jm), Model.screen_of(jf), Model.changing(jf), Model.screen_of(jx), Model.change_note(jx), Model.change_note(jb)])
 
 	# the page, as the exe mounts it (a dry door: every command is recorded)
 	var page: Control = CreateScene.instantiate()

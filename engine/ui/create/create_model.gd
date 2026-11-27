@@ -272,7 +272,19 @@ static func change_note(job: Dictionary) -> String:
 	var c: Dictionary = mine.back()
 	if str(c.get("outcome", "")) in ["not made", "failed", "cancelled"]:
 		return "Your last change could not be made: \u201c%s\u201d" % JobModel.one_line(str(c["text"]), 60)
-	return ""
+	return balance_note(job, int(c.get("seq", 0)))
+
+
+## N27 (lane T): the balance a person's change moved, in the Foreman's plain words (boundlift.ts BALANCE_MOVED: its first
+## line), from the newest such note after the change request `seq`; "" when the change moved no bound. The change was
+## built as asked; this says what it did to the balance and how to tune it ("make it fairer").
+const BALANCE_MOVED := "[foreman] balance moved by your change: "
+static func balance_note(job: Dictionary, seq: int) -> String:
+	var said: String = ""
+	for n: Variant in job.get("notes", []):
+		if n is Dictionary and int((n as Dictionary).get("seq", 0)) > seq and str((n as Dictionary).get("text", "")).begins_with(BALANCE_MOVED):
+			said = str((n as Dictionary)["text"]).substr(BALANCE_MOVED.length()).get_slice("\n", 0)
+	return said.substr(0, 1).to_upper() + said.substr(1) if not said.is_empty() else ""
 
 
 ## The packages a change round is working on when every phase has passed (no current phase): those not promoted.
