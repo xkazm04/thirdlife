@@ -20,7 +20,7 @@ import { FOREMAN_NOTE, clip } from "./conduct.js";
 import { CARTRIDGE_DIFF, FIGURE_MISSED } from "./coregate.js";
 import { REMOVED, entriesText, type Removal } from "./removal.js";
 import { NOT_DONE, noteLines, notMadeSince } from "./halfmade.js";
-import { BALANCE_MOVED } from "./boundlift.js";
+import { BALANCE_MOVED, balanceLines } from "./boundlift.js";
 
 /** N27 (lane T): the start of a what-changed line naming a rule the builder added that the person did not ask for. */
 export const UNASKED_RULE = "unasked rule";
@@ -133,9 +133,21 @@ export function whatChangedNote(events: readonly JobEvent[], version: string, fo
   const missed = files.length === 0 ? [] : since.flatMap((e) => (e.type === "note" && e.text.startsWith(`${FOREMAN_NOTE}${FIGURE_MISSED}: `) ? [e.text.slice(FOREMAN_NOTE.length)] : []));
   // H1g: what the builders say they did not make, on its own line (and where it went), so "asked" never reads as all made
   const notMade = files.length === 0 ? [] : notMadeSince(since);
-  // N27: the balance the person's change moved (the newest note's first line) and every rule they did not ask for, each on its own line
-  const moved = files.length === 0 ? [] : since.flatMap((e) => (e.type === "note" && e.text.startsWith(BALANCE_MOVED) ? [(e.text.split("\n")[0] ?? "").slice(FOREMAN_NOTE.length)] : [])).slice(-1);
+  // N27: the balance the person's change moved and every rule they did not ask for, each on its own line (D27 item 6:
+  // the newest first line of each thing it moved, not only the newest of all)
+  const moved = files.length === 0 ? [] : balanceLines(since.flatMap((e) => (e.type === "note" && e.text.startsWith(BALANCE_MOVED) ? [(e.text.split("\n")[0] ?? "").slice(FOREMAN_NOTE.length)] : [])));
   const rules = files.length === 0 ? [] : unaskedRules(since).map((l) => `${UNASKED_RULE} (the builder's words; you did not ask for it): ${clip(l.replace(/^RULE:\s*/, ""), 300)}`);
   const lines = [...new Set([...notMade, ...named, ...unnamed, ...missed, ...moved, ...rules])].map((l) => `\n${l}`).join("");
   return `${`${FOREMAN_NOTE}${WHAT_CHANGED} in v${version}${was !== "" ? ` (since v${was})` : ""}: ${asked.length > 0 ? `asked ${asked.join(", ")}; ` : ""}${made}`.slice(0, 1500)}${lines}`;
+}
+
+/**
+ * D27 item 2 (the d27 copy of J1, events 1044-1108): the cartridge's diff for the meteor REMOVED the bubble and the spot
+ * tricks, the data-only path skipped harbour's re-verification ("their files did not change"), and harbour's own test, which
+ * still measured the bubble, failed only in the final verification; the loop blamed the cartridge, whose builder put the
+ * bubble back against the person's words. A data-only round that removed something re-verifies its dependants: a test
+ * that measured what is gone fails there, and its owner is asked to adapt (reverifyDependants).
+ */
+export function removedInRound(events: readonly JobEvent[], id: string, round: number): boolean {
+  return events.some((e) => e.type === "note" && e.package === id && e.round === round && e.text.startsWith(`${FOREMAN_NOTE}${REMOVED}: `));
 }

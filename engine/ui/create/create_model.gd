@@ -290,15 +290,26 @@ static func not_finished(job: Dictionary, seq: int) -> String:
 
 
 ## N27 (lane T): the balance a person's change moved, in the Foreman's plain words (boundlift.ts BALANCE_MOVED: its first
-## line), from the newest such note after the change request `seq`; "" when the change moved no bound. The change was
-## built as asked; this says what it did to the balance and how to tune it ("make it fairer").
+## line), from the notes after the change request `seq`; "" when the change moved no bound. The change was built as
+## asked; this says what it did to the balance and how to tune it ("make it fairer"). D27 item 6: one line for each
+## thing it moved (who wins the test rounds, a hand check's wins, how long matches run: the words before " now "), the
+## newest line of each, in the order they were first told (boundlift.ts balanceLines); before, only the newest of all.
 const BALANCE_MOVED := "[foreman] balance moved by your change: "
 static func balance_note(job: Dictionary, seq: int) -> String:
-	var said: String = ""
+	var order: Array = []
+	var newest: Dictionary = {}
 	for n: Variant in job.get("notes", []):
 		if n is Dictionary and int((n as Dictionary).get("seq", 0)) > seq and str((n as Dictionary).get("text", "")).begins_with(BALANCE_MOVED):
-			said = str((n as Dictionary)["text"]).substr(BALANCE_MOVED.length()).get_slice("\n", 0)
-	return said.substr(0, 1).to_upper() + said.substr(1) if not said.is_empty() else ""
+			var said: String = str((n as Dictionary)["text"]).substr(BALANCE_MOVED.length()).get_slice("\n", 0)
+			var key: String = said.get_slice(" now ", 0)
+			if not newest.has(key):
+				order.append(key)
+			newest[key] = said
+	var lines: PackedStringArray = []
+	for key: Variant in order:
+		var l: String = str(newest[key])
+		lines.append(l.substr(0, 1).to_upper() + l.substr(1))
+	return "\n".join(lines)
 
 
 ## The packages a change round is working on when every phase has passed (no current phase): those not promoted.

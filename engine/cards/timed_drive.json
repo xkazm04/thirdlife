@@ -110,6 +110,7 @@
       "A chase camera low behind the car (TLCameras.chase, distance about 8.5 m, height 3 m), framed at about a fifth of the frame height (TLCameras.frame), as seed_drive does; one fixed overview for captures."
     ],
     "juice": [
+      "Words for the big moments go in big letters in the middle of the screen, apart from the score and the clock (a TLHudLayer text with an outline, or a center label of its own), and are gone when the moment ends: never added to the score line or the clock, never padded with blank lines into a tall slab.",
       "Nitro gets a kick of shake (about 0.06 m over 18 frames, TLCameras.shake) and a flame (the nitro_flame preset of TLVfx).",
       "Hitting a cone or a barrier gets a sound and a small burst (TLAudio.play, TLVfx.burst); a lap gets a beep and the lap time on the HUD."
     ],
