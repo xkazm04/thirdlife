@@ -4,8 +4,11 @@ extends SceneTree
 ## and `HOME DONE`; engine/tools/selftest.d/764-home-look.sh reads them.
 ##   look.bell     a raise stroke is a cosine bell: the height 2 cells (a third of the radius) out is under 0.88 of the
 ##                 centre's (M2's plateau kept 0.97), and it falls every cell to the rim
-##   look.terrace  a flatten on a slope: a flat top, and every vertex of its steep side (slope over ROCK_TO) carries the
-##                 terrain code and a rock colour (the nearest paint is rock_warm or cliff)
+##   look.terrace  a flatten on a slope: a flat top; LP (27 Nov): rock is drawn per triangle by the shader from the
+##                 triangle's own plane (land_mesh.gd FACE_FROM_NY), so every steep side triangle of the drawn mesh
+##                 (normal y under FACE_TO_NY) has the Home land's UV (y <= -8), the terrain code and a colour alpha of
+##                 1 at its three vertices (rock may show), and the top's vertices along the crease keep the ground's
+##                 own colour (the nearest paint is a grass: M5 pulled them toward rock_warm, half a cell onto the top)
 ##   look.paint    one painted cell gives the 4 x 4 vertices round it (1, 3, 3, 1)^2 / 64 of the paint (worst error)
 ##   look.river    beyond the 71 m band, inside the water ribbon: lowering under the ribbon's level is refused
 ##                 ("river (its water would show ..."), raising is not; far from the river no ribbon is found
@@ -92,21 +95,55 @@ func terrace_case() -> void:
 	var side := 0
 	var rocky := 0
 	var bad := []
-	for j: int in range(-8, 9):
-		for i: int in range(-8, 9):
-			var v := c + Vector2i(i, j)
-			if _slope(v) < LandMesh.ROCK_TO + 0.05 or not _moved_near(v):
+	var tcode := int(land().ground().terrain_code)
+	var crease := {}                         # vertices of a steep triangle that are also vertices of a level one
+	var level_v := {}
+	var steep_v := {}
+	var box := Rect2(Vector2(c) * 3.0 - Vector2(24, 24), Vector2(48, 48))
+	for id: Vector2i in land().mesh.chunks:
+		var s: Dictionary = land().mesh.chunks[id]
+		var pos: PackedVector3Array = s.pos
+		var idx: PackedInt32Array = s.idx
+		var col: PackedColorArray = s.col
+		var code: PackedInt32Array = s.code
+		var uv: PackedVector2Array = s.uv
+		for t: int in range(0, idx.size(), 3):
+			var a := pos[idx[t]]
+			if not box.has_point(Vector2(a.x, a.z)):
+				continue
+			var n := (pos[idx[t + 1]] - a).cross(pos[idx[t + 2]] - a).normalized()
+			var ny := absf(n.y)
+			for k: int in 3:
+				(steep_v if ny < LandMesh.FACE_TO_NY else level_v)[idx[t + k]] = id
+			if ny >= LandMesh.FACE_TO_NY:
 				continue
 			side += 1
-			var m: Array = d.mesh_at(v)
-			var paint := _nearest_paint(m[0] if not m.is_empty() else Color.BLACK, v)
-			if not m.is_empty() and int(m[1]) == int(land().ground().terrain_code) and paint in ["rock_warm", "cliff"]:
+			var good := true
+			for k: int in 3:
+				var vi := idx[t + k]
+				good = good and code[vi] == tcode and col[vi].a > 0.999 and uv[vi].y <= -7.99
+			if good:
 				rocky += 1
 			elif bad.size() < 3:
-				bad.append("%s slope %.2f code %s paint %s" % [str(v), _slope(v), str(m[1]) if not m.is_empty() else "-", paint])
-	var ok: bool = side >= 4 and rocky == side and top <= 30
-	say("terrace", ok, "flatten, brush 5, 60 frames on a slope of %.2f: the top's spread over 7 x 7 vertices %d cm; %d side vertices steeper than %.2f, %d of them rock (terrain code, nearest paint rock_warm or cliff)%s" % [
-		slope0, top, side, LandMesh.ROCK_TO + 0.05, rocky, "" if bad.is_empty() else "; NOT " + "; ".join(bad)])
+				bad.append("triangle at %s ny %.2f codes %d alpha %.2f uv.y %.2f" % [str(a), ny, code[idx[t]], col[idx[t]].a, uv[idx[t]].y])
+	var top_edge := 0
+	var top_grass := 0
+	for vi: int in steep_v:
+		if not level_v.has(vi):
+			continue
+		var s: Dictionary = land().mesh.chunks[steep_v[vi]]
+		var p: Vector3 = (s.pos as PackedVector3Array)[vi]
+		if absf(p.y - land().height_at(c.x * 3.0, c.y * 3.0)) > 0.05:
+			continue                             # the crease at the top (the foot is another)
+		top_edge += 1
+		var v := Vector2i(roundi(p.x / 3.0), roundi(p.z / 3.0))
+		if _nearest_paint((s.col as PackedColorArray)[vi], v) in ["grass", "grass_dark", "grass_dry"]:
+			top_grass += 1
+		elif bad.size() < 4:
+			bad.append("top edge %s paint %s" % [str(p), _nearest_paint((s.col as PackedColorArray)[vi], v)])
+	var ok: bool = side >= 8 and rocky == side and top <= 30 and top_edge >= 4 and top_grass == top_edge
+	say("terrace", ok, "flatten, brush 5, 60 frames on a slope of %.2f: the top's spread over 7 x 7 vertices %d cm; %d drawn triangles steeper than normal y %.2f, %d of them Home land with the terrain code and rock allowed at all 3 vertices; %d vertices on the top's crease, %d of them the ground's grass%s" % [
+		slope0, top, side, LandMesh.FACE_TO_NY, rocky, top_edge, top_grass, "" if bad.is_empty() else "; NOT " + "; ".join(bad)])
 	d.b.undo()
 	d.b.flush()
 
@@ -117,27 +154,6 @@ func _heights(c: Vector2i, r: int) -> Dictionary:
 		for i: int in range(-r, r + 1):
 			out[c + Vector2i(i, j)] = int(land().cm_at(c + Vector2i(i, j)))
 	return out
-
-
-## The steepest lattice triangle round vertex `v` (rise over run), from the heights now.
-func _slope(v: Vector2i) -> float:
-	var h := func(a: int, b: int) -> float: return land().cm_at(v + Vector2i(a, b)) / 100.0
-	var s := 0.0
-	# the six triangles (land_mesh.gd `_rock`)
-	s = maxf(s, Vector2(h.call(1, 0) - h.call(0, 0), h.call(1, 1) - h.call(1, 0)).length())
-	s = maxf(s, Vector2(h.call(1, 1) - h.call(0, 1), h.call(0, 1) - h.call(0, 0)).length())
-	s = maxf(s, Vector2(h.call(0, 0) - h.call(-1, 0), h.call(0, 1) - h.call(0, 0)).length())
-	s = maxf(s, Vector2(h.call(1, 0) - h.call(0, 0), h.call(0, 0) - h.call(0, -1)).length())
-	s = maxf(s, Vector2(h.call(0, -1) - h.call(-1, -1), h.call(0, 0) - h.call(0, -1)).length())
-	s = maxf(s, Vector2(h.call(0, 0) - h.call(-1, 0), h.call(-1, 0) - h.call(-1, -1)).length())
-	return s / 3.0
-
-
-func _moved_near(v: Vector2i) -> bool:
-	for o: Vector2i in [Vector2i.ZERO, Vector2i(1, 0), Vector2i(-1, 0), Vector2i(0, 1), Vector2i(0, -1)]:
-		if (land().store.heights as Dictionary).has(v + o):
-			return true
-	return false
 
 
 func _nearest_paint(c: Color, v: Vector2i) -> String:

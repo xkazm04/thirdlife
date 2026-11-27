@@ -80,6 +80,18 @@ void fragment() {
 #ifdef TL_SHORE
 	vec4 bp = INV_PROJECTION_MATRIX * vec4(SCREEN_UV * 2.0 - 1.0, textureLod(depth_tex, SCREEN_UV, 0.0).r, 1.0);
 	float deepness = max(-bp.z / bp.w + VERTEX.z, 0.0) * max(v.y, 0.2);   // metres of water under this point, roughly
+	if (pond && UV.x < -5.0) {
+		// LP (27 Nov): a poured pond's bank is the land's 3 m triangles, so the line where the land rises through the
+		// water is a polygon of 3 m sides. The pond's mesh (kernel/world/build/water_mesh.gd) carries at each vertex the
+		// bank depth: the mean over a disc of 1.8 m of the water over the land there, a little less, in UV.x - (-10), on
+		// half-metre squares by the bank. The water ends where that depth does: the corners round off into one curve
+		// inside the polygon, and the land still hides the water wherever it stands above it. The shallows take the
+		// smaller of it and the depth read here (a wading leg still gets its foam line). Only such ponds (the river and a
+		// pond without it draw as before).
+		float bank_d = UV.x + 10.0;
+		if (bank_d <= 0.0) { discard; }
+		deepness = min(deepness, bank_d);
+	}
 	float dz = deepness / max(shore, 0.05) + wob * 0.35;                    // 0 at the waterline, 1 where the shallows end
 	float dfw = fwidth(dz) * 0.75 + 0.002;
 	float shal = 1.0 - smoothstep(1.0 - dfw, 1.0 + dfw, dz);
