@@ -96,3 +96,69 @@ NEXT THREE
 2. Lane T: route a NOT DONE hand-off to the package that owns the named file (any package, not only drawing), and re-run a
    check that never started instead of charging a package.
 3. A "make it fairer" sentence for court (newcomer 11/20) and a camera tweak so the far shell victim in karts is seen.
+
+==========================================================================================================================
+ROUND 2 (Director's ask ~15:20; 15:20-17:45): a newcomer's hands through the exe, one fix sentence per game, "make it fairer"
+Details: PROOF-J2nd.md, section "Round 2". Clips and stills: r2/ in this folder (800 px wide, crf 32, 30 s).
+
+HOW THE NEWCOMER PLAYED
+- The exported exe (dist/ThirdLife, build 6522394), ThirdLife.exe -- --dungeon=<the owner's menu pack> --seed=1, window,
+  --write-movie, 80 s each. No real keyboard: the exe's TL_EXE_KEYS presses keys at physics frames; the stream is a
+  newcomer's (.tl/j2nd/r2/keys.mjs: holds W, steers late in bursts, presses the new key every 4-7 s whatever happens).
+  It is open loop, so it cannot react to the screen. All exe runs: exit 0, 0 SCRIPT ERROR lines.
+- Closed loop, headless: the packs' own TLHand "newcomer" plus a person who read the new key (.tl/j2nd/tests/j2n_*.gd).
+
+WHAT A NEWCOMER DID NOT SEE IN THE FIRST 60 s (the picks of round 1)
+- Karts v0.1.10: NO SHELL AT ALL. Boxes and shells are hidden while the lesson runs, and the lesson ends only when you spin
+  mint_1; a newcomer who watches the lesson plays the whole first match without the ability (headless: 0 boxes in 10800
+  frames). Round 1's figures came from a hand that skips the lesson, so this was hidden. The far victim and the warning
+  arrow never came up for him.
+- Biplane v0.1.8: 40 s of lesson with Vesper as a far blue arrow (the "get Vesper in front of your nose" hint never comes
+  true; Q meets "needs 40 ENERGY"); at REAL FIGHT three messages in the same second (REAL FIGHT, her HARPOON! ROLL ring,
+  a stall hint) while his energy reads EXHAUSTED; shot down about 70 s in.
+- Court v0.1.8: nothing ever says C; the glowing hand is a few pale pixels; nothing says he could jump to steal a lob.
+
+THE FIX SENTENCES (SENTENCES.md, "Round 2")
+  karts  -> v0.1.11, 29 min, 1.12M in / 8.8k out (items r4, first round): PROMOTED
+    boxes and shells from GO! lesson or not; hint line "Drive through a rainbow box" -> "F fires a red shell" -> "Q jumps
+    over one"; far-hit red flash. Newcomer hand (lesson on): 2 boxes, 1 fired, 1 hit, shelled once in minute 1 (was 0).
+    0 errors, hash 08fe071f twice. Hands: newcomer 16/20, perfect 19/20. In the exe: boxes at GO!, the hint names them,
+    SHELLED! over a flipped tub 40 s in.
+  biplane -> v0.1.9, 26 min, 1.46M in / 16.0k out (first_flight, one round): PROMOTED
+    lesson step "cross": Vesper sweeps 30 m ahead of his nose, "Q: HARPOON her as she crosses your nose", she never rolls
+    off it in the lesson; her first harpoon waits 10 s into the fight and never while he is too low to roll; REAL FIGHT
+    stands alone. Newcomer hand: hooks her in the lesson (frame 219 / 57), 2 hooks in 5 min (was 0 and 2); she hooks him
+    3-4 times (was 1 and 0). 0 errors, hash 163f297c twice. In the exe: she crosses close at 4 s with the Q hint; REAL
+    FIGHT alone; he still loses round 1 (shot down ~57 s).
+  court newcomer fix + "make it fairer" (sent 15:42 and, 32 s later, into the running Foreman's inbox): FAILED, NOTHING PROMOTED
+    the fix worked on film (C: ALLEY-OOP + glow ball + ring over the open mate; SPACE: JUMP TO STEAL IT when rivals lob);
+    "make it fairer" was tuned blind twice (newcomer 10/20, then 11/20; the card asks 13); the second failure ended the
+    job: "The change was NOT made", pack/ back to v0.1.8. 117 min, 4.12M in / 29.8k out. The unpromoted pack (the fix +
+    the tier-1 tuning) is reports/change-not-made-s1858/pack: 0 errors, hash 375a0941 twice.
+
+NEW EDITOR FINDINGS (for lane T, evidence in PROOF)
+8.  Biplane: a change with two RULE lines that change play (lesson hooks always land; her cooldown held while I am low)
+    was judged "view or screen only", so skill_spread 0.04 went unjudged and unnoted (events 994, 1000).
+9.  "Make it fairer" is tuned blind: neither package may run the newcomer hand test over 20 seeds ("I could not measure the
+    newcomer win share", event 1673; "measured on seed 1 only", event 1786). Each guess costs a ~35 min final check.
+10. A second sentence sent while a change runs is judged together with it: the fairness guard failed and threw away the
+    working newcomer fix with it (event 1858).
+Item 25 watch: round 2 ran the three jobs side by side again with two promotions during court's checks: 343 verdicts,
+none "report_missing", no starved stalls. The only start failures remain the two at 12:32:58.
+
+MENU (pack path + title)
+- C:/Users/kazda/kiro/third-life/.claude/worktrees/d25-kart/.tl/jobs/j2nd/bumper-kart-football-3-20261125-1/promoted/game.bumper_kart_football_3@0.1.11
+    "Bumper-kart football v0.1.11: red shells for newcomers (made in Create, juice day)"   (replaces the v0.1.10 row)
+- C:/Users/kazda/kiro/third-life/.claude/worktrees/d25-kart/.tl/jobs/j2nd/biplane-duel-two-biplanes-20261125-1/promoted/game.biplane_duel_two_biplanes@0.1.9
+    "Biplane duel v0.1.9: harpoon whip, newcomer lesson (made in Create, juice day)"      (replaces the v0.1.8 row)
+- Court stays v0.1.8 (the existing row). Optional, Director's call: the unpromoted
+  C:/Users/kazda/kiro/third-life/.claude/worktrees/d25-kart/.tl/jobs/j2nd/half-court-3-v-20261125-1/reports/change-not-made-s1858/pack
+    "Half-court: alley-oop cue (made in Create, NOT promoted: failed the newcomer card)"
+
+GATES: node devx/bin/tl.mjs check --tier fast PASS 5/5 at 16:25 (devx.test 230/230, arch 12/12). Only docs and .tl/ changed.
+
+NEXT THREE
+1. Resend the court newcomer fix ALONE (the same sentence), then "make it fairer" only after it is promoted.
+2. Lane T: findings 8-10 (judge RULE lines even when the sentence talks about the screen; let a fairness round run the hand
+   test; never bundle a queued sentence into a running change's guard).
+3. A person plays karts v0.1.11 and biplane v0.1.9 from the menu without skipping the lessons.
