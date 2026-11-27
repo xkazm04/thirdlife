@@ -26,3 +26,15 @@
 
 ## Biplane third follow-up (sent on the copy after v0.1.7)
 > The HARPOON! ROLL warning is great, but Vesper still gets her harpoon off only once or twice in five minutes, and in one of my flights not a single time. When her harpoon is ready she should keep hunting until she gets her shot, so that her red ring closes on me about once a minute. When she hooks me, show HOOKED! as big as when I hook her, and let the camera pull back so I see my own plane whipped round on her cable.
+
+## Round 2: karts newcomer follow-up (sent on the copy after v0.1.10)
+> A newcomer who watches the lesson never meets the shells: I drove for three minutes without a single item box, because the boxes wait for the lesson to end, and the lesson only ends when I spin a mint kart. Put the boxes on the deck from the first kick-off, lesson or not, and let the mint karts fire at me from the start. Teach the new keys in the lesson's hint line: after SPACE bump its side, show Drive through a rainbow box, then F fires a red shell, and Q jumps over one. And when my shell hits a kart far away, show a big red flash and a puff over that kart so I can see it from where I am.
+
+## Round 2: biplane newcomer follow-up (sent on the copy after v0.1.8)
+> As a newcomer I never get to use the harpoon in my first minute and cannot answer hers. In the lesson Vesper stays far away as a small blue arrow, so the hint get Vesper in front of your nose never comes true: have her fly slowly across in front of me once in the lesson so I can harpoon her and see HOOKED!. When the real fight starts, her HARPOON! ROLL comes at the same moment as REAL FIGHT and a stall hint, while my energy is empty, so I cannot roll: let her first harpoon wait 10 seconds into the fight, never fire it while I am too low on energy to roll, and show one message at a time with her warning first.
+
+## Round 2: court newcomer follow-up (sent on the copy after v0.1.8)
+> As a newcomer I never found out the alley-oop exists: in my first minute the hint line only said HOLD E ON THE CHALK and SPACE: SWAT AS THEY RISE, never C, and my open teammate's glowing hand is a tiny dot I could not see. When I have the ball and a teammate is open near the rim, show C: ALLEY-OOP over him in big letters with a bright ring under his feet, and make the glowing hand a big pulsing ball of light over his head. When the rivals throw one, tell me in the hint line SPACE: JUMP TO STEAL IT.
+
+## Round 2: court "make it fairer" (sent after the newcomer follow-up)
+> Make it fairer: a newcomer now wins only 11 of 20 matches. Bring it back to about 13 or 14 of 20 without taking away the alley-oops, the steals or the dunks.

@@ -521,3 +521,11 @@ on the frame and the figure and Fable on surfaces and nature, looping for 10 hou
 - ~16:10: S4 round 2: Create still cannot drive arm A's switches (a fast cartridge edit promoted without a builder; T item 29). JB round 4: Arsenal glass met v0.1.27; queued-round join seen live.
 - ~16:20: JB-back done (13 sentences, all promoted: robots v0.1.9 on a par with the hand version by eye; Arsenal v0.1.27; shield v0.1.13 braces 2.7 vs 4.8, bowled 4.8 vs 7.0, charges 11.0 vs 10.3). Menu 63.
 - ~17:05: S1 round 2: A after fixes (A2 + T's fixes) reached 'bots use it' in ONE sentence on half-court (promoted, 72.9 min) and shield wall (27.4 min); B not re-run. Menu 65.
+- 16:44 standup: F1 stopped (branch kept, not landed); final list running on d27-m6 (merged with main); disk 18 GB.
+- 16:47: disk crisis over: C: fell to 9 GB (gtai raw AVIs ~80 GB in kiro/gtai-wt); the gtai session deleted them and now deletes each AVI once encoded: C: back to ~97 GB. %TEMP%/claude/46f132430c565ee6 (25 GB, a gravitone-gcloud session) left for the owner. The Director freed 6.8 GB of its own (job captures in finished trees, S1 base copies).
+- 17:17 standup: T round 5 (status asked), S1 r3 B on main's fixes, S2 r2 re-runs, J2nd r2, J2b (shield v0.1.15 volleys). Disk recovered to 105 GB.
+- 17:42: J2nd round 2 (newcomer pass): karts v0.1.11 boxes from GO!, biplane v0.1.9 lesson; court cue built but thrown away with 'make it fairer' (newcomer 10-11 of 20 vs 13). Menu 68.
+- 17:43 day-27 standup: final list running on d27-m6 23be5789 (gate at packs); main +4 docs only; disk 97 GB; no agents.
+- 18:09: J2b done: robots v0.1.11 magnet yank, shield v0.1.16 catapult volley, all by the editor (5 promotions, no refusal). Menu 70.
+- 18:32: S2 round 2: A's hammer from one plain sentence matched the hand version (flights 4.6-5.3 m vs hand 3.7-5.4); B with the card came out thin, and the check missed it (it read only the last answer): fix A4/B4 committed on both branches. Menu 72.
+- 18:43 day-27 standup: full gate 11/13 on d27-m6 (kernel cap + hockey many_budget timing; A/B next); uncapped suite running.

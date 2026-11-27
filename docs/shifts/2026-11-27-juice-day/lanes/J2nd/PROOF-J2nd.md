@@ -416,3 +416,170 @@ not with my own hands.)
   errors, hash 60552975 twice**. Whole matches, 0 errors: seed 1 (11752 frames) rival oops 3 of 3 caught, mine 7 of 9
   with 2 STOLEN!; seed 2 (15003 frames, crew 21 - quarry 13) rival oops 4 of 4 caught, mine 11 of 11. **Rival bots
   land about 0.9-1.0 alley-oops a minute** (was 0); steals 0-0.6 a minute.
+
+---
+
+# Round 2 (Director's ask, 15:20): a newcomer's hands through the exe, one fix sentence per game, "make it fairer"
+
+## How the newcomer played (method)
+- **The exe** `C:/Users/kazda/kiro/third-life/dist/ThirdLife/ThirdLife.exe` (build 6522394) with `-- --dungeon=<pack>
+  --seed=1`, the packs the owner has in his menu (`.tl/proof-games/j2_kart_shells`, `j2_biplane_harpoon`,
+  `j2_court_alleyoop`), a window at 0,1440, `--write-movie` at 60 fps (it records 1920 x 1080), 4800 frames (80 s), the
+  repo's window lock. Script: `.tl/j2nd/r2/execlip.sh`.
+- **No real keyboard**: the exe's own instrument `TL_EXE_KEYS` presses and releases keys at physics frames (the same
+  Input state a keyboard sets). The stream is a newcomer's, made by `.tl/j2nd/r2/keys.mjs` (seeded, open loop): he
+  holds the obvious key (W), steers late in bursts of 15-80 frames, and presses the new key every 4-7 s whether or not
+  it is the moment (karts F every 240-420 frames, Q now and then, sometimes twice; biplane Q every 300-450, Shift every
+  400-700 not timed to her ring; court C every 200-360, shots held 18-40 frames). It does not react to the screen: that
+  is the limit of an open-loop stream. The exact streams are saved beside each clip (`*.keys.txt`).
+- **Closed loop, headless**, for numbers: the pack's own newcomer hand (`TLHand "newcomer"`, its reaction delays and
+  misses) plus a person who has read the new key: `.tl/j2nd/tests/j2n_shell.gd`, `j2n_harpoon.gd`, `j2n_oop.gd`.
+- All three exe runs: exit 0, 0 SCRIPT ERROR lines. Clips are 800 px wide, crf 32, 30 s.
+
+## What a newcomer does not see or understand in the first 60 s
+### Karts v0.1.10 (`r2/r2_kart_v0110_newcomer_exe_no_boxes.mp4`, `r2/r2_kart_newcomer_exe_80s_sheet.jpg`,
+### `r2/r2_kart_newcomer_lesson_hint.jpg`)
+- **He never meets a shell.** In 80 s there is not one rainbow box on the deck. The hint line says only "W drive, SHIFT
+  boost, SPACE bump its side" the whole time.
+- Why (read in the pack): items hides boxes and shells while `lesson_active()` (items r1's own note: "Hidden during
+  lesson_active and far_loop_active"), and the core's lesson ends only when p1 spins mint_1. A newcomer who does not
+  press Enter to skip the lesson and never spins mint_1 plays the WHOLE first match without the new ability.
+- Headless proof: the newcomer hand, lesson on (`j2n_shell.gd`, seed 1): **3600 frames: 0 boxes, 0 shells; 10800
+  frames (the whole first match, red won 3-0): 0 boxes, 0 shells, 0 warnings.** Every earlier figure of mine used a
+  hand that skips the lesson, so this was hidden from round 1.
+- The far shell victim and the warning arrow could not be judged by a newcomer: they never appear for him.
+### Biplane v0.1.8 (`r2/r2_plane_v018_newcomer_exe.mp4`, `r2/r2_plane_newcomer_exe_80s_sheet.jpg`,
+### `r2/r2_plane_newcomer_ring_from_far.jpg`, `r2/r2_plane_newcomer_lesson_alone.jpg`)
+- **The first 40 s are a lesson with Vesper far away**: a small blue arrow at the edge of the screen. The hint "Harpoon:
+  get Vesper in front of your nose, inside 60 m" never comes true; his Q presses meet "Harpoon needs 40 ENERGY".
+- **When REAL FIGHT starts, three messages land in the same second**: REAL FIGHT, her big HARPOON! ROLL ring, and "W
+  released while climbing: stall turn", while his energy bar reads EXHAUSTED, so he could not roll even if he
+  understood. Her plane is a speck up in the corner when her ring closes on him.
+- Then she sits behind him ("THEY WERE BEHIND YOU: roll or loop") and he is SHOT DOWN about 70 s in.
+- Headless, newcomer hand (`j2n_harpoon.gd`, 18000 frames, seeds 1 and 2, 0 errors): **Vesper fires 7-8 harpoons in 5
+  min (1.4-1.6 a minute) and the newcomer notices 1-2 of them; she hooks him 1 and 0 times** (the pilot's own constant
+  rolls save him); his own harpoon lands 0 of 5 and 2 of 5; she wins the match both times.
+### Court v0.1.8 (`r2/r2_court_v018_newcomer_exe.mp4`, `r2/r2_court_newcomer_exe_80s_sheet.jpg`,
+### `r2/r2_court_newcomer_first_ball_no_c_hint.jpg`, `r2/r2_court_newcomer_rival_oop.jpg`)
+- **Nothing tells him C exists.** In 80 s the hint line says HOLD E ON THE CHALK, SPACE: SWAT AS THEY RISE and CLEAR IT
+  PAST THE ARC; never C. His open teammate's glowing hand is a few pale pixels at play distance (first still).
+- He sees ALLEY-OOP! twice (bots' and his random C), big and clear; the rival oop's push-in shows the catcher over the
+  rim, but nothing tells him he could jump to steal it.
+- Headless, newcomer hand pressing C after 6 s with the ball (`j2n_oop.gd`, whole matches, seeds 1 and 2, 0 errors):
+  he holds the ball rarely, so he throws 1 a match; **his bot mates throw 3 a match and all 3 are STOLEN by rivals**;
+  rival oops land 4 of 4; he still wins 21-17 and 20-15 (the Foreman's newcomer check: 11 of 20).
+
+## The fix sentences (one per game; court also "make it fairer")
+- Karts, sent 15:27:47 (`.tl/jobs/_ui_logs/1795789667-j2nd-kart4-change.log`): boxes from the first kick-off lesson or
+  not, the new keys in the lesson's hint line, a far-hit flash. Routed to items (r4).
+- Biplane, sent 15:35:36 (`.tl/jobs/_ui_logs/1795790136-j2nd-plane5-change.log`): Vesper crosses in front of me once in
+  the lesson; her first harpoon waits 10 s into the fight and never while I am too low to roll; one message at a time.
+- Court, sent 15:42:09 (`.tl/jobs/_ui_logs/1795790528-j2nd-court3-change.log`): "C: ALLEY-OOP" over the open mate with
+  a ring, a big pulsing glow, and "SPACE: JUMP TO STEAL IT" when rivals throw. **Then "make it fairer"** sent 15:42:41
+  into the running Foreman's inbox (`.tl/jobs/_ui_logs/1795790561-j2nd-court4-change.log`).
+- Small routing note: the Foreman split "When the rivals throw one, tell me in the hint line SPACE: JUMP TO STEAL IT"
+  off as "the rivals' part ... for the bots your files drive" to crews_stakes (event 1640), though it is a hint line.
+
+## Editor finding 8 (15:52): a rules change judged as "view or screen only"
+- Biplane's newcomer sentence went to first_flight (event 990). Its builder wrote two `RULE:` lines that change play
+  (in the lesson Vesper never rolls off my harpoon; after it her harpoon cooldown is held while my energy is below the
+  roll's cost) and a 10 s hold on her first harpoon (event 994). The Foreman then said (event 1000): "balance not judged:
+  a change to the view or the screen only; tests/bot_tofu.gd figures outside their bounds, not judged: skill_spread
+  0.04 (bound 0.25 to 0.95); skill_variants 2 (bound 3 or more)". Lane T1's camera/HUD-only skip took a sentence that
+  talks about messages as screen-only, and so a real balance move (skill_spread 0.04) went unjudged and unnoted to the
+  person. Evidence: biplane copy events 994, 1000.
+
+## Round 2 results: karts and biplane
+
+### Karts newcomer fix -> v0.1.11 (sent 15:27:47, promoted 15:57:08: 29 min) **<- the new karts pick**
+- items r4, first round. **Cost: 2 model calls, 1.12M tokens in (1.03M cache reads), 8.8k out.** Boxes and shells work
+  from the first live frame, lesson or not; the lesson's hint line stages "Drive through a rainbow box" -> "F fires a
+  red shell" -> "Q jumps over one"; a far hit (18 m or more from me) gets a red flash, a puff and a red ring over the
+  victim. One unasked-rule line on the card (mint bots may fire at me during the lesson, "as the player asked").
+- Hands over 20 seeds: **newcomer 16 of 20, perfect 19 of 20** (v0.1.10: 17 and 19).
+- v0.1.11 = my film copy `kart_r4x` (no diff). Headless, the newcomer hand with the lesson on (`j2n_shell.gd`, 3600
+  frames): seed 1 **0 script errors, hash 08fe071f twice**; **he picks up 2 boxes, fires 1, hits 1, is shelled once in
+  his first minute** (v0.1.10: 0 of everything for the whole first match); seed 2: 1 box, 1 fired, shelled once.
+- **The newcomer in the exe** (`r2/r2_kart_fix_newcomer_exe_a.mp4`, `r2/r2_kart_fix_newcomer_exe_b.mp4`, 30 s each;
+  `r2/r2_kart_fix_newcomer_exe_80s_sheet.jpg`, `r2/r2_kart_fix_box_hint.jpg`, `r2/r2_kart_fix_shelled_sheet.jpg`):
+  - at "GO!" the rainbow boxes stand on the deck on either side of the circle and the hint line says **Drive through a
+    rainbow box**: a newcomer now knows what they are;
+  - the mint karts' shells reach him and his mates: a red-and-white tub flips under a big red **SHELLED!** 40 s in, and
+    twice more by 75 s;
+  - my open-loop stream never drove through a box in 80 s (it steers blind), so the hint stays on "Drive through a
+    rainbow box"; the far-hit flash was not seen in this window (he never fired). The closed-loop newcomer above did
+    get boxes.
+
+### Biplane newcomer fix -> v0.1.9 (sent 15:35:36, promoted 16:01:05: 26 min) **<- the new biplane pick**
+- first_flight r? (one round), dependents re-verified. **Cost: 2 model calls, 1.46M tokens in (1.36M cache reads),
+  16.0k out.** A new lesson step "cross": Vesper flies 30 m ahead of my nose, sweeping side to side, hint "Q: HARPOON
+  her as she crosses your nose", and in the lesson she never rolls off it; her first harpoon waits 10 s into the real
+  fight; she never fires while my energy is below a roll; REAL FIGHT and her warning pause the other hints. **See
+  finding 8: the Foreman judged this "view or screen only" and did not judge skill_spread 0.04.**
+- v0.1.9 = my film copy `plane_r5x` (no diff). Headless, the newcomer hand (`j2n_harpoon.gd`, 18000 frames): seed 1
+  **0 script errors, hash 163f297c twice**; **he hooks Vesper in the lesson (frame 219; seed 2: frame 57)**, 2 hooks in
+  5 min each seed (v0.1.8: 0 and 2); **she hooks him 3 and 4 times** (v0.1.8: 1 and 0) out of 7 and 5 tries: with the
+  10 s wait and the energy guard her shots come when he can roll, but he notices her ring only 0-1 times, so they land
+  more. She still wins both matches.
+- **The newcomer in the exe** (`r2/r2_plane_fix_newcomer_exe.mp4`, 30 s; `r2/r2_plane_fix_lesson_cross_sheet.jpg`,
+  `r2/r2_plane_fix_real_fight_alone.jpg`, `r2/r2_plane_fix_newcomer_exe_80s_sheet.jpg`):
+  - 4 s in, Vesper's blue plane sweeps close across in front of him with "Q: HARPOON her as she crosses your nose":
+    the harpoon finally has a target in the first minute (my blind stream pressed Q at the wrong moment and missed);
+  - REAL FIGHT now stands alone on the screen (no ring, no stall hint at the same time);
+  - he is still SHOT DOWN about 57 s in: a newcomer loses round 1 fast.
+
+## Round 2 results: court
+
+### Court newcomer fix + "make it fairer" (sent 15:42:09 and 15:42:41; both merged by 16:17)
+- The newcomer sentence was split three ways: bodies_first_minute r3 (the cue, the glow), court_exchange r15 (the rival-
+  oop hint in `scripts/main.gd`, plus a RULE: a plain Space swat near the rim now counts as a steal try), and the
+  rivals' part to crews_stakes r16, which said "no change was needed in this package's scope" (event 1704).
+  - bodies_first_minute r3: "C: ALLEY-OOP" at 46 pt in yellow over the catcher the core would pick, a pulsing yellow
+    ring under his feet, every match; the glowing hand replaced by a pulsing ball of light (radius 0.55, 2.95 m up);
+    in the lesson the line reads SPACE: JUMP TO STEAL IT while a rival lob is up.
+- "Make it fairer" went to court_exchange (event 1664): tier 1 only, `bite` 0.7 -> 0.8, `read` 0.2 -> 0.12, `error_f`
+  8 -> 10 (it says these move away from the contract's tier-1 figures and also change my own bot mates). Its builder:
+  "I could not measure the newcomer win share; the newcomer hand test is not one of the commands I may run."
+- **The Foreman's final hand check, newcomer over 20 seeds: 10 of 20** (v0.1.8: 11 of 20; the card asks 13). So "make
+  it fairer" did not make it fairer by the Foreman's own measure; the builder tuned blind. (Outcome of the job: below.)
+- My film copy `court_r3x` (the pack after all merges; the crews_stakes r16 "merge" event lists 7 files but the pack is
+  byte for byte the same before and after it): headless seed 1, 3600 frames: **0 script errors, hash 56a19e33 twice**.
+  Newcomer hand pressing C (`j2n_oop.gd`, whole matches): seed 1 21-19, **he catches 2 of his mates' alley-oops and
+  slams them** (v0.1.8: 0), 1 stolen; seed 2 20-15, same events as v0.1.8 (3 mate oops, 3 stolen).
+- **The newcomer in the exe** (`r2/r2_court_fix_newcomer_exe.mp4`, 30 s from 42 s; `r2/r2_court_fix_c_cue.jpg`,
+  `r2/r2_court_fix_steal_hint.jpg`, `r2/r2_court_fix_newcomer_exe_80s_sheet.jpg`):
+  - when a rival lobs, the hint line says **SPACE: JUMP TO STEAL IT**, and a STOLEN! follows a few seconds later;
+  - **C: ALLEY-OOP** in yellow stands over the open mate, with a glowing ball over his head and a yellow ring at his
+    feet: readable at play distance now;
+  - but in this run the cue first shows at 72 s: a newcomer who rarely holds the ball free in the first minute still
+    may not meet it in his first 60 s.
+- 16:52 the final check failed the card: "hand check failed ... newcomer hand: 10 of 20 won (Wilson 95 % 30..70); the
+  card asks at least 13. Sent back to crews_stakes" (event 1782), one repair round, "a second failure ends the job
+  unpromoted". crews_stakes r17 (event 1786) made tier-1 rivals clumsier (shot error 18 -> 24 frames, guard gap 1.8 ->
+  2.4 m, poke 0.14 -> 0.10, later drives, more hesitation; my mates swat more) and said: "The newcomer win share was
+  measured on seed 1 only (one win). The seeds 1-20 count is unmeasured."
+
+## Editor finding 9 (16:57): "make it fairer" is tuned blind
+- Neither package that tuned the newcomer's odds could run the measure the Foreman judges them by: court_exchange r15
+  "I could not measure the newcomer win share; the newcomer hand test is not one of the commands I may run" (event
+  1673); crews_stakes r17 "measured on seed 1 only ... The seeds 1-20 count is unmeasured" (event 1786). The first try
+  moved the newcomer from 11 to 10 of 20. A person's "make it fairer" costs a full final check (about 35 min) per guess.
+  Evidence: court copy events 1673, 1782, 1786.
+- **17:39 the court job FAILED** (event 1858): "hand check of card.team_possession failed, nothing promoted: newcomer:
+  11 of 20 won ... the card asks at least 13. The change was NOT made. pack/ was put back to ... 0.1.8; the unpromoted
+  files of the change are kept only in reports/change-not-made-s1858/pack/." **Cost of both sentences: 7 model calls,
+  4.12M tokens in (3.74M cache reads), 29.8k out, 117 min.**
+- **Editor finding 10:** my "make it fairer" was sent into the running Foreman's inbox while the newcomer fix ran, so
+  the Foreman judged both as one change. When fairness failed its guard twice, the newcomer fix was thrown away with it:
+  the cue, the glow ball and SPACE: JUMP TO STEAL IT (which worked, on film above) are not in any promoted version.
+  A person in Create who adds "make it fairer" while another change runs loses both.
+- The unpromoted pack `reports/change-not-made-s1858/pack` = my film copy `court_r3x` plus crews_stakes r17's tier-1
+  tuning (`data/crews.json` only). Headless seed 1, 3600 frames: 0 script errors, hash 375a0941 twice. It is real Create
+  output and playable, but the Foreman did not promote it.
+
+## Item 25 watch (start failures while jobs ran side by side)
+- Round 2 ran the three jobs side by side again (15:27-16:17), two promotions (karts 15:57:08, biplane 16:01:05) during
+  court's checks, plus three exe windows and many headless runs of mine. **343 verdicts written in the copies since
+  14:41: none with `report_missing` / `stdout_not_json`, and no `starved_stalls` lines since 14:40.** The only start
+  failures today stay the two of 12:32:58 (biplane `harvest_look-r1-reverify-lint-s841`, 907 ms; court
+  `final-hand-perfect-seed7-s1417`, 1494 ms), the second the karts copy promoted v0.1.8. One event, not reproduced.
