@@ -325,10 +325,11 @@ jump pad, a coin, a hazard, and a **run** (start, checkpoints, finish) that time
   with no zone is not taken). A stamp with no zones and no rules is written as `tl.stamp/1`, byte for byte as before.
 - Placing a `tl.stamp/2` turns and moves the zones as it does the blocks (a box stays a box: its corners turned, then
   sorted), and writes the zones and rules in the same batch as the blocks, with the next free ids and the rules'
-  references rewritten (as an LLM answer's ids are). A rule `start` whose run name already exists in the Home keeps
-  the name (the records are by name).
+  references rewritten (as an LLM answer's ids are). When a placed course's run name already exists in the Home,
+  the tool asks once in a name field prefilled `<name> (2)` (the next free number): Enter renames the placed rules'
+  runs, Esc keeps the name (the two courses then share one record: records are by name).
 - **The share code** is a stamp as one line of text: `TL1-` followed by the URL-safe base64 (no padding) of the
-  deflate-compressed UTF-8 of the stamp's JSON. Copying a stamp puts its code on the clipboard; pasting a code (Ctrl+V
+  zlib stream (RFC 1950, deflate inside: Godot's `COMPRESSION_DEFLATE`; Node `zlib.inflateSync`) of the UTF-8 of the stamp's JSON. Copying a stamp puts its code on the clipboard; pasting a code (Ctrl+V
   in the stamp tool) checks it as a stamp file is checked (unknown keys and bad shapes refused with a reason) and adds
   it to the stamps like an import. A code longer than 65,536 characters is refused.
 
