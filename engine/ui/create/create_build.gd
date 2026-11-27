@@ -377,7 +377,7 @@ func _change_row(at: Vector2) -> void:
 	cb.add_theme_stylebox_override("focus", sb)
 	cb.position = at
 	cb.size = Vector2(740, 80)
-	cb.max_length = 240
+	cb.max_length = 800  # N27: a person's ability needs room (J2's hammer sentence lost its charge, cooldown and glow to a 240 cut)
 	cb.text = _change_draft
 	cb.text_changed.connect(func(t: String) -> void: _change_draft = t)
 	cb.text_submitted.connect(func(_t: String) -> void: send_change())

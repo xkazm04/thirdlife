@@ -26,7 +26,7 @@ func _idea() -> void:
 	box.add_theme_stylebox_override("focus", sbf)
 	box.position = Vector2(110, 212)
 	box.size = Vector2(860, 92)
-	box.max_length = 240
+	box.max_length = 800  # N27: room for a whole idea (the change box takes as much)
 	box.text_changed.connect(func(t: String) -> void: sentence = t)
 	box.text_submitted.connect(func(_t: String) -> void: go())
 	_body.add_child(box)
