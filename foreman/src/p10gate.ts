@@ -10,7 +10,7 @@ import { readManifest } from "./promoter.js";
 import { dependants } from "./manifest.js";
 import { FINAL_FAILED, PACK_TEST_FAILED, PACK_TEST_NOT_MINE } from "./p10.js";
 import { FOREMAN_NOTE, clip } from "./conduct.js";
-import { finalSentSince } from "./rounds.js";
+import { CHANGE_NOT_FINISHED, clearedOf, finalSentSince } from "./rounds.js";
 import type { GateFailure, Verified } from "./machine.js";
 import type { ForemanOptions } from "./options.js";
 import type { GenerateCall } from "./designer.js";
@@ -152,15 +152,21 @@ export function blameFinal(h: GateHost, a: Acceptance, vr: VerifyResult): { id: 
     // right after is not a change since.
     const saw = pass.package !== undefined && !/-reverify-/.test(pass.report) ? pass.package : pass.after !== undefined && /-pack-bot-/.test(pass.report) ? pass.after : undefined;
     const own = saw !== undefined ? merges.find((m) => m.seq > pass.seq && m.package === saw)?.seq : undefined;
-    const since = merges.filter((m) => m.seq > pass.seq && m.seq !== own && ok(m.package));
+    // N27 T2 (J2 robots, events 1005-1034): a package whose merge a control run cleared (the test fails without its
+    // files too) or whose builder answered that nothing in its part can fix this check is not where the failure comes from
+    const cleared = clearedOf(h, test, pass.seq);
+    const since = merges.filter((m) => m.seq > pass.seq && m.seq !== own && ok(m.package) && !cleared.has(m.package));
     const last = since[since.length - 1];
     if (last) {
       const others = [...new Set(since.map((m) => m.package))].filter((x) => x !== last.package);
       return { id: last.package, how: `${test}${owner ? ` (a test of package ${owner})` : ""} last passed at event ${pass.seq} (${pass.report}); since the state that run saw, ${last.package} merged last (event ${last.seq})${others.length > 0 ? `, after ${others.join(", ")}` : " and nothing else changed"}, so its files are where the failure comes from` };
     }
-    if (ok(owner)) return { id: owner, how: `${test} last passed at event ${pass.seq} and no package merged since, so the package that registers the test (${owner}) takes it` };
+    if (ok(owner) && cleared.size > 0 && !cleared.has(owner)) return { id: owner, how: `${test} last passed at event ${pass.seq}; ${[...cleared.entries()].map(([p, why]) => `${p} is cleared (${why})`).join("; ")}, so the package that registers the test (${owner}) takes it` };
+    if (ok(owner) && !cleared.has(owner)) return { id: owner, how: `${test} last passed at event ${pass.seq} and no package merged since, so the package that registers the test (${owner}) takes it` };
+    if (cleared.has(owner ?? "")) return undefined; // the owner itself said nothing in its part can fix it: nobody is left (sendBackFinal tells the person)
   }
-  if (ok(owner)) return { id: owner, how: `no passing run of ${test} is in the log, so the package that registers the test (${owner}) takes it` };
+  if (ok(owner) && !clearedOf(h, test, 0).has(owner)) return { id: owner, how: `no passing run of ${test} is in the log, so the package that registers the test (${owner}) takes it` };
+  if (ok(owner)) return undefined; // the owner said nothing in its part can fix it (sendBackFinal tells the person)
   const m = lastSince(promotedAt);
   return m ? { id: m.package, how: `${m.package} merged last (event ${m.seq})` } : undefined;
 }
@@ -176,6 +182,14 @@ export function sendBackFinal(h: GateHost, a: Acceptance, vr: VerifyResult): "se
   const limit = finalLimit(h);
   if (sent >= limit) return limit > 0 ? "spent" : "no";
   const who = blameFinal(h, a, vr);
+  if (!who && sent > 0 && a.verb === "bot") {
+    // N27 T2: every package a send-back could reach is cleared of this check: stop the loop and tell the person why
+    const test = a.args.find((x) => x.startsWith("--test="))?.slice("--test=".length) ?? "";
+    const cleared = clearedOf(h, test, 0);
+    const owner = testOwner(h, test) ?? h.s.order[0] ?? "";
+    if (h.s.packages[owner] !== undefined) h.append({ type: "note", package: owner, round: h.pkg(owner).round, text: `${FOREMAN_NOTE}${CHANGE_NOT_FINISHED}: the game's check ${test} still fails (${clip(vr.summary, 160)}), and no part of the game is left that can fix it: ${[...cleared.entries()].map(([p, why]) => `${p}: ${why}`).join("; ") || "nobody owns it"}. The earlier version stays the one to play. Say what to change in other words, or "make matches shorter" if they now run too long.` });
+    return "spent";
+  }
   if (!who) return "no";
   const what = `${a.verb} (${vr.level})${a.verb === "bot" ? ` ${a.args.join(" ")}` : ""}`;
   const report = h.rel(vr.reportFile);
@@ -183,3 +197,4 @@ export function sendBackFinal(h: GateHost, a: Acceptance, vr: VerifyResult): "se
   h.reopen(who.id, text, text);
   return "sent";
 }
+

@@ -5,7 +5,8 @@
 import type { JobEvent } from "./events.js";
 import { CHANGE_REASON_RE, type JobState, type PackageView } from "./joblog.js";
 import { PHASE_HOLD_RE } from "./design_state.js";
-import { FINAL_FAILED } from "./p10.js";
+import { FINAL_FAILED, PACK_TEST_NOT_MINE } from "./p10.js";
+import { FOREMAN_NOTE, clip } from "./conduct.js";
 export { FINAL_FAILED };
 
 /** Fixed starts of the `detail` of a package sent back after its merge; the feedback and the resume read them. */
@@ -164,4 +165,32 @@ export function finalSentSince(events: readonly JobEvent[]): number {
     }
   }
   return events.filter((e) => e.type === "reopened" && e.seq > since && reopenKind(e.reason) === "final_failed").length;
+}
+
+// ---------- N27 T2 (night of 27 Nov, lane J2's robots): who is NOT where a final failure comes from ----------
+// J2 events 1005-1034: core's tests/bot_tofu.gd ran out of frames after core's hammer. Control runs showed twice that it
+// fails without show's files too (PACK_TEST_NOT_MINE notes), and show's builder answered "No change made ... nothing in my
+// scope can fix the cause"; the final verification still sent it back to show four times, because show merged last, and
+// the change ended "NOT made". A package a control run cleared, or whose builder answered that nothing in its part can
+// fix this check, is not blamed for it again; when nobody is left the loop stops and the person is told why.
+
+/** The builder's words that nothing in its part can fix a check sent back to it. */
+export const NOTHING_IN_SCOPE = /\bno change (was )?made\b|\bnothing (in|within) my (scope|part|package|files)\b|\b(not|nothing) (in|within) my scope\b|\boutside my scope\b|\bcannot be fixed (in|from) my\b/i;
+/** The start of the Foreman's note (after FOREMAN_NOTE) when a final failure is left with nobody who can fix it. */
+export const CHANGE_NOT_FINISHED = "change not finished";
+
+/** The packages cleared of `test`'s failure since event `since`, with why. */
+export function clearedOf(h: { events: readonly JobEvent[] }, test: string, since: number): Map<string, string> {
+  const out = new Map<string, string>();
+  const sentFor = new Map<string, number>(); // package -> seq of its newest final send-back for this test
+  for (const e of h.events) {
+    if (e.seq <= since) continue;
+    if (e.type === "note" && e.text.startsWith(`${FOREMAN_NOTE}${PACK_TEST_NOT_MINE}: ${test},`)) out.set(e.package, `a control run showed ${test} fails without its files too (event ${e.seq})`);
+    if (e.type === "reopened" && e.reason.startsWith(FINAL_FAILED) && e.reason.includes(`--test=${test}`)) sentFor.set(e.package, e.seq);
+    if (e.type === "note" && !e.text.startsWith(FOREMAN_NOTE) && sentFor.has(e.package) && e.seq > (sentFor.get(e.package) ?? 0)) {
+      const line = e.text.split(/\r?\n/).find((l) => NOTHING_IN_SCOPE.test(l));
+      if (line !== undefined) out.set(e.package, `its builder answered: "${clip(line.replace(/^\s*[-*]\s*/, ""), 240)}" (event ${e.seq})`);
+    }
+  }
+  return out;
 }

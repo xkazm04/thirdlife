@@ -171,3 +171,111 @@ NEXT THREE (T2 onward)
    as the tofu rows now are. The idle-win and never-ending-match defects stay guards.
 3. Freeze the hand tests (fake runner reads its wins from a game file), and tie the balance note to the merged round. A
    later round that comes back inside its bounds should clear the note.
+
+==========================================================================================================================
+T2: J2's final-verification loop (04:13-05:05)
+Tree d25-hard-a, branch n27-tofu, on top of 79cccfcf. Not committed: the Director lands.
+
+OUTCOME AGAINST THE THREE NEEDS
+
+1. A final-verification failure goes back to the package that owns the failing test: MET (test). Not exercised live,
+   because need 2 made the test pass.
+   - p10gate.ts blameFinal now skips a package that is cleared (rounds.ts clearedOf):
+     - a control run cleared it (a "[foreman] pack test fails without this merge too" note for this test: J2 events 1006
+       and 1034 said this about show twice, and the Foreman still blamed show);
+     - or its builder answered, after a final send-back of this test, that nothing in its part can fix it (NOTHING_IN_SCOPE:
+       "no change made", "nothing in my scope", ...).
+   - When everyone who merged since the last pass is cleared, the package that registers the test takes it.
+   - Test N27 T2 2 is J2's log in small: it goes to core, "show is cleared (a control run showed tests/bot_tofu.gd fails
+     without its files too (event 1006))".
+
+2. A frame budget that a person-asked longer match breaks scales, with a note: MET, live.
+   - In a person's PLAY change (the same rule as the balance note), a bot run that failed ONLY on frames runs once more:
+     - "only on frames" means bot.completed false; bot.ok is accepted too, because a cut run cannot be ok;
+     - it runs with 3x the frames, at most 108,000 (tofugate.ts longerMatch, called from foreman.ts verifyLogged);
+     - if it passes, it counts, and the person gets "[foreman] balance moved by your change: built as you asked; matches now
+       run longer (...). Say "make matches shorter" to tune it.";
+     - a run still not done with 3x the frames (a match that never ends) stays a failure, and so does a run with any other
+       failed check.
+   - Live, on a copy of J2's job with J2's exact hammer sentence (sent 04:18):
+     - show r7's pack run of tests/bot_tofu.gd ran out of 36,000 frames and passed with 108,000, using 43,666 frames
+       (events 1202, 1203 note);
+     - the FINAL verification failed the same way (event 1214: "not done within 36000 frames", 2 matches) and passed on
+       the longer run (event 1215: done, 43,666 frames);
+     - there was no send-back to show at all;
+     - v0.1.6 was PROMOTED at 05:01 (event 1267) with the hammer.
+   - The card's newcomer hand check fell to 11 of 20 (bound 13 or more). By T1's rule that became a note, not a refusal
+     (event 1260): "built as you asked; a newcomer player now wins 11 of 20 (was 17 of 20). Say "make it fairer" to tune
+     it."
+   - Create on the real job (headless): change_note = "Built as you asked; a newcomer player now wins 11 of 20 (was 17 of
+     20). Say "make it fairer" to tune it."
+   - stills/t2_robot_v016_hammer_strip.jpg: robots carry sledgehammers, one raised (tile 1), and robots are flattened and
+     tumbling in dust (tiles 7-9).
+   - Timing: the builder rounds finished by 04:32. Promotion came at 05:01, 43 min after the send, because the card's 40
+     hand-check runs took about 13 min. The last 30 min were verification only, with no builder spending tokens.
+
+3. A builder's "nothing in my scope can fix it" answer stops the loop and tells the person in Create: MET (test, plus
+   Create check). Not live: tonight's job never reached it.
+   - sendBackFinal: when the blame is left with nobody (every candidate cleared, the owner included) after at least one
+     send-back, the loop stops.
+     - It appends "[foreman] change not finished: the game's check <test> still fails (...), and no part of the game is
+       left that can fix it: <package: why, in the builder's words>. The earlier version stays the one to play. ...".
+     - It returns "spent": the job ends done on the earlier version, as today's "the change was NOT made".
+     - Test N27 T2 3 uses J2's "No change made ... nothing in my scope can fix the cause".
+   - Create (create_model.gd change_note):
+     - a change whose job ended "the change was NOT made" without a promotion now reads "Your last change could not be
+       made: "<words>"", followed by the not-finished reason on a second line;
+     - before this, such a change kept the outcome "in flight", and no note said it was not made;
+     - create.iterate.model checks it (job e4-unfinished).
+
+LIVE FINDINGS FIXED IN THIS ROUND (from the same job)
+- Measure kept, live (event 1140). Core r16's workspace still held J2's earlier edit of tests/bot_tofu.gd: the edit
+  counted the hammer's wind-up as a tell. The Foreman undid it, and the note names it.
+- Core r16 and r17 were refused on tells 2 < 3. The frozen bot does not count the new hammer wind-up among its tells.
+  - The builder kept the hammer and said why (event 1150); the gate yielded at r18 as designed.
+  - Fixed after: a new attack move with its own wind-up (swing, raise, slam, smash, hammer, leap, dunk, ...) moves the
+    tells rows (test N27 T2 5). A look change still guards them.
+  - This job ran on the code from before the fix.
+- "close test rounds: now 0, was 0" was told to the person as their change's doing (event 1146). Fixed: a row already
+  outside its bound before the change gets no balance note (test N27 T2 4). This job ran on the code from before the fix.
+- rounds.test 6 ("p10gate.ts classifies no round by a prefix of its own") failed on my first clearedOf. It now lives in
+  rounds.ts, beside finalSentSince.
+
+GATES ON d25-hard-a (final source)
+- foreman npm test: 455 tests, 448 pass, 0 fail, 7 skipped. That is T1's 450/443 plus the 5 T2 tests.
+- node devx/bin/tl.mjs check --tier fast: 5/5 PASS (arch 12/12, assets 4/4, cards 3/3, devx.test 230/230,
+  foreman.typecheck).
+- selftest create.: 29 passed, 0 failed (run after the Create changes).
+- tofu.test.ts: 12/12. rounds.test passes.
+
+CHANGED FILES (T2)
+- foreman/src/tofugate.ts: longerMatch, onlyOutOfFrames, longerNote, DEFAULT_BOT_FRAMES, LONGER_MAX_FRAMES.
+- foreman/src/foreman.ts: +2 lines in verifyLogged (2002 lines, ratchet 2032).
+- foreman/src/p10gate.ts: blameFinal skips cleared packages; sendBackFinal stops with the person's note.
+- foreman/src/rounds.ts: clearedOf, NOTHING_IN_SCOPE, CHANGE_NOT_FINISHED.
+- foreman/src/boundlift.ts: a row out before gets no note; the tells touch words.
+- foreman/src/test/tofu.test.ts: +5 tests (N27 T2 1-5).
+- engine/ui/create/create_model.gd: change_note for a change not finished; not_finished.
+- engine/ui/create/create_iterate_checks.gd: the e4-unfinished case inside create.iterate.model (count unchanged; CRLF).
+- Claim: foreman/src/p10gate.ts is not on night-2026-11-27-juice's list. rounds.ts is listed.
+
+BEHAVIOUR CHANGES (named)
+- A bot run that fails only on frames, in a person's play change, gets one rerun with 3x frames, at most 108,000. This adds
+  up to about 3 min of headless play per such run. Outside a person's play change, nothing changes.
+- A final failure is no longer sent to a package that a control run or its own builder cleared.
+- A final loop with nobody left to fix it ends with a note to the person instead of spending the remaining rounds.
+- The what-changed card still shows only the newest "balance moved" line. On this job that is the hand-check line; the
+  "matches now run longer" line is in the log, not on the card.
+
+PROPOSED JOB.md TEXT (Director-only)
+  - "[foreman] change not finished: ...": a final check still fails and every package it could go back to is cleared (a
+    control run showed it fails without that package's files, or its builder answered that nothing in its part can fix
+    it). The job ends done on the earlier version; Create shows the reason under "Your last change could not be made".
+  - "[foreman] balance moved by your change: built as you asked; matches now run longer ...": a bot run in a person's play
+    change ran out of its frames and passed when run once more with three times as many (at most 108,000).
+
+NEXT
+1. T3 (queued): raise the change box's cap (create_build.gd:380, max_length 240). JOB.md and the Foreman set no length
+   limit on change_requested.text (events.ts: nonEmpty only). The door already flattens line breaks.
+2. The what-changed card and Create: show every distinct "balance moved" line of the change, not only the newest.
+3. Hand-test freezing (ask 3 from T1).
