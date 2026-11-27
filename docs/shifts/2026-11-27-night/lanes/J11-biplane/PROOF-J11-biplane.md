@@ -280,3 +280,39 @@ module, `clips/final_c5_deflect_loopring_reversed.mp4` (20 s) and `clips/final_c
 | By hand | not in the landed pack | `.tl/juice/biplane_hand/` (03:38-04:20, while changes 2 and 3 were refused): the same three abilities plus Vesper's stunts in every round, built as a module on the change-1 pack; it showed them two hours before the editor did, and the editor's later rounds caught up and passed it (a bigger, cleaner loop, the season ace wired properly). |
 
 Editor cost tonight: 6 changes, 10 builder rounds (r13-r22), 12.05M tokens in (11.26M cache reads), 105k out.
+
+## Round J11b (05:38-06:45): one more change, on main bd5d4b06+ (T2, 800-character change box)
+
+Tree fast-forwarded to main b1444245 (my lane docs moved aside first; they were identical to main's), foreman rebuilt,
+class cache re-imported.
+
+### Change 7 (sent 05:39:15, merged 05:46:41, first time)
+- Typed (482 characters): "Three fixes. First, take out the graze rule I never asked for: a hit that lands does full
+  damage again, also off the nose line. Second, my own smoke covers my view: late in a round, when my plane is hurt,
+  its black smoke fills a third of the screen right in front of the camera. Keep my smoke thin and out of my view so
+  I can still see her; her smoke can stay big. Third, when I loop with her behind me she pulls up after me only in
+  the first round; make her do that in every round."
+- Path full, core r23 only (4.0 min building, 0.97M in, 8k out). No balance note, no refusal, nothing added.
+- **Came out as asked**, in its own note: the graze rule is gone (`graze_deg`/`graze_dmg` removed; "A hit inside the
+  7-degree cone or the 2 m catch radius now does full damage"); my own smoke has its own numbers (`own_size` 0.4,
+  `own_life` 0.35, sinking 5 m/s, `own_flame` 0.5), hers unchanged; `_follow_loop()` now runs in every round, after
+  the loop and roll reflexes. I checked the files: no `graze` left in `combat.gd` or `tuning.json`.
+- **The old test-pilot edit remains**: `tests/support/pilot.gd` is byte for byte v0.1.3's, which still carries r15's
+  five lines ("she hangs in a stall turn: a person who stayed on her puts a burst into the slow plane"). The change
+  did not touch the test files, and "measure kept" undoes only new edits to the measuring tests, not that old one.
+- Figures (proof copy `.tl/j11/c7`, `bot_juice`, seed 1): 3600 frames twice, hash 66997af2... both, 0 script errors;
+  18000 frames 0 errors (hash 2c993bfe...), per minute: my loops 1.8, hers 0.8, REVERSED 0.2, her rolls 3.4,
+  deflects 1.0 hers + 0.4 mine, shoot-downs 0.2. One seed: the drop from v0.1.3's 0.4 shoot-downs is one kill fewer
+  in 5 minutes and I would not read a trend into it.
+- **Promoted v0.1.4 at 06:02:40** (the job's final verification all ok, no failed step); its code is byte for byte
+  the `c7` copy I measured.
+- What I saw (`clips/v014_editor_round2_loops.mp4`, 20 s, frames 4800-6000 = the first 20 s of round 2, the season's
+  ace flying her; `stills/v014_editor_round2_sheet.jpg`, `stills/v014_editor_her_loop_pullup.jpg`): I loop with her
+  behind me and **she pulls up after me in round 2**: her blue plane climbs beside my white ring while my plane hangs
+  vertical in it, then she is above me as I come out (before change 7 her pull-up ran only in round 1). She loops on
+  her own a few seconds later. The ring stays clean and the view stays clear.
+- Not seen in this clip: **my own smoke**. Round 2 has just started and my plane is almost whole (a few small dark
+  puffs at the nose), so whether late-round smoke still covers the view is not proven by a picture. The numbers say
+  it should not (my puffs 0.4 of the size, 0.35 of the life, sinking away). The 20-minute film of a late round lost
+  the window lock to the other lanes, and at 13 GB free disk I cut it short. The graze rule is not something you can
+  see; I checked it in the files.
