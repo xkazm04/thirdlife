@@ -565,7 +565,7 @@
    "sun": {"color": "#9db4f0", "energy": 0.55, "elev": 42.0, "azim": 210.0},
    "toon": {"shade": "#1c2c66", "shade_k": 0.9, "shade_ground": "#222a58", "amb_sky": "#4a5aa0", "amb_energy": 0.35, "amb_ground": "#2a2a4a", "bounce": "#000000", "bounce_k": 0.0},
    "fog": {"color": "#1c2448", "density": 0.00045},
-   "sky": {"zenith": "#0b1030", "upper": "#16204a", "mid": "#24305e", "horizon": "#3a4a78", "ground": "#1a2040", "glow": "#8aa0d8", "glow_k": 0.35, "disc": "#e8f0ff", "disc_r": 0.018, "cloud": "#3a4878", "cloud_shade": "#222c54", "cloud_ink": "#0c1028", "sun_draw_elev": 28.0},
+   "sky": {"zenith": "#0b1030", "upper": "#16204a", "mid": "#24305e", "horizon": "#3a4a78", "ground": "#1a2040", "glow": "#8aa0d8", "glow_k": 0.35, "disc": "#eef2ff", "disc_r": 0.032, "cloud": "#3a4878", "cloud_shade": "#222c54", "cloud_ink": "#0c1028", "sun_draw_elev": 12.0, "sun_draw_yaw": -150.0, "stars": 1.0, "moon": 0.5},
    "water": {"deep": "#1c2650", "shallow": "#26346a", "sky": "#4a5a90", "stripe": "#5a6ca8", "foam": "#8a9ad0"},
    "grade": {"shadows": "#0c1c78", "highlights": "#ffd090", "split": 0.45, "sat": 0.78, "plum_density": 0.4, "olive_fill": 1.0},
    "lamps": 1.4

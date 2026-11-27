@@ -55,7 +55,8 @@ const KEYS: Dictionary = {
 	"sun": ["color", "energy", "elev", "azim"],
 	"toon": ["shade", "shade_k", "shade_ground", "amb_sky", "amb_ground", "amb_energy", "bounce", "bounce_k", "rim2", "rim2_k"],
 	"fog": ["color", "density", "height_density"],
-	"sky": ["zenith", "upper", "mid", "horizon", "ground", "glow", "glow_k", "disc", "disc_r", "cloud", "cloud_shade", "cloud_ink", "sun_draw_elev"],
+	"sky": ["zenith", "upper", "mid", "horizon", "ground", "glow", "glow_k", "disc", "disc_r", "cloud", "cloud_shade", "cloud_ink", "sun_draw_elev",
+		"sun_draw_yaw", "stars", "moon"],
 	"water": ["deep", "shallow", "sky", "stripe", "foam"],
 	"grade": ["shadows", "highlights", "sat", "split", "contrast", "lift", "plum_density", "olive_fill"],
 	"env": ["exposure"],
@@ -171,7 +172,7 @@ static func mix(a: Dictionary, b: Dictionary, w: float) -> Dictionary:
 		var vb: Variant = b.get(k, va)
 		if va is Color:
 			out[k] = (va as Color).lerp(vb as Color, w)
-		elif k == "sun.azim":
+		elif k == "sun.azim" or k == "sky.sun_draw_yaw":
 			out[k] = float(va) + wrapf(float(vb) - float(va), -180.0, 180.0) * w
 		else:
 			out[k] = lerpf(float(va), float(vb), w)
@@ -291,19 +292,27 @@ static func apply(rig: Node, d: Dictionary, lk: Dictionary) -> int:
 		n += 5
 		var sm: ShaderMaterial = env.sky.sky_material as ShaderMaterial if env.sky != null else null
 		if sm != null:
-			for k: String in KEYS["sky"]:
-				sm.set_shader_parameter(k, lk["sky." + k])
-				n += 1
+			n += _write(sm, d, "sky", lk)
 	var water: Variant = TLStyle._mats.get("water")
 	if water is ShaderMaterial:
-		for k: String in KEYS["water"]:
-			(water as ShaderMaterial).set_shader_parameter(k, lk["water." + k])
-			n += 1
+		n += _write(water as ShaderMaterial, d, "water", lk)
 	var grade: Node = rig.get_node_or_null("Grade/Rect")
 	if grade is CanvasItem and (grade as CanvasItem).material is ShaderMaterial:
-		var gm := (grade as CanvasItem).material as ShaderMaterial
-		for k: String in KEYS["grade"]:
-			if (d.get("grade", {}) as Dictionary).has(k) or lk["grade." + k] != _noon_value(d, "grade", k):
-				gm.set_shader_parameter(k, lk["grade." + k])
-				n += 1
+		n += _write((grade as CanvasItem).material as ShaderMaterial, d, "grade", lk)
+	return n
+
+
+## A section's keys onto a material. A key the style names is written as the look has it; a key it leaves out is written
+## only while it differs from noon's, and at noon its override is cleared (null: the shader's own default again), so
+## what install left (nothing set) is what noon leaves (stars, moon, a grade knob the file does not name).
+static func _write(m: ShaderMaterial, d: Dictionary, sec: String, lk: Dictionary) -> int:
+	var n := 0
+	var named: Dictionary = d.get(sec, {}) if d.get(sec, {}) is Dictionary else {}
+	for k: String in KEYS[sec]:
+		var v: Variant = lk[sec + "." + k]
+		if named.has(k) or v != _noon_value(d, sec, k):
+			m.set_shader_parameter(k, v)
+		else:
+			m.set_shader_parameter(k, null)
+		n += 1
 	return n

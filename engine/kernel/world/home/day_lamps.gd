@@ -13,6 +13,10 @@ const CAP := 48
 const CHOOSE_EVERY := 15
 const KEEP := 0.81                     # a live socket's squared distance is weighed by this (0.9 of its distance)
 const FADE := 12
+## Round 2 (27 Nov): a street lamp only burns at dusk and at night, where the kit's lantern light (half a house window,
+## 10.8 m) left a faint patch beside the light mast's pool. Its socket burns brighter, reaches further and falls off
+## flatter, in a warmer colour: the mast's pool is the bar. Factors on the kit's values (energy, range), values to set.
+const NIGHT := {"street_lamp": {"light_energy": 2.4, "omni_range": 1.6, "omni_attenuation": 0.9, "light_color": "#ffb04c"}}
 ## what a light node takes from another template of its own kind when its slot moves to it
 const PROPS: PackedStringArray = ["light_color", "light_specular", "light_indirect_energy", "light_size", "shadow_enabled",
 	"omni_range", "omni_attenuation", "spot_range", "spot_angle", "spot_angle_attenuation", "spot_attenuation"]
@@ -58,8 +62,19 @@ static func _walk(n: Node, xf: Transform3D, key: String, out: Array) -> void:
 
 
 func add_template(key: String, tpl: Dictionary) -> void:
-	if not templates.has(key):
-		templates[key] = tpl
+	if templates.has(key):
+		return
+	var t := tpl.duplicate()
+	var part := key.get_slice("|", 0)
+	for prop: String in (NIGHT.get(part, {}) as Dictionary):
+		var v: Variant = NIGHT[part][prop]
+		if prop == "light_color":
+			t[prop] = Color(String(v))
+		elif prop == "omni_attenuation":
+			t[prop] = v
+		elif t.has(prop):
+			t[prop] = float(t[prop]) * float(v)
+	templates[key] = t
 
 
 ## Section `s` lights from these sockets now: [[template key, world Transform3D], ...] ([] clears it).

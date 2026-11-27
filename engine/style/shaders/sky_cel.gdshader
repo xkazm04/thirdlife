@@ -20,6 +20,9 @@ uniform float disc_r = 0.027;
 uniform float disc_soft = 0.004;
 uniform float glow_k = 0.8;
 uniform float cloud_scale = 1.0;
+// Lane DN (27 Nov): the night. Both 0 by default, so every look that does not name them is drawn as before.
+uniform float stars = 0.0;   // 0 none .. 1 a full field: small cut dots fixed to the sky, fading towards the horizon
+uniform float moon = 0.0;    // 0 the disc is the sun; > 0 it is the moon: a flat shadow eats one side (more as it grows), three maria
 
 // Centre offset as a share of the sector, base elevation, half-width and
 // height in degrees. A low bank is longer than a high, billowing crown.
@@ -151,12 +154,39 @@ void sky() {
 	float angle = acos(clamp(dot(sun,d),-1.0,1.0));
 	// The broad peach field carries a smaller, yellow aureole immediately
 	// around the pale disc. Both follow its bearing across the sky join.
+	// EYEDIR is continuous at the longitude join, including its derivatives.
+	float pixel = degrees(max(length(dFdx(d)),length(dFdy(d))))*.68;
+	if (stars > .0 && h > .015) {
+		// cells of about 0.8 degree, narrower in longitude towards the zenith; one star in a share `stars` of them
+		float el = degrees(asin(h));
+		vec2 g = vec2(degrees(atan(d.z,d.x))*cos(asin(h)), el)/.8;
+		vec2 gi = floor(g);
+		float r = fract(sin(dot(gi,vec2(127.1,311.7)))*43758.5453);
+		if (r > 1.0-.07*stars) {
+			vec2 at = vec2(fract(r*13.7),fract(r*71.3))*.7+.15;
+			float dist = length(fract(g)-at)*.8;
+			float rad = pixel*(.55+1.1*fract(r*29.1));
+			float star = 1.0-smoothstep(rad-pixel*.5,rad+pixel*.5,dist);
+			c = mix(c,vec3(.93,.95,1.0),star*smoothstep(.015,.2,h)*(.55+.45*fract(r*7.9)));
+		}
+	}
 	c = mix(c,glow,glow_k*(.40*exp(-12.0*angle*angle)+.60*exp(-75.0*angle*angle)));
 	float feather = clamp(max(length(dFdx(d)),length(dFdy(d))),.00015,.002);
 	float rim = max(feather,disc_soft);
-	c = mix(c,disc,1.0-smoothstep(disc_r-rim,disc_r+rim,angle));
-	// EYEDIR is continuous at the longitude join, including its derivatives.
-	float pixel = degrees(max(length(dFdx(d)),length(dFdy(d))))*.68;
+	vec3 face = disc;
+	if (moon > .0) {
+		// the disc's own plane: a flat shadow disc offset to the lower left, and three darker maria, all cut
+		vec3 t1 = normalize(cross(sun,vec3(0.0,1.0,0.0)));
+		vec3 t2 = cross(t1,sun);
+		vec2 q = vec2(dot(d,t1),dot(d,t2))/disc_r;
+		float qa = rim/disc_r;
+		float sh = 1.0-smoothstep(1.0-qa,1.0+qa,length(q-vec2(-2.05+.95*moon,-.35)));
+		float mare = max(max(1.0-smoothstep(.26-qa,.26+qa,length(q-vec2(.22,.28))),
+			1.0-smoothstep(.2-qa,.2+qa,length(q-vec2(-.18,-.08)))),1.0-smoothstep(.15-qa,.15+qa,length(q-vec2(.38,-.32))));
+		face = mix(disc,disc*.8,mare);
+		face = mix(face,mix(c,disc,.18),sh);
+	}
+	c = mix(c,face,1.0-smoothstep(disc_r-rim,disc_r+rim,angle));
 	if (cloud_scale > .0 && h > .008 && h < .80) {
 		vec2 angles = degrees(vec2(atan(d.z,d.x),asin(h)));
 		c = cloud_at(c,angles,pixel,bearing,2);
