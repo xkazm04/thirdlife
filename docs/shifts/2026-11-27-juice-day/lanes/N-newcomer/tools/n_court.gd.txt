@@ -1,0 +1,70 @@
+extends "bot_hand_newcomer.gd"
+## N-newcomer (counting, FILM COPY ONLY; from J2nd j2n_oop.gd): the pack's newcomer hand (TLHand "newcomer" through the shared policy), who
+## has read "C alley-oop": with the ball he presses C about every 6 s of holding it, through the same TLHand (its
+## delays and misses). Counts every event kind by side, a whole match.
+
+var held := 0
+var press_c := false
+var main_node = null
+var hints: Array = []
+var last_hint := ""   # v0.1.9 never names C, so the newcomer never presses it; true once a version names it
+var counts := {}
+var lastc := -1
+
+func _side(s: Dictionary, id: String) -> String:
+	if id == "you":
+		return "hand"
+	if id == "" or not s["actors"].has(id):
+		return "none"
+	return ("mate" if s["actors"][id]["team"] == s["actors"]["you"]["team"] else "rival")
+
+func _hint_now() -> String:
+	if main_node == null:
+		for c: Node in ctx.root.get_tree().root.find_children("*", "", true, false):
+			var sc = c.get_script()
+			if sc != null and str(sc.resource_path).ends_with("scripts/main.gd") and c.get("game") != null:
+				main_node = c
+				break
+	if main_node == null or main_node.get("game") == null:
+		return ""
+	# the lesson module's own line (v0.1.10: teach_mod.hint, drawn first) wins over the game's hint line
+	var tm = main_node.get("teach_mod")
+	if tm != null and str(tm.get("hint")) != "":
+		return str(tm.get("hint"))
+	return str(main_node.get("game").get("hint_text"))
+
+
+func _bot_tick(frame: int) -> void:
+	var h: String = _hint_now()
+	if h != last_hint:
+		if h != "" and hints.size() < 30:
+			hints.append("%d %s" % [frame, h])
+		last_hint = h
+	# a version that names C on the hint line teaches him the key: from then on he presses it (late, as below)
+	if "C:" in h:
+		press_c = true
+	var s: Dictionary = ctx.pack_state()
+	for ev in s["events"]:
+		if int(ev["frame"]) > lastc:
+			var kind: String = str(ev["kind"])
+			if kind == "miss" and ev["data"].has("cause"):
+				kind = "miss_" + str(ev["data"]["cause"])
+			if kind.begins_with("oop") or kind in ["dunk", "make", "intercept", "miss_brick"]:
+				var k: String = kind + ":" + _side(s, str(ev["by"]))
+				counts[k] = int(counts.get(k, 0)) + 1
+	if not s["events"].is_empty():
+		lastc = int(s["events"][-1]["frame"])
+	if s["owner"] == "you" and s["actors"]["you"]["action"] == "free":
+		held += 1
+		if held > 360 and press_c:
+			tl.tap(&"oop")
+			held = 0
+	else:
+		held = 0
+	super._bot_tick(frame)
+
+func _bot_result() -> Dictionary:
+	var r: Dictionary = super._bot_result()
+	r["summary"] = str(r["summary"]) + "; oop events %s; hints %s" % [JSON.stringify(counts), str(hints)]
+	r["counts"] = counts
+	return r

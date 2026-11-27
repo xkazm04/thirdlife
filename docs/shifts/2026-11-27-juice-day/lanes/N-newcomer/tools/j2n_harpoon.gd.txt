@@ -1,0 +1,99 @@
+extends Node
+## J2nd round 2: a NEWCOMER (TLHand "newcomer" through the pack pilot); notices her ring 4 times in 10 and rolls 25 frames later. Else as J11's census hand (the pack's sharp pilot, E when she sits on my tail) plus Q (harpoon) when she
+## sits in front of my guns within 55 m. Counts every event by side from the pack's events; uses per minute.
+
+var ctx
+var hand: TLHand
+var pilot
+var done: bool = false
+var seen: Dictionary = {}
+var counts: Dictionary = {}
+var tailed: int = 0
+var loop_taps: int = 0
+var first: Dictionary = {}
+var ev_log: Array = []
+var harp_taps: int = 0
+var s_last: Dictionary = {}
+var hf: int = -9999
+var rng := RandomNumberGenerator.new()
+var was_aim: bool = false
+var roll_at: int = -1
+var rings: int = 0
+var noticed: int = 0
+
+
+func _bot_setup(c) -> void:
+	ctx = c
+	hand = TLHand.create(ctx, "newcomer")
+	rng.seed = 7
+	pilot = ctx.load_script("tests/support/pilot.gd").new()
+	pilot.setup(ctx, hand)
+
+
+func _bot_tick(frame: int) -> void:
+	var s: Dictionary = ctx.pack_state()
+	var me: Dictionary = s["me"]
+	var rv: Dictionary = s["rival"]
+	var p := Vector3(me["pos"][0], me["pos"][1], me["pos"][2])
+	var q := Vector3(rv["pos"][0], rv["pos"][1], rv["pos"][2])
+	var f := Vector3(me["fwd"][0], me["fwd"][1], me["fwd"][2])
+	var rel: Vector3 = q - p
+	var behind: bool = rel.dot(f) < 0.0 and rel.length() < 55.0
+	tailed = tailed + 1 if behind and s["phase"] == "fight" else 0
+	pilot.drive(s)
+	# a person who has learnt E: she has sat behind me a second, so loop over her
+	if tailed > 60 and me["state"] == "fly" and float(me["energy"]) > 45.0:
+		hand.tap(&"loop")
+		loop_taps += 1
+		tailed = -240
+	# a person who has learnt Q: she is in front of my guns, close: harpoon her
+	var ahead: bool = rel.dot(f) > 0.0 and rel.length() < 55.0 and rad_to_deg(f.angle_to(rel)) < 15.0
+	if ahead and s["phase"] == "fight" and me["state"] == "fly" and frame - hf > 120 and float(me["energy"]) > 45.0:
+		hand.tap(&"harpoon")
+		harp_taps += 1
+		hf = frame
+	var aim: bool = str(s.get("harpoon", {}).get("vesper", "")) == "aim"
+	if aim and not was_aim:
+		rings += 1
+		if rng.randf() < 0.4:
+			noticed += 1
+			roll_at = frame + 25
+	was_aim = aim
+	if frame == roll_at:
+		hand.tap(&"roll")
+	for e: Dictionary in s["events"]:
+		var key: String = "%d|%s|%s|%s|%s" % [int(e["f"]), e["type"], e["by"], e["on"], e["move"]]
+		if seen.has(key):
+			continue
+		seen[key] = true
+		var name: String = str(e["type"])
+		if name in ["fired", "windup_start"] and str(e["move"]) in ["roll", "loop", "harpoon"]:
+			name = str(e["move"]) + ("_ring" if name == "windup_start" and str(e["move"]) == "harpoon" else "")
+		elif false:
+			name = str(e["move"])
+		elif name in ["fired", "windup_start"]:
+			continue
+		var who: String = str(e["by"]) if str(e["by"]) != "" else str(e["on"])
+		var k: String = name + ":" + who
+		counts[k] = int(counts.get(k, 0)) + 1
+		if name in ["roll", "loop", "evade", "deflect", "reversed", "perfect_roll", "loop_stall", "round_over", "finisher", "kill", "shot_down", "crash", "harpoon", "harpoon_ring", "hooked", "flung", "whiff"] and ev_log.size() < 400:
+			ev_log.append("%d %s" % [int(e["f"]), k])
+		if not first.has(k):
+			first[k] = int(e["f"])
+	if s.has("juice"):
+		for k: String in s["juice"]:
+			counts["j_" + k] = s["juice"][k]
+	s_last = s.get("harpoon", {})
+	done = frame >= ctx.max_frames - 5
+
+
+func _bot_result() -> Dictionary:
+	var mins: float = maxf(1.0, float(ctx.frame)) / 3600.0
+	var per_min: Dictionary = {}
+	for k: String in counts:
+		per_min[k] = snappedf(float(counts[k]) / mins, 0.01)
+	return {"ok": true, "summary": "rings %d noticed %d; harpoon taps %d; stunts %s; harpoon %s" % [rings, noticed, harp_taps, JSON.stringify(counts), JSON.stringify(s_last)], "metrics": {"counts": counts, "per_min": per_min, "first_f": first, "loop_taps": loop_taps, "harp_taps": harp_taps, "harpoon": s_last, "log": ev_log, "frames": ctx.frame}}
+
+
+func _bot_done() -> bool:
+	return done

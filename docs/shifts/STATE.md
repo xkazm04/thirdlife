@@ -558,3 +558,4 @@ on the frame and the figure and Fable on surfaces and nature, looping for 10 hou
 - 23:37: disk back to ~76 GB (gtai removed ~29 GB of raw .rgb frame dumps and stale mutate copies). Finding: devx/test/gate-honesty.test.mjs leaves a tl_hon_* repo per run in %TEMP% (5260 since 25 Nov, 1.8 MB).
 - 23:55: T3 round 2 landed (f8b3a687; merged: fast 5/5, npm 536/529/0/7, cards check ok): 'NEW MOVE: none', text-copy check, words kept on screen.
 - 00:12: T3 round 3 landed (the 'how often' guard): fast 5/5, npm 537/530/0/7.
+- 00:35: N-newcomer round 2: shield v0.1.19 clear screen, karts v0.1.12 who got shelled, biplane v0.1.11 harpoon taught, court v0.1.11 alley-oop taught (court play changed unasked: an old animation copy restored). Menu 86. All lanes done.

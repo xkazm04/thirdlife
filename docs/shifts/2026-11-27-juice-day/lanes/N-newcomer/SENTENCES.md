@@ -29,3 +29,35 @@ I played my first minute as a newcomer and the game told me wrong things about m
 ```
 The MEGA lines work: I see "YOUR CHECK MADE YOU MEGA" and "RMB CHECK: GO MEGA" in the panel now. One thing is broken on the HOME screen: the two new lines are too long for the ONE MATCH card, so they run past its right edge and are cut off ("...your shot floors everyone." and "bump them" sticks out of the card, "flat." is gone). Make every line of the ONE MATCH card fit inside the card (shorter words or wrapped onto two lines, the card growing taller if it must), for example "F: METEOR. Light your stick, hold shoot:" / "your shot floors everyone." and "Land a body check (RMB): you go MEGA," / "twice the size. Bump them flat." Change nothing in the match.
 ```
+
+# Round 2
+
+## Shield wall (clutter), sent 22:11:12 -> v0.1.19
+
+```
+As a newcomer I cannot see the fight for the words: the hint line ("CALL WHEN UP", "RED CIRCLE: step out...") floats in the middle of the screen right across the fighters, and the big HEALTH ||||| / STAMINA ||||| text plates of my captain and of the rival sit over the quay on both sides, with YOU, OPEN: HIT NOW and HIT FROM BEHIND/SIDE stacked over the heads too. Clear the middle: put the hint line at the bottom, on a dark strip just above the key row, never over the fighters; turn the HEALTH and STAMINA text plates into two slim coloured bars in the top corners (mine top left under CAPTAIN'S CALL, the locked rival's top right) with the name small above them; keep the words over the heads short and one at a time. Change nothing in the fight itself.
+```
+
+## Bumper-kart football, sent 22:28:34 -> v0.1.12
+
+```
+As a newcomer I now meet the boxes and the shells in my first minute, thank you. But SHELLED! comes up big and red in the middle of the screen every time anyone on the deck is hit, two or three times a minute, so I never know whether it was me, my mate, or the kart my own shell hit: I think I am being shelled all the time. Make the word say who: when I am hit, "YOU'RE SHELLED!" big and red with the name of the kart that fired it ("by Mint 2") under it; when my own shell hits, "GOT HIM!" big in my team's colour; when a mate or a rival is hit by someone else, only a small "SHELLED!" tag over that kart, not the big word in the middle. Change nothing in the shells themselves.
+```
+
+## Biplane duel, sent 22:33:06 -> v0.1.10
+
+```
+As a newcomer I still never hook Vesper in my first minute. In the lesson "Q: harpoon her while she sits in front of your nose" comes up, but she flies below and behind me, a small VESPER arrow at the bottom edge, never in front of my nose, and after 15 seconds the lesson moves on to "Follow them" whether I hooked her or not; later "They loop behind you. Fly on." sits on the screen for half a minute and tells me nothing to do. Make the harpoon pass happen where I can see it: Vesper flies level at my height about 30 m straight ahead, slowly enough to stay in my sight, a red ring closes on her and "Q NOW!" shows while she is in my harpoon's reach, and the pass waits until I have hooked her once (or 40 seconds); only then go on.
+```
+
+## Half-court 3 v 3, sent 22:43:01
+
+```
+As a newcomer I never find the alley-oop in my first minute: nothing on the screen ever says C. The hint line only switches between "HOLD E ON THE CHALK" and "SPACE: SWAT AS THEY RISE", and the glow over my open teammate is a few pale pixels from the play camera. Teach it: whenever I hold the ball and a teammate is open for a lob, put "C: ALLEY-OOP" in big yellow letters over that teammate with a pulsing yellow ring at his feet and a big glow over his hand, and say "C: ALLEY-OOP" on the hint line the first few times (one line at a time, after the chalk and swat lines), every match, not only in the lesson. Change nothing in how the alley-oop or the rivals play.
+```
+
+## Biplane duel, second sentence, sent 23:18:11
+
+```
+Much better: the harpoon pass now waits for me, and when I chase her well I hook her in the first seconds. But from my camera behind my plane, Vesper sits exactly behind my own fuselage during the pass: "Q NOW!" and the red ring are drawn on my own plane and I cannot see her at all, only a bit of blue wing poking out; she only shows when I bank away, and then she is out of reach. Put her where I can see her: during the pass she flies 4-5 m above my nose line, so she sits in the top half of the screen just above my aim cross, a little to one side, and keep "Q NOW!" and the ring on her there. Show one hint at a time ("Q: harpoon Vesper..." and "Harpoon: get Vesper in front of your nose" should not both appear in the pass).
+```

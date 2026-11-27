@@ -263,3 +263,221 @@ looked at.
   have no newcomer hand on their cards at all. So the card's newcomer figure (robots 15 of 20) says nothing about
   whether a newcomer finds the crazy ability. Only a hand that reads the screen does.
 - `TL_EXE_KEYS` cannot press mouse buttons; two of these three games teach with the mouse.
+
+---
+
+# Round 2 (Director, 22:05): karts, biplane, court, and the shield clutter (22:10-)
+
+Tree unchanged: main from 48a7e24b, foreman not rebuilt (the Director did not merge main here). Job copies (plain
+`cp -r` at 22:10; every original's last `job_state` was `done`; originals untouched), in
+`C:/Users/kazda/kiro/third-life/.claude/worktrees/d27-newc/.tl/jobs/`:
+- `bumper-kart-football-3-20261125-1` from `d25-kart/.tl/jobs/j2nd/` (newest v0.1.11, last seq 1793);
+- `biplane-duel-two-biplanes-20261125-1` from `d25-court/.tl/t2e/jobs/` (newest v0.1.9, last seq 1063);
+- `half-court-3-v-20261125-1` from `d25-kart/.tl/jobs/j2nd3/` (newest v0.1.9, last seq 2180).
+Shield went on in my own copy (v0.1.18 -> v0.1.19). Same method as round 1: the exe in a window with a told-keys-only
+open-loop stream (`tools/keys.mjs.txt`, games `kart`, `plane`, `court` added), the engine in a window with a closed-loop
+newcomer, headless newcomer hands. The newcomer hands this round: J2nd's `j2n_shell.gd` (karts) and `j2n_harpoon.gd`
+(biplane, TLHand "newcomer") as J2nd wrote them, so the figures compare with J2nd's; `n_kart.gd` (j2n_shell plus a log
+of the big shell word and whose shell it was); `n_court.gd` (the pack's newcomer hand plus J2nd's C press, which he only
+makes once a hint line has named C; it reads the game's hint line and, from v0.1.10, the lesson's own line).
+
+## Round 2 verdict (00:33)
+
+Again the worst thing in each newcomer's first minute was what the screen said or hid, and one sentence fixed it on its
+first round each time; biplane and court took their one follow-up. 6 sentences, 6 promotions, 16 model calls, 9.41M tokens
+in (8.62M cache reads), 77.2k out.
+
+| Game | Worst thing (first minute) | Versions | Newcomer after | Pick |
+|---|---|---|---|---|
+| Shield wall | hint line, HEALTH/STAMINA plates and head tags all over the fight | -> v0.1.19 (22 min) | middle clear; plays as v0.1.18 | **v0.1.19** |
+| Karts | SHELLED! big for every hit on the deck: was it me? | -> v0.1.12 (34 min) | YOU'RE SHELLED! by Mint 2 / GOT HIM! / small tags; hands 16/20, 19/20 | **v0.1.12** |
+| Biplane | the harpoon pass happens below and behind him and ends after 15 s: 0 hooks | -> v0.1.10 (32 min), follow-up -> v0.1.11 (29 min) | 1 hook in his first minute (was 0); in the exe Vesper sits above his nose under Q NOW!, the blind stream hooks her | **v0.1.11** |
+| Court | C is never named | -> v0.1.10 (54 min), follow-up -> v0.1.11 (40 min) | big yellow C: ALLEY-OOP over the open mate, on the hint line 2-3 times; hands 17/20, 20/20; one bottom line, the commentary on a strip under the score | **v0.1.11** |
+
+Pack paths and titles: REPORT.txt "MENU (round 2)". Court v0.1.10/v0.1.11 carry an unasked play change from a stale
+package workspace (finding 5), and a faint ghost of the old commentary line remains at the top left of court v0.1.11.
+
+## Shield wall: the clutter (sentence 22:11:12 -> v0.1.19, promoted 22:33:23, 22 min) **<- the new shield pick**
+- What the newcomer saw (v0.1.16-v0.1.18, round 1's films: `stills/shield_v0116_exe_20-38s_sheet.jpg`,
+  `stills/shield_v0118_window_call_when_up.jpg`): the hint line floats in the middle of the screen across the fighters;
+  big HEALTH ||||| / STAMINA ||||| text plates for his captain (left) and the locked rival (right) sit over the quay;
+  YOU, OPEN: HIT NOW and HIT FROM BEHIND/SIDE stack over the heads.
+- The Planner named core; core r24 merged first round (`scripts/show.gd`, `data/tuning.json`). **Cost: 2 model calls,
+  0.86M tokens in (0.79M cache reads), 7.6k out.** In its words: the hint is drawn on a dark strip above the key row;
+  health and stamina are slim bars in the top corners (mine left, the locked rival right) with the name small above; the
+  head tags are one short word, "OPEN!" or "FLANK!", else a tiny health mark; it no longer shows "YOU" over my man ("this
+  differs from the contract's health+stamina large for controlled and its lock", said on the card).
+- Drawing only: the newcomer hand plays v0.1.19 exactly as v0.1.18 (seed 1 **b0341c1a twice**, seed 2 08e7ec9c; 0 errors).
+- **Window** (`clips/r2_shield_v0119_window_clear_middle.mp4`, 22 s; `stills/r2_shield_v0119_window_red_circle_strip.jpg`,
+  `stills/r2_shield_v0119_window_10-17s_sheet.jpg`, `stills/r2_shield_v0119_window_call_when_up_40s.jpg`): the same
+  0:56 moment as round 1's v0.1.18 still: the middle of the screen is the fight now; "CALL WHEN UP" and "RED CIRCLE: step
+  out, or hold RIGHT MOUSE over your head" sit on a dark strip just above the key row; OPEN! is one short word over the
+  rival. The corner bars are thin and small; the names over them are tiny.
+- **Exe** (`clips/r2_shield_v0119_exe_newcomer.mp4`, 25 s; `stills/r2_shield_v0119_exe_g_ready_strip_20s.jpg`): the same
+  open-loop stream as round 1, and this time his first Q press (made while busy) is kept by v0.1.18's change: the call
+  goes off and **G READY / READY: CATAPULT** lights in the key row 20 s in (v0.1.16 and v0.1.17 with the same stream:
+  never in the minute).
+
+## Bumper-kart football (red shell on F, jump on Q)
+
+### v0.1.11: the newcomer's first minute
+- **Exe** (`clips/r2_kart_v0111_exe_newcomer.mp4`, 28 s; `stills/r2_kart_v0111_exe_f_hint_shell_held.jpg`,
+  `stills/r2_kart_v0111_exe_shelled_whom.jpg`): J2nd's fix holds: rainbow boxes on the deck from GO!, the hint line
+  stages "Drive through a rainbow box" -> "F fires a red shell" -> "Q jumps over one", and a held shell reads as a red
+  disc over his tub. But at 2:43 **SHELLED!** fills the middle of the screen while four karts scrum round the ball:
+  whose hit was it?
+- **Window, closed loop** (`clips/r2_kart_v0111_window_shelled_whom.mp4`, 24 s; `stills/r2_kart_v0111_window_0-28s_sheet.jpg`):
+  the same: SHELLED! big for every hit; after the first goal the hint line goes back to "W drive, SHIFT boost, SPACE
+  bump its side" for the rest of the minute.
+- **Headless** (`n_kart.gd`; seed 1 **08fe071f twice**, J2nd's hash for v0.1.11; seed 2 3a106ab0; 0 errors): 1-2 boxes,
+  1 shell fired, shelled once; the big word came up 3 times in his first minute (seed 1): after his own shell's hit
+  (frame 628), mint_2's hit on him (1161), and a hit by mint_2 and red_2 on others (2275). The same word each time.
+- Read in the pack (`scripts/items/items.gd`): `shelled_text` is set on every hit, whoever fired and whoever was hit.
+
+### Sentence (22:28:34) -> v0.1.12 (promoted 23:02:16, 34 min) **<- the karts pick**
+- The Planner named items; items r5 merged first round (`data/items.json`, `scripts/items/items.gd`). The Foreman also
+  sent "the rivals' part" to teams r8, which changed nothing ("needs no work in my files"). **Cost: 3 model calls,
+  1.85M tokens in (1.70M cache reads), 12.0k out.**
+- Built: **YOU'RE SHELLED!** big and red with "by <kart>" under it only when he is hit; **GOT HIM!** in red when his own
+  shell hits; any other hit only a small red SHELLED! tag over that kart for 60 frames.
+- v0.1.12 = my film copy `kart12c` (`diff -rq`: only `pack.json`'s tests list and my test). Drawing only: seed 1
+  **08fe071f twice** (= v0.1.11), seed 2 3a106ab0; the big words in seed 1: GOT HIM! (628), YOU'RE SHELLED! (1161); the
+  third hit is a tag. Hands over 20 seeds (the Foreman's final checks): **newcomer 16 of 20, perfect 19 of 20** (v0.1.11:
+  16 and 19, J2nd).
+- **Window** (`clips/r2_kart_v0112_window_got_him_youre_shelled.mp4`, 24 s; `stills/r2_kart_v0112_window_got_him.jpg`,
+  `stills/r2_kart_v0112_window_youre_shelled_by_mint2.jpg`, `stills/r2_kart_v0112_window_got_him_shelled_sheet.jpg`):
+  GOT HIM! in red over the far end when his shell lands; at 2:48 **YOU'RE SHELLED!** with "by Mint 2" over his own
+  flipped tub.
+- **Exe** (`clips/r2_kart_v0112_exe_newcomer.mp4`, 28 s; `stills/r2_kart_v0112_exe_same_hit_small_tag.jpg`): the very
+  same 2:43 scrum as v0.1.11's still (same stream, same seed): the big SHELLED! is gone, a small red SHELLED! tag hangs
+  over the kart that was hit. He can tell now.
+
+## Biplane duel (harpoon on Q, roll on Shift)
+
+### v0.1.9 (T2's copy): the newcomer's first minute
+- **Exe** (`clips/r2_plane_v019_exe_harpoon_pass_below.mp4`, 28 s; `stills/r2_plane_v019_exe_q_hint_vesper_below.jpg`,
+  `stills/r2_plane_v019_exe_0-28s_sheet.jpg`): "ARROWS fly, hold W", then the lesson's harpoon pass: "Q: harpoon her
+  while she sits in front of your nose" for 15 s, while Vesper is a small blue VESPER arrow at the bottom edge, below and
+  behind him; then the lesson moves on to "Follow them" without a hook.
+- **Window, closed loop** (`clips/r2_plane_v019_window_no_hook_fly_on.mp4`, 28 s; `stills/r2_plane_v019_window_0-28s_sheet.jpg`,
+  `stills/r2_plane_v019_window_fly_on_38s.jpg`): no hook either; "Harpoon: get Vesper in front of your nose, inside
+  60 m" names no key; **"They loop behind you. Fly on."** stays on the screen for about 25 s and tells him nothing to do.
+- **Headless** (`j2n_harpoon.gd`; seed 1 **c38ee476 twice**, seed 2 efb0aacf; 0 errors): 1-3 harpoon tries, **0 hooks**
+  in his first minute; Vesper fires 0-1.
+- Read in the pack (`scripts/first/first.gd`): the pass (`cross`) ends at `cross_max_f` 900 frames whether he hooked
+  her or not.
+
+### Sentence 1 (22:33:06) -> v0.1.10 (promoted 23:05:14, 32 min)
+- The Planner named first_flight; first_flight r5 merged first round and handed its new numbers to core (r31, `data/tuning.json`
+  `lesson` keys, "nothing plays differently"). **Cost: 3 model calls, 2.01M tokens in (1.84M cache reads), 17.9k out.**
+- Built: the pass waits until one hook or 40 s; Vesper level at his height on his nose line, 32 m ahead, at 0.85 of his
+  speed; a red ring and "Q NOW!"; a miss reloads at once in the pass; the loop line now reads "Vesper loops to get
+  behind you: keep flying level". The card: "balance moved by your change: ... the share of test rounds where the lead
+  changes hands: now 0, was 1", not judged.
+- v0.1.10 = my film copy `plane10c` (`diff -rq`: only `pack.json`'s tests list and my test).
+- **Headless** (seed 1 **e3af709a twice**, seed 2 06229c8e; 0 errors): **he hooks Vesper once in his first minute in
+  each seed** (v0.1.9: 0), 3-4 tries.
+- **Window** (`clips/r2_plane_v0110_window_hooked_in_lesson.mp4`, 26 s; `stills/r2_plane_v0110_window_hooked_sheet.jpg`,
+  `stills/r2_plane_v0110_window_5s.jpg`): **HOOKED!** about 5 s in, "HOOKED! Now stay on her tail", then the new loop line.
+  Caveat: this closed-loop pilot hooks her at about frame 300, the frame the pass begins, right after "She rolled off your
+  harpoon" (the same in v0.1.11's window run, `clips/r2_plane_v0111_window_newcomer.mp4`,
+  `stills/r2_plane_v0111_window_hooked_sheet.jpg`), so the window runs show the hook, not the pass's picture; the exe
+  runs show the pass.
+- **Exe** (`clips/r2_plane_v0110_exe_q_now_hidden.mp4`, 28 s; `stills/r2_plane_v0110_exe_q_now_vesper_behind_my_plane.jpg`,
+  `stills/r2_plane_v0110_exe_17-35s_sheet.jpg`): "Q: harpoon Vesper, straight ahead of your nose" and **Q NOW!** with
+  the red ring come up again and again, but from the chase camera she sits right behind his own fuselage: the ring is
+  drawn on his plane and only a scrap of blue wing shows. The open-loop stream got no hook in the minute. Two hint lines
+  also alternate in the pass ("Q: harpoon Vesper..." and "Harpoon: get Vesper in front of your nose, inside 60 m").
+
+### Sentence 2 (23:18:11): Vesper above the nose line, one hint at a time
+-> v0.1.11 (promoted 23:47:36, 29 min) **<- the biplane pick**
+- The Planner named core; core r32 lifted her from `main` (`_lesson_lift`, `harpoon.lesson_up` 4.5 m) and said the pass
+  itself lives in first_flight's script; first_flight r6 then placed her there directly (4.5 m above my nose line, 2.5 m
+  to the right) and said the one-hint part was already done by core (the "Harpoon: get Vesper..." line is hidden in the
+  pass). Both merged first round. **Cost: 3 model calls, 1.69M tokens in (1.53M cache reads), 12.9k out.** The card:
+  "balance moved: ways of the core move that work: now 2, was 3", not judged.
+- v0.1.11 = my film copy `plane11c` (`diff -rq`: only `pack.json`'s tests list and my test).
+- **Headless** (seed 1 **4df31017 twice**, seed 2 eb7b3fba; 0 errors): he hooks her once in his first minute in each seed,
+  3 tries (as v0.1.10).
+- **Exe** (`clips/r2_plane_v0111_exe_q_now_visible_hooked.mp4`, 26 s; `stills/r2_plane_v0111_exe_q_now_above_nose.jpg`,
+  `stills/r2_plane_v0111_exe_q_now_hooked_sheet.jpg`): Vesper's blue biplane now sits just above his nose in the upper
+  middle of the screen with **Q NOW!** and the red ring on her, clearly apart from his own plane; one hint line ("Q:
+  harpoon Vesper, straight ahead of your nose"). Even the blind open-loop stream **hooks her about 18 s in**: HOOKED!
+  big and red, "HOOKED! Now stay on her tail". (v0.1.10 with the same stream: no hook in the minute.)
+
+## Half-court 3 v 3 (alley-oop on C)
+
+### v0.1.9: the newcomer's first minute
+- **Exe** (`clips/r2_court_v019_exe_no_c.mp4`, 28 s; `stills/r2_court_v019_exe_0-28s_sheet.jpg`) and **window, closed
+  loop** (`clips/r2_court_v019_window_no_c.mp4`, 28 s; `stills/r2_court_v019_window_0-28s_sheet.jpg`,
+  `stills/r2_court_v019_window_ball_no_c_hint.jpg`): the hint line flips between "HOLD E ON THE CHALK" and "SPACE: SWAT AS
+  THEY RISE" (in the first seconds it is drawn twice, a blurred copy under the first); **C is never named**; no cue over
+  an open mate.
+- **Headless** (`n_court.gd`, which presses C only once a hint names it; seed 1 **64240fb0 twice**, seed 2 51928ae2; 0
+  script errors; every run's only error is the pack hand's own "not done within 3600 frames", it plays whole matches):
+  the hint lines he saw in seed 1, 19 of them: chalk, swat, "SPACE: JUMP TO STEAL IT" once, "CLEAR IT PAST THE ARC";
+  never C. The rivals throw and land an alley-oop in his first minute; he throws none.
+
+### Sentence (22:43:01) -> v0.1.10 (promoted 23:37:23, 54 min) **<- the court pick**
+- The Planner named bodies_first_minute; r5 merged first round (`data/clips.json`, `scripts/bodies/mod.gd`,
+  `scripts/bodies/poses.gd`, `scripts/teach/mod.gd`); its note about where the cue's numbers live went on to
+  court_exchange r21 as "the rest of your change", which copied them into `data/tuning.json` and made `scripts/main.gd`
+  keep one hint line at a time. **Cost: 3 model calls, 1.56M tokens in (1.41M cache reads), 14.9k out.**
+- Built: "C: ALLEY-OOP" at 64 pt in strong yellow over the open mate whenever he holds the ball and a mate is open, a
+  pulsing ring at that mate's feet and a glow ball over his hand, every match; "C: ALLEY-OOP" on the hint line up to 3
+  times a match once a mate newly opens.
+- **Hands over 20 seeds** (the Foreman's final checks): **newcomer 17 of 20, perfect 20 of 20** (v0.1.9: newcomer 17 of
+  20).
+- v0.1.10 = my film copy `court10c` (`diff -rq`: only `pack.json`'s tests list and my test).
+- **Headless** (seed 1 **181bc670 twice**, seed 2 3c3c439a): "C: ALLEY-OOP" reaches his hint line 2-3 times in his first
+  minute (frames 699, 903, 2051 in seed 1; first at frame 218 in seed 2). **Play moved, unasked:** the pack's own newcomer hand (which
+  never reads the screen) hashes 64240fb0 on v0.1.9 and 181bc670 on v0.1.10. The cause I found: bodies_first_minute
+  merged `scripts/bodies/poses.gd` and `mod.gd` from its own workspace, which lacks v0.1.9's pose cache (`pose_step_f` /
+  `resync_f` from `data/crews.json` are no longer read). The card does not mention it (editor finding 5 below).
+- **Window** (`clips/r2_court_v0110_window_c_alley_oop_cue.mp4`, 22 s; `stills/r2_court_v0110_window_c_cue_11s.jpg`,
+  `stills/r2_court_v0110_window_c_cue_sheet.jpg`): 11 s in, with the ball, **C: ALLEY-OOP** in big yellow letters
+  stands over his open mate at the right wing, a yellow ring at the mate's feet and a big yellow glow over his hand;
+  readable from the play camera. Two hint lines are drawn stacked for a moment ("C: ALLEY-OOP" over "HOLD E ON THE
+  CHALK").
+- **Exe** (`clips/r2_court_v0110_exe_newcomer_off_ball.mp4`, 28 s from 30 s; `stills/r2_court_v0110_exe_30-58s_sheet.jpg`,
+  `stills/r2_court_v0110_exe_overlapping_labels_54s.jpg`): the open-loop stream is off the ball the whole minute, so the
+  cue never comes up for him (it needs him holding the ball with a mate open); the rivals' STOLEN! and ALLEY-OOP! read
+  big. At 0:53 the top-left commentary line ("YOUR MAN NOW - MOSS: ...") is drawn over another line, the letters pile
+  into each other, and the score is gone while it shows.
+
+### Sentence 2 (23:45:55) -> v0.1.11 (promoted 00:26:04, 40 min) **<- the court pick**
+- The Planner named court_exchange; r22 merged first round (`data/tuning.json`, `scripts/main.gd`). **Cost: 2 model
+  calls, 1.44M tokens in (1.35M cache reads), 11.9k out.** Built, in its words: one bottom "hint" label for everything
+  (the lesson's own label kept empty); the crews module's "matchup" line drawn by `main` on a new dark strip centred under
+  the score (the old label "kept but drawn invisible").
+- Drawing only: seed 1 **181bc670 twice** (= v0.1.10), seed 2 3c3c439a. Hands over 20 seeds: **newcomer 17 of 20,
+  perfect 20 of 20**. v0.1.11 = my film copy `court11c` (`diff -rq`: only `pack.json`'s tests list and my test).
+- **Window** (`clips/r2_court_v0111_window_one_line.mp4`, 22 s; `stills/r2_court_v0111_window_one_bottom_line_11s.jpg`):
+  the same 0:11 moment as v0.1.10: one bottom line, "C: ALLEY-OOP", under the big cue over the open mate; no stack.
+- **Exe** (`clips/r2_court_v0111_exe_commentary_strip.mp4`, 28 s from 30 s; `stills/r2_court_v0111_exe_commentary_strip_54s.jpg`):
+  the same 0:53 moment: the score CREW 5 - 7 QUARRY stays, and "YOUR MAN NOW - MOSS: SHOOT OVER MOSS" reads on a dark
+  strip right under it. **Not fully fixed:** a faint ghost of the old top-left line still shows behind the score's left
+  end (the "invisible" label is not fully transparent in that frame). My one follow-up is spent; this is for the next
+  pass.
+- Both window runs (v0.1.9 and v0.1.10) printed one SCRIPT ERROR at exit from the kernel runner's watchdog thread
+  (`res://kernel/runner/worker.gd:387`, "Cannot call method 'lock' on a null value"), not from the pack; every headless
+  run: 0 script errors.
+
+## Round 2 editor findings (for the Director and the T lanes; evidence in the copies' job logs)
+5. **A package merged whole files from a stale workspace and undid a later change.** Court v0.1.10: bodies_first_minute
+   r5 merged `scripts/bodies/poses.gd` and `mod.gd` from its workspace; that workspace still held the alley-oop cue from
+   the failed change of 17:39 (J2nd finding 10), which no promoted version had, and its `poses.gd` predates v0.1.9's
+   (my reading of the diff). Result: v0.1.9's pose cache (`crews.json` `anim.pose_step_f`, `resync_f`) is gone
+   and play moved: the pack's own newcomer hand hashes 64240fb0 on v0.1.9 and 181bc670 on v0.1.10 (3600 frames, seed 1).
+   Its note even says the cue "still shows ... as before" though no promoted version had it. The card says nothing of
+   the play change. Evidence: court copy events 2188, 2198; `.tl/n/r/court9_packnew.json`, `court10c_packnew.json`.
+   (Main has T2's "refused changes leave nothing behind"; this tree is from 48a7e24b, so this may already be fixed.)
+6. **A "the rest of your change" hop for a note.** Court: bodies_first_minute's remark about where the cue numbers live
+   went to court_exchange r21 as an unmade part, and court_exchange copied the numbers into `data/tuning.json`, so the cue
+   now has two homes (event 2200). Karts: "the rivals' part" went to teams r8, which changed nothing (event 1804; the
+   same shape as J2b's finding 1).
+7. **Two packages steer one thing.** Biplane v0.1.11: core r32 lifted Vesper from `main` (`_lesson_lift`) while the pass
+   lives in first_flight's script; first_flight r6 then placed her itself and left core's lift in, "does nothing and can
+   stay" (events 1148, 1169).
+8. The kernel runner's watchdog thread printed a SCRIPT ERROR at exit in two windowed court runs
+   (`res://kernel/runner/worker.gd:387`, `_wd_mutex` null), not in headless runs. Kernel, not pack.

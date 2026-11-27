@@ -1,0 +1,83 @@
+extends "bot_teams.gd"
+## N-newcomer (FILM COPY ONLY; J2nd j2n_shell.gd plus a log of the big shell word, who it was about): a NEWCOMER's hand on rookie, lesson and all (TLHand "newcomer": its own
+## reaction delays and misses), who has read "F fire": with a shell he fires 40-90 frames after picking it up, aimed or
+## not; he notices a shell homing on him 4 times in 10 and jumps 30 frames later. Counts what happens to him.
+
+var rng := RandomNumberGenerator.new()
+var held_since: int = -1
+var fire_at: int = -1
+var jump_at: int = -1
+var seen: Dictionary = {}
+var c: Dictionary = {"warned": 0, "noticed": 0, "shelled": 0, "dodged": 0, "fired": 0, "hit_by_me": 0, "boxes": 0, "live_f": 0}
+var prev_targeting: Array = []
+var words: Array = []
+var last_word := ""
+
+func _init() -> void:
+	profile = "newcomer"
+	skip = false
+	rng.seed = 7
+
+
+func _measure(s: Dictionary, frame: int) -> void:
+	super._measure(s, frame)
+	if s["phase"] == "live":
+		c["live_f"] += 1
+	if not s.has("items"):
+		return
+	var w: String = str(s["items"].get("shelled_text", ""))
+	if w != last_word:
+		if w != "" and words.size() < 30:
+			var hit_ids: Array = []
+			for e: Dictionary in s["events"]:
+				if e["type"] == "item" and e["kind"] == "hit":
+					hit_ids.append(str(e["kart"]))
+			words.append("%d %s %s" % [frame, w, str(hit_ids)])
+		last_word = w
+	var now: Array = []
+	for sh: Dictionary in s["items"]["shells"]:
+		if sh["target"] == "p1":
+			var key: String = "%s@%.0f" % [sh["owner"], 0.0]
+			now.append(sh["owner"])
+	var hit_now: bool = false
+	for e: Dictionary in s["events"]:
+		if e["type"] == "item":
+			if e["kind"] == "hit" and e["kart"] != "p1":
+				hit_now = true
+			if e["kart"] == "p1":
+				if e["kind"] == "jump_dodge": c["dodged"] += 1
+				elif e["kind"] == "fire": c["fired"] += 1
+				elif e["kind"] == "hit": c["hit_by_me"] += 1
+				elif e["kind"] == "box": c["boxes"] += 1
+	for o in now:
+		if not prev_targeting.has(o):
+			c["warned"] += 1
+			if rng.randf() < 0.4:
+				c["noticed"] += 1
+				jump_at = frame + 30
+	if hit_now and prev_targeting.size() > now.size() and str(s["karts"][0]["state"]) != "drive":
+		c["shelled"] += 1
+	prev_targeting = now
+
+
+func _play(s: Dictionary, frame: int) -> void:
+	super._play(s, frame)
+	if not s.has("items") or s["phase"] != "live":
+		return
+	var held: bool = bool(s["items"]["held"].get("p1", false))
+	if held and held_since < 0:
+		held_since = frame
+		fire_at = frame + rng.randi_range(40, 90)
+	if not held:
+		held_since = -1
+	if held and frame == fire_at:
+		hand.tap(&"fire_item")
+	if frame == jump_at:
+		hand.tap(&"jump")
+
+
+func _bot_result() -> Dictionary:
+	var r: Dictionary = super._bot_result()
+	r["summary"] = "newcomer: %s; words %s; %s" % [str(c), str(words), str(r.get("summary", ""))]
+	r["newcomer"] = c
+	return r

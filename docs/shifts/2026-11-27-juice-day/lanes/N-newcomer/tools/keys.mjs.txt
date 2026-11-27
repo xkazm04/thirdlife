@@ -33,6 +33,24 @@ if (game === 'robot') {
   for (let f = 320; f < N; f += ri(8, 30)) ev.push([f, `~${ri(-40, 40)},${ri(-30, 30)}`]);
   taps('F', 300, 600, 600, 6, N, 0.3);
   holds('Shift', 300, 600, 40, 120, 700);
+} else if (game === 'kart') {
+  // told: "W drive, SHIFT boost, SPACE bump its side" from the start; after a box "F fires a red shell"; then "Q jumps
+  // over one" (J2nd round 2, v0.1.11's lesson hint line); E (whirl) is never named in the first minute
+  put(140, 'W', true);
+  bursts(['A', 'D'], 50, 170, 15, 60);
+  taps('Space', 90, 240); taps('Shift', 300, 500, 300, 40);
+  taps('F', 240, 420, 700); taps('Q', 400, 700, 1200);
+} else if (game === 'plane') {
+  // told: "HOLD W", "SPACE: fire when they sit in your sight", the lesson's "Q: HARPOON her as she crosses your nose";
+  // the roll (Shift) is named by her "HARPOON! ROLL" warning; E (loop) and F are not named in the first minute
+  put(140, 'W', true);
+  bursts(['Left', 'Right', 'Up', 'Down', 'Left', 'Right'], 30, 110, 20, 80);
+  taps('Space', 40, 100, 150, 10); taps('Q', 300, 450, 300); taps('Shift', 400, 700, 900);
+} else if (game === 'court') {
+  // told: "HOLD E ON THE CHALK", "SPACE: SWAT AS THEY RISE", SPACE to shoot; WASD the universal guess; C is never named
+  bursts(['W', 'A', 'S', 'D', 'W', 'W'], 20, 90, 30, 120);
+  for (let f = 300 + ri(0, 150); f < N; f += ri(150, 300)) { put(f, 'Space', true); put(f + ri(18, 40), 'Space', false); }
+  holds('E', 300, 600, 40, 120, 400);
 }
 ev.sort((a, b) => a[0] - b[0]);
 console.log(ev.map(([f, k]) => `${f}:${k}`).join(';'));

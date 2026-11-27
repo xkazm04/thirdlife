@@ -108,3 +108,73 @@ NEXT THREE THINGS THIS LANE WOULD DO
 2. A shield sentence for the screen clutter: the hint line and everyone's HEALTH/STAMINA plates sit over the fight.
 3. Turn the hint-reading newcomer hand into a reusable test (the pack's hint line read from its view object, a press
    60-150 frames after a key is named, 3 in 10 missed), so a card can ask "does a newcomer meet the new move in 60 s".
+
+==========================================================================================================================
+ROUND 2 (Director 22:05; 22:10-00:33). Karts, biplane, court: the same first-minute pass; shield: the clutter.
+Tree unchanged (main from 48a7e24b, foreman not rebuilt). Job copies (plain cp -r at 22:10, originals untouched):
+karts v0.1.11 from d25-kart/.tl/jobs/j2nd, biplane v0.1.9 from d25-court/.tl/t2e/jobs, court v0.1.9 from
+d25-kart/.tl/jobs/j2nd3; shield went on in my own copy (v0.1.18).
+
+OUTCOME
+  Shield wall (clutter). Worst: the hint line floats mid-screen across the fighters, big HEALTH/STAMINA text plates on
+    both sides, YOU / OPEN: HIT NOW / HIT FROM BEHIND/SIDE stacked over heads.
+    -> v0.1.19 (22 min, 2 calls, 0.86M in / 7.6k out): hint on a dark strip above the key row, slim bars in the top
+       corners, one short word over heads (OPEN!, FLANK!); drawing only (b0341c1a = v0.1.18). In the exe, the open-loop
+       newcomer's busy Q press is now kept (v0.1.18) and G READY lights 20 s in (v0.1.16/17: never).
+  Karts. Worst: SHELLED! fills the middle of the screen for EVERY hit on the deck (3 in his first minute: his own shell,
+    a shell on him, a hit between others), so he cannot tell whether it was him.
+    -> v0.1.12 (34 min, 3 calls, 1.85M / 12.0k; a teams r8 "rivals' part" changed nothing): YOU'RE SHELLED! + "by Mint 2"
+       only when he is hit, GOT HIM! when his shell hits, a small tag otherwise. Drawing only (08fe071f = v0.1.11);
+       hands newcomer 16/20, perfect 19/20 (= v0.1.11). The exe shows the same 2:43 scrum: big word gone, small tag.
+  Biplane. Worst: the lesson's harpoon pass puts Vesper below and behind him (a VESPER arrow at the bottom edge) and ends
+    after 15 s anyway: 0 hooks in his first minute (seeds 1, 2); "They loop behind you. Fly on." sits for ~25 s.
+    -> v0.1.10 (32 min, 3 calls, 2.01M / 17.9k): the pass waits for one hook or 40 s, Vesper level 32 m ahead, red ring
+       and "Q NOW!"; newcomer 1 hook in his first minute (both seeds). But in the exe Vesper sat right behind his own
+       fuselage: "Q NOW!" and the ring were drawn on his own plane.
+    -> follow-up v0.1.11 (29 min, 3 calls, 1.69M / 12.9k): Vesper 4.5 m above and 2.5 m right of the nose line, one hint
+       at a time; in the exe she sits visibly above his nose under Q NOW! and even the blind stream hooks her ~18 s in
+       (v0.1.10 with the same stream: no hook).
+  Court. Worst: nothing ever says C; the hint line flips between HOLD E ON THE CHALK and SPACE: SWAT AS THEY RISE.
+    -> v0.1.10 (54 min, 3 calls, 1.56M / 14.9k): big yellow "C: ALLEY-OOP" over the open mate with a ring and a glow, and
+       on the hint line 2-3 times in his first minute; hands newcomer 17/20, perfect 20/20 (v0.1.9 newcomer 17/20).
+       Unasked play change (finding 5): newcomer hash 64240fb0 -> 181bc670 for the pack's own hand.
+    -> follow-up (23:45:55): the top-left commentary line drew over itself and hid the score; two bottom lines stacked.
+    -> v0.1.11 (40 min, 2 calls, 1.44M / 11.9k): one bottom line; the commentary on a dark strip under the score, which
+       stays; drawing only (181bc670 = v0.1.10); hands 17/20, 20/20. A faint ghost of the old top-left line still shows
+       behind the score's left end in the exe at 0:53 (not fully fixed; my one follow-up is spent).
+
+MENU (round 2; pack path + title; Director-only rows)
+- C:/Users/kazda/kiro/third-life/.claude/worktrees/d27-newc/.tl/jobs/shield-wall-3-v-20261125-1-jb/promoted/game.shield_wall_3_v@0.1.19
+    "Shield wall v0.1.19: a clear screen (made in Create, juice day)"           (replaces the v0.1.18 row as the pick)
+- C:/Users/kazda/kiro/third-life/.claude/worktrees/d27-newc/.tl/jobs/bumper-kart-football-3-20261125-1/promoted/game.bumper_kart_football_3@0.1.12
+    "Bumper-kart football v0.1.12: who got shelled (made in Create, juice day)"
+- C:/Users/kazda/kiro/third-life/.claude/worktrees/d27-newc/.tl/jobs/biplane-duel-two-biplanes-20261125-1/promoted/game.biplane_duel_two_biplanes@0.1.11
+    "Biplane duel v0.1.11: the harpoon taught (made in Create, juice day)"
+- C:/Users/kazda/kiro/third-life/.claude/worktrees/d27-newc/.tl/jobs/half-court-3-v-20261125-1/promoted/game.half_court_3_v@0.1.11
+    "Half-court v0.1.11: the alley-oop taught (made in Create, juice day)"      (note: play moved vs v0.1.9, finding 5)
+  In-between versions (biplane v0.1.10, court v0.1.10) are in the same promoted/ folders and need no rows.
+
+ACCEPTANCE (round 2: the same method, rules and clip sizes; one fix sentence per game, at most one follow-up, no
+"make it fairer")
+- Every old and new version: an exe run in a window (told-keys-only open loop) and an engine-window closed-loop run, a
+  clip of 30 s or less at 800x450 crf 32, stills looked at, 3600 headless frames with 0 script errors and the same hash
+  twice, the newcomer hand's figures: MET (PROOF "Round 2"). Hashes: karts v0.1.11 08fe071f x2, v0.1.12 08fe071f x2;
+  biplane v0.1.9 c38ee476 x2, v0.1.10 e3af709a x2, v0.1.11 4df31017 x2; court v0.1.9 64240fb0 x2, v0.1.10 181bc670 x2,
+  v0.1.11 181bc670 x2; shield v0.1.19 b0341c1a x2. Seed 2 also 0 errors for every version. Each promoted pack = the film copy
+  I measured (diff -rq: only pack.json's tests list and my tests).
+- Sentences: shield 1, karts 1, biplane 1 + 1 follow-up, court 1 + 1 follow-up; no fairness ask: MET (SENTENCES.md).
+- Honesty notes: the closed-loop biplane pilot hooks Vesper at about frame 300, right where the pass begins, so the
+  window runs show the hook but not the pass's picture; the exe runs show the pass. The court window runs print one
+  SCRIPT ERROR at exit from the kernel runner's watchdog thread (worker.gd:387), not from the pack; headless runs: 0.
+
+EDITOR FINDINGS (round 2; PROOF findings 5-8)
+5. Court v0.1.10: bodies_first_minute merged poses.gd/mod.gd from a stale workspace (it still held the unpromoted cue
+   of the 17:39 failed change); v0.1.9's pose cache is gone and play moved (pack newcomer hand 64240fb0 -> 181bc670),
+   not on the card. Main has T2's "refused changes leave nothing behind"; this tree predates it.
+6. A builder's remark about where numbers live becomes "the rest of your change" for another package (court r21 copied
+   the cue numbers into tuning.json: two homes); karts' "rivals' part" to teams r8 changed nothing.
+7. Biplane v0.1.11: core and first_flight both steer Vesper in the pass (core's _lesson_lift stays as dead code).
+8. Kernel: the runner's watchdog thread (worker.gd:387) errors at exit in windowed --quit-after runs.
+
+GATES (round 2): node devx/bin/tl.mjs check --tier fast PASS 5/5 at 00:00 (arch 12/12, assets 4/4, cards 3/3, devx.test 230/230,
+  foreman.typecheck clean); disk 73 GB free. Full tier not required (docs and .tl/ only).
