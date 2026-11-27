@@ -76,3 +76,39 @@ export function playWhy(why: string): string {
     .filter((s) => !(DRAW_WORDS.test(s) && !PLAY_ASK.test(s)))
     .join(" ");
 }
+
+/**
+ * D27 T3 round 2 (this lane's l3 copy, events 1355-1381): the drawing of the change had gone to harbour (event 1337),
+ * and the cartridge's builder still wrote the camera and FLATTENED! as NOT DONE lines. One named the drawing package and
+ * went on to harbour (folded into its round, no cost, but the card read "NOT made by cartridge"); the other named
+ * "scripts/", the base's, and went BACK to the cartridge to make in its own files: a wasted cartridge round (r16) that
+ * could only say it cannot. When the drawing of the change in flight went to another package, a hand-off from the
+ * cartridge's owner whose words are drawing only is dropped: the drawing package already has the whole change. Its
+ * NOT made note becomes a plain note. Pure.
+ */
+export function drawnHandoffs(events: readonly JobEvent[], owner: string, out: readonly Record<string, unknown>[]): Record<string, unknown>[] {
+  if (!drawnElsewhere(events, owner)) return [...out];
+  let last = -1;
+  for (const e of events) if (e.type === "promoted") last = e.seq;
+  const drawer = [...events].reverse().find((e) => e.type === "change_requested" && e.seq > last && e.text.startsWith(`${FOREMAN_NOTE}the drawing part of change request `));
+  const to = drawer?.type === "change_requested" ? drawer.package : undefined;
+  if (to === undefined) return [...out];
+  const handoff = (e: Record<string, unknown>): boolean => {
+    const t = String(e["text"] ?? "");
+    if (e["type"] !== "change_requested" || (e["package"] !== to && e["package"] !== owner)) return false;
+    if (!t.startsWith(`${FOREMAN_NOTE}the rest of your change`) && !t.startsWith(`${FOREMAN_NOTE}make in your own files the part of your change`)) return false;
+    const said = /\("([\s\S]*?)"\)/.exec(t)?.[1] ?? "";
+    return said !== "" && DRAW_WORDS.test(said) && !PLAY_ASK.test(said.replace(/"[^"]*"/g, " "));
+  };
+  const res: Record<string, unknown>[] = [];
+  out.forEach((e, i) => {
+    if (handoff(e)) return;
+    const next = out[i + 1];
+    if (e["type"] === "note" && String(e["text"] ?? "").startsWith(`${FOREMAN_NOTE}part of your change was NOT made`) && next !== undefined && handoff(next)) {
+      res.push({ ...e, text: `${FOREMAN_NOTE}the drawing part already went to ${to} in this change, so this is not sent on: ${String(e["text"]).replace(/^\[foreman\] part of your change was NOT made[^:]*: /, "")}` });
+      return;
+    }
+    res.push(e);
+  });
+  return res;
+}

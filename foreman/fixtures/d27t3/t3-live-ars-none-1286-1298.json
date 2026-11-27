@@ -1,0 +1,44 @@
+{
+ "source": "lane T3 live copy of J2b's Arsenal job (l1): harbour r21's note with \"NEW MOVE: none\" (1286), the move-lands refusal of r22 (1298) and harbour r23's note (1301)",
+ "events": [
+  {
+   "v": 1,
+   "seq": 1286,
+   "ts": "2026-11-27T21:13:46.865Z",
+   "job": "three-against-three-hockey-20261125-1",
+   "type": "note",
+   "package": "harbour",
+   "round": 21,
+   "text": "- Mega skaters are found from the core's `effect_start` / `effect_end` events whose `Kind` or `Text` is `mega`. As a fallback, a `check` event with `Outcome` stumble or down starts the drawing, and it lasts the cartridge's own `mega` effect `duration_frames` (300), read from the cartridge. No play rule is copied; the drawing only.\n- To grow a figure, the scale (`mega.scale` 2.0) goes on the pawn's child nodes, not the pawn itself. The base interpolates the pawn's own basis, and scaling it gave non-finite transforms.\n- The sounds are kernel presets, because the kernel has no boing, thud or pop: boing = `hit_rubber`, thud = `break`, pop = `beep` (named in tuning `mega.*_sound`).\n- FLATTENED! is decided by drawing: a skater who is not mega goes down within `mega.flatten_near_m` (3.2 m) of a mega skater.\n- The small camera shake on a flatten is a new shake beyond the contract's \"only your knockdown or a goal\", because the change asks for it. It is skipped when the victim is the human, since harbour.gd already shakes for your own knockdown, so it never shakes twice.\n- New tuning block `harbour.mega` (scale, grow/shrink frames, flash, tag and centre word, sounds, flatten reach, shake 0.08 m for 8 frames, tremor). No existing keys changed.\n- `tests/bot_harbour.gd` now reports `mega_starts`, `mega_flattens` and `mega_ends` (5, 3 and 5 in this run). It adds an OWNER line when no MEGA was seen.\n- NEW MOVE: none (MEGA is a timed effect on the core's existing body check, as the cartridge said)."
+  },
+  {
+   "v": 1,
+   "seq": 1298,
+   "ts": "2026-11-27T21:17:41.123Z",
+   "job": "three-against-three-hockey-20261125-1",
+   "type": "verify",
+   "package": "harbour",
+   "round": 22,
+   "level": "V4",
+   "verb": "bot",
+   "ok": false,
+   "report": "reports/harbour-r22-move-lands-s1298.json"
+  },
+  {
+   "v": 1,
+   "seq": 1301,
+   "ts": "2026-11-27T21:18:48.809Z",
+   "job": "three-against-three-hockey-20261125-1",
+   "type": "note",
+   "package": "harbour",
+   "round": 23,
+   "text": "- The bot reports the body check under `metrics.moves` as both `body_check` and `none`. The second copy exists because the cartridge's note was read as \"NEW MOVE: none\". MEGA is a timed effect earned by the core's body check, not a new attack, and the counts come only from the core's `check` events and its `ContactOutcome` / `ContactBy` read-outs.\n- NEW MOVE: none (MEGA adds no attack; the body check it rewards is counted as above).\n- Not checked: `f_lit_in_lock` reads 137. If the drawing's \"meteor\" flag means the meteor is lit, the F lock in the minute after each drop is not holding (change request 13).\n- The bot's other OWNER targets are unchanged and still missed: bubble prompt, bubble hits, shield checks, spot matches and slush stalls (0 in the match and in both drills), Otter collects, armed feeds."
+  }
+ ],
+ "refusal": [
+  {
+   "kind": "lands",
+   "message": "The person asked for a new attack (\"Add a Mario Kart Mega Mushroom you earn with a big hit, like NHL Hitz: any skater, me or a bot, who lands a body check goes MEGA for five seconds. He flashes white with a boing and balloons to twice his size, with MEGA! big over him (and in\n... (474 more characters cut)\"). In this round's bot runs (tests/bot_harbour.gd, tests/bot_match_hand.gd, tests/bot_toys.gd) no bot test of your package reports moves.none: add `\"moves\": {\"none\": {\"started\": <n>, \"landed\": <n>}}` to the metrics of a bot test your acceptance runs (tests/bot_harbour.gd, tests/bot_match_hand.gd, tests/bot_toys.gd), count a landing only from the game's own contact events, and let that bot use the move where it can land. Never count a landing the game did not make, and never change the Foreman's tofu bot for it."
+  }
+ ]
+}

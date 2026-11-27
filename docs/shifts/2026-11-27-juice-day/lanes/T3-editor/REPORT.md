@@ -417,3 +417,122 @@ WRITE-UPS (no code)
      owner).
 - My recommendation: A for the ring and the beam (the two that recur), B for props, not C. The decision is the owner's,
   as the brief says.
+
+==========================================================================================================================
+ROUND 2: the Director's rulings after the landing (d0eb5bbf; main = 89f64291 with T2's rounds), 23:10-
+Tree d25-hard-a (now main). Not committed: the Director lands it.
+
+(1) "NEW MOVE: none" is no move: MET (unit).
+- Cause: my live Arsenal copy, events 1286-1301.
+  - harbour r21 wrote "NEW MOVE: none (MEGA is a timed effect on the core's existing body check, ...)";
+  - landcheck.ts newMovesOf took "none" as a move id;
+  - the land gate refused harbour r22 for it ("no bot test of your package reports moves.none");
+  - harbour r23 then counted a fake `moves.none`: 68 s and 0.42M tokens for nothing.
+- Fix (landcheck.ts newMovesOf):
+  - none, no, nothing and n/a are not ids;
+  - an explicit NEW MOVE line is the builder's word, so "NEW MOVE: none" also overrides a loose "New moves `x`" line.
+- Test D27 T3 R2 none, on the real note (1286) and the real refusal (1298). "NEW MOVE: rush, slam" still gives both
+  moves.
+
+(2) A package that draws its own copy of another package's text goes back once, with the owner named: MET (unit;
+    a scan of every real merge).
+- textowner.ts copiedTextEvents, on the afterMerge line (foreman.ts stays at 2005 lines). At a merge, a builder line
+  qualifies when it says one package's files override or replace another package's text, or that the other's text is
+  "no longer shown". COPY_WORDS and TEXT_WORDS find it; "never replaces" does not count.
+  - The text's owner is the package named as "the <id>'s ...", or else by one of its text files.
+  - The copier is the owner of the other files the line names, or else the builder who wrote it.
+- The copier gets "[foreman] one owner per text: <copier>'s files draw their own copy of a text that <owner> owns
+  (<files>), in <reporter>'s words: "...". Take the copy out of your files and draw the words as <files> holds them; a
+  word that must change is <owner>'s, so write it as a NOT DONE line naming <file> with the exact words."
+  - The second time in a change, it is a note for the person instead.
+- Test D27 T3 R2 copies:
+  - N's event 1496 (harbour's own note): harbour goes back, with skin named as the owner;
+  - S4's event 808 (the skin's builder found harbour's tagline override): harbour goes back;
+  - a second report in the same change becomes a note.
+- Scan of every merge in every job on this machine (766 merges): it fires on exactly these two.
+  - The first version also fired on d27-newc's kart items ("it never replaces the core's ... lines"); the negation
+    guard is there for that.
+
+(3) Item 36: to the owner with my recommendation (kit parts for the ring and the beam; props stay TLBodies shapes in
+    gen/). No code, as ruled.
+
+(4) A word over a body stays whole on the screen: MET in the rule (unit); see the live run for what a builder did with it.
+- Seen in my v0.1.29 film: FLATTENED! over a man near the edge read "ATTENED!"
+  (stills/t3_v029_mate_mega_f756-864_sheet.jpg).
+- Fixed where every builder reads it:
+  - foreman/prompts/builder.md, "Words on the screen": a word drawn at a body's screen point (lay.project) is measured
+    (lay.measure) and clamped inside the safe area, 5 % of lay.extent() in from every edge; a point behind the camera
+    gets no word over it;
+  - the juice line of all six cards says the same. tl cards check passes.
+- Test D27 T3 R2 edge.
+
+(found live in l3) A drawing-only hand-off is dropped when the drawing already went to another package: MET (unit).
+- l3's cartridge builder wrote the camera and FLATTENED! as NOT DONE lines, although the drawing part of the change had
+  already gone to harbour (event 1337).
+  - One line named the drawing package and went on to harbour. It folded into harbour's round at no cost, but the card
+    read "NOT made by cartridge".
+  - The other named "scripts/", which is the base's, so halfmade sent it BACK to the cartridge (event 1359).
+    cartridge r16 spent a quick diff, a builder run and the checks (2.4 min) to say it cannot.
+- Fix (playsplit.ts drawnHandoffs, wrapping afterMerge on its line; foreman.ts +0 lines):
+  - while the drawing of the change in flight is another package's, a hand-off from the cartridge's owner whose words
+    are drawing only is not sent;
+  - its NOT made note becomes "[foreman] the drawing part already went to harbour in this change, so this is not sent
+    on: ...".
+- Test D27 T3 R2 drawn, on l3's real events (1330-1365):
+  - afterMerge alone gives the same two requests the live run made;
+  - after the filter: none, and no NOT made note;
+  - without a drawing part in the change, nothing is filtered.
+
+LIVE l3: the edge rule in a builder's round (paid, claude-cli sonnet)
+- Setup: my copy, cut back to my v0.1.28, in .tl/t3/jobs2/... J2b's follow-up (1319) was resent word for word at
+  23:15:45. It promoted v0.1.29 at 23:39:22 (23.6 min): 6 model calls, 3.02M tokens in, 32.4k out.
+- It ran on the code from before drawnHandoffs, so the wasted cartridge r16 above is in it.
+- The quick diff this time said "no key says it". cartridge r15's builder made the check rate as
+  game.skater.check_speed_min 1.5 -> 1, where l2's diff had made bot_check_windup_frames 12 -> 6. Same ask, another
+  valid key: model variance.
+- harbour r25, built with the new builder.md rule (the person did not ask about edges), draws MEGA! and FLATTENED! with
+  one helper. Its doc line: "A big word over a skater's figure, measured and kept 5 % inside the screen, ...; nothing
+  when the figure is behind the camera". The code does it: lay.measure, clamps against 5 % of lay.extent(), and returns
+  when z <= 0.
+- Film: clips/t3_ars_v029b_edge_rule.mp4 (seed 1, frames 360-1500, 19 s, 0 script errors).
+  - Still I looked at: stills/t3_v029b_flattened_clamped_f1290-1380_sheet.jpg. A rival lies flat at the left edge of
+    the screen, and FLATTENED! is drawn whole, held just inside the edge, under YOU ARE MEGA!.
+  - In v0.1.29 (l2), the same kind of moment read "ATTENED!".
+  - The camera pulls back while I am MEGA, as asked.
+- FINDING (for the Director, not fixed here): l3's v0.1.29 plays to the SAME hashes as v0.1.28 on seeds 1-3 (7df3f5a1,
+  57e41c10, f0c6699b; 0 script errors). Rival giants are still 1/1/1 a minute.
+  - The cartridge builder's check_speed_min 1.5 -> 1 did not move play on these seeds, so "twice as often" was not met.
+    l2's windup 12 -> 6 did meet it.
+  - The Foreman promoted it with no word on it. A figure the person names ("twice as often") that the measured check
+    can count would be the guard (askedFigureMiss knows minutes and goals, not "how often").
+
+GATES ON d25-hard-a (round 2, final source)
+- foreman npm test: 536 tests, 529 pass, 0 fail, 7 skipped (23:31-23:38). Main 89f64291: 532/525/0/7. The +4 are R2
+  none, R2 copies, R2 edge and R2 drawn.
+  - npm 4 (535/528/0/7) came before R2 drawn.
+- node devx/bin/tl.mjs check --tier fast: PASS 5/5 (arch 12/12, assets 4/4, cards 3/3, devx.test 230/230,
+  foreman.typecheck), 23:41, after the last source change.
+- create.: not run, engine/ui untouched. Full tier: NOT RUN. The kernel, kits, rigs, style and seeds are untouched.
+  engine/cards changed only in one juice line each; tl cards check passes.
+- foreman.ts: 2005 lines.
+
+CHANGED FILES (round 2)
+- foreman/src: landcheck.ts (newMovesOf), textowner.ts (copiedTextEvents, textCopies), playsplit.ts (drawnHandoffs),
+  foreman.ts (the afterMerge line, one import line; +0 lines).
+- foreman/prompts/builder.md: "A word over a body stays whole on the screen".
+- engine/cards/*.json: one clause in each juice line.
+- Tests and fixtures: d27t3_editor.test.ts (+4 tests). Fixtures: t3-live-ars-none-1286-1298.json,
+  text-copies-n1496-s4808.json, t3-live-l3-handoffs-1334-1365.json.
+- Lane folder: clips/t3_ars_v029b_edge_rule.mp4; stills/t3_v029b_flattened_clamped_f1290-1380_sheet.jpg.
+
+BEHAVIOUR CHANGES (round 2)
+- "NEW MOVE: none" names no move.
+- A builder line that says another package's text is overridden by a copy sends the copier back once, naming the owner.
+- While the drawing of a change is another package's, the cartridge owner's drawing-only NOT DONE lines are not sent
+  on.
+- Every builder is told to keep a word over a body whole inside the safe area.
+
+NEXT
+1. The "how often" figure: when the person names a rate ("twice as often") that the measured check can count, check it
+   after the change, as askedFigureMiss does for minutes and goals (l3 finding).
+2. Item 30: `foreman revert`, built to the plan.

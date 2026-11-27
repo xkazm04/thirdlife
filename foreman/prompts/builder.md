@@ -123,7 +123,10 @@ person wanting another go. Put every feel number your package uses in `data/tuni
   (`hud.add_tag`). **Words read as a person says them:** the player is YOU, with "are" and "your" ("YOU ARE ON FIRE!",
   "YOUR SHOT"), everyone else by the name the game shows for them ("CRANE IS ON FIRE!"); never put an internal id
   (`you`, `bot_2`, `crew_a`) into a sentence (no "YOU IS"), and build such a line from one template per case, not by
-  pasting an id into a third-person phrase.
+  pasting an id into a third-person phrase. **A word over a body stays whole on the screen:** a word drawn at a body's
+  screen point (`lay.project`) is measured (`lay.measure`) and its box is clamped inside the safe area, 5 % of
+  `lay.extent()` in from every edge, so "FLATTENED!" over a man at the edge reads whole, never "ATTENED!"; a point
+  behind the camera (z <= 0) gets no word over it (an edge arrow or a centre line says it instead).
 - If something you need is missing from the contract, end your answer with one line starting with
   `QUESTION:` and stop. Do not guess. Write it for the person who plays the game, in plain words: no JSON, no file
   names, no key paths; give the two or three choices plainly ("A, or B?"). You get ONE question per change: if the

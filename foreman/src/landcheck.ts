@@ -31,15 +31,18 @@ export const MOVES_LAND = `${FOREMAN_NOTE}new move lands in the Foreman's bot ru
 export const MOVES_UNCOUNTED = `${FOREMAN_NOTE}new move not counted`;
 
 const ID = /^[a-z][a-z0-9_]*$/;
+const NO_MOVE = /^(none|no|nothing|n|na)$/i;
 
 /** The moves a builder's note names as new: `NEW MOVE: a, b` lines, and "New moves `a` (...) and `b`" lines. */
 export function newMovesOf(note: string): string[] {
   const out: string[] = [];
   const loose: string[] = [];
+  let tagged = false;
   for (const raw of note.split(/\r?\n/)) {
     const line = raw.replace(/^\s*[-*]\s*/, "");
     const tag = /^NEW MOVES?:\s*(.+)$/i.exec(line);
     if (tag) {
+      tagged = true;
       // the ids come first: "NEW MOVE: rush, slam" or "NEW MOVE: cannon_shot. It is the core's shotgun, ..."
       const head = ((tag[1] as string).replace(/\([^()]*\)/g, "").split(/\.(?:\s|$)|:/)[0] ?? "");
       for (const w of head.split(/[,;]|\band\b/)) {
@@ -47,7 +50,9 @@ export function newMovesOf(note: string): string[] {
         // round, not by mine" gave the moves "the" and "not")
         const words = w.trim().replace(/`/g, "").split(/\s+/).filter(Boolean);
         const id = words[0] ?? "";
-        if (words.length === 1 && ID.test(id)) out.push(id);
+        // D27 T3 round 2 (lane T3's live Arsenal copy, event 1286: "NEW MOVE: none (MEGA is a timed effect ...)" made the
+        // land gate ask for a move called "none"): none, no, nothing and n/a say there is no new move
+        if (words.length === 1 && ID.test(id) && !NO_MOVE.test(id)) out.push(id);
       }
       continue;
     }
@@ -58,7 +63,7 @@ export function newMovesOf(note: string): string[] {
     for (let i = 0; i < 4; i++) flat = flat.replace(/\([^()]*\)/g, "");
     for (const m of flat.matchAll(/`([^`]+)`/g)) if (ID.test(m[1] as string)) loose.push(m[1] as string);
   }
-  return [...new Set(out.length > 0 ? out : loose)];
+  return [...new Set(out.length > 0 || tagged ? out : loose)]; // an explicit NEW MOVE line is the builder's word, "none" too
 }
 
 export interface MoveCount {
