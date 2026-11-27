@@ -342,8 +342,9 @@ jump pad, a coin, a hazard, and a **run** (start, checkpoints, finish) that time
   zone and rule the next free id when it shows the answer, and rewrites the answer's references to match.
 - Before accept, the exe checks an answer's space and shows what it finds with the ghost (it does not refuse): blocks
   that rest on nothing, a pad or a flag with no floor under it, a coin inside a solid block, a run whose finish cannot
-  be reached from its start (an estimate over standable cells: walking, steps of at most 0.55 m, and jumps of at most
-  1.2 m up and 4 m across).
+  be reached from its start (an estimate over standable cells matching the body, measured 27 Nov: walking, steps of
+  at most 0.55 m, a jump of at most 1.0 m up within 2.5 m across, 1.2 m up only from the next cell (a mantle), a flat
+  gap (at most 0.25 m up) or any drop within 3 m; a launch zone carries further).
 - **Fix it** (round 2): when the check found something, R sends one follow-up ask with the same sentence and cursor
   and an optional key `fix`: `{"ops": [the answer's ops], "findings": ["<a finding naming cells and distances>", ...]}`
   (omitted in every other ask). The answer replaces the ghost; only Enter keeps it. It counts as a call.
@@ -364,7 +365,9 @@ block materials from the ask's tables (trim omitted = mat). Kinds (v1) and their
 - `bridge`: a deck `w` wide and `d` long at y of `at`, railings (fences) on both sides, piers every 6 cells down to
   the ground or bed, and steps at both ends down to the ground.
 - `platform`: a floor `w` x `d` at y of `at` with a railing round it and posts down to the ground.
-Blocks an assembly would place in a protected or occupied cell are left out with the place ops' reasons; the shape
+Conventions: `at`'s y is the floor row (the ground y); the turn is about the centre of the `at` cell; `h` is unused
+by bridge and platform and `d` by wall, tower and stair; each kind has a least size (the exe refuses a smaller one
+with a reason). Blocks an assembly would place in a protected or occupied cell are left out with the place ops' reasons; the shape
 is the same for the same input (deterministic, no randomness).
 
 
