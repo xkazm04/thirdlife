@@ -16,6 +16,7 @@ var mesh: RefCounted = null             # block_mesh.gd (null: a scratch copy, n
 var check: Callable                     # (cell, code) -> reason: protect.gd `refusal`, set by the owner
 var scratch := false                    # a preview's copy (`copy`): it remembers the cells its ops changed
 var touched := {}                       # Vector3i -> true: those cells, in the order they were first changed
+var home: Variant = null                # M6 round 3: weakref to home_build.gd (ctx "home"); null in a scratch copy
 
 
 ## `ctx`: "blocks" (the store), "mesh" (its mesher, optional), "check" (the protection callable, optional).
@@ -23,15 +24,17 @@ func _init(ctx: Dictionary) -> void:
 	store = ctx.blocks
 	mesh = ctx.get("mesh")
 	check = ctx.get("check", Callable())
+	home = ctx.get("home")               # M6 round 3 (lane A6): the Home, for the ground an assembly reaches down to
 
 
 func ops() -> PackedStringArray:
 	return PackedStringArray(["place", "remove"])
 
 
-## The op kinds the LLM may write for this layer (command_ask.gd `ops_now`): always both.
+## The op kinds the LLM may write for this layer (command_ask.gd `ops_now`): always both, and (M6 round 3) the input op
+## `assemble` this layer expands (`expand_input`).
 func offers() -> Array:
-	return ["place", "remove"]
+	return ["place", "remove", "assemble"]
 
 
 # ------------------------------------------------------------------ ops
@@ -312,3 +315,19 @@ func _touch_box(lo: Vector3i, hi: Vector3i) -> void:
 	for sz in range(a.y, b.y + 1):
 		for sx in range(a.x, b.x + 1):
 			store.dirty[Vector2i(sx, sz)] = true
+
+
+# ------------------------------------------------------------------ M6 round 3 (lane A6): the input op `assemble`
+## An assembly (contracts/BUILD.md "Assemblies (M6, round 3)") as the place ops that build it (assembly.gd `expand`):
+## {"ops": [...]} or {"error"}. home_build.gd `expand_input` calls it for every `assemble` of an answer (INPUT_OPS).
+## The ground its piers, posts and steps reach down to is the land as the answer's earlier land ops leave it
+## (`land_now`), else the Home's land layer. Cells that are protected or occupied are not left out here: the place
+## ops are refused with their own reasons by the dry run and the apply, as every place op is.
+func expand_input(op: Dictionary, land_now: RefCounted = null) -> Dictionary:
+	var land: RefCounted = land_now
+	if land == null and home is WeakRef and (home as WeakRef).get_ref() != null:
+		land = (home as WeakRef).get_ref().call("layer", "land")
+	var ground := Callable()
+	if land != null and land.has_method("height_at"):
+		ground = func(x: int, z: int) -> int: return floori(float(land.call("height_at", x + 0.5, z + 0.5)) + 0.01)
+	return (load("res://kernel/world/build/assembly.gd") as GDScript).call("expand", op, ground)

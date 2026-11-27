@@ -22,26 +22,26 @@ Counters: a-z and _, at most 8 in the Home.
 Space (checked before the player accepts): a pad or flag zone's bottom row is the feet cell over a floor (a block
 placed or there, or the ground); a coin is 1 x 2 x 1 cells on such a feet cell (it floats 1 m up), never in a block;
 every block rests on the ground or another block. A run's way must be walkable: stairs, slabs, half-block steps; a
-jump climbs at most 1 block and crosses at most 3 empty cells.
+jump climbs 1 block only over at most 1 empty cell, and crosses at most 2 empty cells only when flat or going down.
 Worked examples (flat ground at y 10):
 A door that opens and closes on E: two dark wood cells in a wall, a zone round them to stand in.
 {"op":"fill","from":[100,10,52],"to":[100,11,52],"shape":1,"mat":4,"rot":0}
 {"op":"zone","id":1,"box":[[100,10,52],[100,11,52]],"look":"none","name":"Door"}
 {"op":"zone","id":2,"box":[[99,10,51],[101,11,53]],"look":"none"}
 {"op":"rule","id":1,"when":{"on":"use","zone":2},"do":[{"do":"toggle","zone":1}]}
-A short run: start pad, a stair onto a ledge (top 11, a checkpoint) with a coin, a 2-cell gap, a pillar with the flag.
+A short run: start pad, a stair onto a ledge (top 11, a checkpoint) with a coin, a 1-cell gap, a pillar with the flag.
 {"op":"fill","from":[100,10,49],"to":[101,10,49],"shape":3,"mat":1,"rot":0}
 {"op":"fill","from":[100,10,46],"to":[101,10,48],"shape":1,"mat":1,"rot":0}
-{"op":"fill","from":[100,10,42],"to":[101,11,43],"shape":1,"mat":2,"rot":0}
+{"op":"fill","from":[100,10,43],"to":[101,11,44],"shape":1,"mat":2,"rot":0}
 {"op":"zone","id":1,"box":[[100,10,50],[101,10,51]],"look":"pad","name":"Start"}
 {"op":"zone","id":2,"box":[[101,11,46],[101,12,46]],"look":"coin"}
 {"op":"zone","id":3,"box":[[100,11,46],[101,11,48]],"look":"none"}
-{"op":"zone","id":4,"box":[[100,12,42],[101,12,43]],"look":"flag","name":"Finish"}
+{"op":"zone","id":4,"box":[[100,12,43],[101,12,44]],"look":"flag","name":"Finish"}
 {"op":"rule","id":1,"when":{"on":"enter","zone":1},"do":[{"do":"start","run":"Hop"}]}
 {"op":"rule","id":2,"when":{"on":"enter","zone":2},"if":[{"running":true}],"do":[{"do":"take","zone":2},{"do":"add","counter":"coins","by":1}]}
 {"op":"rule","id":3,"when":{"on":"enter","zone":3},"if":[{"running":true}],"do":[{"do":"checkpoint","zone":3}]}
 {"op":"rule","id":4,"when":{"on":"enter","zone":4},"if":[{"running":true}],"do":[{"do":"finish"}]}
-{"op":"zone","id":5,"box":[[100,10,44],[101,10,45]],"look":"none","name":"Fall"}
+{"op":"zone","id":5,"box":[[100,10,45],[101,10,45]],"look":"none","name":"Fall"}
 {"op":"rule","id":5,"when":{"on":"enter","zone":5},"if":[{"running":true}],"do":[{"do":"respawn"}]}
 A fall: under EACH jump gap a zone of look none on the floor the walker lands on if he misses (the ground, or a lower
 landing), just the gap's cells: enter, if running, respawn (at the last checkpoint). Never one zone round the whole

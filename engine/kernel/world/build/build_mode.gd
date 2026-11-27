@@ -23,7 +23,8 @@ const TOOLS := [preload("res://kernel/world/build/tools/blocks_tool.gd"), preloa
 	preload("res://kernel/world/build/tools/paint_tool.gd"), preload("res://kernel/world/build/tools/piece_tool.gd"),
 	preload("res://kernel/world/build/tools/stamp_tool.gd"), preload("res://kernel/world/build/tools/water_tool.gd"),
 	preload("res://kernel/world/build/tools/path_tool.gd"), preload("res://kernel/world/build/tools/plant_tool.gd"),
-	preload("res://kernel/world/build/tools/rules_tool.gd"), preload("res://kernel/world/build/tools/command_tool.gd")]   # strip order; seam_lists.gd TOOLS holds the cases to it
+	preload("res://kernel/world/build/tools/assembly_tool.gd"), preload("res://kernel/world/build/tools/rules_tool.gd"),
+	preload("res://kernel/world/build/tools/command_tool.gd")]   # strip order; seam_lists.gd TOOLS holds the cases to it
 const RulesPlay := preload("res://kernel/world/build/rules_play.gd")
 const SELF := "res://kernel/world/build/build_mode.gd"
 const REACH := 24.0                     # metres the cursor reaches past the camera's distance to the visitor

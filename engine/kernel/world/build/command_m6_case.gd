@@ -11,7 +11,7 @@ extends SceneTree
 ##   command-m6.floating  an answer with a block in the air, a pad over nothing and a coin inside a cube: the ghost's
 ##                        note says "check: 1 block floats; ... has no floor; a coin is inside a block", red marks stand
 ##                        on the problem cells; Esc reverts, the Home untouched
-##   command-m6.reach     the reachability estimate on three courses: a stair, a ledge, a 2-cell gap and a pillar
+##   command-m6.reach     the reachability estimate on three courses: a stair, a ledge, a 1-cell gap and a pillar
 ##                        (reachable); the same with a 5-cell gap (not); a flag on a 2-block pillar beside the start (not)
 ##   command-m6.course    a course answer (stair, ledge, coins, checkpoint, gap, pillar, flag; ids 1..n) over a Home that
 ##                        holds zone 1 and rule 1: the note counts "N zones, M rules: Hop" and finds nothing; Enter keeps
@@ -298,7 +298,7 @@ func reach_case() -> void:
 	var got := []
 	var lines := []
 	var ok := true
-	for f: Array in [[2, false, true], [5, false, false], [0, true, false]]:
+	for f: Array in [[1, false, true], [5, false, false], [0, true, false]]:   # round 3 (A6): 1-cell gap (2 m + 1 m up: the body makes it; 3 m + 1 m it does not)
 		var shown := await ghost("a course", course_ops(int(f[0]), bool(f[1]), false), "A course.")
 		if shown.is_empty():
 			say("reach", false, "no ghost for %s: %s" % [str(f), str(t.call("status"))])
@@ -310,7 +310,7 @@ func reach_case() -> void:
 		lines.append("'%s' (%d feet cells, path %d)" % [sp.line, int(sp.nodes), (runs[0].path as Array).size() if runs.size() == 1 else -1])
 		ok = ok and reach == bool(f[2]) and (str(sp.line) == "" if reach else str(sp.line) == "finish not reachable")
 		await key_on_ghost(KEY_ESCAPE)
-	say("reach", ok, "reachable %s (want [true, false, false]: 2-cell gap, 5-cell gap, 2-block wall); lines %s" % [str(got), ", ".join(PackedStringArray(lines))])
+	say("reach", ok, "reachable %s (want [true, false, false]: 1-cell gap, 5-cell gap, 2-block wall); lines %s" % [str(got), ", ".join(PackedStringArray(lines))])
 
 
 func course_case() -> void:

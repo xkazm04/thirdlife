@@ -15,7 +15,7 @@ extends "res://kernel/world/build/command_m6_case.gd"
 ##     command-findings.floating  the findings name the floating cell, the pad with no floor (zone, box) and the coin in a
 ##                         block, one line each
 ##     command-findings.gap       a 5-cell gap: "a gap too wide: ... 6.0 m across (5 empty cells)" and the climb from
-##                         the platform "2.0 m up"; the 2-cell gap has no finding
+##                         the platform "2.0 m up"; the 1-cell gap has no finding (round 3: 3 m + 1 m up is past the body)
 ##     command-findings.wall      a flag on a 2-block pillar beside the start: "a climb too high ... 2.0 m up"
 
 var group := "fix"
@@ -124,7 +124,7 @@ func findings_floating() -> void:
 
 func findings_reach() -> void:
 	var got := {}
-	for f: Array in [["ok", 2, false], ["gap", 5, false], ["wall", 0, true]]:
+	for f: Array in [["ok", 1, false], ["gap", 5, false], ["wall", 0, true]]:   # round 3 (A6): the reachable gap is 1 cell (2 m + 1 m up)
 		var shown := await ghost("a course", course_ops(int(f[1]), bool(f[2]), false), "A course.")
 		got[f[0]] = shown.get("space", {}).get("findings", [])
 		await key_on_ghost(KEY_ESCAPE)
@@ -133,5 +133,5 @@ func findings_reach() -> void:
 	var x: int = site.x + 2
 	say("gap", (got.ok as Array).is_empty() and gap.begins_with("finish of Hop not reachable from its start") and \
 		gap.contains("a gap too wide: from feet cell (") and gap.contains(", %d, %d) to the finish" % [site.top + 1, site.z + 7]) and gap.contains("6.0 m across (5 empty cells)") and \
-		gap.contains("2.0 m up"), "2-cell gap: %s; 5-cell gap: %s" % [JSON.stringify(got.ok), gap])
+		gap.contains("2.0 m up"), "1-cell gap: %s; 5-cell gap: %s" % [JSON.stringify(got.ok), gap])
 	say("wall", wall.contains("a climb too high") and wall.contains("2.0 m up") and not wall.contains("a gap too wide"), wall)

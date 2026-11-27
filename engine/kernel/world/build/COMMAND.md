@@ -251,3 +251,41 @@ alone (steps of 0.55 m, no jump) reaches no coin and no finish: it is a jumping 
   the gap's cells (enter, if running, respawn at the last checkpoint), never one zone round the whole course (the
   real tower's 11 x 9 "Fall" zone was refused next to a lot and would have caught the start and the stairs). The
   worked course has one under its 2-cell gap. The zones-and-rules section is 4.26 KB (4.40 KB with one listed zone).
+
+## Round 3 (lane A6, 27 Nov 2026): assemblies, the body's jump
+
+- **Assemblies** (contracts/BUILD.md "Assemblies (M6, round 3)"; `assembly.gd`, `assembly_kinds.gd`): the ask's `ops`
+  offers `assemble` (the blocks layer's `offers()`), the prompt teaches it (`world_edit.ts` `ASSEMBLE_TEXT`, 2,040 bytes
+  with a worked tower and the water example's bridge as one op: "PREFER ASSEMBLIES for walls, towers, houses, stairs, bridges and platforms; place or fill
+  single blocks only for details"), the Foreman checks its shape in the exe's words plus the ask's material table and
+  region (`world_edit_assemble.ts`: the core footprint, turned, inside the region) and feeds a bad one back; the answer
+  keeps the assemble as written, and the exe expands it when it shows the ghost (`home_build.gd` `expand_input` ->
+  `blocks_layer.gd` `expand_input` -> `assembly.gd` `expand`), so the space check, the ghost and the counts see the
+  blocks. Conventions: `at` is the low corner, its y the ground y (the floor row sits in that cell); `rot` turns about
+  the centre of the `at` cell (rot 0: the front faces north and the shape covers x at..at+w-1, z at..at+d-1). The
+  hand's Shapes tool (`tools/assembly_tool.gd`) writes the same op.
+- **The jump the body makes** (Director, from lane P's headless body over lane C's tower: about 1.0 m up with about
+  2.5 m across at a run; 3 m across + 1 m up in one jump failed at a walk): the estimate's separate limits (1.2 m up,
+  4 m across) became one combined limit (`command_space.gd` `Grid.reach_up`): up to 1.0 m (`JUMP_UP`) within 2.5 m
+  (`JUMP_ACROSS`, cell centre to cell centre), 1.2 m (`MANTLE_UP`) only from the next cell, a flat gap (at most 0.25 m
+  up, `GAP_UP`) or any drop within 3 m (`GAP_ACROSS`, 2 empty cells). Walks and steps (0.55 m) and launches and
+  teleports are as before (a launch adds to 1.2 m up and 3 m across). `Grid.jump_up` / `jump_across` still cap it for a
+  stricter walker. The findings end with `JUMPS`, these limits in words; the zones-and-rules prompt's "Space" line says
+  them, and its worked run's gap is 1 cell (it was the 3 m + 1 m hop). 785 `reach` and 787 `gap`: the reachable
+  fixture's gap is 1 cell (was 2: 3 m + 1 m up, now rightly not reachable).
+- **The real calls** (27 Nov, the editor binary in a window, claude-cli `--model opus` = claude-opus-5-5, fresh Homes,
+  the same cursors as lane C; scripts `.tl/a6/tower-call.sh`, `bridge-call.sh`, one call each, no fix call):
+
+| Ask | Model time | Tokens in / out | Ops | Refused | Space check | assemble used |
+|---|---|---|---|---|---|---|
+| the tower sentence (lane C: 106.2 s, 41.8k / 11.6k; 92.5 s, 41.3k / 10.1k) | 53.7 s | 18,285 / 5,510 | 226 (192 blocks, 5 zones, 5 rules) | 0 | 1 coin out of reach | no |
+| "a small stone bridge with railings across the stream here" (lane C: 32.2 s, 18.4k / 3.3k, 154 blocks) | 29.8 s | 19,456 / 3,015 | 160 blocks | 0 | nothing | no |
+
+  Neither answer used `assemble`: the model hand-placed both (fills), though the prompt offered it, said "PREFER
+  ASSEMBLIES" and (for the bridge) gave the water example's bridge as one op. Both were single attempts by their tokens
+  (lane C's towers were about two). The tower: a 5 x 5 stone tower 8 high with windows and a dark top, a dark-stone
+  stair on solid fill up its west side to the top, 3 coins, the flag on top; the replay (`command_m6_case.gd --
+  replay`) finishes it with every hop at most 2 m (11 feet cells, 2 of 3 coins: one coin floats 1 m over its stair).
+  The replay's tour was fixed this round: a coin out of reach no longer fences the finish off (it walked round the
+  finish while any coin was left). Captures: `docs/shifts/2026-11-27-day/lanes/A6-assemblies/a6-tower.jpg`,
+  `a6-bridge.jpg`, and the Shapes tool `a6-shapes-tool.jpg`, `a6-shapes-built.jpg`.
