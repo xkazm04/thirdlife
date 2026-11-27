@@ -7,8 +7,12 @@ extends RefCounted
 ##   "village"                         the village's rectangle and 72 m round it (the valley blends into it there)
 ##   "game lot"                        a site's footprint and 34 m round it (the pad's blend, valley.gd `height`)
 ##   "lane"                            within 12 m of a lane, its verge or the bridge deck (home/hook.gd `lanes`)
-##   "river"                           within 71 m of the river's line: the water ribbon is 136 m wide and clipped by
-##                                     the ground's depth, so a hollow there would fill with a river that is not there
+##   "river"                           within 71 m of the river's line (the banks and the channel); and beyond it, as
+##                                     far as the river's water ribbon reaches (its HALF width is 136 m, 115-156 m a
+##                                     segment and up to 209 m from the line in x where it runs aslant: places.gd,
+##                                     TLKitRoad.river_ribbon), a vertex may not be lowered under the ribbon's level:
+##                                     the ribbon is clipped only by the ground's depth, so a hollow there would fill
+##                                     with river water that is not there (seen in the exe 80 m from the line, M5)
 ##   "field"                           (land only) a ploughed parcel: its furrows are one mesh and cannot follow
 ##   "authored structure (<name>)"     a house, the mill, a stall, the hoist, a flag, a gate, a portal, a sign: every
 ##                                     drawn thing of the valley that is not ground or scatter (found in the scene)
@@ -21,6 +25,7 @@ const SITE_BAND := 34.0
 const LANE_BAND := 12.0
 const RIVER_BAND := 71.0
 const LANE_CELL := 24.0
+const LATTICE_M := 3.0                # metres between land vertices (land_ground.gd LATTICE)
 const FURROWED := ["dirt", "grass_dry", "sand"]
 const GROUND_NAMES := ["WrenValley", "WrenWater", "ValleyLanes", "ValleyGreens", "Furrows", "HomeBlocks", "HomeLand",
 	"HomeBuildMode", "WorldFarGround", "WorldMesas", "WorldMesaPines"]
@@ -35,6 +40,9 @@ var _ready := false
 var _lanes := {}                         # Vector2i cell (LANE_CELL m) -> [PackedVector2Array triangle, ...]
 var _things := []                        # [Vector2 centre, radius, name]
 var _columns: Variant = null             # a batch's block columns: [Rect2, {Vector2i: true}] (`begin_batch`)
+var _water := {}                         # Vector2i cell (WATER_CELL m) -> [[PackedVector2Array triangle, Vector3 heights], ...]
+const WATER_CELL := 48.0
+const WATER_MARGIN := 0.30               # metres over the ribbon a lowered vertex must stay (lane W: 30 cm)
 
 
 func _init(ground: RefCounted, store: RefCounted, p: RefCounted, parent: Node3D) -> void:
@@ -44,7 +52,8 @@ func _init(ground: RefCounted, store: RefCounted, p: RefCounted, parent: Node3D)
 	landscape = parent
 
 
-## The protect.gd "area" rule: why the ground in `rect` may not take `what` ("land" or "paint"), "" when it may.
+## The protect.gd "area" rule: why the ground in `rect` may not take `what` ("land", "paint" or "plant": growth, M5),
+## "" when it may. Growth moves nothing, so the visitor standing there does not refuse it.
 func rule(rect: Rect2, what: String) -> String:
 	if not g.flat():
 		_prepare()
@@ -53,7 +62,7 @@ func rule(rect: Rect2, what: String) -> String:
 			return why
 	if _has_blocks(rect):
 		return "blocks"
-	if _visitor_in(rect):
+	if what != "plant" and _visitor_in(rect):
 		return "too close"
 	return ""
 
@@ -134,6 +143,7 @@ func _prepare() -> void:
 					(_lanes[k] as Array).append(tri)
 	if landscape == null:
 		return
+	_prepare_water()
 	var inner: Rect2 = (g.border as Rect2).grow(VILLAGE_BAND)
 	for child: Node in landscape.get_children():
 		# a drawn thing of the valley: a kit part (meta tl_kind) or a mesh of its own (TLMesh `instance`); never the visitor,
@@ -148,6 +158,70 @@ func _prepare() -> void:
 		if r.size.x > STRUCTURE_MAX or r.size.y > STRUCTURE_MAX or inner.encloses(r):
 			continue
 		_things.append([r.get_center(), r.size.length() * 0.5 + 2.0, str(child.get_meta(&"tl_kind")) if child.has_meta(&"tl_kind") else str(child.name)])
+
+
+## The river's water ribbon (the node "WrenWater"), its triangles by cell, for `water_level`.
+func _prepare_water() -> void:
+	var w := landscape.find_child("WrenWater", true, false) as MeshInstance3D
+	if w == null or w.mesh == null:
+		return
+	var xf := w.global_transform if w.is_inside_tree() else w.transform
+	for sf: int in w.mesh.get_surface_count():
+		var a: Array = w.mesh.surface_get_arrays(sf)
+		var pos: PackedVector3Array = a[Mesh.ARRAY_VERTEX]
+		var idx := PackedInt32Array(a[Mesh.ARRAY_INDEX]) if a[Mesh.ARRAY_INDEX] != null else PackedInt32Array()
+		var n: int = idx.size() if not idx.is_empty() else pos.size()
+		for t: int in range(0, n - 2, 3):
+			var p: Array = []
+			for q: int in 3:
+				p.append(xf * pos[idx[t + q] if not idx.is_empty() else t + q])
+			var tri := PackedVector2Array([Vector2(p[0].x, p[0].z), Vector2(p[1].x, p[1].z), Vector2(p[2].x, p[2].z)])
+			var box := Rect2(tri[0], Vector2.ZERO).expand(tri[1]).expand(tri[2])
+			var rec := [tri, Vector3(p[0].y, p[1].y, p[2].y)]
+			for cz: int in range(floori(box.position.y / WATER_CELL), floori(box.end.y / WATER_CELL) + 1):
+				for cx: int in range(floori(box.position.x / WATER_CELL), floori(box.end.x / WATER_CELL) + 1):
+					var k := Vector2i(cx, cz)
+					if not _water.has(k):
+						_water[k] = []
+					(_water[k] as Array).append(rec)
+
+
+## The height of the river's water ribbon over (x, z), or NAN where it does not reach.
+func water_level(x: float, z: float) -> float:
+	if g.flat():
+		return NAN
+	_prepare()
+	var p := Vector2(x, z)
+	for rec: Array in _water.get(Vector2i(floori(x / WATER_CELL), floori(z / WATER_CELL)), []):
+		var t: PackedVector2Array = rec[0]
+		if Geometry2D.point_is_inside_triangle(p, t[0], t[1], t[2]):
+			var b := _bary(p, t)
+			var h: Vector3 = rec[1]
+			return h.x * b.x + h.y * b.y + h.z * b.z
+	return NAN
+
+
+static func _bary(p: Vector2, t: PackedVector2Array) -> Vector3:
+	var v0 := t[1] - t[0]
+	var v1 := t[2] - t[0]
+	var v2 := p - t[0]
+	var d := v0.x * v1.y - v1.x * v0.y
+	if absf(d) < 1e-9:
+		return Vector3(1.0, 0.0, 0.0)
+	var b := (v2.x * v1.y - v1.x * v2.y) / d
+	var c := (v0.x * v2.y - v2.x * v0.y) / d
+	return Vector3(1.0 - b - c, b, c)
+
+
+## Why vertex `v` may not go from `from_cm` down to `to_cm`: under the river's water ribbon's level there ("" = it
+## may; raising, or staying above the ribbon, always may).
+func water_refusal(v: Vector2i, to_cm: int, from_cm: int) -> String:
+	if to_cm >= from_cm:
+		return ""
+	var y := water_level(v.x * LATTICE_M, v.y * LATTICE_M)
+	if is_nan(y) or to_cm / 100.0 >= y + WATER_MARGIN:
+		return ""
+	return "river (its water would show: it stands at %.1f m here)" % y
 
 
 static func _bounds(n: Node3D) -> AABB:

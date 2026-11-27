@@ -10,7 +10,7 @@ const R_MAX := 8
 const SEGMENTS := 72
 const BAND := 0.14                       # metres: the ring's half width
 const LIFT := 0.12                       # metres over the ground
-const FLAT_TOP := 0.25                   # of the radius at full strength (a round dome; (1 - t^2)^2 made a cone on the 3 m lattice)
+const FLAT_EDGE := 0.85                  # flatten: full strength out to this fraction of the radius (a terrace keeps a hard edge)
 
 var host: Node = null                   # build_mode.gd
 var radius := 3                         # lattice cells
@@ -77,7 +77,10 @@ func layer() -> RefCounted:
 
 
 ## Vertices (`cells` false) or cells under the brush at `at`, with their falloff: [[Vector2i, weight 0..1], ...].
-func under(at: Vector3, cells := false) -> Array:
+## Vertices: a cosine bell `0.5 + 0.5 cos(PI t)` (a raised hill is round, no plateau: M2 held full strength out to a
+## quarter of the radius and made a mesa), or with `hard` full strength out to FLAT_EDGE and a short fall (flatten: a
+## terrace with a crisp edge). Cells: 1 inside the radius.
+func under(at: Vector3, cells := false, hard := false) -> Array:
 	var out := []
 	var r := metres()
 	var off := 0.5 if cells else 0.0
@@ -86,7 +89,10 @@ func under(at: Vector3, cells := false) -> Array:
 			var d := Vector2((i + off) * LATTICE - at.x, (j + off) * LATTICE - at.z).length()
 			if d <= r:
 				var t := d / r
-				out.append([Vector2i(i, j), 1.0 - smoothstep(FLAT_TOP, 1.0, t) if not cells else 1.0])
+				var f := 1.0
+				if not cells:
+					f = 1.0 - smoothstep(FLAT_EDGE, 1.0, t) if hard else 0.5 + 0.5 * cos(PI * t)
+				out.append([Vector2i(i, j), f])
 	return out
 
 
@@ -105,7 +111,7 @@ func forget() -> void:
 ## sample; the stroke asks every vertex it touches): the ring is red then.
 func first_refusal(at: Vector3, what: String) -> String:
 	var l := layer()
-	var off := 0.5 if what == "paint" else 0.0
+	var off := 0.0 if what == "land" else 0.5
 	var r := metres() * 0.85
 	l.begin_asking(Rect2(at.x - metres() - 2 * LATTICE, at.z - metres() - 2 * LATTICE, 2 * metres() + 4 * LATTICE, 2 * metres() + 4 * LATTICE))
 	var why := ""

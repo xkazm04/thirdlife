@@ -4,6 +4,9 @@ extends RefCounted
 ## ground moved by at most HIDE metres moves with it; one whose ground was lifted or lowered more is hidden (its basis
 ## scaled to zero), so no tree is buried to its crown or left standing in the air. Undo gives every instance its own
 ## transform back. The trunks the visitor bumps into follow the same rule (land_layer.gd `trunk_foot`).
+## M5 (lane W's ask): an instance standing in the player's water (the water layer's `wet_at`, duck-typed) is hidden too,
+## and its trunk is left out (land_layer.gd `trunk_foot`); the water layer asks for a chunk again after a flood or a
+## drain (land_layer.gd `refresh_scatter`).
 ## The forest belt's MultiMeshes ("WorldBelt*") are the village's (places.gd trims them, so their tl_xs is stale) and
 ## the village is protected: they are left out.
 
@@ -14,6 +17,7 @@ var landscape: Node3D
 var by_chunk := {}                       # Vector2i -> [[MultiMesh, index, Transform3D as built], ...]
 var state := {}                          # "<mm id>:<index>" -> "moved" | "hidden" (absent: as built)
 var _ready := false
+var home: Variant = null                 # M5: a WeakRef of home_build.gd (its water layer), set by the land layer
 
 
 func _init(ground: RefCounted, parent: Node3D) -> void:
@@ -63,6 +67,8 @@ func update(id: Vector2i, delta: Callable) -> Array:
 		var d: float = delta.call(xf.origin.x, xf.origin.z)
 		var key := "%d:%d" % [mm.get_instance_id(), int(e[1])]
 		var now := "" if d == 0.0 else ("hidden" if absf(d) > HIDE else "moved")
+		if wet(xf.origin.x, xf.origin.z):
+			now = "hidden"
 		if now == "moved":
 			mm.set_instance_transform(int(e[1]), xf.translated(Vector3(0.0, d, 0.0)))
 			moved += 1
@@ -76,6 +82,13 @@ func update(id: Vector2i, delta: Callable) -> Array:
 		else:
 			state[key] = now
 	return [moved, hidden]
+
+
+## True when (x, z) stands in the player's water (the water layer's `wet_at`; false without one).
+func wet(x: float, z: float) -> bool:
+	var h: RefCounted = (home as WeakRef).get_ref() if home is WeakRef else null
+	var w: RefCounted = h.call("layer", "water") if h != null else null
+	return w != null and w.has_method("wet_at") and bool(w.call("wet_at", x, z))
 
 
 ## The instances of chunk `id` and how each stands: [[origin as built, "" | "moved" | "hidden"], ...].
