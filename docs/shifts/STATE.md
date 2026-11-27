@@ -457,3 +457,6 @@ on the frame and the figure and Fable on surfaces and nature, looping for 10 hou
 - Lanes: T tofu gate (d25-hard-a / n27-tofu), J5 karts, J2 robots, J4 court, J11 biplane at 03:00; J19 shield, J1
   arsenal queued. Trees branched from main e66eb94e, foreman built, cache imported (00:17); fast tier on main PASS 5/5;
   sleep off; claim night-2026-11-27-juice (exact foreman files; the Home session owns world_edit*, kits, kernel API).
+- 03:51 standup: 5 lanes on track. T's bound-as-note fix proven on a real job (v0.1.5). The tofu gate refused or bent
+  J4's dunk and J11's roll; J2's hammer loops in final verification (routed to show). By-hand copies are under way
+  (court_hand already has all three abilities). Disk 40 GB.
