@@ -346,6 +346,10 @@ jump pad, a coin, a hazard, and a **run** (start, checkpoints, finish) that time
   be reached from its start (an estimate over standable cells matching the body, measured 27 Nov: walking, steps of
   at most 0.55 m, a jump of at most 1.0 m up within 2.5 m across, 1.2 m up only from the next cell (a mantle), a flat
   gap (at most 0.25 m up) or any drop within 3 m; a launch zone carries further).
+- The ask gains `land_refused`: `[{"reason":"<reason>", "runs":[[z, x0, x1], ...]}, ...]` in the shape of `refused`:
+  the 1 m columns of the region where the ground ops (`land`, `paint`, `path`, `plant`, `flood`, `pour`) are refused,
+  each with its reason; a column answers for its 3 m ground cell. Blocks may still be placed there (that is `refused`).
+  Omitted when there are none (M6 round 4, lane A).
 - **Fix it** (round 2): when the check found something, R sends one follow-up ask with the same sentence and cursor
   and an optional key `fix`: `{"ops": [the answer's ops], "findings": ["<a finding naming cells and distances>", ...]}`
   (omitted in every other ask). The answer replaces the ghost; only Enter keeps it. It counts as a call.
