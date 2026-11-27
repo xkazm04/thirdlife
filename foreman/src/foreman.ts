@@ -20,8 +20,8 @@ import { CARRIED_FIELDS, MANIFEST_FILE, PACK_VERSION, kernelApiFor, acceptedCarr
 import { builderFeelSection, servesLine } from "./roomtext.js"; // JOB.md 2026-11-21: builders read the design
 import { briefText, critic, render, replanPackages, type GenerateCall, type PackageLine, type PlannerInput, type ReplanInput } from "./designer.js";
 import { NEW_PACKAGE, grow, ownerOrNew, wireWaits, type GrowHost } from "./grow.js"; import { botsBriefText, botsEvents, botsPlanOf, type BotsPlan } from "./botsdefault.js"; // S1-bots A
-import { FINAL_NOTE, fastFinal, fastMerge, fastPromotion, mergeNote, roundAcceptance, whatChangedNote } from "./fastchange.js"; // E4b: a data-only change // E4 (24-25 Nov): a change may add a package
-import { removedSince } from "./removal.js"; import { promotionErrors } from "./promogate.js"; import { answeredThisChange, askedAgain, plainQuestion } from "./asktwice.js"; import { longerMatch, tofuGate } from "./tofugate.js"; import { withGrants } from "./scopegrant.js"; import { afterMerge } from "./halfmade.js"; // H1 (E5e): what a change removed, named; H1d: promotion pictures with script errors refuse
+import { FINAL_NOTE, changedFiles, fastFinal, fastMerge, fastPromotion, mergeNote, removedInRound, roundAcceptance, whatChangedNote } from "./fastchange.js"; // E4b: a data-only change // E4 (24-25 Nov): a change may add a package
+import { removedSince } from "./removal.js"; import { promotionErrors } from "./promogate.js"; import { answeredThisChange, askedAgain, plainQuestion } from "./asktwice.js"; import { longerMatch, tofuGate } from "./tofugate.js"; import { withGrants } from "./scopegrant.js"; import { afterMerge, coreHintOf, foldable } from "./halfmade.js"; import { rivalSplit } from "./rivals.js"; import { finalLandNotes, landGate } from "./landcheck.js"; // D27 items 1 and 4 // H1 (E5e): what a change removed, named; H1d: promotion pictures with script errors refuse
 import { criticRubric, inReach, phaseLine, phaseStep, replanPhases, stuckText, waitsForVerdict } from "./phases.js"; // JOB.md 2026-11-20: phases
 import { writeGenerateCalls } from "./transcript.js";
 import { botFinish, botMoments, planShots } from "./shots.js";
@@ -177,6 +177,7 @@ export class Foreman {
     const id = c.package ?? (c.seq !== undefined ? this.askedOwners.get(c.seq)?.owner : undefined);
     if (id === undefined) return true;
     const p = this.s.packages[id];
+    if (p !== undefined && foldable(p, c.text, running.has(id), this.log.events)) return true; // D27 round 3: a hand-off joins a round not yet built
     return p !== undefined && p.state === "promoted" && (p.mergedFiles ?? []).length > 0 && !(running?.has(id) ?? false);
   }
 
@@ -406,7 +407,7 @@ export class Foreman {
   private spec(id: string): PackageSpec {
     const p = this.s.plan.find((x) => x.id === id);
     if (!p) throw new ForemanError(`unknown package ${id}`);
-    return withGrants(p, this.log.events); // H1f: a person's yes to a scope question widens it for this change
+    return withGrants(p, this.log.events, this.s.plan); // D27 item 7: the cartridge owner writes its rules sidecar in a change; H1f: a person's yes to a scope question widens it for this change
   }
 
   // ---------- scheduling ----------
@@ -873,7 +874,7 @@ export class Foreman {
           break;
         }
       }
-      if (!failure) failure = await this.serialMerge(() => this.mergeAndGate(id, round));
+      if (!failure) failure = landGate(this.gateHost, id, round) ?? (await this.serialMerge(() => this.mergeAndGate(id, round))); // D27 item 4: a new attack must land
       if (!failure) return;
       if (failure.inconclusive !== undefined) {
         // N3b: no verdict. The round is not lost, the builder gets no feedback for it, and nothing is merged: the
@@ -1186,11 +1187,11 @@ export class Foreman {
     fs.mkdirSync(packDir, { recursive: true });
     fs.writeFileSync(path.join(packDir, MANIFEST_FILE), manifest);
     this.append({ type: "merge", package: id, files, ...(removed.length > 0 ? { removed } : {}) });
-    for (const e of afterMerge(this.s.plan, this.log.events, id, round, files, (this.pkg(id).changes ?? []).at(-1))) this.append(e as Parameters<JobLog["append"]>[0]); // H1f: what a yes widened; H1g: the rest of a half-made change goes on
+    for (const e of afterMerge(this.s.plan, this.log.events, id, round, files, (this.pkg(id).changes ?? []).at(-1), coreHintOf(this.s.plan, jobCore(this.gateHost), (...p) => this.dir(...p)))) this.append(e as Parameters<JobLog["append"]>[0]); // H1f: what a yes widened; H1g: the rest of a half-made change goes on
     const starved = this.starvedDetail(id);
     this.append({ type: "package_state", package: id, state: "promoted", round, ...(starved ? { detail: starved } : {}) });
     // N3: a package that was merged before and is merged again has changed under the packages that depend on it.
-    if (hadMerged && fastMerge(this.s, files)) {
+    if (hadMerged && fastMerge(this.s, files) && !removedInRound(this.log.events, id, round)) { // D27: a removal re-verifies the dependants
       // E4b: a data-only change: the dependants' files and the milestone's look did not change (fastchange.ts)
       this.append({ type: "note", package: id, round, text: clip(mergeNote(files, dependants(this.s.plan, id)), 1000) });
       return undefined;
@@ -1289,9 +1290,7 @@ export class Foreman {
         let known = this.askedOwners.get(c.seq);
         if (known === undefined) {
           const model = this.o.plannerModel ?? this.o.model;
-          const cands = changeCandidates(this.packageLines(), this.s.plan, jobCore(this.gateHost));
-          const res = await ownerOrNew(this.o.builder, { sentence: this.s.sentence ?? "", title: this.s.title ?? "", text: c.text, packages: cands }, model ? { model } : {});
-          this.logGenerateCalls(res.calls, model);
+          const cands = changeCandidates(this.packageLines(), this.s.plan, jobCore(this.gateHost)); const res = await ownerOrNew(this.o.builder, { sentence: this.s.sentence ?? "", title: this.s.title ?? "", text: c.text, packages: cands }, model ? { model } : {}); this.logGenerateCalls(res.calls, model);
           const bots = res.ok ? botsPlanOf(res.value, cands) : undefined; // S1-bots A: a new move tells the bots by default
           known = res.ok
             ? { owner: res.value.package, how: res.value.package === NEW_PACKAGE ? clip(res.value.reason, 200) : `the Planner names the package: ${clip(res.value.reason, 200)}`, ...(bots ? { bots } : {}) }
@@ -1319,8 +1318,8 @@ export class Foreman {
       }
       const sk = c.text.startsWith(FOREMAN_NOTE) ? undefined : skinSplit(this.s.plan, owner, c.text); // H1h: the game's text (title, tagline, names, commentary) goes to the skin's owner
       const text = sk === undefined ? c.text : sk.rest === "" ? ([owner, how] = [sk.to, `${how}; ${sk.why}`], c.text) : (this.append({ type: "change_requested", package: sk.to, text: skinPartText(c.seq, sk.why, sk.skinText) }), (how = `${how}; ${sk.why}`), sk.rest);
-      this.reopen(owner, `${changeReason(c.seq)}; ${how}: ${clip(text, 300)}`, `${CHANGE_ROUND}: ${text}`);
-      const bp = c.package === undefined ? this.askedOwners.get(c.seq)?.bots : undefined; if (bp !== undefined) { const ev = botsEvents(bp, owner, c.seq, text); if (ev.note !== undefined) this.append({ type: "note", package: owner, round: this.pkg(owner).round, text: ev.note }); for (const w of ev.wires) this.append({ type: "change_requested", package: w.package, text: w.text }); } // S1-bots A (botsdefault.ts)
+      if (!c.text.startsWith(FOREMAN_NOTE)) for (const r of rivalSplit(this.s.plan, (x) => this.s.packages[x]?.mergedFiles, owner, c.seq, text)) (this.append({ type: "change_requested", package: r.package, text: r.text }), (how = `${how}; ${r.why}`)); // D27 item 1: the rivals' words reach every package that drives a bot
+      this.reopen(owner, `${changeReason(c.seq)}; ${how}: ${clip(text, 300)}`, `${CHANGE_ROUND}: ${text}`); const bp = c.package === undefined ? this.askedOwners.get(c.seq)?.bots : undefined; if (bp !== undefined) { const ev = botsEvents(bp, owner, c.seq, text); if (ev.note !== undefined) this.append({ type: "note", package: owner, round: this.pkg(owner).round, text: ev.note }); for (const w of ev.wires) this.append({ type: "change_requested", package: w.package, text: w.text }); } // S1-bots A (botsdefault.ts)
       await cartridgeChange(this.gateHost, owner, this.pkg(owner).round, text); // E3b: on a core, a cartridge diff first (coregate.ts)
       applied += 1;
     }
@@ -1903,7 +1902,8 @@ export class Foreman {
     const errs = promotionErrors(this.gateHost, `promotion${nth}`); // H1d: the game in a window throws script errors
     if (errs !== undefined) return this.endJob("failed", clip(`promotion refused: ${errs}. ${nth > 1 ? `Earlier version v${this.s.promoted?.version ?? "?"} stays the one to play.` : "Nothing was promoted."}`, 900), true), false;
     if (nth > 1) {
-      this.append({ type: "note", package: owner, round: this.pkg(owner).round, text: whatChangedNote(this.log.events, this.jobIdentity().version, removedSince(path.resolve(this.jobDir, this.s.promotions.at(-1)?.dest ?? "pack"), this.dir("pack"))) }); // E3f: one line for Create; H1: each removal on its own line
+      for (const n of finalLandNotes(this.gateHost)) this.append(n); // D27 item 4: a move handed on is judged by the final bot run
+      this.append({ type: "note", package: owner, round: this.pkg(owner).round, text: whatChangedNote(this.log.events, this.jobIdentity().version, removedSince(path.resolve(this.jobDir, this.s.promotions.at(-1)?.dest ?? "pack"), this.dir("pack")), changedFiles(path.resolve(this.jobDir, this.s.promotions.at(-1)?.dest ?? "pack"), this.dir("pack"))) }); // E3f: one line for Create; H1: each removal on its own line; D27 11: only files that changed
       if (shots.length > 0) this.append({ type: "note", package: owner, round: this.pkg(owner).round, text: `${FOREMAN_NOTE}pictures of the pack as it is promoted the ${nth}${nth === 2 ? "nd" : nth === 3 ? "rd" : "th"} time (after the change): ${shots.join(", ")}` });
     }
     if (this.o.promote) {
