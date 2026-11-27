@@ -552,3 +552,23 @@ design paths we can mimic"; "research know how first"). The research is `docs/re
   overlapping more than 0.1 m), as the house hockey's tests/metrics.gd counts them. Its keeps: the house play camera
   (high, looking down at the play, never low behind a skater) and a readable puck (larger than life, a hot rim, a ring
   under your skater); builders get the house numbers (`follow`, the puck and ring keys of `look`) read live.
+
+### Added 2026-11-27 (night, lane T): a person's change is built as asked
+
+The tofu gate bent four games of 25 Nov away from what the person asked. From the night of 27 Nov, in a change since the
+last promotion, the Foreman writes these notes a person reads (all start `[foreman] `; Create shows the first line of the
+first one on the done screen):
+- `[foreman] balance moved by your change: <one line for Create>\nfigures (...)`. A change since the last promotion moved
+  a balance figure outside its bound. The figures are:
+  - the tofu rows `skill_spread`, `skill_variants`, `lead_change_share`, `close_rounds`, `pressure_waves`,
+    `possession_median_f`;
+  - the rows the person's words name;
+  - a card hand check other than idle.
+
+  The change was built as asked and is not refused for it.
+- `[foreman] balance not judged: ...`: a change to the view or the screen only; its balance figures were not judged.
+- `[foreman] already outside before your change, not judged as its regression: ...`.
+- `[foreman] measure kept: <files> ...`: a builder edited the plan's tofu bot (or a test script it loads) after its first
+  merge; the edit was undone before verification.
+- A what-changed line `unasked rule (the builder's words; you did not ask for it): ...`: a builder line that adds a rule
+  the person did not ask for (its `RULE:` line under `DEVIATIONS:`, or hidden-rule words).
