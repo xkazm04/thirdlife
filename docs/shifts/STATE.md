@@ -498,3 +498,4 @@ on the frame and the figure and Fable on surfaces and nature, looping for 10 hou
 - 09:45 standup: LP, S6, DN on track; S6 at home. 126/126, world 9/9, uncapped suite next; RAM 64 %, disk 62 GB.
 - ~10:40: S4-core done: C++ arm A (core patch 0005: bot meteors 1-3/min, dives stop 3 of 10) vs no-C++ arm B (drawn only, 0 dive stops); branches d27-sp-core / -b pushed. JB-back launched.
 - ~11:20: S35-packs done (3A biplane: the freeze kept the old pilot and Create said nothing; 3A karts cleaned in one round; 5A/5B shield both made by Create, plus 5B by hand). 7 spike rows added to the owner menu (33), each 600 f 0/0 in the exe. Slot held open: CPU 100 %.
+- ~11:05: S6 seam committed 6690ad32 on d27-m6 (integration branch); Director re-ran fast 5/5, home. 128/128, world_edit 13/13. M6 lanes P, T, C launched (d27-m6-p/t/c); 5 Opus agents running (LP, DN, P, T, C).

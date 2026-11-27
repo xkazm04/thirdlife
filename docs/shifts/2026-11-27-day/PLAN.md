@@ -23,9 +23,13 @@ No handshake (owner away): the scope is the owner's sentence; the Director decid
 | R3 smart builders + AI | - | Opus | 08:05 | R3 |
 | R4 our engine scout | - (read-only, Director saves) | Opus Explore | 08:05 | R4 |
 | LP look polish | d27-look / d27-look | Opus | 08:05 | LP |
-
 | S6 M6 seam (rules and runs) | d27-m6 / d27-m6 | Opus | 08:40 | S6 |
 | DN day and night | d27-night / d27-night | Opus | 08:40 | DN |
+| P M6 play | d27-m6-p / d27-m6-p | Opus | 11:05 | P |
+| T M6 tool | d27-m6-t / d27-m6-t | Opus | 11:05 | T |
+| C M6 LLM | d27-m6-c / d27-m6-c | Opus | 11:05 | C |
+
+S6 seam done 10:50: committed 6690ad32 on d27-m6 (the M6 integration branch; main untouched until the merged M6 passes the full list). Director re-ran fast 5/5, home. 128/128, world_edit 13/13; seam's uncapped suite stopped at 160/715 under load (1 many_budget red, k2.down_invariants: to A/B at integration). Contract clarifications 53a2d344 on d27-m6.
 
 Research landed 08:30 (e3b1ccc8): R1-R4 + THESIS.md ("build it, say what it does, play it"), contract BUILD.md M6. After S6: lanes P (play), T (tool), C (LLM) from the seam's LANES.md.
 Selftest blocks: LP 768-772; S6 773-775; DN 776-778; P 779-781; T 782-784; C 785-787.
