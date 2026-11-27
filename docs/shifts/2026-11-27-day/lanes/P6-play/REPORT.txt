@@ -58,7 +58,8 @@ ACCEPTANCE
   773 and 774 re-run alone after the last code edit (rules_play burst): HOME rules-seam ok, HOME rules-play ok.
   world: PASS [9/9]; its table (.tl/gate-world.log of this worktree) is identical to main's .tl/gate-world.log of
     25 Nov (diff empty: the 9 hashes and frame counts).
-  uncapped selftest.sh: see the line under UNCAPPED below.
+  uncapped selftest.sh: NOT MET, a stopped run (never a pass): stopped at 328 cases by the Director's order (12:55),
+    see UNCAPPED below.
 
 CHANGED FILES
 New (engine/kernel/world/build/): play_facade.gd (the facade), play_doors.gd (mask + slide), play_looks.gd (pad, coin,
@@ -112,4 +113,14 @@ THE NEXT THREE THINGS
    the door, the pad and the card feels right; then tune OPEN/CLOSE frames and the card's 300 frames from that.
 
 UNCAPPED
-(filled in below when the run ends)
+`bash engine/tools/selftest.sh` (no filter, no outer timeout) started 11:35, STOPPED at 12:49 on the Director's order
+(he runs it once on the merged tree): 328 of about 715+ cases reached (main: 712 passed, 3 failed), 325 PASS, 3 FAIL.
+NOT a pass. The three fails, none in a block this lane touches (the home. blocks are later in the order and passed in
+the home. run above):
+  k2.down_invariants  exit 1: the same wall-clock frame budget fail of example.down the seam saw under this load
+                      (invariants.many_budget); no Home, no build mode
+  site.editor_pad     "world exited 127"
+  site.arrived_yaw_record  node:assert:152
+The two site.* fails were not read further (stopped run); exit 127 is a command not found, read as this worktree's
+environment (or load), not judged as mine without a rerun on the merged tree. Log: .tl/p6/gates/all.log.
+No process of the run is left (checked by command line naming this worktree).
