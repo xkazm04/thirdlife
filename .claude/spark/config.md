@@ -27,11 +27,19 @@ locale_count: 1
   a kernel fault of 03:31 was found by it at 05:39.
 - a worktree runs the whole full gate after `npm ci` in its `foreman/` and plain copies (no links) of
   `site/marble-run-three-marbles-20261110-1` and `-2` into its `site/`; with only one of the two, a devx ledger test fails.
+  (promoted 2026-11-27, hit twice) It also needs the rink binaries copied BY CONTENT: `cp -rn engine/cores/rink/bin/. <tree>/engine/cores/rink/bin/`
+  and `cp -rn engine/cores/rink/lab/bin/. <tree>/engine/cores/rink/lab/bin/` (a plain `cp -r` into the tracked folder nests it
+  and rink.playtester_seat / rink.cartridge fail as "not built"), and `npm run build` in its foreman (ask_foreman cases).
 - a win-or-lose test enters the gate only after its verdict held on 20 of 20 seeds (two of tonight's were coins: 10 and 19 of 20);
   a difficulty figure comes from `tl ladder` and is quoted with the hand profile and the seed count.
 
 - before committing a builder's new directory: `git check-ignore -v <dir>/<a file>`; an ignore pattern for job output
   (`/site/`) once hid `engine/kernel/world/site/` and the commit would have dropped the site's code silently.
+
+- (promoted 2026-11-27, hit twice) `kernel.selftest` outruns the full gate's 1800 s cap (429 of 430 units, 0 failed, on 27 Nov):
+  after the full gate, run `bash engine/tools/selftest.sh` uncapped, judge it by its `N passed, M failed` line, and name every
+  red case by running it on `main` and on the branch back to back under the same load (frame budgets like `many_budget` move
+  with the machine's load; a night shift on the machine pushes them over 1.0 ms on `main` too).
 
 ## Rituals
 - Phase 0: read `.claude/sessions.json`; add an entry for this spark's scope. Phase 6: remove it.
@@ -64,6 +72,12 @@ brief is a thing to measure, and the brief says so: builders corrected three of 
 could not stay, a blade at 3.0 m not 1.9, a tolerance needing 100 seeds). A second builder on a pack another builder is in gets
 its own worktree and a list of files it stays out of: five such merges were clean. A kernel helper that asks the physics
 world asks the pack's own space (`TLContext.space_state_of`), and anything new in the kernel is proven in a world, not only alone.
+
+(promoted 2026-11-27, hit in M4 and M5 of world-sandbox) Cross-lane hand-offs are contract items, not relays: the contract
+names each one with its exact signature (`wet_at(x, y, z)`, not "a wet check"), the Director relays a request between lanes by
+quoting the producing lane's code, and the integration owns one case per hand-off that drives it end to end through the real
+pipeline (water hides the land's scatter after a flush; an LLM answer that digs then pours fills the dug hollow; the LLM path
+offers and teaches every op the lanes add). Three of M5's four integration bugs were hand-offs no lane case could see.
 
 ## Wave defaults
 One AskUserQuestion call of up to 4 questions.
@@ -144,3 +158,13 @@ One AskUserQuestion call of up to 4 questions.
   (here two Foreman jobs); the proof found camera-vs-scenery, twist timing and name drift that no lane gate measured.
   When a design wave settles a fun promise, also ask when it happens on screen, so the critic's capture rule can see it.
 - 2026-11-21 game-quality-bar: when the operator says "you ignored my notes", scout his own past words (memory, STATE, spark notes, briefs) and map each to the hop that dropped it; the gap table made the design obvious. A quality gate needs the primitives it demands: pair a critic rubric with the engine features it checks (hit-stop, push-apart, camera occlusion), or builders cannot satisfy it.
+- 2026-11-26 world-sandbox: when parallel lanes extend a shared vocabulary (ops, tables), one acceptance line must cross lanes at integration: the LLM path offers AND teaches every op the lanes add (the prompt taught only block ops until integration).
+- 2026-11-26 world-sandbox: a full gate in a worktree needs the main checkout's ignored inputs: site/ marble jobs 1 and 2, engine/cores/rink/bin, lab/bin. kernel.selftest now outruns its 1800 s cap (1684 s quiet before this spark): settle it with an uncapped `engine/tools/selftest.sh` run read by count, and name each red case by an A/B in a detached main worktree.
+- 2026-11-26 world-sandbox: `git branch -d` judges against the checkout's HEAD, not main: use `git merge-base --is-ancestor <b> main` (and `git cherry`) before -D.
+- 2026-11-27 world-sandbox M5: five Opus lanes off one seam merged with zero conflicts; the integration found four bugs, three of them cross-lane hand-offs (a relayed signature paraphrased wrong, a layer pipeline stepped once in fixed order so a later layer's hand-off to an earlier one never ran, a multi-op LLM answer planned on the state before its own earlier ops). Promoted to Repo law. A pipeline of duck-typed layers that may hand work to each other flushes to a fixed point, not one pass.
+- 2026-11-27 world-sandbox M5: another session launched a night shift (5 Opus lanes) on the same machine and main during the landing gate; main moved twice (docs only). Land with `git merge --ff-only` from the shared main worktree after merging main into the branch, and name timing reds by A/B under the same load.
+- 2026-11-27 day shift (world-sandbox M6, owner away): two Opus lanes went silent for 2-3 h each, both stopped just before writing a large file in one go ("rewrite the terrace case", "write the refactor with Python"). Briefs now say: no single write of more than ~300 lines (edit in pieces), a standup line before any big write, and the Director stops a lane at its second silent standup (60 min), not later; its on-disk work is resumed by a fresh agent with a RESUME.md.
+- 2026-11-27: four lanes' Python or editor writes flipped a file's line endings (LF<->CRLF), inflating diffs 5-10x. The landing ritual runs a helper that restores each modified file's endings from its HEAD blob (count CRs with `tr -cd '\r' | wc -c`; `grep $'\r'` does not work in Git Bash) before staging.
+- 2026-11-27: a read-only newcomer playtest (Fable) on the merged tree found ten frictions no lane's tests saw (2-high doors stop the walker, a starter that traps a walker, tools refused near the spawn with no cue, an unclickable hotbar); three fix lanes closed most in two hours. Run the playtest at mid-day on the first merged tree, not at the end.
+- 2026-11-27: the LLM ignored a new op (assemble) in two real calls until it was FIRST in the prompt's ops and the worked examples used it; then it used it at its own sizes in every call (fastest and cheapest calls of the day). Prompt order and worked examples are the lever; a "PREFER X" line is not.
+- 2026-11-27: worktree prep copies ignored inputs by CONTENT (`cp -rn src/. dst/`): `cp -r src dst` into an existing tracked folder nests it (engine/cores/rink/bin/bin) and the rink cases then fail as "not built"; the rink lab is engine/cores/rink/lab/bin.
