@@ -533,3 +533,50 @@ First ability: the meteor (a shot, the hand's only). This one is a body state an
    (on v0.1.28, seeds 1-3, `harbour.marks.mega_on` 6 / 4 / 3 equals the sim's `effect_start mega` 6 / 4 / 3), but nothing ties them.
 10. **A harbour builder guessed a value it could not read** ("raise `game.ai.body_check` from 0.6 to 0.9"; the cartridge
    says 1); the cartridge diff then chose a valid key (`bot_check_windup_frames` 12 -> 6) instead. Harmless here.
+
+---
+
+# Round 3 (Director, 19:10): see a rival's giant off screen; film the big FLATTENED!
+
+## The big FLATTENED! on v0.1.29 (filmed, no change)
+- Found by headless counting on v0.1.29 (seeds 4-7, 3600 frames, 0 script errors each: 6d6bffba, cb69b038, 1617ac71,
+  68766c1b): checks landed by a skater already mega: seed 4 frames 510 and 1594, seed 5 frame 289, seed 7 frames 1788
+  and 1793 (my giant from 1593). On seeds 1-3 my mega checks were the starting checks, which is why round 2's takes
+  never showed it.
+- **On film** (`clips/j2b_arsenal_v029_flattened.mp4`, 4.3 s, window, seed 7, frames 1580-1838, 800 wide, crf 32, 0
+  script errors; stills `stills/arsenal_v029_flattened_f1776-1820.jpg`, `stills/arsenal_v029_flattened_f1800.jpg`,
+  looked at): my giant #7 strides through two orange rivals at their net; both drop flat under his skates, ice spray,
+  and **FLATTENED!** in big yellow letters with a dark outline over them, replacing YOU ARE MEGA! for the moment, then
+  sliding with them. Met: big, one word at a time, over the man.
+
+## The sentence (sent 19:11:17 on v0.1.29, log `.tl/jobs/_ui_logs/1795803076-j2b-ars4-change.log`), 502 characters
+> When a rival goes MEGA where my camera cannot see him ... show a big orange arrow at the edge of the screen pointing
+> at him, with MEGA! and how many metres away he is on it, pulsing faster as he gets closer. When he comes back on
+> screen, drop the arrow and keep his MEGA! big over his head until he shrinks. Do not move my camera for it ...
+(My call as the person: an edge arrow, not a camera glance, so the player keeps his own view.)
+
+### -> v0.1.30 (promoted 19:22:08: 10.9 min) **<- the Arsenal pick now**
+- The Planner (4 s) named harbour; **harbour r22** (one round, merged 19:16:56; `data/tuning.json`, `scripts/harbour.gd`,
+  `scripts/harbour_toys.gd`): the arrow for rivals only, shown when his point 1 m above the ice is behind the camera
+  or within `edge_px` of the edge; behind the camera it "points along his left/right offset and downward"; the
+  distance between the drawn figures; a rival's MEGA! now lasts his whole MEGA; a `mega_arrow` mark. No hand-off, no
+  question. **Cost: 2 model calls (the Planner and harbour r22), 1.04M tokens in (0.97M cache reads), 10.1k out.**
+- v0.1.30 = my film copy `.tl/j2b/film/ars_h22` (`diff -rq`: only `pack.json`'s tests list and my two tests).
+- **Headless, v0.1.30** (3600 frames, **0 script errors**): seed 1 **45fa13fd twice**, seed 2 468e8acb, seed 3 9bced1db:
+  **the same hashes as v0.1.29** (drawing only, as it should be). The arrow mark fired on seeds 1-3 (2, 4 and 18 marks;
+  seed 3 had four rival giants).
+- **On film** (`clips/j2b_arsenal_v030_mega_arrow.mp4`, 14.5 s, window, seed 3, frames 1265-2135, the very moment round
+  2's take could not show (a rival goes mega at 1277 while my camera follows me along the boards); stills
+  `stills/arsenal_v030_arrow_f1308.jpg`, `stills/arsenal_v030_arrow_f1270-1366.jpg`,
+  `stills/arsenal_v030_arrow_f1812-1908.jpg`, looked at):
+  - an orange arrowhead appears at the bottom edge with **MEGA! 24 m** beside it, and the metres count up as he skates
+    away (24, 25, 27 ... 44 m) and down as the next giant comes (14, 12, 11, 10 m): I know a giant is out there and how
+    far.
+  - Weaker than asked: the arrow is mid-size, not big (about a tenth of the screen height); while the giant is behind
+    the camera it jumps between the bottom and the left edge from frame to frame; at times it sits under the controls
+    panel at the bottom left, and its label overlaps the puck's own distance marker ("31 m" over "MEGA! 30 m"). The
+    pulse cannot be judged from stills. The giant never came back on screen in this take, so "his MEGA! big until he
+    shrinks" is built (the builder's note) but not seen.
+- How it feels (from film): the warning works as information, and it is honest to the person's ask (the camera is left
+  alone). As juice it is small and restless; a second sentence would ask for it bigger, steady at one edge while he is
+  behind me, and clear of the HUD panels. (Round 3 was one sentence; I stopped here as asked.)

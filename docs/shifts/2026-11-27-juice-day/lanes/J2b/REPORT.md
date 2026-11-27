@@ -172,3 +172,43 @@ NEXT THREE (Arsenal)
 1. A person plays v0.1.29 with real keys (the check on the right mouse button, then the meteor while mega).
 2. A sentence for the rivals' giants to be seen: a short camera glance or an edge arrow when a rival goes mega off screen.
 3. Route findings 6-8 to lane T: on the rink core the Planner should send rules to the cartridge package first.
+
+======================================================================================================================
+ROUND 3 (Director 19:10): see a rival's giant off screen; film the big FLATTENED! (19:10-19:27)
+
+OUTCOME
+- FLATTENED! (v0.1.29, no change): found by counting seeds 4-7 (a check landed by a skater already mega: seed 7 frames
+  1788 and 1793) and filmed: clips/j2b_arsenal_v029_flattened.mp4 (4.3 s): my giant strides through two rivals at
+  their net, both drop flat, FLATTENED! big yellow with an outline over them. MET.
+- One sentence (502 chars, 19:11:17), my call as the person: an orange edge arrow with MEGA! and the metres to an
+  off-screen rival giant, pulsing as he nears; his MEGA! big over him when on screen; the camera left alone.
+  -> v0.1.30 promoted 19:22:08 (10.9 min; harbour r22 only, first round; 2 calls, 1.04M in / 10.1k out).
+  Drawing only: seeds 1-3 hash exactly as v0.1.29 (45fa13fd twice, 468e8acb, 9bced1db), 0 script errors.
+- On film (clips/j2b_arsenal_v030_mega_arrow.mp4, 14.5 s, seed 3 frames 1265-2135, the moment round 2 could not show):
+  an orange arrowhead with "MEGA! 24 m" at the screen edge, metres counting up as he goes and down as the next giant
+  comes (14 ... 10 m). Works as information. Weaker than asked: mid-size, not big; while he is behind the camera it
+  jumps between the bottom and left edge; it can sit under the controls panel and its label overlaps the puck's
+  distance marker. "His MEGA! big over him until he shrinks" is built but the giant never came on screen in my take.
+  The pulse cannot be judged from stills.
+
+MENU ROW (Director-only; replaces v0.1.29 as the Arsenal pick)
+- C:/Users/kazda/kiro/third-life/.claude/worktrees/d25-biplane/.tl/jobs/three-against-three-hockey-20261125-1/promoted/game.three_against_three_hockey@0.1.30
+    "Arsenal hockey v0.1.30: MEGA from a big hit (made in Create, juice day)"   keys: body check (right mouse button)
+                                                                                 = MEGA; F the meteor
+
+GATES
+- tl check --tier fast at 19:26: PASS 5/5 (arch 12/12, assets 4/4, cards 3/3, devx.test 230/230, typecheck clean). Docs and .tl/ only.
+- Raw film deleted after every cut.
+
+NEW FILES (lane folder)
+- clips/j2b_arsenal_v029_flattened.mp4 (4.3 s), clips/j2b_arsenal_v030_mega_arrow.mp4 (14.5 s);
+- stills/arsenal_v029_flattened_f1776-1820.jpg, arsenal_v029_flattened_f1800.jpg, arsenal_v030_arrow_f1308.jpg,
+  arsenal_v030_arrow_f1270-1366.jpg, arsenal_v030_arrow_f1812-1908.jpg;
+- PROOF "Round 3", SENTENCES round 3, STANDUP.
+
+NO NEW EDITOR FINDING this round: the Planner named the right package (a drawing-only change), one round, no hand-off,
+no question.
+
+NEXT (if the Director wants one more sentence)
+- "The MEGA arrow is too small and jumps around: make it twice as big, keep it on one edge while he is behind me, and
+  never under the panels or on top of the other markers."

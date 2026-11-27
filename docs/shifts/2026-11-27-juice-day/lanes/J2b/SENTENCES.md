@@ -36,3 +36,7 @@
 ### Arsenal follow-up 1 (on v0.1.28, sent 18:42:31), 696 characters
 
 > MEGA works and the giants read at once, but four things are wrong. When I go mega the camera stays where it was, so for a second my own giant legs fill the screen: pull the camera back and up while I am mega. FLATTENED! is a small word that piles on top of YOU ARE MEGA!: show FLATTENED! big over the man who goes down, one at a time, with the thud and a little shake. When a rival knocks me down, YOU ARE MEGA! stays on screen while I lie on the ice: take it away the moment I fall, and show his MEGA! big over him instead. And the rival bots go mega only about once a minute: I want to face their giants about twice as often, so they should land their body checks on me and my mates more often.
+
+## Round 3: Arsenal (on v0.1.29, sent 19:11:17), 502 characters: an edge arrow for an off-screen rival giant
+
+> When a rival goes MEGA where my camera cannot see him, I never know a giant is coming: half the time it happens behind me or across the ice. While any rival is mega and off my screen, show a big orange arrow at the edge of the screen pointing at him, with MEGA! and how many metres away he is on it, pulsing faster as he gets closer. When he comes back on screen, drop the arrow and keep his MEGA! big over his head until he shrinks. Do not move my camera for it: I want to keep my eyes on my own play.

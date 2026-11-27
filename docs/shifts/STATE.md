@@ -547,3 +547,4 @@ on the frame and the figure and Fable on surfaces and nature, looping for 10 hou
 - 19:17: S1 round 3 (fairness): B on main's fixes left bots at 0 after sentence 1 on both games; shield reached the bar with 2, court not in 2 (teammates never get it). A reached it in 1 on both. Menu 75.
 - 19:17 standup: S1 done; T hung 15:34-19:20 (stopped, resumed with a narrowed queue); J2nd blocked on finding 12 (to T); S2 r3, J2b r3 running. Menu 75, all 0/0 on exe cafb68de.
 - 19:22: S2 done (3 rounds): the pass works through either arm; output differs by builder variance (about 21-36 runs per arm to tell apart); the lane picks A on the default. Menu 76.
+- 19:27: J2b done (round 3: FLATTENED! filmed; v0.1.30 edge arrow for off-screen rival giants, drawing only, smaller and jumpier than asked). Menu 77.
