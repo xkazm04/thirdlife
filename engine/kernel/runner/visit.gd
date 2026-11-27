@@ -202,8 +202,11 @@ func steer(tick: int) -> void:
 	# walker-feel: the body has weight (visitor.gd `wish`, world_space.gd `drive`): it eases toward this velocity
 	var want: Vector3 = move.normalized() * pace if move.length() > 0.01 else Vector3.ZERO
 	if vis.get("space") != null:
+		# T6-3: while building, C with Ctrl held is a tool's (the stamp tool's Ctrl+C): it neither slides nor sinks him
+		var c_tool: bool = _building() != null and Input.is_physical_key_pressed(KEY_CTRL)
+		var climb: float = input.strength(&"jump") if c_tool else input.axis(&"slide", &"jump")
 		vis.call("wish", want, input.just_pressed(&"jump") and not in_flight and not toggle_fly,
-			input.just_pressed(&"slide") and not in_flight and not toggle_fly, toggle_fly, input.axis(&"slide", &"jump"))
+			input.just_pressed(&"slide") and not in_flight and not toggle_fly and not c_tool, toggle_fly, climb)
 	elif move.length() > 0.01:
 		world.set("player_pos", (world.get("player_pos") as Vector3) + want / 60.0)
 	if tick % PATH_EVERY == 0:
