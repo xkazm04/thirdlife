@@ -70,6 +70,13 @@ export function boxes(runs: [number, number, number][]): string[] {
   return out;
 }
 
+/** The ask's `water` (M5) as the prompt's "Water (measured)": per surface cell y, the columns it covers as boxes. */
+export function waterFacts(water: Ask["water"]): string {
+  if (!water?.length) return "none in the region";
+  return water.map((w) => `surface in cell y ${w.y} (a block at y ${w.y} or lower in these columns stands in the water): ` +
+    boxes(w.runs).join("; ")).join("\n");
+}
+
 /** The ask as the prompt's measured facts: tables, the region, the ground, the refused columns, the blocks there. */
 export function facts(ask: Ask): Record<string, string> {
   const { min, max } = ask.region, g = ask.ground;
@@ -95,13 +102,14 @@ export function facts(ask: Ask): Record<string, string> {
     region: `${min.join(", ")} to ${max.join(", ")} (inclusive). Every cell you touch must be inside it`,
     ops: kinds.join(", "),
     caps: `at most ${Math.min(MAX_OPS, ask.caps.ops)} operations after boxes are expanded; room for ${ask.caps.blocks_left} more blocks in the Home`,
-    tables, ground, refused, blocks,
+    tables, ground, refused, blocks, water: waterFacts(ask.water),
     layers: ask.layers && Object.keys(ask.layers).length ? "Other layers in the region (as the Home reads them):\n" + JSON.stringify(ask.layers) : "",
     more_ops: moreOps(ask.ops),
   };
 }
 
-/** How to write the land, paint, put and lift ops, only when the Home offers them (their layers are built). */
+/** How to write the land, paint, put and lift ops (M2, M3) and pour, drain, path, unpath and plant (M5), each only when
+ *  the Home offers it (its layer is built), with worked examples of a pond (land, then pour) and a path. */
 function moreOps(kinds: string[]): string {
   const out: string[] = [];
   if (kinds.includes("land")) out.push(
@@ -115,7 +123,31 @@ function moreOps(kinds: string[]): string {
     `- {"op":"put","at":[x,y,z],"part":"<kit part>","rot":r} stands a kit part from the table on the cell at (its base
   on the ground y of that column); add "params" only to change a part's size. {"op":"lift","at":[x,y,z]} takes one
   away (the "pieces" layer above lists them). Parts are the finishing touches: lamps, benches, fences, trees, signs.`);
-  return out.length ? ["More operations the Home takes here:", ...out].join("\n") : "";
+  if (kinds.includes("pour")) out.push(
+    `- {"op":"pour","at":[x,y,z]} fills a hollow with still water from that cell: the Home floods the 3 m cells round it
+  up to just under the lowest rim. Dig the hollow first with land (lower the inner vertices, keep the rim), then pour
+  into its lowest cell. A pour that would run into the river, a protected area or past 2,048 cells is refused.`);
+  if (kinds.includes("drain")) out.push(
+    `- {"op":"drain","cells":[[i,j,level_cm],...]} empties the player's water in 3 m cell [i, j]; level_cm is its level now.`);
+  if (kinds.includes("path")) out.push(
+    `- {"op":"path","id":n,"pts":[[x_cm,z_cm],...],"width_cm":w,"paint":"<p>"} lays a path draped on the ground through
+  2-64 control points in world cm (x*100, z*100), each 100-4800 cm from the last; width_cm 150-800; paint one of dirt,
+  sand, stone, rock_warm, grass_dry, plank; id a new number no path in the "paths" layer above has.` +
+    (kinds.includes("unpath") ? ` {"op":"unpath",...} removes a path: write it whole, as that layer lists it.` : ""));
+  if (kinds.includes("plant")) out.push(
+    `- {"op":"plant","cells":[[i,j,"<from>","<to>"],...]} sets the growth of 3 m cell [i, j]: meadow, flowers, tall_grass,
+  or valley (the ground's own); from is its growth now ("valley" where the "plants" layer names none). Trees and bushes
+  are put ops of the parts tree and bush.`);
+  if (!out.length) return "";
+  const examples: string[] = [];
+  if (kinds.includes("land") && kinds.includes("pour")) examples.push(
+    `A pond on flat ground at y 10 (1000 cm) over the cells x 99..107, z 48..56: lower the 4 inner vertices, then pour.
+{"op":"land","verts":[[34,17,850],[35,17,850],[34,18,850],[35,18,850]]}
+{"op":"pour","at":[103,8,52]}`);
+  if (kinds.includes("path")) examples.push(
+    `A dirt path 2.5 m wide from a door at (102, 55) to a well at (120, 70), bending once:
+{"op":"path","id":1,"pts":[[10250,5550],[11000,6400],[12050,7050]],"width_cm":250,"paint":"dirt"}`);
+  return ["More operations the Home takes here:", ...out, ...(examples.length ? ["Worked examples:", ...examples] : [])].join("\n");
 }
 
 export async function worldEditCommand(input: string | undefined, output: string | undefined, builderFor: () => Builder, opts: GenerateOptions): Promise<number> {

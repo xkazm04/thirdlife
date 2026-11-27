@@ -4,13 +4,17 @@
 // problem in words the model can act on. A good answer is EXPANDED into the contract's ops (contracts/BUILD.md
 // "The LLM command bar"): `fill` and `clear` boxes become place and remove ops, a remove names what it removes, and the
 // count of expanded ops is capped (MAX_OPS). The answer file never holds a box: only tl.edit/1 ops without v, author
-// and batch.
+// and batch. M5 (lane C): a place may name only a material of the ask's table and a put only a part of its parts table
+// (the ask lists what play has unlocked); paint, path and plant names, a path's points and width are held to the
+// contract's lists and ranges (contracts/BUILD.md "Milestone 5").
 
 export const MAX_OPS = 4000;
 export const SHAPES = 8;
-export const MATS = 9;                   // 10 (glass) is a window's pane only: never a block's material
 export const FLIPPABLE = [3, 4, 7];      // stair, ramp, roof
 export const PAINTS = ["grass", "grass_dark", "grass_dry", "dirt", "sand", "stone", "rock_warm", "cliff", "valley"];
+export const PATH_PAINTS = ["dirt", "sand", "stone", "rock_warm", "grass_dry", "plank"];
+export const PLANTS = ["meadow", "flowers", "tall_grass", "valley"];
+export const PATH = { ptsMin: 2, ptsMax: 64, stepMin: 100, stepMax: 4800, widthMin: 150, widthMax: 800 };   // cm
 const LATTICE = 3;
 /** Every op kind an ask's `ops` may name (tl.world-edit-ask/1): the layers' kinds and `pour`, which the exe expands. */
 export const ASK_OPS = ["place", "remove", "land", "paint", "put", "lift", "flood", "pour", "drain", "path", "unpath", "plant"];
@@ -64,6 +68,7 @@ export function expand(ask: Ask, given: ModelOp[]): { ops: EditOp[]; problems: s
   const [lo, hi] = [ask.region.min, ask.region.max];
   const inside = (c: number[]) => c.every((v, i) => v >= (lo[i] as number) && v <= (hi[i] as number));
   const kinds = new Set(ask.ops);
+  const mats = ask.mats.map((m) => m.id), parts = new Set((ask.parts ?? []).map((p) => p.kind));
   const problems: string[] = [];
   const ops: EditOp[] = [];
   let placed = 0, removed = 0;
@@ -78,7 +83,7 @@ export function expand(ask: Ask, given: ModelOp[]): { ops: EditOp[]; problems: s
     const [s, m, r] = [o.shape as number, o.mat as number, o.rot as number];
     if (s < 1 || s > SHAPES) { say(i, `unknown shape ${s}: use an id from the shape table (1-${SHAPES})`); return undefined; }
     if (m === 10) { say(i, "mat 10 (glass) is only a window's pane: give a window (shape 6) its frame's material, the pane is glass by itself"); return undefined; }
-    if (m < 1 || m > MATS) { say(i, `unknown mat ${m}: use an id from the material table (1-${MATS})`); return undefined; }
+    if (!mats.includes(m)) { say(i, `mat ${m} is not in the material table (unknown, or not unlocked yet): use one of ${mats.join(", ")}`); return undefined; }
     if (r < 0 || r > 3) { say(i, "rot must be 0, 1, 2 or 3"); return undefined; }
     if (o.flip !== undefined && o.flip !== true) { say(i, "flip is written only when true (leave it out otherwise)"); return undefined; }
     if (o.flip === true && !FLIPPABLE.includes(s)) { say(i, "flip is for stair, ramp and roof (shapes 3, 4, 7) only"); return undefined; }
@@ -139,7 +144,7 @@ export function expand(ask: Ask, given: ModelOp[]): { ops: EditOp[]; problems: s
     }
     if (Object.hasOwn(OTHER, o.op)) {
       if (!kinds.has(o.op)) { say(i, `the Home does not take "${o.op}" yet: use only ${[...kinds].join(", ")}${blockOps ? ", fill, clear" : ""}`); return; }
-      const why = otherOp(o, inside, lo, hi);
+      const why = otherOp(o, inside, lo, hi, ask, parts);
       if (why) { say(i, why); return; }
       const { op, ...rest } = o;
       ops.push({ op, ...rest });
@@ -155,25 +160,34 @@ export function expand(ask: Ask, given: ModelOp[]): { ops: EditOp[]; problems: s
 
 /** The land, paint, put, lift (M2, M3), flood, drain, pour, path, unpath and plant ops (M5) checked against the region
  *  and for the types of their fields; their own rules are the exe's layers'. */
-function otherOp(o: ModelOp, inside: (c: number[]) => boolean, lo: Cell, hi: Cell): string {
+function otherOp(o: ModelOp, inside: (c: number[]) => boolean, lo: Cell, hi: Cell, ask: Ask, parts: Set<string>): string {
   const extra = Object.keys(o).filter((k) => k !== "op" && !(OTHER[o.op] as string[]).includes(k));
   if (extra.length) return `${o.op} takes no ${extra.map((k) => `"${k}"`).join(", ")}`;
   if (o.op === "put" || o.op === "lift" || o.op === "pour") {
     if (!isCell(o.at)) return "at must be a cell [x, y, z] of integers";
     if (!inside(o.at)) return `at ${JSON.stringify(o.at)} is outside the region`;
     if (o.op === "put" && (typeof o.part !== "string" || !isInt(o.rot))) return "put needs part and rot";
+    if (o.op === "put" && !parts.has(o.part as string)) return `the part "${o.part}" is not in the parts table (unknown, or not unlocked yet): use one of ${[...parts].join(", ")}`;
+    if (o.op === "put" && ((o.rot as number) < 0 || (o.rot as number) > 3)) return "rot must be 0, 1, 2 or 3";
     return "";
   }
   if (o.op === "path" || o.op === "unpath") {
     for (const k of ["id", "pts", "width_cm", "paint"] as const) if (o[k] === undefined) return `${o.op} needs id, pts, width_cm and paint`;
     if (!isInt(o.id) || o.id < 1) return "id must be a positive integer";
     if (!isInt(o.width_cm)) return "width_cm must be an integer (cm)";
-    if (typeof o.paint !== "string") return "paint must be a path paint's name";
-    if (!Array.isArray(o.pts) || o.pts.length < 2) return "pts must hold at least 2 points [x_cm, z_cm]";
+    if (o.width_cm < PATH.widthMin || o.width_cm > PATH.widthMax) return `width_cm ${o.width_cm} is outside ${PATH.widthMin}-${PATH.widthMax} (a path is 1.5 to 8 m wide)`;
+    if (typeof o.paint !== "string" || !PATH_PAINTS.includes(o.paint)) return `paint must be a path paint: ${PATH_PAINTS.join(", ")}`;
+    if (!Array.isArray(o.pts) || o.pts.length < PATH.ptsMin || o.pts.length > PATH.ptsMax) return `pts must hold ${PATH.ptsMin} to ${PATH.ptsMax} points [x_cm, z_cm]`;
+    let prev: number[] | undefined;
     for (const p of o.pts) {
       if (!Array.isArray(p) || p.length !== 2 || !p.every(isInt)) return "every point is [x_cm, z_cm] of integers";
       const x = (p[0] as number) / 100, z = (p[1] as number) / 100;
       if (x < lo[0] || x > hi[0] + 1 || z < lo[2] || z > hi[2] + 1) return `the point [${p[0]}, ${p[1]}] (world ${x}, ${z}) is outside the region`;
+      if (prev) {
+        const d = Math.hypot((p[0] as number) - (prev[0] as number), (p[1] as number) - (prev[1] as number));
+        if (d < PATH.stepMin || d > PATH.stepMax) return `the points [${prev[0]}, ${prev[1]}] and [${p[0]}, ${p[1]}] are ${Math.round(d)} cm apart; consecutive points are ${PATH.stepMin} to ${PATH.stepMax} cm apart`;
+      }
+      prev = p as number[];
     }
     return "";
   }
@@ -184,9 +198,11 @@ function otherOp(o: ModelOp, inside: (c: number[]) => boolean, lo: Cell, hi: Cel
     const x = (e[0] as number) * LATTICE, z = (e[1] as number) * LATTICE;
     if (x < lo[0] || x > hi[0] + 1 || z < lo[2] || z > hi[2] + 1) return `[${e[0]}, ${e[1]}] (world ${x}, ${z}) is outside the region`;
     if (o.op === "land" && !((e.length === 3 || e.length === 4) && e.slice(2).every(isInt))) return "a land vertex is [i, j, to_cm] (the exe fills from_cm) or [i, j, from_cm, to_cm]";
-    if (o.op === "paint" && !(e.length === 4 && PAINTS.includes(e[2] as string) && PAINTS.includes(e[3] as string))) return `a paint cell is [i, j, "<from>", "<to>"] with paints from the table`;
+    const paints = ask.paints ?? PAINTS;
+    if (o.op === "paint" && !(e.length === 4 && paints.includes(e[2] as string) && paints.includes(e[3] as string))) return `a paint cell is [i, j, "<from>", "<to>"] with paints from the table (${paints.join(", ")})`;
     if ((o.op === "flood" || o.op === "drain") && !(e.length === 3 && isInt(e[2]))) return `a ${o.op} cell is [i, j, level_cm] of integers`;
     if (o.op === "plant" && !(e.length === 4 && typeof e[2] === "string" && typeof e[3] === "string")) return `a plant cell is [i, j, "<from>", "<to>"]`;
+    if (o.op === "plant" && !(PLANTS.includes(e[2] as string) && PLANTS.includes(e[3] as string))) return `a plant cell's growths are ${PLANTS.join(", ")} ("${e[2]}", "${e[3]}" given)`;
   }
   return "";
 }

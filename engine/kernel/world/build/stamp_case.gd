@@ -8,7 +8,8 @@ extends SceneTree
 ##                 batch per placing, one undo empties it; placed over itself it is refused whole
 ##   stamp.item    exported as a .tlitem: item.gd `check` passes as kind stamp, tier data; imported: the same stamp,
 ##                 byte for byte; a tampered archive and a non-stamp item are refused
-##   stamp.tool    the tool through build mode's keys: 0, two corners, G saves "Stamp 1"; 1 picks it, R turns, LMB
+##   stamp.tool    the tool through build mode's keys: 0, two corners, G opens the name field ("Stamp 1"), Enter saves
+##                 it (M5: the field is command_bar.gd; 765 types a name of its own); 1 picks it, R turns, LMB
 ##                 places it (one undo); X exports; a .tlitem in the inbox is imported when the tool is picked
 
 const HomeBuild := preload("res://kernel/world/build/home_build.gd")
@@ -203,6 +204,12 @@ func tool_case() -> void:
 	t.press(MOUSE_BUTTON_LEFT, {})
 	var bx: Array = t.call("box")
 	await tap(KEY_G)
+	var e := InputEventKey.new()
+	e.keycode = KEY_ENTER
+	e.physical_keycode = KEY_ENTER
+	e.pressed = true
+	root.push_input(e)                  # Enter into the name field (the GUI's path), "Stamp 1" already in it
+	await wait(2)
 	var listed: int = (t.get("stamps") as Array).size()
 	var name_ := str((t.call("stamp") as Dictionary).get("name", ""))
 	await tap(KEY_1)

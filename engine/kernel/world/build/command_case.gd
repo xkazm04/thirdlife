@@ -11,7 +11,7 @@ extends SceneTree
 ##                    mode, T does not switch the tool; the letters land in the field; Esc closes it, nothing asked
 ##   command.ask      Enter, a sentence, Enter: the ask file is written (region, ground, tables, the blocks there), the
 ##                    door was asked `world-edit --in <ask> --out <answer>`, the pending marker says "thinking... 0:01"
-##   command.ghost    the answer arrives: a ghost with the note and its counts ("24 blocks, 1 refused: occupied"); the
+##   command.ghost    the answer arrives: a ghost with the note and its counts ("24 blocks, 1 removed; 1 refused: occupied"); the
 ##                    Home's store and log are untouched
 ##   command.accept   Enter: one batch, every op by "llm", in the journal; one Ctrl+Z takes it all back
 ##   command.revert   a second answer, Esc: nothing applied, build mode still on, the ghost gone
@@ -302,7 +302,7 @@ func ghost_case() -> void:
 	var st: Dictionary = t.call("status")
 	var untouched: bool = int(b.blocks.total) == int(_before.total) and (b.edits.history as Array).size() == int(_before.batches)
 	var ok: bool = not shown.is_empty() and pv != null and bool(pv.get("shown")) and int(pv.call("stats").tris) > 0 and untouched and \
-		str(st.info).contains("A little stone tower") and str(st.info).contains("24 blocks, 1 refused: occupied") and bool(t.call("blocks_input")) and \
+		str(st.info).contains("A little stone tower") and str(st.info).contains("24 blocks, 1 removed; 1 refused: occupied") and bool(t.call("blocks_input")) and \
 		str(((shown.get("marker") as Node).get("label") as Label3D).text) == "A little stone tower, three blocks high."
 	say("ghost", ok, "ghost shown %s (%d tris), info '%s', store untouched %s (blocks %d, batches %d)" % [
 		not shown.is_empty(), int(pv.call("stats").tris) if pv != null else 0, str(st.info), untouched, int(b.blocks.total), (b.edits.history as Array).size()])

@@ -47,12 +47,13 @@ build mode is on again.
 | `cursor` | [x, y, z]: the place cell the cursor named when Enter was pressed ("here") |
 | `facing` | 0-3, `home_build.gd` `rot_facing` of the camera's forward: 0 the person looks north (-z), 1 west, 2 south, 3 east |
 | `region` | `{min, max}`: 32 x 24 x 32 cells, x and z centred on the cursor, y from 4 below it. Every op must stay inside (the Foreman refuses the rest) |
-| `ops` | the op kinds the Home applies now: place, remove; land and paint once M2's layer is built; put and lift once M3's is (a stub answers "not built yet") |
+| `ops` | the op kinds the Home applies now: every layer's `offers()` (place, remove; land, paint; put, lift; M5: pour, drain once the water layer is built, path, unpath once paths are, plant once plants are; a stub offers none) |
 | `blocks` | `[[x, y, z, shape, mat, rot, flip 0/1], ...]` in the region (`read_region`) |
 | `ground` | `{min: [x, z], rows}`: `rows[z - min z][x - min x]` is the y of the cell a block takes standing on the ground there (the land layer's `height_at` once M2 gives it, else `home/hook.gd` `ground_y`) |
 | `refused` | `[{reason, runs: [[z, x0, x1], ...]}]`: the columns protection refuses at their ground cell ("game lot", "authored structure (...)", "tree"), asked with the visitor out of the way. Absent: none |
-| `shapes`, `mats` | `[{id, name, note}]`: the 8 shapes and the 9 block materials, with what each is for |
-| `paints`, `parts` | the paint names and the kit parts (`{kind, note}`), only when paint and put are in `ops` |
+| `shapes`, `mats` | `[{id, name, note}]`: the 8 shapes and the block materials play has unlocked (1-9 always; M5: 11 brick and 12 plaster once granted, unlocks.gd), with what each is for |
+| `paints`, `parts` | the paint names and the kit parts play has unlocked (`{kind, note}`; M5: locked kinds are left out), only when paint and put are in `ops` |
+| `water` | M5: `[{y, runs: [[z, x0, x1], ...]}]`, the measured water: the valley's river and ponds (home/valley.gd `water`, where it stands above the ground) merged with the water layer's `water_runs` (the layer's wins in a column); `y` is the cell holding the surface (`floor(level)`). In a water column `ground` is the bed. Absent: none |
 | `layers` | the other layers' `read_region` keys (M2's ground, M3's `pieces`), as they read them. Absent: none |
 | `caps` | `{ops: 4000, blocks_left}` |
 
@@ -119,8 +120,49 @@ The ask file is 4.5 to 7.6 KB, the prompt about 9 KB.
 - An ask still pending when the person leaves the Home is lost to this session: its line stays "pending" and the
   Foreman's answer file is left in `<home>/llm/`.
 - The pending pillar stands on the cursor cell: on a stream bed it is under the water and only its "thinking..." text
-  shows (`m4-ask.jpg`). The ask carries no water level (M5's), so the model infers a stream from the ground's dip.
+  shows (`m4-ask.jpg`). M5: the ask carries the water (`water`), so the model no longer infers a stream from the dip.
 - The refused columns are read at the ground cell only (a lot is a column; a house wall above the ground cell is
   found when the answer is kept).
 - 754 `seam.tools` holds the command tool to the stub's line "Command: coming in M4"; the real tool cannot meet it
   (`PATCHES-M4.md` P1).
+
+## M5 (lane C, 27 Nov 2026): water, the new ops, locks, the ghost per layer, the stamp name
+
+- **Water.** The ask's `water` (above) and the prompt's "Water (measured)" section (`world_edit.ts` `waterFacts`: per
+  surface y, the columns as boxes), with the rule: a bridge's deck stands at least 1 cell above the higher bank's ground
+  y and 1 above the water's surface y and rests a cell on each bank; its steps start on a dry column at that column's
+  own ground y and climb 1 per cell. A worked bridge (stream, deck, piers, steps on supports, railings) is in the prompt.
+- **The new ops.** `pour`, `drain`, `path`, `unpath` and `plant` are taught in the prompt's more-ops section only when
+  `ops` offers them, with a pond (land, then pour) and a path as worked examples. The Foreman checks them
+  (`world_edit_check.ts`): in the region, the shapes of their entries, path paints (dirt, sand, stone, rock_warm,
+  grass_dry, plank), plant growths (meadow, flowers, tall_grass, valley), 2-64 points 100-4,800 cm apart, width 150-800
+  cm, paint names from the ask's `paints`. Their rules are the layers' (a stub refuses "not built yet: water").
+- **Locks.** The ask lists only what play has unlocked (`Ask.make(..., Unlocks.new(<home>))`). The Foreman refuses a
+  place whose `mat` is not in the ask's `mats` and a put whose `part` is not in its `parts` ("not unlocked yet"), fed
+  back like any problem. The exe backstop: when a ghost is shown, and again at accept, `command_answer.gd`
+  `split_locked` takes out every place naming a locked material or shape and every put naming a locked part; they are
+  counted refused "locked: <condition>" and the rest is applied. Lift and remove are never locked; the layers never ask.
+- **The ghost per layer.** Blocks are drawn by the tool's `preview`; every other layer's part by its own
+  `preview_node` under `layer_ghosts` (`home_build.gd` `preview_nodes`). The pieces layer's (`pieces_layer.gd`
+  `preview_node`) draws the pieces a dry run would put in holo and those it would lift in red (`piece_ghost.gd`, the
+  holo fill UV (0.5, 2)). Land, water, paths and plants draw theirs when their lanes write `preview_node`.
+- **The counts** read over every op, then the refusals by reason, most first (at most 3 named): "212 blocks, 5
+  removed, 3 parts, land 40 points, paint 12 cells, pond 120 cells, 40 m path, plants 8 cells; 6 refused: game lot,
+  locked: win Parkour once" (`command_answer.gd` `counts`; a remove whose cell a later place fills is not "removed").
+- **The stamp name.** The stamps tool's G opens a `command_bar.gd` of its own pre-filled with the next free "Stamp N"
+  (selected; at most 60 characters); Enter saves under that name, Esc cancels; the key that closed it is held as the
+  command tool holds its keys (PIECES.md).
+- **The case:** `command_m5_case.gd`, `engine/tools/selftest.d/765-home-command-m5.sh` (`HOME command-m5 ok`).
+
+Figures (27 Nov 2026, the exported exe, a window, claude-cli `--model opus` = claude-opus-5-5, one attempt):
+
+| Ask | Model time | Tokens in / out | Ops | Refused | Frames from ask to ghost |
+|---|---|---|---|---|---|
+| "a small stone bridge with railings across the stream here" (cursor on the bed at -254, -4, -30; water y -3, level -2.21 m) | 26.4 s | 15,029 / 2,608 | 136 (128 blocks) | 0 | 1,665 |
+
+The bridge: a dark stone deck at y -2 (one above the water's cell -3 and the banks' -3 at its ends), x -258..-245 over
+the 12 m stream, 5 wide, four rows of pale stone piers on the bed, three-wide stairs from both banks starting on dry
+columns at their own ground y, wooden fence railings with corner posts. No white block. The ask was 11.8 KB (the
+water key two levels, 384 columns); the headless ask with the water read takes about 50-65 ms of wall clock (765,
+measured, not decided on). Captures: lane C's scratchpad `c-bridge-ghost.jpg`, `c-bridge.jpg`, `c-bridge-side-e.png`,
+`c-bridge-side-w.png`.

@@ -3,12 +3,15 @@ extends CanvasLayer
 ## person types a sentence: the field has the keyboard (TLInput `keys_taken`: the visitor sees no key, build mode reads
 ## none), Enter sends (`submitted`), Esc closes it without asking (`cancelled`). A line above the field says where it
 ## builds and how many calls are left today. English, inline (repo convention). Kernel UI: no material.
+## M5 (lane C): the stamp tool's name field is another bar of this script, opened with a text already in it (selected,
+## so typing replaces it), at most 60 characters, its own placeholder.
 
 signal submitted(text: String)
 signal cancelled
 
 const LIFT := 236                       # px from the window's bottom to the bar's bottom (the hotbar sits under it)
 const WIDTH := 720.0
+const SENTENCE := "a stone bridge across here ... make this house taller with a slate roof"
 
 var box: VBoxContainer
 var title: Label
@@ -38,7 +41,7 @@ func _init() -> void:
 	line.name = "Sentence"
 	line.custom_minimum_size = Vector2(WIDTH, 40)
 	line.add_theme_font_size_override("font_size", 20)
-	line.placeholder_text = "a stone bridge across here ... make this house taller with a slate roof"
+	line.placeholder_text = SENTENCE
 	line.max_length = 400
 	line.text_submitted.connect(func(t: String) -> void: submitted.emit(t))
 	line.gui_input.connect(_on_key)
@@ -46,13 +49,19 @@ func _init() -> void:
 	box.visible = false
 
 
-func open(head: String) -> void:
+## Shows the field with `head` above it and `text` in it (selected), taking at most `max_len` characters.
+func open(head: String, text := "", max_len := 400, hint := SENTENCE) -> void:
 	title.text = head
-	line.text = ""
+	line.max_length = max_len
+	line.placeholder_text = hint
+	line.text = text.left(max_len)
 	box.visible = true
 	line.grab_focus()
 	if line.has_method("edit"):
 		line.call("edit")
+	line.caret_column = line.text.length()
+	if not line.text.is_empty():
+		line.select_all()
 
 
 func close() -> void:

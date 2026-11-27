@@ -45,8 +45,11 @@ part's knob (fence length 2-16 m, tree height, house width ...), V its choice (f
 lamp light ...), R turn, LMB put, RMB lift the piece under the cursor (Ctrl or RMB held shows it red).
 
 Stamps (the fifth tool): 0 a new box (LMB a corner, LMB the opposite corner: the block under the cursor or the cell on
-the ground; the top is found from what stands there, the wheel moves it), **G** saves it as
-`<home>/stamps/<slug>.json` named "Stamp N" (Enter is the host's command bar); 1-9 a saved stamp, Tab page, wheel next,
+the ground; the top is found from what stands there, the wheel moves it), **G** opens the name field (M5: a
+`command_bar.gd` above the hotbar, the next free "Stamp N" in it and selected, so typing replaces it; at most 60
+characters), **Enter** saves it as `<home>/stamps/<slug>.json` under that name and **Esc** cancels; while the field is
+open the tool has the keyboard, and the key that closed it is held by the tool until it is let go (so that Enter never
+opens the command bar and Esc never leaves build mode: `stamp_tool.gd` `_latched`, as the command tool's); 1-9 a saved stamp, Tab page, wheel next,
 R turn, LMB place (one batch, one undo; a stamp `build.preview` refuses anywhere is not placed at all), X export to
 `<home>/stamps/export/<slug>.tlitem`, I import every `.tlitem` dropped into `<home>/stamps/inbox/` (also done when the
 tool is picked; a good one leaves the inbox, a bad one stays with its reason in the hotbar). `<home>` is
