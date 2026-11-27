@@ -59,7 +59,12 @@ static func run(tree: SceneTree, check: Callable, tmp: String) -> bool:
 	var failed: String = _job(jobs.path_join("e4-failed"), [asked, running, {"type": "job_state", "state": "failed", "reason": "the change was NOT made"}], ["0.1.0"])
 	# N27 (lane T): a change built as asked that moved the balance: the Foreman's note (boundlift.ts BALANCE_MOVED), first line shown
 	var moved: String = "[foreman] balance moved by your change: built as you asked; the gulls side now wins 3 of 3 of the Foreman's test rounds (was 1 of 3). Say \"make it fairer\" to tune it.\nfigures (tests/bot_tofu.gd, not judged in this change): close_rounds 0 (was 1)"
+	# D27 item 6: every thing the change moved is shown (the newest line of each), not only the newest note of all
+	var longer: String = "[foreman] balance moved by your change: built as you asked; matches now run longer (the Foreman's test needed about 2 times the frames it planned). Say \"make matches shorter\" to tune it.\nfigures (tests/bot_tofu.gd): not done within 36000 frames"
+	var older: String = "[foreman] balance moved by your change: built as you asked; the gulls side now wins 2 of 3 of the Foreman's test rounds (was 1 of 3). Say \"make it fairer\" to tune it."
 	var balanced: String = _job(tmp.path_join("e4-balance-jobs").path_join("e4-balance"), [asked, running,
+		{"type": "note", "package": "penguin_moves", "round": 2, "text": older},
+		{"type": "note", "package": "penguin_moves", "round": 2, "text": longer},
 		{"type": "note", "package": "penguin_moves", "round": 3, "text": moved},
 		{"type": "promoted", "packId": "game.penguin_push", "version": "0.1.1", "dest": "promoted/game.penguin_push@0.1.1"},
 		{"type": "job_state", "state": "done", "reason": "promoted 0.1.1"}], ["0.1.0", "0.1.1"])
@@ -80,7 +85,7 @@ static func run(tree: SceneTree, check: Callable, tmp: String) -> bool:
 		Model.screen_of(jm) == "done" and Model.version_n(jm) == 2 and Model.play_dir(jm).ends_with("@0.1.1") and Model.person_changes(jm).size() == 1 and Model.change_note(jm).is_empty()
 		and Model.screen_of(jf) == "building" and Model.changing(jf) == TEXT
 		and Model.screen_of(jx) == "done" and Model.change_note(jx).begins_with("Your last change could not be made") and Model.play_dir(jx).ends_with("promoted/game.penguin_push")
-		and Model.change_note(jb) == "Built as you asked; the gulls side now wins 3 of 3 of the Foreman's test rounds (was 1 of 3). Say \"make it fairer\" to tune it."
+		and Model.change_note(jb) == "Built as you asked; the gulls side now wins 3 of 3 of the Foreman's test rounds (was 1 of 3). Say \"make it fairer\" to tune it.\nBuilt as you asked; matches now run longer (the Foreman's test needed about 2 times the frames it planned). Say \"make matches shorter\" to tune it."
 		and Model.screen_of(ju) == "done" and Model.changing(ju).is_empty() and Model.change_note(ju).begins_with("Your last change could not be made: “" + TEXT + "”\nThe game's check tests/bot_tofu.gd still fails"),
 		"made %s v%d %s; flight %s '%s'; failed %s '%s'; balance '%s'; unfinished %s '%s'" % [Model.screen_of(jm), Model.version_n(jm), Model.play_dir(jm), Model.screen_of(jf), Model.changing(jf), Model.screen_of(jx), Model.change_note(jx), Model.change_note(jb), Model.screen_of(ju), Model.change_note(ju)])
 

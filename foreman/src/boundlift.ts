@@ -239,3 +239,19 @@ export function rowsForChange(jobDir: string, events: readonly JobEvent[], rows:
   const before = readTofuMetrics(jobDir, events.filter((e) => e.seq < asked.seq), test).metrics;
   return splitByChange(asked, rows, now, before).judged;
 }
+
+/**
+ * D27 item 6: the balance lines of a change, one per thing they are about (who wins the test rounds, a hand check's wins,
+ * how long matches run): the newest line of each, in the order the things were first told. Before, only the newest line
+ * of all was shown, so "matches now run longer" was lost behind a later hand-check line (lane T2's robot job).
+ */
+export function balanceLines(lines: readonly string[]): string[] {
+  const newest = new Map<string, string>();
+  for (const l of lines) {
+    const key = l.split(" now ")[0] as string;
+    newest.delete(key);
+    newest.set(key, l);
+  }
+  const order = [...new Set(lines.map((l) => l.split(" now ")[0] as string))];
+  return order.map((k) => newest.get(k) as string);
+}

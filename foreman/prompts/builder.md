@@ -98,6 +98,22 @@ person wanting another go. Put every feel number your package uses in `data/tuni
   pilot under `tests/support/`), is what the Foreman judges its bounds by: once merged, an edit you make to one is
   undone before your round is verified. Change the game, never the
   test that measures it.
+- **A new attack must land.** In a change round that adds a move meant to hit somebody (a charge, a slam, a dunk, a
+  special shot), write one line `NEW MOVE: <id>` for each under `DEVIATIONS:` (the id your game publishes for it), and
+  count it in a bot test your acceptance runs (never the tofu bot): that bot uses the move where it can land, and its
+  result's `metrics` gets `"moves": {"<id>": {"started": <uses>, "landed": <uses that hit somebody>}}`, counted only from the
+  game's own contact events. A new attack that never lands sends your round back. Check its reach against how close
+  two bodies can really come (their pushboxes or capsules stop a charger before his blow), not only against the
+  distance you meant.
+- **What is not yours goes on.** When part of the change needs a file outside your scope, write it as one line
+  `NOT DONE: <what the person asked> needs <path>, which is outside my scope: <the exact edit>`. The Foreman sends that
+  part, with the person's words, to the package that owns the path. Do not end the change with it unsaid.
+- **Words on the screen.** An impact word or a banner (SLAM!, ON FIRE, REJECTED!, GOAL!) goes in big letters in the
+  middle of the screen, apart from the score and the clock: a `TLHudLayer` text (`hud.add_layer`, `lay.text` at the
+  screen centre in a bold or black face, an outline instead of a box behind it) or a `center` label of its own. Never
+  put it into the score line or the clock's label, never pad a label with blank lines or spaces to make it look bigger
+  (its plate grows with every line into a slab), and clear it when the moment is over. A word over one body is a tag
+  (`hud.add_tag`).
 - If something you need is missing from the contract, end your answer with one line starting with
   `QUESTION:` and stop. Do not guess. Write it for the person who plays the game, in plain words: no JSON, no file
   names, no key paths; give the two or three choices plainly ("A, or B?"). You get ONE question per change: if the
