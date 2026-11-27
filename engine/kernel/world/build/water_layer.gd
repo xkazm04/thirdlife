@@ -9,7 +9,7 @@ extends RefCounted
 ##   water_store.gd    the cells and their levels; the file part
 ##   water_fill.gd     the pour's fill: a priority flood on the land lattice up to just under the spill level
 ##   water_mesh.gd     one TLMesh per 96 m chunk in the still-water look (TLStyle "water", the depth shore), the ghost
-##   water_scatter.gd  valley trees and reeds standing in the water hidden, and back when it is drained (a fallback)
+##   (the valley's trees and reeds standing in the water are hidden by the land's scatter, land_layer.gd `refresh_scatter`)
 ## Refusals of a flood (and a pour), per cell, short: "water there already at [i, j]", "spills into the river" (the
 ## land layer's river band, or a cell the river's ribbon reaches whose bed lies below the river: the ribbon would show
 ## in it), "spills: <the protected area's reason>" (village, game lot, lane, authored structure, outside the Home);
@@ -21,7 +21,6 @@ const StubLayer := preload("res://kernel/world/build/stub_layer.gd")
 const WaterStore := preload("res://kernel/world/build/water_store.gd")
 const WaterFill := preload("res://kernel/world/build/water_fill.gd")
 const WaterMesh := preload("res://kernel/world/build/water_mesh.gd")
-const WaterScatter := preload("res://kernel/world/build/water_scatter.gd")
 const KEYS := ["v", "op", "cells", "author", "batch"]
 const ORDER := ["v", "op", "cells"]
 const POUR_KEYS := ["v", "op", "at", "author", "batch"]
@@ -36,10 +35,9 @@ var id := "water"
 var ctx: Dictionary
 var store: RefCounted = WaterStore.new()
 var mesh: RefCounted = null              # water_mesh.gd (null: nothing drawn: no root, or a scratch copy)
-var scatter: RefCounted = null
 var scratch := false
 var dirty := {}                          # Vector2i chunk -> true: its mesh and scatter follow in `step`
-var stats := {"fills": 0, "fill_usec": [], "check_usec": [], "hidden": 0, "shown": 0}
+var stats := {"fills": 0, "fill_usec": [], "check_usec": []}
 var _made := false
 var _land: RefCounted = null
 
@@ -82,9 +80,6 @@ func _make() -> void:
 	if scratch or not (r is Node3D) or not is_instance_valid(r):
 		return
 	mesh = WaterMesh.new(r)
-	var l := land()
-	if l != null and not l.ground().flat():
-		scatter = WaterScatter.new(l, (r as Node3D).get_parent() as Node3D)
 
 
 # ------------------------------------------------------------------ ops
@@ -441,8 +436,6 @@ func _touch(c: Vector2i) -> void:
 ## Redraws at most PER_STEP dirty chunks (all of them for a flush's budget): the mesh, then the scatter standing in it.
 func step(budget: int) -> int:
 	_make()
-	if scatter != null:
-		scatter.keep()
 	if dirty.is_empty():
 		return 0
 	if mesh == null:
@@ -455,10 +448,9 @@ func step(budget: int) -> int:
 	for ch: Vector2i in ids.slice(0, count):
 		dirty.erase(ch)
 		mesh.draw(ch, store.levels, h)
-		if scatter != null:
-			var r: Array = scatter.update(ch, store.levels)
-			stats.hidden += int(r[0])
-			stats.shown += int(r[1])
+		var l := land()
+		if l != null and l.has_method("refresh_scatter"):
+			l.refresh_scatter(ch)        # the land's scatter asks `wet_at` again in its own step
 	return mini(count, ids.size())
 
 
@@ -506,10 +498,7 @@ func copy() -> RefCounted:
 
 
 func free_all() -> void:
-	if scatter != null:
-		scatter.restore()
 	if mesh != null:
 		mesh.free_all()
 	mesh = null
-	scatter = null
 	_made = true                         # the builder is leaving: nothing is drawn again

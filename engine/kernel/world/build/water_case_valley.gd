@@ -172,10 +172,16 @@ func river_case() -> void:
 		b.undo()
 	var want := {"band": "spills into the river", "game lot": "spills: game lot", "village": "spills: village",
 		"ribbon": "spills into the river", "ribbon pour": "spills into the river"}
+	# M5 integration: the land now refuses that dig itself (lane L, PATCHES-W W3: "river (its water would show ...)"), so
+	# no such hollow can be made; the water's own refusal is then moot. Any other refusal of the dig is still a failure.
+	var land_refuses: bool = not dug.is_empty() and str(dug.land).begins_with("river")
+	if land_refuses:
+		want.erase("ribbon")
+		want.erase("ribbon pour")
 	for k: String in want:
 		if str(got.get(k, "(none)")) != want[k]:
 			bad.append("%s: '%s'" % [k, str(got.get(k, "(none)"))])
-	if not dug.is_empty() and str(dug.land) != "":
+	if not dug.is_empty() and str(dug.land) != "" and not land_refuses:
 		bad.append("the dig was refused: %s" % dug.land)
 	var parts := []
 	for k: String in got:
@@ -285,7 +291,7 @@ func tool_case(site: Vector2) -> void:
 ## A valley tree or reed in a free, gentle spot: its cell's corners lowered 40 cm (the land moves it, not hides it),
 ## the hollow round it 1.5 m under the lowest ground and a wall 1 m over the highest; poured, drained.
 func scatter_case() -> void:
-	var sc: RefCounted = w.scatter
+	var sc: RefCounted = land.scatter            # the land's scatter hides what stands in the water (PATCHES-W W1, lane L)
 	var pick := []
 	if sc != null:
 		sc.call("_prepare")
@@ -347,16 +353,20 @@ func scatter_case() -> void:
 	var f: Dictionary = w.plan(c)
 	b.apply(w.pour_ops(c).ops)
 	b.flush()
-	var wet_scale: float = (sc.set_to.get(key_of, xf) as Transform3D).basis.get_scale().length()
-	var hidden_here: bool = (sc.hidden as Dictionary).has(key_of)
+	var wet_state := ""
+	for r: Array in land.scatter.report(pick[4]):
+		if (r[0] as Vector3).is_equal_approx(p):
+			wet_state = str(r[1])
 	b.apply(w.drain_op(c))
 	b.flush()
-	var back: Transform3D = sc.set_to.get(key_of, Transform3D())
-	var ok: bool = why == "" and land_state == "moved" and absf(moved_y + 0.40) < 0.02 and str(f.reason) == "" and wet_scale < 1e-4 and hidden_here \
-		and back.basis.get_scale().length() > 0.5 and absf(back.origin.y - p.y + 0.40) < 0.02
-	t.say("scatter", ok, "an instance at %s (cell %s): the land lowered it %.2f m (%s); poured %d cells at %.2f m over its foot -> scale %.3f, hidden %s; drained -> scale %.2f at %.2f m from where it was built (the land's)%s" % [
-		str(p.snapped(Vector3.ONE * 0.1)), str(c), moved_y, land_state, (f.cells as Array).size(), int(f.level) / 100.0, wet_scale, hidden_here,
-		back.basis.get_scale().length(), back.origin.y - p.y, "" if ok else "; BAD land '%s', fill '%s'" % [why, f.reason]])
+	var back_state := ""
+	for r: Array in land.scatter.report(pick[4]):
+		if (r[0] as Vector3).is_equal_approx(p):
+			back_state = str(r[1])
+	var ok: bool = why == "" and land_state == "moved" and absf(moved_y + 0.40) < 0.02 and str(f.reason) == "" and wet_state == "hidden" 		and back_state == "moved"
+	t.say("scatter", ok, "an instance at %s (cell %s): the land lowered it %.2f m (%s); poured %d cells at %.2f m over its foot -> %s; drained -> %s%s" % [
+		str(p.snapped(Vector3.ONE * 0.1)), str(c), moved_y, land_state, (f.cells as Array).size(), int(f.level) / 100.0, wet_state, back_state,
+		"" if ok else "; BAD land '%s', fill '%s'" % [why, f.reason]])
 	b.undo()
 
 

@@ -191,9 +191,13 @@ func step(budget := STEP_BUDGET) -> int:
 ## Rebuilds everything pending now (a load, a test).
 func flush() -> int:
 	var n := 0
-	for l: RefCounted in layers:
-		while int(l.pending()) > 0:
-			n += int(l.step(1 << 20))
+	var more := true
+	while more:                          # M5: a layer's step may hand work to an earlier one (water -> the land's scatter)
+		more = false
+		for l: RefCounted in layers:
+			while int(l.pending()) > 0:
+				n += int(l.step(1 << 20))
+				more = true
 	return n
 
 

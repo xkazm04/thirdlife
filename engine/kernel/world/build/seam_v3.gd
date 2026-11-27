@@ -263,10 +263,11 @@ func m5() -> Array:
 		if n.get_meta(&"tl_layer", "") == "blocks":
 			tris = int(n.call("stats").tris)
 	var stub_ghost: Array = shown.filter(func(id: String) -> bool: return Lists.is_stub_layer(b.layer(id)) and id != "blocks")
-	var skipped: Array = b.preview_nodes(r, ["blocks"]).map(func(n: Node3D) -> String: return str(n.get_meta(&"tl_layer", "")))
+	var skipped_nodes: Array = b.preview_nodes(r, ["blocks"])
+	var skipped: Array = skipped_nodes.map(func(n: Node3D) -> String: return str(n.get_meta(&"tl_layer", "")))
 	if shown.is_empty() or shown[0] != "blocks" or tris <= 0 or not stub_ghost.is_empty() or skipped.has("blocks") or b.blocks.total != 0:
 		bad.append("ghosts %s (blocks %d tris), skip blocks %s, stub ghosts %s, Home blocks %d" % [str(shown), tris, str(skipped), str(stub_ghost), b.blocks.total])
-	for n: Node3D in nodes:
+	for n: Node3D in nodes + skipped_nodes:
 		n.free()
 	# water_runs, the scatter
 	var runs: Array = CommandAsk.water_of(b, Vector3i(-16, -4, -16), Vector3i(15, 19, 15))

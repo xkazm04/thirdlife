@@ -67,7 +67,7 @@ func update(id: Vector2i, delta: Callable) -> Array:
 		var d: float = delta.call(xf.origin.x, xf.origin.z)
 		var key := "%d:%d" % [mm.get_instance_id(), int(e[1])]
 		var now := "" if d == 0.0 else ("hidden" if absf(d) > HIDE else "moved")
-		if wet(xf.origin.x, xf.origin.z):
+		if wet(xf.origin.x, xf.origin.y + d, xf.origin.z):
 			now = "hidden"
 		if now == "moved":
 			mm.set_instance_transform(int(e[1]), xf.translated(Vector3(0.0, d, 0.0)))
@@ -84,11 +84,12 @@ func update(id: Vector2i, delta: Callable) -> Array:
 	return [moved, hidden]
 
 
-## True when (x, z) stands in the player's water (the water layer's `wet_at`; false without one).
-func wet(x: float, z: float) -> bool:
+## True when a thing standing at (x, y, z) stands in the player's water (the water layer's `wet_at(x, y, z)`; false
+## without one).
+func wet(x: float, y: float, z: float) -> bool:
 	var h: RefCounted = (home as WeakRef).get_ref() if home is WeakRef else null
 	var w: RefCounted = h.call("layer", "water") if h != null else null
-	return w != null and w.has_method("wet_at") and bool(w.call("wet_at", x, z))
+	return w != null and w.has_method("wet_at") and bool(w.call("wet_at", x, y, z))
 
 
 ## The instances of chunk `id` and how each stands: [[origin as built, "" | "moved" | "hidden"], ...].

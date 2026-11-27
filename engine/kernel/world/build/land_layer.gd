@@ -289,7 +289,7 @@ func drawn_height_at(x: float, z: float) -> float:
 ## home/hook.gd: where a trunk standing at `foot` stands now (it moves with the ground), or null (its tree is hidden).
 func trunk_foot(foot: Vector3) -> Variant:
 	var d := delta_at(foot.x, foot.z)
-	if absf(d) > LandScatter.HIDE or (scatter != null and scatter.wet(foot.x, foot.z)):
+	if absf(d) > LandScatter.HIDE or (scatter != null and scatter.wet(foot.x, foot.y + d, foot.z)):
 		return null
 	return foot + Vector3(0.0, d, 0.0)
 
