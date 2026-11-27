@@ -20,6 +20,8 @@ extends RefCounted
 
 const Check := preload("res://kernel/world/build/rules_check.gd")
 const FEET_LIFT := 0.05                  # metres: feet standing on a block's top read as the cell above it
+const REENTER_FRAMES := 60               # F3: a run going is restarted by entering its start zone only after the feet
+                                         # were out of that zone this many frames (1 s): a step off and back is not a restart
 
 var layer: RefCounted = null             # rules_layer.gd (read only)
 var facade: RefCounted = null            # rules_facade.gd or one extending it
@@ -41,6 +43,7 @@ var counted := {}                        # rule id -> true: its count trigger fi
 var events := {}                         # "start" / "finish" -> true: made in the last frame, read as triggers now
 var _next_events := {}
 var last_finish := {}                    # {"run", "frames", "best_frames", "new_best"} of the last finish
+var left_at := {}                        # F3: zone id -> the frame the feet cell last left it (this visit)
 
 
 func _init(rules_layer: RefCounted = null, f: RefCounted = null, recs: RefCounted = null) -> void:
@@ -75,6 +78,7 @@ func stop(why := "build") -> void:
 	counters.clear()
 	counted.clear()
 	inside.clear()
+	left_at.clear()
 	events.clear()
 	_next_events.clear()
 	run_name = ""
@@ -97,6 +101,9 @@ func step(at_frame: int, feet: Vector3i, use_down: bool) -> void:
 			here[z] = true
 	events = _next_events
 	_next_events = {}
+	for z: int in inside:
+		if not here.has(z):
+			left_at[z] = frame
 	var since := frame - frame0
 	var ids: Array = rules.keys()
 	ids.sort()
@@ -177,6 +184,10 @@ func _effect(e: Dictionary, r: Dictionary, feet: Vector3i) -> void:
 
 
 func _start(name: String, r: Dictionary, feet: Vector3i) -> void:
+	var w0: Dictionary = r.when
+	if running and name == run_name and str(w0.on) == "enter" and w0.has("zone") \
+			and frame - int(left_at.get(int(w0.zone), -REENTER_FRAMES)) < REENTER_FRAMES:
+		return                                   # back on the start a moment after stepping off: the run goes on
 	_close_all()
 	_coins_back()
 	counters.clear()

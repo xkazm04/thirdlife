@@ -261,7 +261,8 @@ jump pad, a coin, a hazard, and a **run** (start, checkpoints, finish) that time
   and/or `"max":<0-999>` in the same object.
 - **Effects** (`do`):
   - `{"do":"start", "run":"<run name>"}`: starts a run (1-24 printable characters) from this frame: the run's clock
-    is 0, counters are 0, every zone is closed and every coin is back. Starting the run that is going restarts it.
+    is 0, counters are 0, every zone is closed and every coin is back. Starting the run that is going restarts it,
+    except by entering its start zone within 60 frames (1 s) of the feet leaving it (F3, 27 Nov).
   - `{"do":"checkpoint", "zone":<id>}`: the run's respawn becomes the zone's floor centre.
   - `{"do":"finish"}`: ends the run that is going and records it (below).
   - `{"do":"respawn"}`: puts the visitor at the run's respawn (the start zone's floor centre until a checkpoint), or
