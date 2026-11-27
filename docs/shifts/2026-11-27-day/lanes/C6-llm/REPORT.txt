@@ -44,7 +44,14 @@ ACCEPTANCE
     bash engine/tools/selftest.sh home. : "selftest: 134 passed, 0 failed" (the seam's 126 + 785's 6 + the 774/775 stubs).
     tl check --tier full --only world: PASS [9/9], 247 s; the 9 hashes and frame counts are identical to main's
     .tl/gate-world.log (diff of the table: empty).
-    Uncapped bash engine/tools/selftest.sh: SEE THE LAST LINE OF THIS SECTION (filled in when it ends or is stopped).
+    Uncapped bash engine/tools/selftest.sh: NOT MET, a STOPPED run (never a pass). Stopped on the Director's order
+    (12:10) at 160 cases: 158 PASS, 2 FAIL. The Director runs it once on the merged tree. The two fails, not judged
+    here: p11.world_alone ("the world ended with exit code 127", world.sh alone over seed_paddle, ex_kit, ex_walker in
+    bot mode; the world gate's 9/9 alone-hashes passed on this tree) and k2.down_invariants ("exit code 1, expected
+    0": the seam saw the same case fail as a wall-clock frame budget under load). Neither touches a C file. Only my
+    own processes were stopped (the selftest.sh tree whose cwd is this worktree).
+    Line endings: my Python edits wrote CRLF into 6 LF files (text-mode writes on Windows); the Director restored LF.
+    From now on each file keeps its existing line endings.
     Foreman full suite: 465 / 459 pass / 0 fail / 6 skipped (the explain.test flake did not show).
 
 DELIVERED (files, all in the C rows of LANES.md)

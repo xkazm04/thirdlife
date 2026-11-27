@@ -6,3 +6,4 @@
 11:27 | state: working | did: home. selftest 134 passed 0 failed (785 6/6 inside) | next: world gate, fast tier, report | gates: home. 134/134
 11:32 | state: working | did: world gate PASS 9/9, hashes and frames identical to main's gate-world.log; fast 5/5 | next: uncapped selftest (long), report | gates: world 9/9 = main
 11:32 | state: working | did: landable: round 1 complete (ask, Foreman checks, prompt, space check, replay, 785, real call); touching no source file from here | next: uncapped selftest running (long under load), REPORT.txt | gates: fast 5/5, foreman 459/465 0 fail, home. 134/134, 785 6/6, world 9/9 = main
+12:12 | state: done | did: done round 1, stopped uncapped run (Director 12:10) at 160 cases: 158 PASS, 2 FAIL (p11.world_alone exit 127, k2.down_invariants); REPORT.txt finished | next: no edits until the Director's round 2 message | gates: fast 5/5, foreman 459/465 0 fail, home. 134/134, 785 6/6, world 9/9 = main, uncapped STOPPED 158/160
