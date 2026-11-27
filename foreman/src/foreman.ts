@@ -28,7 +28,7 @@ import { botFinish, botMoments, planShots } from "./shots.js";
 import { coreRouteOf, templateOf } from "./templates.js";
 import { CARTRIDGE_INVALID, startFromBase } from "./coreroute.js"; // E3 of 24 Nov: a game on a core starts from the base
 import { cartridgeChange, coreDataGate, diffRound, jobCore, phaseCheck } from "./coregate.js";
-import { changeCandidates, coreChangeOwner, skinSplit } from "./coreowner.js"; import { skinPartText } from "./skintext.js"; import { lastHandRows, retryEvents } from "./resumefix.js"; // E3f: on a core, a change never goes to the base
+import { changeCandidates, coreChangeOwner, skinSplit } from "./coreowner.js"; import { juiceNoteFor, juicePart } from "./juicepass.js"; /* S2-juice */ import { skinPartText } from "./skintext.js"; import { lastHandRows, retryEvents } from "./resumefix.js"; // E3f: on a core, a change never goes to the base
 import { decideLook, filmLook, hudArgs, hudOn, sendBack, stripsOn, verdictOfLook } from "./quality.js"; // JOB.md 2026-11-21: the quality loop
 import { QUALITY_PAUSE, qualityNext } from "./quality_state.js"; // L2b: each milestone filmed with its newest packages' own bots
 import { isFakeRunner, verbsFor, type RunnerVerbs } from "./verbs.js";
@@ -1318,6 +1318,7 @@ export class Foreman {
       const sk = c.text.startsWith(FOREMAN_NOTE) ? undefined : skinSplit(this.s.plan, owner, c.text); // H1h: the game's text (title, tagline, names, commentary) goes to the skin's owner
       const text = sk === undefined ? c.text : sk.rest === "" ? ([owner, how] = [sk.to, `${how}; ${sk.why}`], c.text) : (this.append({ type: "change_requested", package: sk.to, text: skinPartText(c.seq, sk.why, sk.skinText) }), (how = `${how}; ${sk.why}`), sk.rest);
       this.reopen(owner, `${changeReason(c.seq)}; ${how}: ${clip(text, 300)}`, `${CHANGE_ROUND}: ${text}`);
+      const juiced = juiceNoteFor(text, owner); if (juiced !== undefined) this.append({ type: "note", package: owner, round: this.pkg(owner).round, text: juiced }); // S2-juice: the pass goes with it, or (arm B) is offered
       await cartridgeChange(this.gateHost, owner, this.pkg(owner).round, text); // E3b: on a core, a cartridge diff first (coregate.ts)
       applied += 1;
     }
@@ -1602,6 +1603,7 @@ export class Foreman {
           "Your files are in the working directory as they were merged; the other packages' files are as the pack holds them now. Make the change inside your scope and keep everything else working: your acceptance runs again, and then the acceptance of every package that depends on yours. " +
           "Where the change request and your contract disagree, the change request wins; say what you changed under DEVIATIONS, because the builders of dependent packages read that.",
       );
+      const juice = juicePart(change); if (juice !== undefined) parts.push(juice); // S2-juice: the standard juice pass, when this change runs it
     }
     const depChanged = queuedAs("dep_changed");
     if (depChanged !== undefined) {

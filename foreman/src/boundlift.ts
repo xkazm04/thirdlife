@@ -8,6 +8,7 @@ import type { JobEvent } from "./events.js";
 import type { JobState } from "./joblog.js";
 import { readTofuMetrics, type TofuMetric } from "./tofu.js";
 import { FOREMAN_NOTE, clip } from "./conduct.js";
+import { JUICE_WORDS, juiceRuns } from "./juicepass.js";
 
 /** The start of the Foreman's note when a person lifted a plan bound. */
 export const LIFTED = `${FOREMAN_NOTE}plan bound lifted`;
@@ -140,7 +141,8 @@ export function askedChange(events: readonly JobEvent[] | undefined): { seq: num
   const first = asks[0];
   if (first === undefined) return undefined;
   const text = asks.map((e) => e.text).join(" / ");
-  return { seq: first.seq, text, kind: changeKind(text) };
+  // S2-juice: a change the juice pass runs on also asks for what the pass adds (hit-stop, a launch that tumbles, a tell)
+  return { seq: first.seq, text: asks.some((e) => juiceRuns(e.text)) ? `${text} / ${JUICE_WORDS}` : text, kind: changeKind(text) };
 }
 
 /** Is `v` inside the row's bound (absent is never inside)? */

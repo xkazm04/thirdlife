@@ -360,6 +360,10 @@ func _done() -> void:
 	mb.pressed.connect(remove_from_menu if listed else add_to_menu)
 	_body.add_child(mb)
 	_change_row(Vector2(150, 572))
+	if Model.juice_of(job) == "ran":  # S2-juice arm A: the pass ran by itself on a new move; say how to leave it out
+		var jn: Label = _label("Your new move got the juice pass: a tell, an impact word, a camera kick, a slow beat. Say “keep it plain” to leave it out.", 18, 650, MUTED, W, HORIZONTAL_ALIGNMENT_CENTER)
+		jn.name = "JuiceNote"
+		_place(jn, Vector2(0, 666))
 
 
 ## E4: the change box: what should change, in the person's words, then a new playable build (`foreman change`).
