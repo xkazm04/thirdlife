@@ -18,8 +18,9 @@ at +z, its high edge at -z. rot 1 rises toward west (-x), rot 2 toward south (+z
 stair, ramp or roof upside down (the underside of an eave). A window's glass faces z at rot 0 and 2 (a wall running
 east-west) and x at rot 1 and 3 (a wall running north-south). Neighbouring stairs, ramps and roofs of the same shape
 join into corners and ridges by themselves; fences join to fences, posts and walls by themselves.
-Walking: a walker climbs stairs and ramps (they collide as 45-degree slopes: one cell up for each cell forward) but no
-vertical step, not even one block. Every way up must be stairs or ramps, rising 1 per cell.
+Walking: a walker climbs stairs (four 0.25 m steps per block) and ramps, and steps up a single riser of half a block
+(a slab on the ground, a cube behind a slab), but not a full block. Every way up a full block must be stairs, ramps
+or a half-block step.
 
 # The ground (measured)
 For each column, the y of the cell a block takes when it stands on the ground (the block sits a little into the

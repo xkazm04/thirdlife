@@ -17,8 +17,8 @@ const BELOW := 4                         # cells of the region below the cursor'
 const MAX_OPS := 4000
 const SHAPE_NOTES := {
 	1: "a full 1 m block",
-	2: "the lower half of a block (a step, a ledge, a ridge cap)",
-	3: "four steps of 0.25 m rising toward its rot's side; walkers climb it",
+	2: "the lower half of a block (a step, a ledge, a ridge cap); walkers step up onto it",
+	3: "four steps of 0.25 m rising toward its rot's side; walkers walk up and down it",
 	4: "a 45-degree slope rising toward its rot's side; walkers climb it",
 	5: "a thin 0.25 m column in the middle of the cell (porch posts, railings' posts)",
 	6: "a window: a frame of its material and a glass pane; the pane faces z at rot 0 and 2, x at rot 1 and 3",

@@ -297,6 +297,17 @@ func input_case() -> void:
 	var reg: Dictionary = b.read_region(Vector3i(0, -4, 0), Vector3i(5, 4, 2))     # PATCHES-C C3: the drain's level, measured
 	if reg.get("water_cells") != [[0, 0, -10], [1, 0, -10]] or b.read_region(Vector3i(100, -4, 100), Vector3i(110, 4, 110)).has("water_cells"):
 		bad.append("read_region water_cells %s" % str(reg.get("water_cells")))
+	# M5 integration: an answer that digs, then pours: the pour fills the dug land (planned on a scratch copy), the
+	# Home is untouched until the answer is applied
+	var b2 := flat()
+	var dig := []
+	for j: int in range(0, 5):
+		for i: int in range(0, 5):
+			dig.append([i, j, -200])
+	var both: Dictionary = b2.expand_input([{"op": "land", "verts": dig}, {"op": "pour", "at": [7, 0, 7]}])
+	var both_ops: Array = both.ops
+	if not (both.refused as Array).is_empty() or both_ops.size() != 2 or str(both_ops[1].get("op")) != "flood" 			or (both_ops[1].cells as Array).size() != 36 or int(b2.layer("land").cm_at(Vector2i(2, 2))) != 0:
+		bad.append("dig + pour %s / refused %s" % [str(both_ops).left(80), str(both.refused)])
 	if not shape_ok or not inside or cols != brute or cols < 144 or not none.is_empty():
 		bad.append("runs %s (%d columns, brute %d), inside %s, far %s" % [str(runs).left(100), cols, brute, inside, str(none)])
 	say("input", bad.is_empty(), "pour at [7, 0, 7] -> 1 flood of %d cells at %d cm, author llm, the fill's cells %s; refused %s; the ghost (preview_nodes) %d holo cells, the Home untouched; pour over the pond: '%s'; read_region water_cells %s; water_runs y %s (floori(-10 / 100.0)), %d runs, %d wet columns (every column of the 12 x 12 m floor and the shallows where the bed is under -10 cm)%s" % [

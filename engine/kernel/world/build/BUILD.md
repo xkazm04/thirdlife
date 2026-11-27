@@ -18,9 +18,11 @@ lane owns which file is `LANES.md`.
 | `blocks_layer.gd` | the `blocks` layer: `place` and `remove` (M1's checks, records and `chunks`) |
 | `land_layer.gd` | the `land` layer: `land` and `paint` (M2) |
 | `pieces_layer.gd` | the `pieces` layer: `put` and `lift` (M3) |
-| `water_layer.gd`, `paths_layer.gd`, `plants_layer.gd` | the M5 layers `water` (`flood`, `drain`; the input op `pour`), `paths` (`path`, `unpath`), `plants` (`plant`). Stubs until their lanes land |
-| `stub_layer.gd` | what an M5 stub layer does (refuses every op "not built yet: <what>", offers nothing, saves nothing); the stubs extend it |
-| `plant_scatter.gd` | M5: `scatter(...)`, the seeded tree and bush `put` ops of a scatter stroke (below). A stub until lane P lands |
+| `water_layer.gd`, `water_store.gd`, `water_fill.gd`, `water_mesh.gd` | the `water` layer (M5): `flood`, `drain`, the input op `pour` (`expand_input`), `wet_at`, `water_runs`; the cells and levels per 3 m cell (saved `water`), the pour's priority flood to just under the spill level, the still-water drawing per 96 m chunk and its ghost |
+| `paths_layer.gd`, `path_shape.gd`, `path_mesh.gd`, `path_grade.gd` | the `paths` layer (M5): `path`, `unpath`, ids (`next_id`), refusal along the samples (`refusal_of`), the drawing per 96 m chunk (made over frames: `VERTS` vertices a frame), `path_at`, `covers`, the ghost (`preview_node`, `ghost_of`), save `paths`; the spline sampled every metre; the ribbon in the terrain material (the boardwalk for `plank`) and the hologram; the grading land op and `lay(build, op)`: path + grading as one batch |
+| `plants_layer.gd`, `land_ghost.gd` | the `plants` layer (M5): `plant` (growth of 3 m cells: meadow, flowers, tall grass, drawn by the ground's shader through the land mesh's UV, never by instances), `stroke_*`, save `plants`; `land_ghost.gd` draws the ground's part of a dry run (land, paint, plants) for `preview_node` (`LAND.md`) |
+| `stub_layer.gd` | what a stub layer does (refuses every op "not built yet: <what>", offers nothing, saves nothing); no M5 layer extends it now, 754 and 757 still hold it |
+| `plant_scatter.gd` | M5: `scatter(...)`, the seeded tree and bush `put` ops of a scatter stroke (below): seeded tree and bush `put` ops, skipping paths, water, protected and steep cells |
 | `build_file.gd` | `tl.build/1`, `/2` and `/3`: save (compaction), load (build file, then the journal replayed), `mark_v`, the version tables `KEY_V` and `OP_V` |
 | `protect.gd` | where a block may not go, with the reason; the rules layers add (`add_rule`) and ground areas (`refusal_area`) |
 | `preview_mesh.gd` | draws a store as a hologram (a dry run's ghost: M4's answer, M3's stamp) |
@@ -97,15 +99,16 @@ itself, so there is no cycle) and registers them. A layer is a RefCounted script
 | `clear()`, `size() -> int`, `content_hash() -> String` | empty it; what it holds; the identity of what it saves (rev moves only when one changes) |
 | `step(budget) -> int`, `pending() -> int` | redraws at most `budget` units (sections for blocks) per physics frame; work left (`flush` loops on it) |
 | `copy() -> RefCounted` | a scratch copy with the same content and rules and no mesh or body (`preview`) |
-| `read_region(min, max) -> Dictionary` | its keys for `home_build.read_region` (blocks: `blocks`; M2: ground; M3: `pieces`) |
+| `read_region(min, max) -> Dictionary` | its keys for `home_build.read_region` (blocks: `blocks`; M2: ground; M3: `pieces`; M5 water: `water_cells`: `[[i, j, level_cm], ...]`) |
 | `add_rules(protect)` (optional) | called once when `home_build.gd` registers the layer (never for a scratch copy): its `protect.add_rule` calls |
 | `free_all()` | meshes freed, bodies dropped |
 | `offers() -> Array` (M5, optional) | the op kinds the LLM may write for this layer now (command_ask.gd `ops_now` is the layers' offers in order): blocks `place`, `remove`; land `land`, `paint`; pieces `put`, `lift`; water `pour`, `drain` (the model pours, the exe floods); paths `path`, `unpath`; plants `plant`. `[]` for a stub: 754 and 757 tell a stub layer from a built one by this |
-| `preview_node(scratch) -> Node3D` (M5, optional) | its part of a dry run's ghost, drawn from its own scratch copy after the ops (`home_build.preview`'s `r.scratch[id]`); null when it has nothing to show. Blocks: `preview_mesh.gd` of the cells added and removed (`diff(scratch)`). Land and pieces have none yet (lanes L and C add it) |
-| `expand_input(op) -> Dictionary` (M5, the water layer) | an input-only op (`pour`) as `{"ops": [...]}` or `{"error"}`; the stub answers `{"error": "not built yet: water"}` |
-| `water_runs(lo, hi) -> Array` (M5, the water layer) | the measured water in a cell box, shaped as the ask's `water` key: `[{"y": <cell y of the surface>, "runs": [[z, x0, x1], ...]}]`; `[]` when there is none (the stub). command_ask.gd `water_of` writes it into the ask; the river's water is merged there |
+| `preview_node(scratch) -> Node3D` (M5, optional) | its part of a dry run's ghost, drawn from its own scratch copy after the ops (`home_build.preview`'s `r.scratch[id]`); null when it has nothing to show. Blocks: `preview_mesh.gd` of the cells added and removed (`diff(scratch)`). Pieces: the pieces a dry run puts in holo and those it lifts in red (`piece_ghost.gd`). Land and plants: `land_ghost.gd` |
+| `expand_input(op) -> Dictionary` (M5, the water layer) | an input-only op (`pour`) as `{"ops": [...]}` or `{"error"}` (a stub layer answers `{"error": "not built yet: water"}`) |
+| `water_runs(lo, hi) -> Array` (M5, the water layer) | the measured water in a cell box, shaped as the ask's `water` key: `[{"y": <cell y of the surface>, "runs": [[z, x0, x1], ...]}]`; `[]` when there is none. `y = floori(level_cm / 100.0)`, as the river's `water_of` rule. command_ask.gd `water_of` writes it into the ask; the river's water is merged there |
+| `wet_at(x, y, z) -> bool` (M5, the water layer, public) | true where a point stands in the player's water; the land's scatter and `plant_scatter.gd` ask it |
 
-The stubs check their ops strictly (keys, types, ranges, names, the cells, the points) and refuse to apply them with a
+A stub layer checks its ops strictly (keys, types, ranges, names, the cells, the points) and refuses to apply them with a
 reason starting `not built yet` (M5: `not built yet: water` / `paths` / `plants`). They offer nothing, save nothing and
 load an absent or empty key only. A lane replaces the file of its stub with the real layer (drop the extends of
 `stub_layer.gd`; add files of its own); see `LANES.md`. Its `malformed` keeps the convention every case relies on:
@@ -134,7 +137,7 @@ build.apply(ops)                                                                
 
 It returns `put` ops (`{"op": "put", "at", "part": "tree" | "bush", "params"?, "rot", "seed"}`, no v, author or batch)
 the pieces layer would take, for a disc of `radius_m` m round `centre` at `per_100m2` plants per 100 m2; the same
-arguments give the same ops (the seed, never the clock). The stub returns `[]`.
+arguments give the same ops (the seed, never the clock). 
 
 ## How it works
 
@@ -157,8 +160,9 @@ arguments give the same ops (the seed, never the clock). The stub returns `[]`.
   - A fence links to a fence, a post or a full opaque face. A post grows rail stubs toward fences. Stacked posts hide
     their end faces.
 - **Colliders** use the same triangles as the drawing, wound counter-clockwise from outside. The physics reads the
-  winding (`home/hook.gd` `facing_up`). The **stair** is the exception: it collides as the ramp of its own form,
-  because the visitor's walkers stop at any vertical riser (see the figures and `PATCHES-WP1.md` P2). The body lives
+  winding (`home/hook.gd` `facing_up`). A stair collides as drawn, its four 0.25 m steps: the visitor
+  steps up any riser of the Home's blocks up to `step_up` (0.55 m: a step, a slab, a slab onto a cube), not a full
+  block (`terrain/walker_riser.gd`); packs are unchanged. The body lives
   only in the visitor's space (tag `home blocks`, stat `block_faces`, layer 1), never in a pack's space or hash.
 - **Look.** One toon surface in the palette material (`TLStyle.material("white")`, CUSTOM0 = cell-local xyz + face axis
   + 4 * grain + 16 * palette column, as `TLMesh`) plus one glass surface. No hand-made material.
@@ -195,12 +199,12 @@ arguments give the same ops (the seed, never the clock). The stub returns `[]`.
 
   | Walker | On the platform at frame | Stopped at frame | Distance from the wall |
   |---|---|---|---|
-  | `walk`, 4.5 m/s | 73 | 122 | 0.378 m |
+  | `walk`, 4.5 m/s | 73 | 125 | 0.378 m |
   | `drive`, 4.5 m/s | 76 | 126 | 0.350 m |
   | `drive`, 9 m/s | 44 | 69 | 0.350 m |
 
-- With the stair drawn as two 0.5 m steps and colliding as drawn, neither walker climbed it at all. With the collider
-  wedge raised 0.125 m (a 0.125 m riser in front), `drive` at 4.5 m/s stalled at the riser.
+- The figures are the stair colliding as drawn (four 0.25 m steps, M5 lane K); with the old ramp-form collider
+  `walk` stopped at frame 122, the rest unchanged.
 
 `TL_BUILD_TRACE=1` prints the walkers' frames.
 
@@ -214,9 +218,11 @@ A person in the Home presses **B** and builds. `build_mode.gd` is the node; `hot
 | `build_mode.gd` | the node, host of the tools: keys and buttons, the cursor ray, tool switching, undo and redo, autosave; `mount` is called by `home/hook.gd` `grow` |
 | `tools/blocks_tool.gd` | M1's hand building: shapes, materials, rot, flip, place and remove, drags as batches |
 | `tools/sculpt_tool.gd`, `tools/paint_tool.gd` | M2 (`LAND.md`): sculpt 1 raise, 2 lower, 3 flatten, 4 smooth, Shift the other way, wheel or [ ] the brush (1-8 cells); paint 1-8 the ground paints, 0 or Backspace the eraser. F and S are not used: they are flight and walking back in `visit.gd` |
-| `tools/piece_tool.gd`, `tools/stamp_tool.gd` | M3 (`PIECES.md`): pieces wheel or 1-9 a part, Tab a page, [ ] its size, V its kind, R turn, LMB put, RMB lift; stamps 0 a new box, G save, 1-9 a stamp, R turn, LMB place (one undo), X export, I import the inbox |
-| `tools/command_tool.gd` | M4 (`COMMAND.md`): Enter asks, Enter keeps the ghost (one batch by llm), Esc or Backspace reverts. M5 seam: the answer's input ops are expanded (`expand_input`) before the dry run, blocks are drawn as before and every other layer's part under `layer_ghosts` (`preview_nodes(r, ["blocks"])`); the counts name the other kinds applied ("24 blocks, 3 paint, 1 refused: occupied") |
-| `tools/water_tool.gd`, `tools/path_tool.gd`, `tools/plant_tool.gd` | M5 stubs ("Water: coming in M5" ...); lanes W, P and L replace them |
+| `tools/piece_tool.gd`, `tools/stamp_tool.gd` | M3 (`PIECES.md`): pieces wheel or 1-9 a part, Tab a page, [ ] its size, V its kind, R turn, LMB put, RMB lift; stamps 0 a new box, G name (a field, "Stamp N" selected), Enter save, Esc cancel, 1-9 a stamp, R turn, LMB place (one undo), X export, I import the inbox |
+| `tools/command_tool.gd` | M4 (`COMMAND.md`): Enter asks, Enter keeps the ghost (one batch by llm), Esc or Backspace reverts. M5 seam: the answer's input ops are expanded (`expand_input`) before the dry run, blocks are drawn as before and every other layer's part under `layer_ghosts` (`preview_nodes(r, ["blocks"])`); the counts name the other kinds applied ("24 blocks, paint 3 cells; 1 refused: occupied": every kind counted, refusals after a `;`, up to 3 reasons); an op naming a locked material, shape or part is refused `locked: <condition>` when shown and at accept |
+| `tools/water_tool.gd` | M5 (water layer): click a hollow and it fills to just under its spill level (one batch; wheel or [ ] the level, 25 cm a notch), the ghost shows cells and level, 2 or RMB drains the body under the cursor; refusals shown red |
+| `tools/path_tool.gd` | M5 (paths layer): LMB a point, RMB / Enter / a click on the last point lays it, Backspace drops a point, 1-6 paint, 0 remove (LMB on a path), wheel or [ ] width 1.5-8 m |
+| `tools/plant_tool.gd` | M5 (plants layer): the round brush, 1 meadow, 2 flowers, 3 tall grass, 0 or Backspace clear; a held stroke is one `plant` op; 4 trees and 5 bushes scatter `put` ops (`plant_scatter.gd`) as one batch |
 | `build_devices.gd` | the test hook `TL_BUILD_DEVICES` |
 | `hotbar.gd` | bottom centre while building: the tool strip, the current tool's slots, its swatch and info line, save state, the refusal reason, its keys. It reads only the tool interface (`state_of`). Boot's key line names "B  build" while walking and hides itself while building (boot.gd reads the meta `tl_build_mode`) |
 | `ghost.gd` | the next edit as a hologram (`TLStyle.material("holo")`; red: a private copy tinted `hazard_red`), the shape's own triangles (`shapes.gd` `entry`, form 0) |
@@ -244,7 +250,7 @@ build mode):
 | Key | While building |
 |---|---|
 | B, Esc | leave build mode (autosave if unsaved). Esc never quits from build mode: `visit.gd` does not quit while `active` |
-| T, Shift+T | next, previous tool: blocks, sculpt, paint, pieces, stamps, water, paths, plants, command (the hotbar's strip lights the current one; a stub says "coming in M<n>", seam_lists.gd `STUB_LINES`) |
+| T, Shift+T | next, previous tool: blocks, sculpt, paint, pieces, stamps, water, paths, plants, command (the hotbar's strip lights the current one; a stub tool says "coming in M<n>", seam_lists.gd `STUB_LINES`) |
 | Enter | the command tool (M4's bar; the stub shows a disabled line). Reserved: no other tool takes it |
 | LMB | place; held and moved: a line of cells, one batch (one undo step) |
 | RMB | remove; held and moved: one batch |
@@ -260,8 +266,8 @@ LMB, RMB, the wheel, 1-8, Tab, R and F2 are the blocks tool's: another tool gets
 them. Ctrl+Z, Ctrl+Y, B, Esc, T, Enter, MMB and Alt are the host's and mean the same in every tool.
 
 **Tools** (the seam, for M2, M3, M4 and M5). A tool is a RefCounted script in `tools/`, made once by build mode (`TOOLS`,
-in strip order: blocks, sculpt, paint, piece, stamp, water, path, plant, command), duck-typed. The M5 stubs
-(`tools/water_tool.gd`, `path_tool.gd`, `plant_tool.gd`) extend `tools/stub_tool.gd`; a lane replaces its file:
+in strip order: blocks, sculpt, paint, piece, stamp, water, path, plant, command), duck-typed. The M5 tools
+(`tools/water_tool.gd`, `path_tool.gd`, `plant_tool.gd`) are built; `tools/stub_tool.gd` stays as the base a stub extends:
 
 | Member | What it does |
 |---|---|

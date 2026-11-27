@@ -42,8 +42,8 @@ an operation except the `author` field.
 |  |  | | 12 | `plaster` (unlockable, M3) |
 
 Joined forms are derived from the neighbours when a section is meshed. They are never stored. A stair is drawn as 4
-steps of 0.25 m and collides as its 45-degree ramp, because the visitor's walkers do not climb a vertical riser
-(`engine/kernel/world/build/PATCHES-WP1.md` P2). When the walker steps up risers, stairs collide as drawn.
+steps of 0.25 m and collides as drawn (M5): the visitor steps up and down a riser of at most half a block on the Home's
+blocks (`engine/kernel/world/terrain/walker_riser.gd`); a pack's walkers are unchanged.
 
 ## `tl.edit/1`: one operation
 

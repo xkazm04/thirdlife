@@ -302,14 +302,19 @@ func preview_nodes(r: Dictionary, skip: Array = []) -> Array:
 func expand_input(ops: Array) -> Dictionary:
 	var out := []
 	var refused := []
+	var land_before := []                # M5 integration: the answer's land ops so far (a pour fills the land they leave)
 	for i: int in ops.size():
 		var op: Variant = ops[i]
 		var kind := str((op as Dictionary).get("op", "")) if op is Dictionary else ""
 		if not INPUT_OPS.has(kind):
 			out.append(op)
+			if kind == "land":
+				land_before.append(op)
 			continue
 		var l := layer(str(INPUT_OPS[kind]))
-		var e: Dictionary = l.call("expand_input", op) if l != null and l.has_method("expand_input") else {"error": "nothing expands %s" % kind}
+		var e: Dictionary = {"error": "nothing expands %s" % kind}
+		if l != null and l.has_method("expand_input"):
+			e = l.call("expand_input", op, _land_after(land_before))
 		if e.has("error") or typeof(e.get("ops")) != TYPE_ARRAY:
 			refused.append([i, str(e.get("error", "%s gave no ops" % kind))])
 			continue
@@ -319,6 +324,19 @@ func expand_input(ops: Array) -> Dictionary:
 				o["author"] = op.author
 			out.append(o)
 	return {"ops": out, "refused": refused}
+
+
+## A scratch copy of the land layer with `land_ops` applied (an answer that digs, then pours), or null when there are none
+## (the live land is read). Never touches the Home.
+func _land_after(land_ops: Array) -> RefCounted:
+	var live := layer("land")
+	if land_ops.is_empty() or live == null:
+		return null
+	var c: RefCounted = live.copy()
+	var trial: RefCounted = EditLog.new()
+	trial.register(c)
+	trial.apply(land_ops)
+	return c
 
 
 # ------------------------------------------------------------------ files

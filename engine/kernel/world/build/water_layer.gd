@@ -323,7 +323,13 @@ func drain_op(c: Vector2i) -> Dictionary:
 
 ## An input op (`{"op": "pour", "at": [x, y, z]}`) as the ops it stands for (home_build.gd `expand_input`): {"ops":
 ## [the flood]} or {"error"}. The fill is the hand pour's at full height; a pour over water there is refused.
-func expand_input(op: Dictionary) -> Dictionary:
+func expand_input(op: Dictionary, land_now: RefCounted = null) -> Dictionary:
+	if land_now != null:                 # home_build.gd: the land as the answer's earlier land ops leave it
+		var was := _land
+		_land = land_now
+		var r := expand_input(op)
+		_land = was
+		return r
 	var why := OpUtil.head(op, POUR_KEYS)
 	if why == "" and op.get("op") != "pour":
 		why = "op must be \"pour\""
