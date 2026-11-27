@@ -70,3 +70,4 @@ findings, then a second crazy ability per game through the editor (the same juic
 - 11:16: J2nd launched (second crazy ability for karts, biplane, half-court through the fixed editor; Opus, d25-kart / d27-second).
 - 16:14: J2b launched (second crazy ability for robots and shield wall; Opus, d25-biplane / d27-second-b). JB-back and S4 done; S2, S35 done earlier.
 - 19:30: T2-editor (d25-court / d27-tofu2: items 23, 24, 26-28, 31, 32) and N-newcomer (d27-newc / d27-newcomer: a newcomer's first minute in robots, shield, Arsenal) launched. T keeps 25, 29, 33+40, 34, 35, 37-39.
+- 21:35: lane T hung twice (15:34-19:20, 19:23-21:20); its round 5 landed by the Director (5e5da87a). T3-editor launched (fresh agent, d25-hard-a): items 34, 35, 37-39, 43-45; 30 and 36 as write-ups.
