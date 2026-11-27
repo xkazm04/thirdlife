@@ -20,7 +20,7 @@ const OpUtil := preload("res://kernel/world/build/op_util.gd")
 const Kinds := preload("res://kernel/world/build/assembly_kinds.gd")
 const KINDS := ["wall", "tower", "house", "stair", "bridge", "platform"]
 const KEYS := ["v", "op", "kind", "at", "size", "rot", "mat", "trim", "opts", "author", "batch"]
-const OPTS := {"wall": ["door", "windows", "crenels"], "tower": ["door", "windows", "crenels", "stairs"], "house": [],
+const OPTS := {"wall": ["door", "windows", "crenels"], "tower": ["door", "windows", "crenels", "stairs"], "house": ["windows"],
 	"stair": [], "bridge": [], "platform": []}
 const STAIRS := ["inside", "outside"]
 const SIZE_MAX := 48
@@ -96,13 +96,21 @@ static func opts_error(kind: String, opts: Dictionary, w: int) -> String:
 		var hi := w - 2 if kind == "tower" else w - 1
 		if OpUtil.int_of(opts.door) == null or int(opts.door) < lo or int(opts.door) > hi:
 			return "opts.door is the door's cell along the %s's front, %d..%d" % [kind, lo, hi]
-	if opts.has("windows") and (OpUtil.int_of(opts.windows) == null or int(opts.windows) < WINDOWS_MIN or int(opts.windows) > WINDOWS_MAX):
+	if opts.has("windows") and kind == "house":            # round 4 (Q-A8): a house's windows are a count on its front
+		if OpUtil.int_of(opts.windows) == null or int(opts.windows) < 0 or int(opts.windows) > house_windows_max(w):
+			return "opts.windows is how many windows on the house's front beside the door, 0..%d for %d wide" % [house_windows_max(w), w]
+	elif opts.has("windows") and (OpUtil.int_of(opts.windows) == null or int(opts.windows) < WINDOWS_MIN or int(opts.windows) > WINDOWS_MAX):
 		return "opts.windows is a window every N cells, N %d..%d" % [WINDOWS_MIN, WINDOWS_MAX]
 	if opts.has("crenels") and (typeof(opts.crenels) != TYPE_BOOL or not bool(opts.crenels)):
 		return "opts.crenels is written only when true"
 	if opts.has("stairs") and (typeof(opts.stairs) != TYPE_STRING or not STAIRS.has(str(opts.stairs))):
 		return "opts.stairs is \"inside\" or \"outside\""
 	return ""
+
+
+## The most front windows a house `w` wide takes: every front cell but the corners and the door (0 under 3 wide).
+static func house_windows_max(w: int) -> int:
+	return maxi(0, w - 3)
 
 
 ## The least size a kind needs (beyond 1-48): "" when `w`, `h`, `d` make the shape it says.

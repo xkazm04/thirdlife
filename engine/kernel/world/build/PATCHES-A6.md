@@ -41,3 +41,16 @@
   inside the body's 2.5 m / 1.0 m). The 5-cell gap and the 2-block wall are unchanged and still not reachable.
 - The Foreman's worked run (prompts/world_edit_rules.md) had the same 3 m + 1 m hop: now a 1-cell gap, its Fall zone on
   that one cell; the "Space" line says the new limits.
+
+## Round 4: the contract wording for the ask's `land_refused` (Q-A7; Director's files, not made)
+
+In contracts/BUILD.md "The LLM command bar (M4)", after the ask's refused columns (or in its M6 additions):
+
+- The ask gains `land_refused`: `[{"reason":"<reason>", "runs":[[z, x0, x1], ...]}, ...]` in the shape of `refused`:
+  the 1 m columns of the region where the ground ops (`land`, `paint`, `path`, `plant`, `flood`, `pour`) are refused,
+  each with its reason; a column answers for its 3 m ground cell (`floor(x / 3)`, `floor(z / 3)`), asked as a paint of
+  that cell with the visitor out of the way. Blocks may still be placed there (that is `refused`). Omitted when there
+  are none. A land vertex may also be refused where no column is marked (a ploughed field refuses land only).
+
+(Implemented: engine/kernel/world/build/command_ask.gd `land_refused`; foreman/src/world_edit.ts askSchema
+`land_refused` (minItems 1), the prompt line; foreman/src/world_edit_land.ts, the feedback.)

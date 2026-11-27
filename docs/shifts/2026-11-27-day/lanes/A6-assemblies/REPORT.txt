@@ -278,3 +278,55 @@ NEXT THREE
 2. A run preset in the Shapes tool (pad at the stair foot, a flag on top), so the hand gets the course the model gets.
 3. Probe the inside-stairs watchtower with the body (a run on it), and assemblies on sloping ground (the stringer and
    the steps where the ground rises under them).
+
+====================================================================================================================
+ROUND 4 (Director, after round 3 landed as 8ecbf9ec; tree = the tip bcde01ef). Nothing committed. No real calls.
+
+1. Q-A8 house opts.windows: DONE (contracts/BUILD.md as the Director wrote it).
+   Expander: assembly.gd OPTS house = ["windows"], `house_windows_max(w)` = w - 3, the check "opts.windows is how many
+   windows on the house's front beside the door, 0..N for W wide"; assembly_kinds.gd `front_windows(w, n)`: nearest the
+   door first, left before right, the spaced cells (2, 5, 8 ... from the door) then the rest (1, 3, 4, ...); absent =
+   round 3's default (the spaced ones: a 7-wide house has 2). Other walls unchanged.
+   Foreman: world_edit_assemble.ts the same rule and words; the prompt's house line says "windows (how many on the
+   front, beside the door: 0..width-3)" (ASSEMBLE_TEXT 2,582 B, under its 2,600 cap).
+   Shapes tool: ] walks the house presets {} / windows 4 / windows 0 (clamped to what the dragged width holds).
+   794: new case `windows` (a 7 x 3 x 5 house: default -> front x [1, 5], 0 -> [], 1 -> [1], 2 -> [1, 5], 4 -> [1, 2,
+   4, 5]; never in the door's cell; 3 windows on the other walls every time); `refusals` 24 rows (a house's 'door' opt
+   now "takes no opt 'door' (only windows)": EXPECTATION MOVED, the house takes one opt now; + windows 5 and -1).
+2. Q-A7 the ask's `land_refused`: DONE. Key name `land_refused`, the shape of `refused` ([{reason, runs: [[z, x0,
+   x1]]}]): the 1 m columns where land, paint, path, plant, flood and pour are refused, each column answering for its
+   3 m ground cell (protect.gd `refusal_area` of the cell for a paint, the visitor out of the way; land vertices under a
+   ploughed field are refused too and not marked); omitted when none (the Foreman's schema refuses `[]`).
+   Exe: command_ask.gd `land_refused` (77 ms for the whole ask at the house spot, landscape loaded).
+   Prompt: ONE line under the refused columns, "Paths, land, paint, plants and water are refused on these columns
+   (blocks may still go there): <reason>: <boxes>". At the house call's spot (-69, 2, 21) it reads "village: x
+   -85..-54, z 5..14; x -84..-64, z 15..36; game lot: ..." (+314 B on that prompt): the village's 72 m band covers
+   most of that region for ground ops, which is why round 3's path was refused.
+   Foreman: world_edit_land.ts feeds back a path (its line sampled every 0.5 m), land vertex, paint / plant / flood
+   cell or pour that meets such a column, with the reason and the columns; a block there still passes.
+   Tests: foreman/src/test/world_edit_land.test.ts, 3 tests (read in refused's shape, the line, absent = no line,
+   [] and a bad run refused; every ground op fed back and the same ops off it / a block on it pass; a path through it
+   fed back and the moved path taken on attempt 2). 794 `input` also checks the exe's key over a protected box (cells
+   x 0..5, z 0..2 exactly) and its absence without one.
+   Contract wording for contracts/BUILD.md: PATCHES-A6.md "Round 4" (not made: the Director's file).
+
+GATES (round 4)
+- bash engine/tools/selftest.sh home. : "selftest: 196 passed, 0 failed" (794 8/8; 785 6/6 with the Foreman reading
+  the real ask; 786 4/4; 787 3/3).
+- tl check --tier fast: PASS 5/5 (arch 12/12, devx.test 230/230, foreman.typecheck).
+- foreman npm test: 474 tests, 468 pass, 0 fail, 6 skipped (round 3: 471; +3 land tests).
+- No real calls (as told). World gate not re-run (nothing a pack or the world reads changed).
+
+FILES (round 4)
+New: foreman/src/world_edit_land.ts, foreman/src/test/world_edit_land.test.ts.
+Changed: engine/kernel/world/build/assembly.gd (house windows), assembly_kinds.gd (front_windows), assembly_case.gd
+     (windows case, refusal rows, land_refused check), command_ask.gd (land_refused), tools/assembly_tool.gd (house
+     presets), engine/tools/selftest.d/794-home-assembly.sh (8 cases), COMMAND.md (the ask row, round 4),
+     PATCHES-A6.md (round 4 wording), foreman/src/world_edit.ts (askSchema land_refused, facts, house line),
+     world_edit_check.ts (Ask.land_refused, landChecker), world_edit_assemble.ts (house windows),
+     test/world_edit_assemble.test.ts (house rows), prompts/world_edit.md ({{land_refused}}). All LF as in git.
+
+QUESTIONS (round 4)
+Q-A9 The ask still carries `layers.ground_refused` (the land layer's per-vertex refusals, 121 entries at the house
+     spot) beside the new `land_refused`; dropping it from the ask's `layers` would save about 2-3 KB of prompt there.
+     The land layer's read_region is not mine; the filter in command_ask.gd would be one line. Do it?

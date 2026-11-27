@@ -10,6 +10,7 @@
 // in order with every limit and refusal of the contract (world_edit_rules.ts), so the model hears them.
 import { rulesChecker } from "./world_edit_rules.js";
 import { ASSEMBLE_KEYS, assembleError } from "./world_edit_assemble.js";
+import { landChecker } from "./world_edit_land.js";
 
 export const MAX_OPS = 4000;
 export const SHAPES = 8;
@@ -46,6 +47,7 @@ export interface Ask {
   blocks: number[][];
   ground: { min: [number, number]; rows: number[][] };
   refused?: { reason: string; runs: [number, number, number][] }[];
+  land_refused?: { reason: string; runs: [number, number, number][] }[];   // round 4 (A6): the ground ops' refused columns
   shapes: AskTables[];
   mats: AskTables[];
   paints?: string[];
@@ -89,6 +91,7 @@ export function expand(ask: Ask, given: ModelOp[]): { ops: EditOp[]; problems: s
   let placed = 0, removed = 0;
   const say = (i: number, text: string) => problems.push(`ops[${i}] (${given[i]?.op}): ${text}`);
   const rules = rulesChecker(ask, given);
+  const landNo = landChecker(ask);
   const record = (op: "place" | "remove", c: number[], b: Block): EditOp => {
     const r: EditOp = { op, at: [c[0], c[1], c[2]], shape: b[0], mat: b[1], rot: b[2] };
     if (b[3]) r.flip = true;
@@ -161,7 +164,7 @@ export function expand(ask: Ask, given: ModelOp[]): { ops: EditOp[]; problems: s
     if (Object.hasOwn(OTHER, o.op)) {
       if (!kinds.has(o.op)) { say(i, `the Home does not take "${o.op}" yet: use only ${[...kinds].join(", ")}${blockOps ? ", fill, clear" : ""}`); return; }
       if (M6.includes(o.op) && !only(i, o, OTHER[o.op] as string[])) return;
-      const why = M6.includes(o.op) ? rules(i, o) : otherOp(o, inside, lo, hi, ask, parts);
+      const why = M6.includes(o.op) ? rules(i, o) : (otherOp(o, inside, lo, hi, ask, parts) || landNo(o));
       if (why) { say(i, why); return; }
       const { op, ...rest } = o;
       ops.push({ op, ...rest });

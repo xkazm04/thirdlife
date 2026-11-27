@@ -11,11 +11,14 @@ extends SceneTree
 ##   assembly.compose   a stair assembly meeting a platform's railing opening: the ground reaches the platform's top
 ##   assembly.stairside a stair run joined only at its foot or its top (round 3, Q-A6): from the ground beside its first
 ##                      step yes, from a ledge beside its second step no, from the ground at its foot yes
+##   assembly.windows   a house's opts.windows (round 4, Q-A8): 0, 1, 2, 4 front windows beside the door (none in the
+##                      door's cells), the default 2 for 7 wide, the other walls unchanged
 ##   assembly.refusals  bad kinds, sizes, mats, opts, too small for what it says: refused with the reason
 ##   assembly.protect   a tower over a protected box and over an occupied cell: the place ops there are refused with
 ##                      the protection's reason and "occupied" by the dry run, `left_out` names the same cells
 ##   assembly.input     home_build.gd `expand_input`: an assemble becomes its place ops (author kept), a place passes, a
-##                      bad assemble is refused at its index; the ask offers assemble; seam_lists' INPUT_OPS agrees
+##                      bad assemble is refused at its index; the ask offers assemble; seam_lists' INPUT_OPS agrees;
+##                      (round 4) the ask's land_refused marks a protected box's 3 m ground cells, omitted when none
 ##   assembly.tool      the Shapes tool: pick a kind, press a corner, drag the footprint, the wheel sets the height, ]
 ##                      cycles an opt: the ghost first (a dry run), release builds ONE batch equal to the expansion of
 ##                      the same assemble; one undo takes it back
@@ -53,6 +56,7 @@ func run() -> void:
 	kinds_case()
 	compose_case()
 	stairside_case()
+	windows_case()
 	refusals_case()
 	protect_case()
 	input_case()
@@ -290,6 +294,37 @@ func stairside_case() -> void:
 		"onto the first step from the side %s, onto the second from a ledge beside it %s, along the run %s; the walk from the ledge reaches step 2 %s, straight from the ledge %s (it goes down and round to the foot)" % [a, b, c, w.has(step2), direct])
 
 
+func windows_case() -> void:
+	var bad := []
+	var got := []
+	var back := -1
+	for n: int in [-1, 0, 1, 2, 4]:
+		var op := {"op": "assemble", "kind": "house", "at": [0, 0, 0], "size": [7, 3, 5], "rot": 0, "mat": 3, "trim": 6}
+		if n >= 0:
+			op["opts"] = {"windows": n}
+		var e: Dictionary = Assembly.expand(op)
+		if e.has("error"):
+			bad.append("%d: %s" % [n, e.error])
+			continue
+		var front := []
+		var others := 0
+		for o: Dictionary in e.ops:
+			if int(o.shape) == Blocks.WINDOW:
+				if int(o.at[2]) == 0:
+					front.append(int(o.at[0]))
+				else:
+					others += 1
+		front.sort()
+		got.append("%s -> %s" % ["default" if n < 0 else str(n), str(front)])
+		if back < 0:
+			back = others
+		var want := 2 if n < 0 else n
+		if front.size() != want or front.has(3) or others != back:
+			bad.append("windows %d: front %s, others %d" % [n, str(front), others])
+	say("windows", bad.is_empty(), "house 7 x 3 x 5, door at x 3: %s; %d windows on the other walls each time%s" % [
+		", ".join(PackedStringArray(got)), back, "" if bad.is_empty() else "; BAD " + "; ".join(PackedStringArray(bad))])
+
+
 func refusals_case() -> void:
 	var good := {"op": "assemble", "kind": "tower", "at": [0, 0, 0], "size": [7, 10, 7], "rot": 1, "mat": 1, "trim": 2,
 		"opts": {"stairs": "outside", "crenels": true}}
@@ -301,7 +336,8 @@ func refusals_case() -> void:
 		[{"opts": {"stairs": "spiral"}}, "\"inside\" or \"outside\""], [{"opts": {"roof": true}}, "takes no opt 'roof'"],
 		[{"opts": {"door": 0}}, "opts.door"], [{"opts": {"windows": 1}}, "opts.windows"],
 		[{"size": [3, 10, 3], "opts": {"stairs": "inside"}}, "at least 5 wide"], [{"size": [7, 3, 7]}, "at least 4 high"],
-		[{"kind": "house", "opts": {"door": 2}}, "a house takes no opts"], [{"kind": "house", "size": [2, 4, 5], "opts": null}, "at least 3 x 3"],
+		[{"kind": "house", "opts": {"door": 2}}, "a house takes no opt 'door' (only windows)"],
+		[{"kind": "house", "size": [7, 4, 5], "opts": {"windows": 5}}, "0..4 for 7 wide"], [{"kind": "house", "size": [7, 4, 5], "opts": {"windows": -1}}, "opts.windows is how many"], [{"kind": "house", "size": [2, 4, 5], "opts": null}, "at least 3 x 3"],
 		[{"kind": "wall", "size": [6, 2, 1], "opts": {"door": 2}}, "at least 3 high"], [{"extra": 1}, "unknown key 'extra'"],
 		[{"op": "fill"}, "op must be \"assemble\""], [{"at": [0, 0]}, "at must be"]]
 	var bad := []
@@ -361,5 +397,11 @@ func input_case() -> void:
 	var ok: bool = JSON.stringify(stripped) == JSON.stringify(want) and authored and got.size() == want.size() + 1 and got[-1] == place \
 		and str(ex.refused) == str([[2, "a tower is at least 3 wide (walls round a hollow)"]]) and ops_now.has("assemble") \
 		and Lists.INPUT_OPS == HomeBuild.INPUT_OPS and Lists.layer_of("assemble") == "blocks"
-	say("input", ok, "expand_input: the stair's %d place ops (author llm), then the place; refused %s; ops_now %s; INPUT_OPS %s" % [
-		want.size(), str(ex.refused), str(ops_now), str(HomeBuild.INPUT_OPS)])
+	# round 4 (Q-A7): the ask's land_refused, the ground ops' refused columns in refused's shape (3 m cells)
+	b.protect.add_box(AABB(Vector3(0, 0, 0), Vector3(6, 4, 3)), "test lot")
+	var ask: Dictionary = CommandAsk.make(b, null, "a path", Vector3i(2, 0, 2), 0)
+	var lr: Variant = ask.get("land_refused")
+	var lr_ok := str(lr) == str([{"reason": "test lot", "runs": [[0, 0, 5], [1, 0, 5], [2, 0, 5]]}])
+	var none_ok: bool = not CommandAsk.make(HomeBuild.new(null, null, {}), null, "a path", Vector3i(2, 0, 2), 0).has("land_refused")
+	say("input", ok and lr_ok and none_ok, "expand_input: the stair's %d place ops (author llm), then the place; refused %s; ops_now %s; INPUT_OPS %s; the ask's land_refused over a protected box %s, none without one %s" % [
+		want.size(), str(ex.refused), str(ops_now), str(HomeBuild.INPUT_OPS), str(lr), none_ok])

@@ -14,7 +14,8 @@ extends RefCounted
 ##             (round 3) outside stairs: a stringer of trim on the outer side at each stair's level, a slab-high
 ##             parapet at each landing, a fence on each; nothing to the ground (the door's front stays open)
 ##   house     a floor, walls w x d x h, a door in the middle of the front with a slab step, windows in row 2 (the
-##             front's 2 cells either side of the door, then every 3; the other walls every 3), a pitched roof (trim)
+##             front: opts.windows of them beside the door, default 2 cells either side then every 3 (round 4); the
+##             other walls every 3), a pitched roof (trim)
 ##             of roof blocks rising from the two long walls to a ridge (a ridge row of cubes when the span is odd),
 ##             gables of the wall's material
 ##   stair     w wide, h steps climbing +z, each step a stair block on a cube (trim) under it, a landing every 6 steps
@@ -236,9 +237,9 @@ static func house(s: RefCounted) -> void:
 				if y == 0 or x == 0 or z == 0 or x == w - 1 or z == d - 1:
 					s.put(x, y, z, Blocks.CUBE, s.mat)
 	var door := w / 2
+	for t: int in front_windows(w, int(s.opts.get("windows", -1))):
+		s.put(t, 2, 0, Blocks.WINDOW, s.mat, 0)
 	for t in range(1, w - 1):
-		if absi(t - door) >= 2 and (absi(t - door) - 2) % 3 == 0:     # round 3: the front's windows flank the door
-			s.put(t, 2, 0, Blocks.WINDOW, s.mat, 0)
 		if posmod(t - w / 2, 3) == 0:
 			s.put(t, 2, d - 1, Blocks.WINDOW, s.mat, 0)
 	for t in range(1, d - 1):
@@ -272,6 +273,22 @@ static func house(s: RefCounted) -> void:
 		for u in long:
 			var r: Vector2i = cell.call(u, n / 2)
 			s.put(r.x, y, r.y, Blocks.CUBE, s.trim)
+
+
+## The front cells of a house `w` wide that hold its windows: `n` of them (-1: the default by width), nearest the
+## door first, left before right: the cells 2, 5, 8 ... from the door (spaced), then 1, 3, 4, 6 ... (filling).
+## Default: the spaced ones (round 3's rule: a 7-wide house has 2, either side of the door).
+static func front_windows(w: int, n: int) -> Array:
+	var door := w / 2
+	var spaced := []
+	var rest := []
+	for k in range(1, w):
+		for t: int in [door - k, door + k]:
+			if t < 1 or t > w - 2:
+				continue
+			(spaced if k >= 2 and (k - 2) % 3 == 0 else rest).append(t)
+	var order := spaced + rest
+	return spaced if n < 0 else order.slice(0, mini(n, order.size()))
 
 
 # ------------------------------------------------------------------ stair
