@@ -467,3 +467,8 @@ on the frame and the figure and Fable on surfaces and nature, looping for 10 hou
 - 04:51 standup: 5 lanes on track. T landed; T2 live on a copy of J2's job ("measure kept" fired). Editor-made so far:
   kart jump, court dunk and block (bots under-use them), biplane loop and kill. By hand: hammer, aerials, sky dunk / block /
   on fire, deflect. CPU 100 %, disk 36 GB.
+- ~05:15: T2 landed on main a7094a8c (8a87cfd: a final failure goes to the test's owner; a longer match in a person's
+  change gets 3x frames and a note; a change that cannot be made says why) + b1ee0b1d (Create's change box and first
+  sentence take 800 characters). J2 landed (docs 9bf4f7dc): the editor hammer v0.1.6 promoted after the fix (31 min,
+  1.4 M tokens; before it the hammer looped 4x and was thrown away after 61 min and 14 M); a juicier hand version (its own
+  id game.robot_soccer_hand); both in the owner menu. J19-shield and J1-arsenal launched 05:10 (time box 07:00).
