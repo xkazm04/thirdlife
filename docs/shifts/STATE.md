@@ -546,3 +546,4 @@ on the frame and the figure and Fable on surfaces and nature, looping for 10 hou
 - 19:09: J2b round 2: Arsenal v0.1.29 MEGA (a landed check makes a giant; rival bots use it via a check_landed effect, no C++), built by the editor. Home's M6 landed on main (cafb68de) and its exe passed export check; all menu packs re-run on it.
 - 19:17: S1 round 3 (fairness): B on main's fixes left bots at 0 after sentence 1 on both games; shield reached the bar with 2, court not in 2 (teammates never get it). A reached it in 1 on both. Menu 75.
 - 19:17 standup: S1 done; T hung 15:34-19:20 (stopped, resumed with a narrowed queue); J2nd blocked on finding 12 (to T); S2 r3, J2b r3 running. Menu 75, all 0/0 on exe cafb68de.
+- 19:22: S2 done (3 rounds): the pass works through either arm; output differs by builder variance (about 21-36 runs per arm to tell apart); the lane picks A on the default. Menu 76.

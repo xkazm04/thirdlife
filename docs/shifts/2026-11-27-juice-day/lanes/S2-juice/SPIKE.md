@@ -374,6 +374,80 @@ four; stills `stills/r2-robot-hammer-t0.02.jpg` (the wind-up) and `-t0.55.jpg` (
 | Robot soccer: sledgehammer (S2 round 2 A, auto pass + check) | `C:/Users/kazda/kiro/third-life/.claude/worktrees/d25-robot/.tl/jobs-a2/robot-soccer-3-v-20261125-1/promoted/game.robot_soccer_3_v@0.1.6` |
 | Robot soccer: sledgehammer (S2 round 2 B, juicy picked + check) | `C:/Users/kazda/kiro/third-life/.claude/worktrees/d27-sp-juice-b/.tl/jobs2/robot-soccer-3-v-20261125-1/promoted/game.robot_soccer_3_v@0.1.6` |
 
+## Round 3 (27 Nov, 18:30-19:25): B again, with the fixed check (A4/B4)
+
+**The test.** Arm B, the card picked:
+- J2's exact sentence plus " Make it juicy.";
+- a fresh copy of the same v0.1.5 base;
+- B4 (a5c16a83) committed in the tree; the same seed, hand and measure as round 2.
+
+**What the editor did** (job log, B tree `.tl/jobs3`):
+- **core r13** (2 min) ran out of time and built little. It handed off:
+  - the bots' part to brain;
+  - the sparks, clang and lens kick to show;
+  - the hammer mesh and its poses stayed NOT DONE.
+
+  Its last answer now carried the checklist line, which is the A4/B4 prompt fix: `tell no | exaggeration small |
+  camera small (no lens kick, no follow) | word no | particles+sound no | slow beat no`.
+- **The check fired** (event 958): "[foreman] juice pass not finished: core skipped the launch; the slow beat; the camera
+  following a launched player; it gets one more round".
+- **core r14**, the juice round (2 min), made:
+  - the launch: 3.6-5.4 m, 40-54 frames, 1.5-2.5 turns;
+  - a slow beat with a camera close-in;
+  - the camera rising with a launched captain.
+- **show r2** made the lens kick. **brain r5** made the bots swing.
+- **Promoted v0.1.6:** 35 min, 5.80M tokens in, 54k out. Four rounds: core r13, brain r5, core r14, show r2. The
+  Foreman's notes: matches 1.3x longer; warned rival attacks 2 (was 3).
+
+**The "B after A4/B4" row**, measured the same way as round 2 (`tests/bot_hammer_measure.gd`, seeds 1, 1, 2, 3):
+
+| | flight (m) | frames down | word | camera | tell | slow beat | bots' swings a minute | hash seed 1 (twice) |
+|---|---|---|---|---|---|---|---|---|
+| round 2 A (auto pass + check) | 4.6-5.3 | 100-110 | BONK! / KA-BONK!! | shake, lens kick, rises with you | heats, small orange ring | yes | 3-6 | `bcc03b43ec7d4ccc` |
+| round 2 B (juicy, old check) | 1.8-2.3 | (in the air about 26) | none | shake only | pose only | yes | about 18-27 | `91ee8d8915159de0` |
+| **round 3 B (juicy, fixed check)** | **4.3-4.6** | **85-106** | **none** | **shake, lens kick, rises with you, closes in on the slow beat** | **none, and no hammer is drawn at all** | **yes** | **11-16 (22 of 24 swings miss on seed 1)** | `37bdbac2880555a0` |
+| by hand (night) | 3.7-5.4 | 103-138 | BONK! / KA-BONK!! | shake, lens kick, follows you | big red reach ring, red-to-white head | none | 5-7 | `ac3f913b63d011cd` |
+
+All four seeds of round 3 B ran 3600 frames with 0 script errors, the same hash twice.
+
+**What the check rescued, and what it did not:**
+- **Rescued:**
+  - the flight, from "small" to 4.3-4.6 m, the hand version's band;
+  - the camera follow, and the lens kick (show's handed part);
+  - the slow beat.
+- **Not rescued:**
+  - **the word.** It is not one of the three parts the check sends back.
+  - **the tell, and the hammer itself.** core r13 marked the hammer mesh and its poses NOT DONE in its own files. That
+    went to the person as a note: no package was asked to finish it, and the juice check does not cover it. In the
+    window (`clips/r3-robot-hammer-B3-A2-hand-s1.mp4`, `stills/r3-robot-hammer-t0.02.jpg` and `-t0.55.jpg`, looked at),
+    the yellow robot swings an invisible hammer: the blue robot flies high over the goal mouth, but nothing in its hand
+    and no ring said it was coming.
+- **The bots** swing often and miss nearly every time. That is brain's rule, not the pass.
+
+**To play round 3 B** (a menu row for the Director): "Robot soccer: sledgehammer (S2 round 3 B, juicy + fixed check)":
+`C:/Users/kazda/kiro/third-life/.claude/worktrees/d27-sp-juice-b/.tl/jobs3/robot-soccer-3-v-20261125-1/promoted/game.robot_soccer_3_v@0.1.6`.
+
+**Is A against B really builder variance? Yes.** All five robot runs in which the pass ran:
+- round 1 A: partial, 2.8-3.4 m;
+- round 1 B-juicy: full, 4.4-4.6 m;
+- round 2 A: full, 4.6-5.3 m;
+- round 2 B: thin, 1.8-2.3 m;
+- round 3 B: full flight and camera, after one extra round, but no word, tell or hammer mesh.
+
+A and B send the builder the same text. Once the pass runs, the arm cannot change what comes out; only the builder
+draw can. The difference between the arms is only whether the pass runs:
+- A: always, on a new move;
+- B: only when the person picks the card or the follow-up.
+
+**How many runs would tell the arms apart on output?**
+- Across those five runs, the typical flight height has a spread of about 1.2 m (standard deviation).
+- To see a 1 m difference in flight height between the arms (5 % significance, 80 % power), the owner would need about
+  **21 runs per arm**.
+- To see a 30-point difference in the share of "complete" builds (50 % against 80 %), about **36 per arm**.
+- At today's 35-90 minutes and 2-6M tokens a run, that is roughly 2-3 days and 60-200M tokens per arm. That is not
+  worth paying, because both arms run the same pass and no real difference is expected.
+- What is worth measuring is how often a person who is never shown the card picks it. For B, that is the whole cost.
+
 ## Lane's recommendation
 
 **A, the automatic pass, with B's buttons turned round.**
@@ -403,4 +477,11 @@ What would change my pick:
 from one sentence with no person's second sentence. B's card produced a thin build that the check could not catch,
 because the builder did not repeat its report. Land A4/B4 (the report in the last answer, the broader skipped words,
 the "not checked" note) with whichever arm the owner picks.
+
+**After round 3:** still A, on the default and not on the output: the outputs differ only by the builder's draw.
+- B4's check works when the builder reports: it rescued the flight, camera and slow beat in one extra round of about
+  4 minutes.
+- Next for either arm: put the word and the tell into the check's list. Also send a move's own NOT DONE about its
+  visible object (the hammer mesh) back to its builder once, as lane T already does for the base's files. Round 3 B
+  shows that the pass can fly the victim high while the hammer itself is never drawn.
 
