@@ -34,3 +34,6 @@ S6 seam done 10:30: committed 6690ad32 on d27-m6 (the M6 integration branch; mai
 Research landed 08:30 (e3b1ccc8): R1-R4 + THESIS.md ("build it, say what it does, play it"), contract BUILD.md M6. After S6: lanes P (play), T (tool), C (LLM) from the seam's LANES.md.
 Selftest blocks: LP 768-772; S6 773-775; DN 776-778; P 779-781; T 782-784; C 785-787.
 Landing: the overlay's pre-merge list on the merged tree in a dedicated worktree; timing reds by A/B under the same load; uncapped `selftest.sh` by count.
+
+## Coordination
+- The juice-day session (third-life-c5) also lands through d25-main and pushes main when it holds only its commits or our docs-only commits; it asks before pushing any code of ours. Hold: no landings in d25-main from 06:10 to 07:30 on 28 Nov (its verdict runs the full tier and the export on main). M6 must land and push before 06:10, or ask c5 for a slot.
