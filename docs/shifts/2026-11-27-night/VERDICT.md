@@ -118,6 +118,13 @@ moved.
 - Balance: you win 39 of 40 at pro with it, against 23 without. It is crazy on purpose.
 - Menu: v0.1.23 (Create) and "Arsenal hockey: meteor slapshot (juice by hand)".
 
+## The exe
+- `dist/ThirdLife` is built from main 6522394 (tag "6522394 2026-11-27 06:24"). `export.sh check` PASSES: the same
+  games and 4 dungeons hash the same as the editor binary, the village shows, W and Esc work, and Create starts an idea.
+- `dist/PLAY-LATEST.cmd` starts it.
+- All 10 new juiced packs (karts v0.1.7; robots v0.1.6 + hand; court v0.1.6 + hand; biplane v0.1.4; shield v0.1.7 +
+  hand; Arsenal v0.1.23 + hand) ran 600 frames as dungeons inside this exe: 0 script errors, 0 engine errors each.
+
 ## Route scoreboard
 | Lane | Route | Held? |
 |---|---|---|
