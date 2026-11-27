@@ -1,0 +1,14 @@
+{
+  "schema": "tl.rink.rules/1",
+  "title": "Arsenal meteor, S4-core arm A: the rival bots light their own meteor and dive to block (native patch 0005)",
+  "notes": "Opens the thirdlife core (RinkCoreThirdlife). Only patch 0005's switches are set; 0002-0004 stay off, so the rest is thirdjam's game as the hand pack plays it.",
+  "rules": {
+    "bot_ability_share": 0.6,
+    "bot_ability_skill": 0.6,
+    "bot_ability_team": 1,
+    "dive_share": 0.6,
+    "dive_shot_share": 0.2,
+    "dive_reach_m": 2.5,
+    "dive_down_frames": 70
+  }
+}

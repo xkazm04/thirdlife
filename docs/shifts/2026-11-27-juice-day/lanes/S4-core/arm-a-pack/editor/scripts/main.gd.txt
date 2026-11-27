@@ -1,0 +1,335 @@
+extends Node
+## Hokej: thirdjam's whole match in our engine (K3 shell, round 3; docs/design/DIRECTIONS.md). The simulation and the bots
+## are thirdjam's own C++ (lane K1's RinkCore, `ctx.cores.open("rink")`, engine/cores/rink/SNAPSHOT.md): the regular cartridge,
+## 5 v 5, first to 3, at the level of data/match.json. This pack keeps the keys and the drawing: thirdjam's camera (cam.gd,
+## equal to thirdjam's rendered camera within 0.54 cm, round 2), the devices for the core's raw glue (human_input.gd), and
+## thirdjam's figure through thirdjam's pawn for every skater (match_view.gd: lane K2's TLRigSkater and skater_pawn).
+## The order inside a frame is AHokejGameMode's (StepOnce, HokejGameMode.cpp:1636-1712): the human's input is read through
+## the camera of the last sim frame (ReadHumanInput cpp:937), the sim steps, the figures take the frame (ApplySimFrame), then
+## the camera steps once on it (PushPresentation -> StepSimFrame, CameraFollow.cpp:1183). The engine's physics interpolation
+## draws camera and figures between the 60 Hz frames (TickComponent cpp:1319-1337, ApplyRender JamPawns.cpp:824-846).
+## Two proof modes, chosen by a key-less action pressed on frame 0 (a bot's): `gym` (one skater on empty ice under the
+## other nine parked: the control rules' tests), `replay` (thirdjam's own logged path through our camera, round 2).
+
+const Cam := preload("cam.gd")
+const Human := preload("human_input.gd")
+const View := preload("match_view.gd")
+const Screen := preload("hud/screen.gd")   # lane K5: thirdjam's HUD (scripts/hud/)
+const Toys := preload("rink_toys.gd")      # lane E1b: the cartridge's zones, obstacles and pickups drawn (scripts/rink_toys.gd)
+
+var ctx
+var cart: Dictionary
+var gym: Dictionary
+var match_cfg: Dictionary
+var cart_file: String = "hockey.regular.cartridge.json"
+var view_cfg: Dictionary
+var replay_base: Dictionary = {}   # the replay mode's skater: a real snapshot entry, its place and motion set from the log
+var rink                 # thirdjam's core (RinkCore): set_raw_input / step / snapshot / state_hash
+var mode: String = "match"
+var cam                  # thirdjam's follow camera (scripts/cam.gd)
+var view                 # the figures: thirdjam's pawn and K2's figure a skater, or the stand-ins (scripts/match_view.gd)
+var rink_c: Dictionary   # FJamCameraRink {L, W, R}
+var follow: Camera3D
+var snap: Dictionary = {}
+var last_raw: Dictionary = {}
+var last_in: Dictionary = {}
+var over: bool = false
+var replay: Array = []
+var replay_i: int = -1
+var sound                # thirdjam's sound, the core's own part (ctx.cores.part; lane K6)
+var arena                # thirdjam's hall, the core's own part (ctx.cores.part; lane K6)
+var react                # the hall answering the game: lamps, net, caps, crowd (arena.reactions; lane K6 round 3)
+var screen               # lane K5: the HUD (scripts/hud/screen.gd)
+var toys                 # lane E1b: what the cartridge puts on the ice (scripts/rink_toys.gd)
+const Harbour := preload("harbour.gd")
+var harbour              # the harbour's drawing (scripts/harbour.gd): presentation only
+const S4 := preload("s4_bots.gd")
+var s4                   # lane S4-core: the bots' meteors and dives, drawn and counted (scripts/s4_bots.gd): presentation only
+
+
+func _pack_setup(c) -> void:
+	ctx = c
+	match_cfg = ctx.read_json("match.json")
+	cart_file = String(match_cfg.get("cartridge", "hockey.regular.cartridge.json"))   # the cut (data/match.json; a rules sidecar opens the variant core)
+	cart = ctx.read_json(cart_file)
+	gym = ctx.read_json("gym.json")
+	view_cfg = ctx.read_json("view.json")
+	var g: Dictionary = cart["game"]
+	var rk: Dictionary = g["rink"]
+	var rink_gen = ctx.load_script("gen/tj_rink.gd")
+	arena = ctx.cores.part("rink", "arena")
+	var marks: Dictionary = _arena_marks()
+	# E5 (25 Nov): the hall's own goals stand where a 90 x 45 rink has its goal lines. On any other rink (a user's 50 m
+	# pond) they stood outside the boards while the core scored at +-(L/2 - 4): the rink's own goals are drawn there.
+	var hall_goals: bool = not marks.is_empty() and absf(float(rk["length_m"]) - 90.0) < 0.01 and absf(float(rk["width_m"]) - 45.0) < 0.01
+	if hall_goals:
+		marks["arena_goals"] = true                # lane K6 round 3: thirdjam's own goals and nets from the hall (the net shakes on a goal)
+	rink_gen.build(ctx.root, rk, {} if arena != null else gym.get("hall", {}), marks)   # no dark box inside thirdjam's hall
+	if arena != null:
+		arena.build(ctx.root, {"rink": rk, "goals": hall_goals})
+		react = arena.reactions(ctx.root, rk)      # lane K6 round 3
+	toys = Toys.new(ctx.root, cart)                # lane E1b: game.rink.zones / obstacles and game.pickups, from the cartridge and the bus
+	rink_c = {"L": float(rk["length_m"]), "W": float(rk["width_m"]), "R": maxf(0.0, float(rk["corner_radius_m"]))}   # FJamCameraRink::FromFrame cpp:127-134
+	rink = ctx.cores.open("rink", cart_file)
+	rink.set_difficulty(String(match_cfg["difficulty"]))
+	rink.set_human_mode("raw")                     # the person's devices; thirdjam's game-mode rules in the core's glue (GAMEMODE.md)
+	rink.reset(ctx.seed)
+	snap = rink.snapshot()
+	var sound_part = ctx.cores.part("rink", "audio")
+	if sound_part != null:
+		sound = sound_part.new()
+		sound.begin(cart)
+	view = View.new(ctx.root, rink_gen, snap, float(g["puck"]["radius_m"]), cart, ctx.cores.view_script("rink", "skater_pawn"), ctx.cores.view_script("rink", "skater_show"), ctx.cores.view_script("rink", "hit_read"), ctx.cores.view_script("rink", "boost_look"), bool(view_cfg.get("figures", true)))
+	# JamControls::ButtonContext's numbers (InputMapping.cpp:474-486): UJamSim::CarrierReachM = max(shot.reach_m, SkaterRadius 0.4 +
+	# stick.reach_m 1.2 (FJamStickConfig default)) + 0.05 (JamSim.cpp:862-869); FJamPassConfig defaults SaucerHalfFrames 8,
+	# PowerFullFrames 30 (JamCartridge.h:356, 363): the regular cartridge has no game.pass
+	harbour = Harbour.new()
+	harbour.setup(ctx, view, cart, ctx.root)
+	s4 = S4.new()
+	s4.setup(ctx, view, harbour, cart)
+	Human.declare(ctx.input)
+	ctx.input.declare_aim(&"aim", 0.0, 200.0)      # the cursor on the ice z = 0 (CursorAimRink, HokejGameMode.cpp:741-754)
+	ctx.input.declare(&"gym", [])                  # proof only, no key
+	ctx.input.declare(&"replay", [])               # proof only, no key
+	cam = Cam.new(Cam.settings(g["camera"]))
+	_camera_step()                                 # PossessHuman -> PushPresentation: the camera's first frame (cpp:1003-1009)
+	follow = ctx.cameras.add_view(&"follow", Vector3.ZERO, Vector3(1, 0, 0), float(cam.C["FovDeg"]))
+	follow.keep_aspect = Camera3D.KEEP_WIDTH       # FieldOfView is horizontal in Unreal (h:36-38)
+	_draw()
+	view.reset_interpolation()                     # the first frame is drawn where it is, not slid into from the origin
+	follow.reset_physics_interpolation()
+	ctx.cameras.screen_fade(1.0)                   # the match opens black (thirdjam's light hold, below)
+	_top_camera(float(rk["length_m"]), float(rk["width_m"]))
+	ctx.cameras.activate(&"follow")
+	ctx.cameras.set_subject(&"follow", view.bodies[int(snap["HumanIndex"])])
+
+
+## The "top" view (the Foreman's critic and a person's overview): straight down on the rink, high enough that the whole
+## sheet and its boards fit the picture with a 6 % margin (the view's vertical angle 60 degrees, the window's aspect), and
+## its near plane 4 m over the ice. E5 (25 Nov) put it 70 m up with the near plane at 50 m: above thirdjam's roof it was
+## black, and at 20 m and below the hall's trusses, lamps and clock still crossed the rink. Now everything higher than
+## 4 m (roof, trusses, the clock, the goal lamps) is cut away; the boards (1.2 m), the glass and the figures stay.
+const TOP_FOV: float = 60.0
+const TOP_CUT_M: float = 4.0
+func _top_camera(length: float, width: float) -> void:
+	var t: float = tan(deg_to_rad(TOP_FOV * 0.5))
+	var aspect: float = maxf(0.5, float(ctx.cameras.aspect()))
+	var h: float = maxf((length * 0.5 + 1.0) * 1.06 / (t * aspect), (width * 0.5 + 1.0) * 1.06 / t)
+	var top_cam: Camera3D = ctx.cameras.add_view(&"top", Vector3(0, h, 0.01), Vector3.ZERO, TOP_FOV)
+	if top_cam != null:
+		top_cam.near = maxf(0.05, h - TOP_CUT_M)
+
+
+## With thirdjam's hall: the colours of RinkActor's markings sections 2 and 3 (arena.json rink_surfaces.Markings: its four
+## materials, sections 0-3; RinkActor.cpp:650-659), for the marks the hall's ice does not paint (gen/tj_rink.gd). Empty
+## without the hall (the pack's own rink and palette).
+func _arena_marks() -> Dictionary:
+	if arena == null:
+		return {}
+	var t: Dictionary = arena.table()
+	var mats: Array = ((t.get("rink_surfaces", {}) as Dictionary).get("Markings", {}) as Dictionary).get("materials", [])
+	if mats.size() < 4:
+		push_error("hokej: arena.json has no four Markings materials; the rink draws its own palette")
+		return {}
+	var out: Dictionary = {}
+	for k: Array in [["red", 2], ["pale", 3]]:
+		var c: Array = (((t["materials"] as Dictionary).get(String(mats[k[1]]), {}) as Dictionary).get("vectors", {}) as Dictionary).get("Color", [])
+		if c.size() < 3:
+			push_error("hokej: arena.json material %s has no Color" % String(mats[k[1]]))
+			return {}
+		out[k[0]] = Color(float(c[0]), float(c[1]), float(c[2]))
+	return out
+
+
+func _pack_start() -> void:
+	pass
+
+
+func _pack_tick(frame: int) -> void:
+	var inp = ctx.input
+	if frame == 0 and arena != null:
+		arena.light(ctx.root)                       # thirdjam's rig light and post (lane K6)
+	elif frame == 0 and gym.get("hall", {}).has("light"):
+		TLStyleHall.apply(ctx.root, gym["hall"]["light"])   # the style's roof light (visual only; nothing headless)
+	_light_hold(frame)
+	if frame == 0:
+		Screen.start_level(ctx, rink)              # lane K5: the level HOME chose, from the input record (key-less action)
+	if frame == 0 and inp.pressed(&"replay"):
+		mode = "replay"
+		replay = (ctx.read_json("tj_trace_regular_pro.json") as Dictionary)["rows"]
+		cam = Cam.new(cam.C)                       # thirdjam's first logged frame starts its filter
+		replay_base = (snap["Skaters"][0] as Dictionary).duplicate()
+		view.show_only(0)
+	elif frame == 0 and inp.pressed(&"gym"):
+		# the gym (the control rules' tests): the same core, the other nine parked (RinkCore.set_bot_mode, SNAPSHOT.md v1.1),
+		# and the opening faceoff stepped through here so the hand starts on open ice at the drop (a test stand, not a match)
+		mode = "gym"
+		rink.set_bot_mode("parked")
+		rink.restart()
+		while int(rink.snapshot()["Phase"]) != 0 and rink.get_frame() < 600:
+			rink.set_raw_input({})
+			rink.step()
+		snap = rink.snapshot()
+		cam = Cam.new(cam.C)
+		_camera_step()
+		view.show_only(int(snap["HumanIndex"]))
+	if mode == "replay":
+		_replay_tick()
+		return
+	var s: Dictionary = snap["Skaters"][snap["HumanIndex"]]
+	var cam_yaw: float = deg_to_rad(cam.last_yaw_out) if cam.init else float(s["Yaw"])   # ReadHumanInput's camera yaw (cpp:943-946)
+	cam_yaw = Vector2(cam_yaw, 0.0).x               # single precision (FRotator's yaw is a float): a record holds it exactly
+	var aim_ok: bool = inp.aim_valid(&"aim")
+	var a: Vector3 = inp.aim(&"aim")
+	last_raw = Human.raw(inp, cam_yaw, aim_ok, inp.aim_pixel(&"aim"), Vector2(a.x, a.z))
+	var frame_was: int = int(snap["Frame"])
+	rink.set_raw_input(last_raw)                    # R restarts inside (RestartMatch, GAMEMODE.md row 14); signals 1-4 too
+	if not over:
+		over = not rink.step()
+	last_in = rink.last_human_input()
+	view.set_human_input(last_in)                   # for the hit read (HokejGameMode.cpp:1706)
+	if int(rink.get_frame()) < frame_was:           # the core restarted (R): a new match on the same seed
+		over = false                                # (the show resets itself when the frame goes back: skater_show.step_sim)
+	snap = rink.snapshot()
+	toys.frame(snap)                                # lane E1b: pickups put down and taken on the sim's frame (the bus), also under a hit-stop
+	if sound != null:
+		sound.frame(snap)                          # lane K6: a held picture still sounds (before the hit-stop return)
+	if react != null:
+		react.frame(snap)                          # lane K6 round 3: the hall answers on the sim's frame (RinkActor's bus frame), also under a hit-stop
+	var held: bool = _draw_figures()
+	harbour.tick(snap)                              # the harbour's drawing, after the base has posed the figures
+	ctx.root.set_meta(&"harbour", harbour.report())
+	s4.tick(snap)                                   # lane S4-core: the bots' meteors and dives
+	ctx.root.set_meta(&"s4", s4.report())
+	if held:
+		return                                      # a hit-stop holds the presentation frame: no camera step, no HUD (HokejGameMode.cpp:1710)
+	_camera_step()
+	_present()
+
+
+## AHokejGameMode::TickLightHold (HokejGameMode.cpp:632-678): the picture is held black until the light rig has been
+## visible LightHoldSettleTicks (3) ticks, then fades in over jam.screen.FadeSeconds 0.35 s (HokejGameMode.h:250-262). Our
+## hall's light is there from the first frame: black on frames 0-2, then 21 frames of linear fade (PlayerCameraManager::
+## StartCameraFade 1 -> 0). Presentation only: the sim steps on (the faceoff countdown runs under it), the hash cannot move.
+const LIGHT_SETTLE: int = 3
+const LIGHT_FADE_FRAMES: int = 21   # 0.35 s at 60 Hz
+func _light_hold(frame: int) -> void:
+	if frame < LIGHT_SETTLE:
+		ctx.cameras.screen_fade(1.0)
+	elif frame < LIGHT_SETTLE + LIGHT_FADE_FRAMES:
+		ctx.cameras.screen_fade(1.0 - float(frame - LIGHT_SETTLE + 1) / float(LIGHT_FADE_FRAMES))
+	elif frame == LIGHT_SETTLE + LIGHT_FADE_FRAMES:
+		ctx.cameras.screen_fade(0.0)
+
+
+## The proof mode of round 2: one row of thirdjam's JAMCAM log a tick (one StepSimFrame there, its hit-stop frames already
+## absent): the human's PosM and YawDeg set from the row, then our camera steps. Nothing simulates.
+func _replay_tick() -> void:
+	replay_i = mini(replay_i + 1, replay.size() - 1)
+	var r: Array = replay[replay_i]
+	var p := Vector2(float(r[1]), float(r[2]))
+	var yaw: float = deg_to_rad(float(r[3]))
+	# the skater: a real snapshot entry (every key the pawn reads), its place, motion and blade from the log
+	var prev: Dictionary = snap["Skaters"][0] if replay_i > 0 else {"Pos": p, "Yaw": yaw}
+	var sk: Dictionary = replay_base.duplicate()
+	sk.merge({"Index": 0, "Team": 0, "Pos": p, "PrevPos": prev["Pos"], "Yaw": yaw, "PrevYaw": prev["Yaw"], "Vel": (p - (prev["Pos"] as Vector2)) / View.DT,
+		"YawRate": wrapf(yaw - float(prev["Yaw"]), -PI, PI) / View.DT, "BladePos": p + Vector2(cos(yaw), sin(yaw)) * 1.0, "bHasPuck": false, "bAtFaceoff": false,
+		"bSprinting": false, "Stamina": 0, "bBraking": false}, true)
+	snap = {"Frame": int(r[0]), "HumanIndex": 0, "Carrier": -1, "Puck": {"Pos": Vector2(1000, 1000), "Z": 0.0, "LastTouch": -1, "PrevPos": Vector2(1000, 1000)},
+		"Skaters": [sk]}
+	_camera_step()
+	_draw()
+
+
+func _camera_step() -> void:
+	cam.C["KeepAspect"] = ctx.cameras.aspect()   # StepSimFrame reads the viewport's size every frame (CameraFollow.cpp:1226-1230)
+	var s: Dictionary = snap["Skaters"][snap["HumanIndex"]]
+	# GetFarNetWorldCm (HUDFeed.cpp:8-12) with F.AttackSign = human team 0 ? +1 : -1 and NetInsetM 4 (HokejGameMode.cpp:1616-1617)
+	var sign_: float = 1.0 if int(s.get("Team", 0)) == 0 else -1.0
+	var net := Vector2(sign_ * (float(rink_c["L"]) * 0.5 - 4.0), 0.0)
+	cam.step({"pos": s["Pos"], "yaw": rad_to_deg(float(s["Yaw"])), "rink": rink_c, "net": net})
+
+
+## The figures and the puck of this sim frame (the match: the show, the pawns, the puck; HokejGameMode.cpp:1664-1707).
+## True when a hit-stop holds the presentation frame.
+func _draw_figures() -> bool:
+	if mode == "match":
+		return view.draw(s4.dress(snap) if s4 != null else snap)   # lane S4-core: arm B lays its faked divers out in a copy
+	var me: int = int(snap["HumanIndex"])
+	view.draw_skater(me, snap["Skaters"][me], int(snap["Frame"]))
+	return false
+
+
+func _draw() -> void:
+	_draw_figures()
+	_present()
+
+
+## The camera's view and the HUD (PushPresentation, HokejGameMode.cpp:1710).
+func _present() -> void:
+	var pose: Dictionary = cam.pose
+	var cp: Vector2 = pose["pos"]
+	var pr: float = deg_to_rad(float(pose["pitch"]))
+	var yr: float = deg_to_rad(float(pose["yaw"]))
+	var eye := Vector3(cp.x, float(pose["height"]), cp.y)
+	var fwd := Vector3(cos(pr) * cos(yr), sin(pr), cos(pr) * sin(yr))   # FRotator(pitch, yaw, 0)'s forward, z up -> y up
+	ctx.cameras.add_view(&"follow", eye, eye + fwd, float(cam.C["FovDeg"]))
+	if mode == "match":
+		# the YOU chevron and tag on the figure's head socket (HumanHeadWorld, HUDWidget.cpp:1089-1121): the full point to K5's HUD
+		screen = Screen.frame_of(screen, ctx, snap, null, last_in, last_raw, view.head_world(int(snap["HumanIndex"])))   # lane K5: the HUD, one call a drawn frame (possession for the buttons: from the glue's snapshot Controls, K5 round 2)
+		if screen != null and screen.front != null:
+			screen.front.tagline = String(harbour.t["tagline"])   # the line under the title (data/tuning.json harbour.tagline)
+		if sound != null and screen != null:       # lane K6 round 3: the voice of the line the caption shows, MS_bark for a bark said
+			sound.booth(int(snap["Frame"]), screen.view.shown, int(screen.view.captions.last_end), screen.view.barks.said)
+
+
+func _pack_state() -> Dictionary:
+	var me: int = int(snap["HumanIndex"])
+	var s: Dictionary = snap["Skaters"][me]
+	var p: Vector2 = s["Pos"]
+	var v: Vector2 = s["Vel"]
+	var pose: Dictionary = cam.pose
+	var cp: Vector2 = pose["pos"]
+	var mv: Vector2 = last_in.get("Move", Vector2.ZERO)
+	var st: Vector2 = last_in.get("Stick", Vector2.ZERO)
+	var ax: Vector2 = last_raw.get("Axis", Vector2.ZERO)
+	var out: Dictionary = {"mode": mode, "frame": int(snap["Frame"]), "replay_i": replay_i, "human": me,
+		"x": p.x, "y": p.y, "vx": v.x, "vy": v.y, "speed": v.length(), "yaw_deg": rad_to_deg(float(s["Yaw"])),
+		"sprinting": bool(s["bSprinting"]), "stamina": int(s["Stamina"]),
+		"cam_x": cp.x, "cam_y": cp.y, "cam_h": float(pose["height"]), "cam_pitch": float(pose["pitch"]), "cam_yaw": float(pose["yaw"]),
+		"cam_boards_w": cam.last_boards_weight,
+		"axis_x": ax.x, "axis_y": ax.y, "move_x": mv.x, "move_y": mv.y,
+		"aiming": st != Vector2.ZERO, "stick_x": st.x, "stick_y": st.y,
+		"in": _in_state(last_in), "raw": _in_state(last_raw)}
+	if mode != "replay":
+		var pk: Dictionary = snap["Puck"]
+		out["rink"] = ctx.cores.state()["rink"]     # the core's own hash, frame and score: the run's state_hash covers the match
+		out["phase"] = int(snap["Phase"])
+		out["over"] = over
+		out["carrier"] = int(snap["Carrier"])
+		out["puck_x"] = (pk["Pos"] as Vector2).x
+		out["puck_y"] = (pk["Pos"] as Vector2).y
+		out["puck_z"] = float(pk["Z"])
+		out["team"] = int(s["Team"])
+		out["faceoff"] = int(snap["FaceoffCountdown"])
+		out["intent"] = int((snap.get("Controls", {}) as Dictionary).get("IntentKind", 0))   # the team signal the brain reads (1-4)
+	return out
+
+
+## A frame's FJamInput or raw devices as plain values (bools as 0 / 1, vectors and the camera yaw as integers x EXACT).
+const EXACT: float = 1125899906842624.0   # 2^50
+static func _in_state(i: Dictionary) -> Dictionary:
+	var o: Dictionary = {}
+	for k: String in i:
+		var v: Variant = i[k]
+		if v is Vector2:
+			o[k] = [int((v as Vector2).x * EXACT), int((v as Vector2).y * EXACT)]   # x 2^50: the single-precision value exactly (a report rounds floats)
+		elif v is bool:
+			o[k] = 1 if v else 0
+		elif v is PackedStringArray:
+			o[k] = Array(v)
+		elif v is float and k == "CameraYaw":
+			o[k] = int(float(v) * EXACT)
+		else:
+			o[k] = v
+	return o

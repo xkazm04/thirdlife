@@ -22,7 +22,7 @@ Parts 4 and 5, and the full key table, are generated from thirdjam's files by `s
 | file | what it is |
 |---|---|
 | `data/<name>.cartridge.json` in a pack | the game: a `tj.cartridge/1` cartridge. `ctx.cores.open("rink", "<name>.cartridge.json")` loads it (kernel API section 24) |
-| `data/<name>.rules.json` beside it (optional) | `tl.rink.rules/1`: switches the thirdjam schema has no key for (K8's patches 0002-0004: `net_carry_wall` a held puck cannot cross the goal line, `carry_holds_body`, `over_top_decel_mps2` 0..60, `sprint_restart_share` 0..1; a value outside its range is refused; `foreman/src/cartridge.ts` `ruleSwitches()` reads them and their ranges from the patch files), and a bot-skill tune per level. Its presence opens the thirdlife core (`RinkCoreThirdlife`) instead of thirdjam's (`SNAPSHOT.md`, "Two cores") |
+| `data/<name>.rules.json` beside it (optional) | `tl.rink.rules/1`: switches the thirdjam schema has no key for (K8's patches 0002-0004: `net_carry_wall` a held puck cannot cross the goal line, `carry_holds_body`, `over_top_decel_mps2` 0..60, `sprint_restart_share` 0..1; patch 0005, the bots' abilities and the dive (below the table); a value outside its range is refused; `foreman/src/cartridge.ts` `ruleSwitches()` reads them and their ranges from the patch files), and a bot-skill tune per level. Its presence opens the thirdlife core (`RinkCoreThirdlife`) instead of thirdjam's (`SNAPSHOT.md`, "Two cores") |
 | `engine/cores/rink/schema/` | thirdjam's schema and limits (`cartridge.schema.json`, `game.schema.json`, `limits.json`) extracted from the C++ loader's embedded copy by `extract.py` (proved: the .inl regenerated from the files equals the original to the byte, and the files equal thirdjam 8dc713c6 `schema/`), and thirdjam's own validator `validate.mjs` + `strict-json.mjs`, copied byte for byte |
 | `native/content/Cartridges/` | every cartridge thirdjam ships: `hockey.regular` (the game), the modes in `modes/`, test cuts |
 
@@ -34,6 +34,25 @@ words), `tunables` (named knobs with min / max / default) and `values` (the knob
 (`null` is refused with "omit the key instead of writing null"; an absent key takes the loader's default); durations are
 physics frames at 60 a second (`*_frames`; a key ending in `_seconds` or `_ms` is refused); the JSON is parsed strictly
 (duplicate keys, trailing commas and comments are refused); the whole file at most 24,000 bytes.
+
+**Bots that use abilities, and the dive (patch 0005, `rules` keys of the sidecar).** Without them thirdjam's bots never hold
+`game.abilities` and nobody dives.
+- `bot_ability_share` 0..1: how often. Above 0 the bots hold the cartridge's mode ability from the drop (and a pickup ability
+  when they take a boost) and use it on their own read: the shotgun from a carry facing the net inside range, with a body in
+  the lane (it floors him), a clear lane or a shot they wanted, after a visible wind-up (the shot held: a winding bot stands at
+  `contact.spin_stability`); the hip check on an opposing carrier in reach; the shield carrying under pressure; the slow puck on
+  a pass or a shot. The share is of the moments the read holds (one coin per 12 frames). Never in the first second after a
+  drop. 0 = thirdjam.
+- `bot_ability_skill` 0..1 (absent 0.5): how well: the shotgun's range 12 m (0) to 28 m (1), a clear-lane shot from 0.5, the
+  wind-up 35 to 100 % of `shot.charge_frames_max`, the hip check's reach 1.2 to 2.0 m. Under 0.34 a bot fires it any time in range.
+- `bot_ability_team` 0..2 (absent 0): whose bots: 0 both teams', 1 the human's rivals, 2 his mates.
+- `dive_share` 0..1: the share of shotgun shots (a meteor) a bot in reach throws itself in front of; `dive_shot_share` 0..1 the
+  share of ordinary shots on its net. A diver slides across the shot's line and lies there `dive_down_frames` (20..240, absent
+  70; it cannot act); its laid-out body stops one shot a dive at ice level: the puck rings off at a quarter of its speed and a
+  shotgun shot stops being one. `dive_reach_m` 0.5..4 (absent 2.5): how far from the line he still gets there. Events `dive`
+  and `dive_block` (Kind shotgun | shot); skater fields `TlWindupLeft`, `TlDiveFrames`, `TlDives`, `TlDiveBlocks` (SNAPSHOT.md).
+- In words: "the rival bots light their own meteor" = `bot_ability_share` 0.5..0.8, `bot_ability_team` 1; "sharp" =
+  `bot_ability_skill` 0.8; "they dive in front of my meteor" = `dive_share` 0.5..0.8; "they block shots" = `dive_shot_share` 0.2..0.4.
 
 ## 2. Checking a cartridge before anybody plays it
 
@@ -218,8 +237,9 @@ iteration (a few keys move, nothing else).
 
 ## 6. What a cartridge cannot do (code, not keys)
 
-- **A new verb** (a kick, a dive, a throw): the buttons are thirdjam's (shoot, pass, check, poke, lift, deke, spin, sprint,
-  brake, ability). A new one is C++ in the core, i.e. a patch in `native/patches-thirdlife` and a rebuild.
+- **A new verb** (a kick, a throw): the buttons are thirdjam's (shoot, pass, check, poke, lift, deke, spin, sprint,
+  brake, ability). A new one is C++ in the core, i.e. a patch in `native/patches-thirdlife` and a rebuild. The bots' dive is
+  one (patch 0005, section 1); the human has no dive key.
 - **A new rule the schema has no key for** (the puck cannot be carried over the goal line, offside): a switch in a thirdlife
   patch plus a key in the `.rules.json` sidecar (how `net_carry_wall` was made). `rules.offside` is fixed false.
 - **A ball sport** (football, basketball, a bouncing ball): the core is a stick sport on ice; a ball, a kick or a bounce off the

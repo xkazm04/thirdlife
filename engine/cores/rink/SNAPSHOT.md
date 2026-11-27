@@ -157,6 +157,11 @@ heard before).
   `bash engine/tools/rink.sh build thirdlife` when `native/patches-thirdlife/*.patch` exist) is the same source compiled from a
   copy of thirdjam with lane K8's patches applied (`native/tools/thirdlife_tree.py`). Every method and snapshot field above is
   the same in both. The kernel picks one by the cartridge (a `<name>.rules.json` beside it: kernel API 1.27).
+- Patch 0005 (bots with abilities, the dive; CARTRIDGE.md section 1) adds to the thirdlife core only: skater fields
+  `TlWindupLeft` (a bot's meteor wind-up, frames left), `TlDiveFrames` (a dive lying across a shot's lane, frames left),
+  `TlDives`, `TlDiveBlocks` (counters), and two events: `dive` (Who the diver, Where him, Strength the miss / 4 m, Kind
+  shotgun | shot, Dir the dive) and `dive_block` (Who the diver, Where the puck, Strength the shot's speed / max, Kind
+  shotgun | shot). With its switches off the fields stay 0 and nothing is emitted.
 - `load_rules(json) -> String` (after `load_cartridge`, before `reset`): the sidecar `tl.rink.rules/1` ("rules": switches set
   through the patches' own `TlSetRule`; "levels": a thirdjam tune string per level, applied by `ApplyDifficultyTune` on top of
   the level's profile at each `reset`). "" = loaded, else the error. The plain core refuses any rule.

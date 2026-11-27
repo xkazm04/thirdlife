@@ -1,0 +1,223 @@
+{
+  "harbour": {
+    "bead_m": 0.09,
+    "bubble_r_m": 1.15,
+    "bubble_y_m": 0.95,
+    "bubble_detail": 4,
+    "bubble_hex": "#7FE9FF",
+    "flare_frames": 18,
+    "flare_scale": 1.35,
+    "flare_cooldown_f": 30,
+    "pose_hold_f": 8,
+    "recoil_m": 0.4,
+    "recoil_f": 12,
+    "contact_m": 0.85,
+    "contact_closing_mps": 0.5,
+    "event_near_m": 1.8,
+    "check_memory_f": 20,
+    "stand_off_m": 1.55,
+    "hit_stop_f": 5,
+    "throw_m": 1.8,
+    "hop_m": 0.45,
+    "bounce_stand_f": 40,
+    "throw_out_f": 7,
+    "return_f": 12,
+    "stand_release_m": 0.1,
+    "poke_open_f": 24,
+    "lean_rad": 0.9,
+    "pop_scale": 1.7,
+    "pop_f": 8,
+    "dent_scale": 0.55,
+    "bounce_tag_f": 45,
+    "bounce_word": "BOUNCED!",
+    "warn_beads": 16,
+    "warn_r_m": 0.95,
+    "warn_bead_m": 0.13,
+    "warn_swell": 0.8,
+    "windup_f": 12,
+    "windup_lean_rad": 0.45,
+    "opening_hint": "F: BUBBLE   Checks bounce off it",
+    "hint_f": 600,
+    "slow_ring_r_m": 0.35,
+    "slow_beads": 10,
+    "trick_names": {
+      "shield": "BUBBLE",
+      "slow_puck": "SLOW PUCK",
+      "shotgun": "CANNON",
+      "hip_check": "HIP CHECK"
+    },
+    "trick_prompts": {
+      "shotgun": "F: CANNON   Your next shot flattens",
+      "hip_check": "F: HIP CHECK   Your next check hits big"
+    },
+    "armed_words": {
+      "shotgun": "CANNON LOADED - SHOOT",
+      "hip_check": "HIP CHECK READY - HIT"
+    },
+    "cannon_beads": 14,
+    "cannon_ring_r_m": 0.45,
+    "cannon_bead_m": 0.11,
+    "cannon_flight_scale": 1.6,
+    "hip_beads": 18,
+    "hip_ring_r_m": 0.85,
+    "hip_bead_m": 0.12,
+    "hip_ring_y_m": 0.7,
+    "trick_spin": 0.12,
+    "meteor": {
+      "puff_every_f": 3,
+      "flame_scale": 1.2,
+      "smoke_scale": 0.8,
+      "stick_y_m": 0.5,
+      "stick_scale": 0.6,
+      "flash_scale": 1.5,
+      "goal_flash_scale": 2.0,
+      "kick_m": 0.15,
+      "goal_kick_m": 0.3,
+      "kick_f": 10
+    },
+    "flatten_memory_f": 30,
+    "hip_near_m": 3.5,
+    "flatten_burst_scale": 1.4,
+    "recharge_word": "BUBBLE BACK IN %d",
+    "counted_hint": "F: BUBBLE x%d   Green spots hand out your next trick",
+    "next_word": "NEXT BUBBLE IN %d",
+    "held_shield_word": "F: BUBBLE x%d",
+    "many_word": "BUBBLE x%d",
+    "grant_burst_scale": 1.2,
+    "grant_db": -5,
+    "returns_hint": "F: BUBBLE   It comes back %d s after you pop it",
+    "ready_word": "BUBBLE READY - F",
+    "ready_f": 90,
+    "ready_db": -6,
+    "return_target_f": 480,
+    "prompt_range_m": 5,
+    "prompt_closing_mps": 2,
+    "arrow_flash_f": 24,
+    "trail_f": 75,
+    "paint_y_m": 0.012,
+    "arrow_hex": "#FFD500",
+    "arrow_flash_hex": "#FFF6B0",
+    "arrow_len_k": 0.92,
+    "arrow_head_len_k": 0.19,
+    "arrow_head_w_k": 0.85,
+    "arrow_shaft_w_k": 0.42,
+    "pool_hex": "#9A35D6",
+    "pool_ring_w_m": 0.5,
+    "pool_segments": 64,
+    "slow_word_h_m": 1.8,
+    "slow_letter_w_m": 0.8,
+    "slow_gap_m": 0.25,
+    "slow_stroke_m": 0.22,
+    "slow_word_off_m": 1.05,
+    "stall_mps": 6,
+    "glint_f": 30,
+    "state_mode": "plain",
+    "spawn_f": 180,
+    "take_reach_m": 0.4,
+    "buoy_y_m": 0.8,
+    "buoy_r_m": 0.28,
+    "bob_m": 0.12,
+    "spot_beads": 14,
+    "tag_f": 90,
+    "shake_m": 0.2,
+    "shake_f": 14,
+    "tagline": "Grab a trick at the green spots. F uses it.",
+    "keep_prefix": "Rink",
+    "winter": {
+      "snow_hex": "#5E6E8C",
+      "snow_lift_m": 0.01,
+      "drifts": [
+        [
+          -32,
+          31,
+          3.5,
+          1.1
+        ],
+        [
+          -8,
+          33,
+          4.5,
+          1.3
+        ],
+        [
+          30,
+          30.5,
+          3,
+          0.9
+        ],
+        [
+          -47,
+          14,
+          3.5,
+          1.2
+        ],
+        [
+          -46,
+          -18,
+          3,
+          1.0
+        ],
+        [
+          8,
+          36,
+          3,
+          0.8
+        ],
+        [
+          -34,
+          -29.5,
+          2.5,
+          0.7
+        ],
+        [
+          34,
+          -29.5,
+          2.5,
+          0.8
+        ],
+        [
+          44,
+          34,
+          4,
+          1.4
+        ]
+      ],
+      "lamp_r_m": 0.7,
+      "lamp_lift_m": 0.3,
+      "lamp_hex": "#FFC766",
+      "shed_x_m": 50,
+      "shed_depth_m": 12,
+      "shed_half_w_m": 19,
+      "shed_h_m": 9,
+      "shed_hex": "#6E3F3A",
+      "window_m": [
+        2.0,
+        1.5
+      ],
+      "window_cols": 9,
+      "window_rows_m": [
+        1.6,
+        4.4,
+        6.8
+      ],
+      "window_hex": "#FFC45A",
+      "boat_at": [
+        14,
+        -39
+      ],
+      "hull_hex": "#A8322B",
+      "cabin_hex": "#D8D2C4"
+    }
+  },
+  "s4": {
+    "note": "Lane S4-core (scripts/s4_bots.gd). source core = the core decides the bots' meteors and dives (arm A, native patch 0005, data/harbour.rules.json); source pack = the pack fakes them (arm B, no C++).",
+    "source": "core",
+    "word_f": 55,
+    "lit_word": "STICK ON FIRE",
+    "dive_word": "DIVE!",
+    "block_word": "BLOCKED!",
+    "save_word": "STOPPED!",
+    "block_shake_m": 0.3,
+    "block_shake_f": 12
+  }
+}

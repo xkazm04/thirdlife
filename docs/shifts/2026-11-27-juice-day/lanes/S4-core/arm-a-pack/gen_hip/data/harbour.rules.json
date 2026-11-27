@@ -1,0 +1,10 @@
+{
+  "schema": "tl.rink.rules/1",
+  "title": "S4-core generality: the values Create's builder named for the sentence (job s4a-arsenal events 1082, 1095), written by hand because no package of the job may write this file",
+  "rules": {
+    "bot_ability_share": 0.7,
+    "bot_ability_skill": 0.8,
+    "bot_ability_team": 1,
+    "dive_shot_share": 0.3
+  }
+}

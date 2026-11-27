@@ -1,0 +1,401 @@
+extends RefCounted
+## The meteor slapshot's drawing (lane J1, by hand, 27 Nov). The hit itself is the core's: game.abilities holds one
+## `shotgun` entry (F arms it; the next shot leaves at magnitude x speed and knocks down every skater within 1 m of its
+## path, CARTRIDGE.md:476), and the shot's charge is the core's (shot.charge_frames_max). This layer reads the snapshot
+## and never touches the core: a burning blade while armed, a heat ring that grows with the wind-up, a fireball with a
+## fire trail while the shot flies, a blast at the release, a burst and a word on every skater it floors, a net that
+## bulges and glass that shakes when it scores or hits the boards, camera kicks. Numbers: data/tuning.json "meteor".
+
+const FIRE := Color(1.0, 0.45, 0.08)
+const HOT := Color(1.0, 0.85, 0.35)
+const WHITE_HOT := Color(1.0, 0.97, 0.85)
+const SMOKE := Color(0.22, 0.2, 0.2, 0.8)
+
+var ctx
+var view
+var h                        # scripts/harbour.gd (its HUD and its root)
+var t: Dictionary
+var root: Node3D
+var charge_max: int = 45
+var blade: Node3D            # follows the human's blade; the flame hangs on it
+var flame: Node3D
+var heat: Node3D             # the heat ring under the human while he winds up
+var ball: Node3D             # the fireball over the puck in flight
+var ball_trail: Node3D
+var drop_f: int = -100000    # the last frame of a faceoff (main.gd gates F for a second after it)
+var nets: Array = []         # {node, side, since}
+var panes: Array = []        # {node, rest, at (Vector2), since, amp}
+var flying: bool = false
+var fly_until: int = -1      # knockdowns up to here are the meteor's
+var shooter: int = -1
+var downs: Dictionary = {}
+var tags: Dictionary = {}    # tag id -> frames left
+var last_frame: int = -1
+var was_armed: bool = false
+var ready_now: bool = false
+var counts: Dictionary = {"uses": 0, "fired": 0, "floored": 0, "floored_rivals": 0, "floored_mates": 0, "keeper_floored": 0,
+	"goals": 0, "boards": 0, "downed_armed": 0, "full_charge": 0, "max_charge": 0.0}
+
+
+func setup(c, v, harbour, cart: Dictionary) -> void:
+	ctx = c
+	view = v
+	h = harbour
+	t = (ctx.read_json("tuning.json") as Dictionary)["meteor"]
+	var g: Dictionary = cart["game"]
+	charge_max = maxi(1, int((g.get("shot", {}) as Dictionary).get("charge_frames_max", 45)))
+	root = Node3D.new()
+	root.name = "Meteor"
+	ctx.root.add_child(root)
+	blade = Node3D.new()
+	root.add_child(blade)
+	flame = TLVfx.attach("nitro_flame", blade, {"color": FIRE, "direction": Vector3.UP, "scale": 1.0})
+	blade.visible = false
+	heat = _heat_ring()
+	ball = _fireball()
+	var rk: Dictionary = g["rink"]
+	var L: float = float(rk["length_m"])
+	var W: float = float(rk["width_m"])
+	var R: float = float(rk.get("corner_radius_m", 0.0))
+	var gw: float = float(rk.get("goal_width_m", 4.0))
+	var gh: float = float(rk.get("goal_height_m", 0.61))
+	for sd: float in [-1.0, 1.0]:
+		nets.append({"node": _net(sd, L * 0.5 - 4.0, gw, gh), "side": sd, "since": 1000})
+	_glass(L, W, R)
+
+
+## A ring of flat, glowing petals round the skater; scaled by the charge.
+func _heat_ring() -> Node3D:
+	var mk := TLMesh.new(71)
+	var n: int = 32
+	for i: int in n:
+		var a := Vector2.from_angle(TAU * i / n)
+		var b := Vector2.from_angle(TAU * (i + 1) / n)
+		var y: float = 0.03
+		mk.quad_up(Vector3(a.x * 0.8, y, a.y * 0.8), Vector3(a.x, y, a.y), Vector3(b.x, y, b.y), Vector3(b.x * 0.8, y, b.y * 0.8), "white", FIRE if i % 2 == 0 else HOT)
+	var mi: MeshInstance3D = mk.instance("MeteorHeat")
+	mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	root.add_child(mi)
+	mi.visible = false
+	return mi
+
+
+## A ball of fire: a white-hot core in an orange shell.
+func _fireball() -> Node3D:
+	var g := Node3D.new()
+	root.add_child(g)
+	var r: float = float(t["ball_r_m"])
+	g.add_child(TLBodies.make(&"sphere", r, "rubber", {"layer": 0, "mask": 0, "track": false, "color": FIRE}))
+	var core: Node3D = TLBodies.make(&"sphere", r * 0.6, "rubber", {"layer": 0, "mask": 0, "track": false, "color": WHITE_HOT})
+	core.position = Vector3(0, 0.0, 0)
+	g.add_child(core)
+	g.visible = false
+	return g
+
+
+## A net bag just inside the goal's own frame, its mouth on the goal line; scaled along its depth when it bulges.
+func _net(sd: float, gl: float, gw: float, gh: float) -> Node3D:
+	var mk := TLMesh.new(72)
+	var d: float = float(t["net_depth_m"])
+	var hw: float = gw * 0.5 - 0.08
+	var top: float = gh - 0.05
+	var col := Color(0.92, 0.94, 0.98)
+	var w: float = 0.035
+	for i: int in 7:                       # the back: uprights and rows
+		var z: float = lerpf(-hw, hw, i / 6.0)
+		mk.bar(Vector3(d, 0.0, z), Vector3(d, top, z), w, w, "white", col)
+	for j: int in 4:
+		var y: float = lerpf(0.04, top, j / 3.0)
+		mk.bar(Vector3(d, y, -hw), Vector3(d, y, hw), w, w, "white", col)
+		for zs: float in [-hw, hw]:          # the sides
+			mk.bar(Vector3(0.05, y, zs), Vector3(d, y, zs), w, w, "white", col)
+	for i: int in 5:                       # the roof
+		var z: float = lerpf(-hw, hw, i / 4.0)
+		mk.bar(Vector3(0.05, top, z), Vector3(d, top, z), w, w, "white", col)
+	var mi: MeshInstance3D = mk.instance("MeteorNet")
+	mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	var n := Node3D.new()
+	n.position = Vector3(sd * gl, 0.0, 0.0)
+	if sd < 0.0:
+		n.rotation.y = PI
+	n.add_child(mi)
+	root.add_child(n)
+	return n
+
+
+## Glass panes on top of the boards, all the way round the straight runs (the hall's own glass is hidden by the harbour).
+func _glass(L: float, W: float, R: float) -> void:
+	var pw: float = float(t["pane_w_m"])
+	var ph: float = float(t["pane_h_m"])
+	var y0: float = 1.2 + ph * 0.5
+	var mat: Material = TLStyle.material(&"glass")
+	var runs: Array = [
+		[Vector2(-(L * 0.5 - R), W * 0.5), Vector2(L * 0.5 - R, W * 0.5)],
+		[Vector2(-(L * 0.5 - R), -W * 0.5), Vector2(L * 0.5 - R, -W * 0.5)],
+		[Vector2(L * 0.5, -(W * 0.5 - R)), Vector2(L * 0.5, W * 0.5 - R)],
+		[Vector2(-L * 0.5, -(W * 0.5 - R)), Vector2(-L * 0.5, W * 0.5 - R)]]
+	for run: Array in runs:
+		var a: Vector2 = run[0]
+		var b: Vector2 = run[1]
+		var n: int = maxi(1, int(floor(a.distance_to(b) / pw)))
+		var dir: Vector2 = (b - a).normalized()
+		for i: int in n:
+			var c: Vector2 = a + dir * (a.distance_to(b) * (i + 0.5) / n)
+			var mk := TLMesh.new(73 + i)
+			mk.box(Vector3(a.distance_to(b) / n - 0.06, ph, 0.05), "glass", Color(0.8, 0.92, 1.0))
+			var mi: MeshInstance3D = mk.instance("MeteorGlass")
+			mi.material_override = mat
+			mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+			mi.position = Vector3(c.x, y0, c.y)
+			mi.rotation.y = -atan2(dir.y, dir.x)
+			root.add_child(mi)
+			panes.append({"node": mi, "rest": mi.transform, "at": c, "since": 1000, "amp": 0.0, "out": Vector3(dir.y, 0.0, -dir.x)})
+
+
+func tick(snap: Dictionary) -> void:
+	var f: int = int(snap["Frame"])
+	if f < last_frame:
+		_reset()
+	var fresh: bool = f != last_frame
+	last_frame = f
+	var sk: Array = snap["Skaters"]
+	var me: int = int(snap["HumanIndex"])
+	var s: Dictionary = sk[me]
+	var pk: Dictionary = snap["Puck"]
+	var armed: bool = String(s.get("AbilityArmed", "")) == "shotgun"
+	var charge: float = clampf(float(maxi(0, int(s.get("ChargeFrames", 0)))) / float(charge_max), 0.0, 1.0) if armed else 0.0
+	if h.back.cannon != null:
+		h.back.cannon.visible = false          # the old cannon beads: the fire says it now
+	# the burning blade and the heat ring
+	var bp: Vector2 = s.get("BladePos", s["Pos"])
+	blade.visible = armed
+	blade.position = Vector3(bp.x, 0.15, bp.y)
+	blade.scale = Vector3.ONE * (1.0 + float(t["flame_grow"]) * charge)
+	var pawn: Node3D = view.pawns[me]
+	heat.visible = armed and charge > 0.0
+	heat.position = Vector3(pawn.position.x, 0.0, pawn.position.z)
+	var hr: float = float(t["heat_r0_m"]) + float(t["heat_r1_m"]) * charge
+	heat.scale = Vector3(hr, 1.0, hr) * (1.0 + (0.08 * sin(f * 0.9) if charge >= 1.0 else 0.0))
+	heat.rotation.y = f * 0.05
+	var armed_was: bool = was_armed
+	if fresh:
+		if armed and not was_armed:
+			TLVfx.burst("sparks", blade.global_position, root, {"color": FIRE, "scale": 1.2})
+			TLAudio.play("nitro", blade.global_position, -4.0)
+		was_armed = armed
+		counts["uses"] = int(s.get("AbilitiesUsed", 0))
+		counts["max_charge"] = maxf(float(counts["max_charge"]), charge)
+		if armed and f % 5 == 0:
+			TLVfx.burst("sparks", blade.global_position, root, {"color": HOT if charge < 0.95 else WHITE_HOT, "scale": 0.5 + charge})
+	# the shot in flight
+	var shot: bool = int(pk.get("ShotgunFrames", 0)) > 0
+	var pp: Vector2 = pk["Pos"]
+	var at := Vector3(pp.x, 0.15 + float(pk.get("Z", 0.0)), pp.y)
+	if view.puck != null and view.puck.visible:
+		at = view.puck.global_position + Vector3(0, 0.05, 0)
+	if fresh and shot and not flying:
+		_release(sk, int(pk.get("ShotgunBy", me)), at, f)
+	if shot:
+		fly_until = f + int(t["flatten_tail_f"])
+	ball.visible = shot
+	if shot:
+		ball.position = at + Vector3(0, float(t["ball_r_m"]) * 0.9, 0)   # the whole ball above the ice, the puck under it
+		ball.scale = Vector3.ONE * (1.0 + 0.15 * sin(f * 1.3))
+		if fresh:
+			var v: Vector2 = pk.get("Vel", Vector2.ZERO)
+			var back := Vector3(-v.x, 0.0, -v.y).normalized() if v.length() > 0.1 else Vector3.UP
+			TLVfx.burst("sparks", at, root, {"color": FIRE, "direction": back, "scale": 1.8})
+			TLVfx.burst("nitro_flame", at, root, {"color": HOT, "direction": back, "scale": 1.6})
+			if f % 2 == 0:
+				TLVfx.burst("smoke", at, root, {"color": SMOKE, "scale": 0.9})
+	if fresh and flying and not shot:
+		if ball_trail != null:
+			ball_trail.queue_free()
+			ball_trail = null
+		TLVfx.burst("smoke", at, root, {"color": SMOKE, "scale": 1.4})
+	if fresh:
+		flying = shot
+		_floored(sk, me, f, armed_was)
+		_events(snap, f)
+	_animate(f)
+	_hint(snap, s, armed, charge, f)
+	if fresh:
+		for id: StringName in tags.keys():
+			tags[id] = int(tags[id]) - 1
+			if int(tags[id]) <= 0:
+				h.hud.remove_widget(id)
+				tags.erase(id)
+
+
+## The release: a blast at the blade, a boom, a kick.
+func _release(sk: Array, by: int, at: Vector3, f: int) -> void:
+	shooter = by
+	counts["fired"] += 1
+	if float(counts["max_charge"]) >= 0.99:
+		counts["full_charge"] += 1
+	counts["max_charge"] = 0.0
+	var from: Vector3 = (view.pawns[by] as Node3D).position + Vector3(0, 0.4, 0)
+	TLVfx.burst("goal_flash", from, root, {"color": WHITE_HOT, "scale": 1.6})
+	TLVfx.burst("sparks", from, root, {"color": FIRE, "scale": 2.2})
+	TLVfx.burst("smoke", from, root, {"color": SMOKE, "scale": 1.6})
+	TLAudio.play("break", from)
+	TLAudio.play("nitro", from)
+	ctx.cameras.shake(float(t["release_shake_m"]), int(t["release_shake_f"]))
+	if ball_trail != null:
+		ball_trail.queue_free()
+	ball_trail = TLVfx.trail(ball, {"color": FIRE, "width": float(t["trail_w_m"]), "frames": int(t["trail_f"])})
+	_tag(&"meteor_go", view.pawns[by], String(t["release_word"]), HOT, int(t["word_f"]))
+	h._mark("meteor_fired", f)
+
+
+## Every skater that goes down while the meteor flies (or a few frames after) was floored by it: the core's shotgun
+## path knocks them down (JamSim.cpp StepShotgun).
+func _floored(sk: Array, me: int, f: int, armed_was: bool) -> void:
+	for i: int in sk.size():
+		var down: bool = bool(sk[i].get("IsDown", false))
+		if i == me and down and not bool(downs.get(i, false)) and armed_was:
+			counts["downed_armed"] += 1          # checked off his feet with the stick on fire: the meteor's price
+		if down and not bool(downs.get(i, false)) and f <= fly_until and i != shooter and int(sk[i].get("TlDiveFrames", 0)) == 0:   # lane S4-core: a diver threw himself down (s4_bots.gd says DIVE!)
+			counts["floored"] += 1
+			var team_me: int = int(sk[me]["Team"])
+			if int(sk[i]["Team"]) == team_me:
+				counts["floored_mates"] += 1
+			else:
+				counts["floored_rivals"] += 1
+			if String(sk[i].get("Role", "")) == "back":
+				counts["keeper_floored"] += 1
+			var pn: Node3D = view.pawns[i]
+			var where: Vector3 = pn.position + Vector3(0, 0.8, 0)
+			TLVfx.burst("sparks", where, root, {"color": FIRE, "scale": 2.0})
+			TLVfx.burst("debris", where, root, {"color": HOT, "scale": 1.0})
+			TLVfx.burst("smoke", where, root, {"color": SMOKE, "scale": 1.2})
+			TLAudio.play("hit_metal", where)
+			ctx.cameras.shake(float(t["floor_shake_m"]), int(t["floor_shake_f"]))
+			_tag(StringName("meteor_floor_%d" % i), pn, String(t["floor_word"]), FIRE, int(t["word_f"]))
+			h._mark("meteor_floored", f)
+		downs[i] = down
+
+
+## The core's own events while the meteor is live: a goal bulges that net and shakes the glass at that end; the boards
+## shake the glass where it struck.
+func _events(snap: Dictionary, f: int) -> void:
+	if f > fly_until:
+		return
+	for e: Dictionary in snap.get("Events", []):
+		var nm: String = String(e.get("Name", ""))
+		var w: Variant = e.get("Where", Vector2.ZERO)
+		var where: Vector2 = w if w is Vector2 else Vector2.ZERO
+		if nm == "goal":
+			counts["goals"] += 1
+			var sd: float = 1.0 if where.x > 0.0 else -1.0
+			for n: Dictionary in nets:
+				if float(n["side"]) == sd:
+					n["since"] = 0
+			var gx: float = (nets[1 if sd > 0.0 else 0]["node"] as Node3D).position.x
+			_shake_glass(Vector2(gx, 0.0), float(t["goal_glass_r_m"]), float(t["glass_amp_m"]) * 1.6)
+			var mouth := Vector3(gx, 0.5, 0.0)
+			TLVfx.burst("goal_flash", mouth, root, {"color": HOT, "scale": 2.4})
+			TLVfx.burst("sparks", mouth, root, {"color": FIRE, "scale": 3.0})
+			TLVfx.burst("confetti", mouth + Vector3(0, 1.0, 0), root, {"color": FIRE, "scale": 1.4})
+			TLAudio.play("horn", mouth)
+			ctx.cameras.shake(float(t["goal_shake_m"]), int(t["goal_shake_f"]))
+			h._mark("meteor_goal", f)
+		elif nm == "board":
+			counts["boards"] += 1
+			_shake_glass(where, float(t["board_glass_r_m"]), float(t["glass_amp_m"]))
+			TLVfx.burst("sparks", Vector3(where.x, 1.0, where.y), root, {"color": FIRE, "scale": 1.6})
+			TLAudio.play("hit_glass", Vector3(where.x, 1.5, where.y))
+			ctx.cameras.shake(float(t["floor_shake_m"]), int(t["floor_shake_f"]))
+			h._mark("meteor_board", f)
+
+
+func _shake_glass(at: Vector2, r: float, amp: float) -> void:
+	for p: Dictionary in panes:
+		var d: float = (p["at"] as Vector2).distance_to(at)
+		if d < r:
+			p["since"] = 0
+			p["amp"] = amp * (1.0 - d / r * 0.6)
+
+
+## The nets spring out and back; the panes rattle and settle (frame-counted, no clock).
+func _animate(f: int) -> void:
+	for n: Dictionary in nets:
+		var k: int = int(n["since"])
+		var node: Node3D = n["node"]
+		if k < 90:
+			var b: float = float(t["net_bulge"]) * exp(-float(k) / 16.0) * absf(cos(float(k) * 0.22))
+			node.scale = Vector3(1.0 + b, 1.0 - b * 0.12, 1.0 + b * 0.25)
+			n["since"] = k + 1
+		else:
+			node.scale = Vector3.ONE
+	for p: Dictionary in panes:
+		var k: int = int(p["since"])
+		var mi: Node3D = p["node"]
+		if k < 60:
+			var a: float = float(p["amp"]) * exp(-float(k) / 12.0)
+			var xf: Transform3D = p["rest"]
+			xf.origin += (p["out"] as Vector3) * a * sin(float(k) * 1.9) + Vector3(0, a * 0.3 * sin(float(k) * 2.7), 0)
+			mi.transform = xf.rotated_local(Vector3.FORWARD, a * 0.25 * sin(float(k) * 2.3))
+			p["since"] = k + 1
+		elif k == 60:
+			mi.transform = p["rest"]
+			p["since"] = 61
+
+
+## The line in the base's hint slot, over the harbour's (the harbour wrote it this frame).
+func _hint(snap: Dictionary, s: Dictionary, armed: bool, charge: float, f: int) -> void:
+	var wait: int = int(s.get("AbilityReadyFrame", 0)) - f
+	if int(snap.get("Phase", 0)) != 0:
+		drop_f = f
+	var locked: bool = int(snap.get("Phase", 0)) != 0 or f - drop_f < 60
+	ready_now = not armed and not flying and wait <= 0 and not locked
+	var text: String = ""
+	if armed:
+		text = String(t["armed_word"]) if charge <= 0.0 else (String(t["charge_word"]) % roundi(charge * 100.0))
+	elif flying:
+		text = String(t["release_word"])
+	elif wait > 0:
+		text = String(t["back_word"]) % ceili(wait / 60.0)
+	elif f < int(t["hint_f"]):
+		text = String(t["opening_hint"])
+	elif locked:
+		text = String(t["locked_word"])
+	else:
+		text = String(t["ready_word"])
+	ctx.root.set_meta(&"rink_hint", text)
+
+
+func _tag(id: StringName, node: Node3D, text: String, col: Color, frames: int) -> void:
+	if tags.has(id):
+		h.hud.remove_widget(id)
+	h.hud.add_tag(id, node, text, Vector3(0, 2.9, 0))
+	h.hud.set_color(id, col)
+	tags[id] = frames
+
+
+func _reset() -> void:
+	flying = false
+	drop_f = -100000
+	fly_until = -1
+	shooter = -1
+	downs = {}
+	was_armed = false
+	for id: StringName in tags.keys():
+		h.hud.remove_widget(id)
+	tags = {}
+	if ball_trail != null:
+		ball_trail.queue_free()
+		ball_trail = null
+	for n: Dictionary in nets:
+		n["since"] = 1000
+		(n["node"] as Node3D).scale = Vector3.ONE
+	for p: Dictionary in panes:
+		p["since"] = 61
+		(p["node"] as Node3D).transform = p["rest"]
+
+
+func report() -> Dictionary:   # for the meteor bot
+	var out: Dictionary = counts.duplicate()
+	out["armed_now"] = was_armed
+	out["ready_now"] = ready_now
+	return out

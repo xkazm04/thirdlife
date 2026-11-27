@@ -1,0 +1,9 @@
+extends "bot_s4.gd"
+## Lane S4-core: bot_s4 plus every frame the harbour marked (meteor_* and s4_*): where to film.
+
+
+func _bot_result() -> Dictionary:
+	var r: Dictionary = super._bot_result()
+	var rep: Dictionary = ctx.root.get_meta(&"harbour", {})
+	r["metrics"]["all_marks"] = rep.get("marks", {})
+	return r

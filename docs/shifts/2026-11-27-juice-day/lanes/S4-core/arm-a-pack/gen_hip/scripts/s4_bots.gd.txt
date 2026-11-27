@@ -1,0 +1,410 @@
+extends RefCounted
+## Lane S4-core (27 Nov, spike): the bots' meteors and dives, drawn and counted. Presentation and counting only; the same
+## drawing in both arms, so the owner compares what the bots DO, not two looks.
+##   source "core" (arm A, native patch 0005): the core says it. A bot holds the cartridge's shotgun (AbilityArmed), winds
+##     it up (TlWindupLeft, ChargeFrames) and fires a real meteor (the puck's ShotgunBy is the bot: meteor.gd draws its
+##     flight and the bodies it fells); a bot dives (the core's "dive" event: the core lays it out, the figure falls in
+##     KnockDir) and its body stops the puck (the core's "dive_block" event: a meteor stops being one on him).
+##   source "pack" (arm B, no C++): the pack fakes what the core cannot. A bot is "lit" while the cartridge's meteor-heat
+##     effect runs on it (the core's EffectEvents: a pickup it took; its shots leave at the effect's speed), its shot is
+##     drawn as a meteor (fireball, trail) but fells nobody; a dive is the pack's decision on the same read as A's, drawn by
+##     laying the figure out in a copy of the snapshot (dress()); the core never moves the body, so a dive stops a puck only
+##     when the standing body was in its way anyway, and never a meteor (the core's shotgun goes through the bodies it fells).
+## Numbers: data/tuning.json "s4".
+
+const FIRE := Color(1.0, 0.45, 0.08)
+const HOT := Color(1.0, 0.85, 0.35)
+const WHITE_HOT := Color(1.0, 0.97, 0.85)
+const ICE := Color(0.9, 0.96, 1.0)
+const DIVE_BLUE := Color(0.15, 0.5, 1.0)     # the words over a diver: readable on white ice
+const SMOKE := Color(0.22, 0.2, 0.2, 0.8)
+
+var ctx
+var view
+var h
+var t: Dictionary
+var root: Node3D
+var source: String = "core"
+var charge_max: int = 45
+var last_frame: int = -1
+var me: int = 0
+var my_team: int = 0
+var flames: Dictionary = {}      # skater -> Node3D on its blade
+var rings: Dictionary = {}       # skater -> heat ring
+var armed: Dictionary = {}       # skater -> armed last frame
+var heat: Dictionary = {}        # source pack: skater -> frames of meteor-heat left (from EffectEvents)
+var fake: Dictionary = {}        # source pack: skater -> {left, dir}
+var decided: Dictionary = {}     # source pack: skater -> shot serial decided on
+var b_ball: Node3D               # source pack: the fireball over a lit bot's shot
+var b_trail: Node3D
+var b_shot_by: int = -1
+var b_shot_left: int = 0
+var tags: Dictionary = {}
+var counts: Dictionary = {"frames": 0, "bot_lit": [0, 0], "bot_meteors": [0, 0], "bot_meteor_goals": [0, 0], "bot_meteor_floored": 0,
+	"dives": [0, 0], "dive_blocks": [0, 0], "dive_blocks_meteor": [0, 0], "human_meteors": 0,
+	"windup_frames": 0, "bot_uses": {}, "log": []}
+
+
+func setup(c, v, harbour, cart: Dictionary) -> void:
+	ctx = c
+	view = v
+	h = harbour
+	t = (ctx.read_json("tuning.json") as Dictionary).get("s4", {})
+	source = String(t.get("source", "core"))
+	charge_max = maxi(1, int(((cart["game"] as Dictionary).get("shot", {}) as Dictionary).get("charge_frames_max", 45)))
+	root = Node3D.new()
+	root.name = "S4Bots"
+	ctx.root.add_child(root)
+	if source == "pack":
+		b_ball = Node3D.new()
+		root.add_child(b_ball)
+		var r: float = 0.42
+		b_ball.add_child(TLBodies.make(&"sphere", r, "rubber", {"layer": 0, "mask": 0, "track": false, "color": FIRE}))
+		b_ball.add_child(TLBodies.make(&"sphere", r * 0.6, "rubber", {"layer": 0, "mask": 0, "track": false, "color": WHITE_HOT}))
+		b_ball.visible = false
+
+
+## Team counts are [the human's mates, his rivals].
+func _side(team: int) -> int:
+	return 0 if team == my_team else 1
+
+
+## Source pack only: a copy of the snapshot for the figures, with each faked diver laid out (KnockFrames / KnockDir, as the
+## core lays out a felled skater: skater_pawn.gd reads both). The sim's own snapshot is never changed.
+func dress(snap: Dictionary) -> Dictionary:
+	if source != "pack" or fake.is_empty():
+		return snap
+	var out: Dictionary = snap.duplicate()
+	var sk: Array = (snap["Skaters"] as Array).duplicate()
+	for i: int in fake.keys():
+		if i < 0 or i >= sk.size():
+			continue
+		var s: Dictionary = (sk[i] as Dictionary).duplicate()
+		if int(s.get("KnockFrames", 0)) <= 0:
+			s["KnockFrames"] = int(fake[i]["left"])
+			s["KnockDir"] = fake[i]["dir"]
+			s["IsDown"] = true
+			s["CanAct"] = false
+		sk[i] = s
+	out["Skaters"] = sk
+	return out
+
+
+func tick(snap: Dictionary) -> void:
+	var f: int = int(snap["Frame"])
+	if f < last_frame:
+		_reset()
+	var fresh: bool = f != last_frame
+	last_frame = f
+	var sk: Array = snap["Skaters"]
+	me = int(snap["HumanIndex"])
+	my_team = int(sk[me]["Team"])
+	var pk: Dictionary = snap["Puck"]
+	if fresh:
+		counts["frames"] += 1
+		if source == "pack":
+			_pack_heat(snap)
+	for i: int in sk.size():
+		if i == me:
+			continue
+		var s: Dictionary = sk[i]
+		var lit: bool = _lit(s, i)
+		var winding: bool = lit and (int(s.get("TlWindupLeft", 0)) > 0 or int(s.get("ChargeFrames", 0)) > 0)
+		_stick(i, s, lit, winding, f, fresh)
+		if fresh and lit and not bool(armed.get(i, false)):
+			counts["bot_lit"][_side(int(s["Team"]))] += 1
+			(counts["log"] as Array).append([f, "lit", i, _side(int(s["Team"]))])
+			_tag(StringName("s4_lit_%d" % i), view.pawns[i], String(t.get("lit_word", "STICK ON FIRE")), FIRE, int(t.get("word_f", 55)))
+			TLAudio.play("nitro", (view.pawns[i] as Node3D).position, -4.0)
+		if fresh and not lit and bool(armed.get(i, false)):
+			var lid := StringName("s4_lit_%d" % i)
+			if tags.has(lid):
+				h.hud.remove_widget(lid)          # fired (meteor.gd says METEOR! over him) or put out
+				tags.erase(lid)
+		if fresh and winding:
+			counts["windup_frames"] += 1
+		armed[i] = lit
+	if fresh:
+		_events(snap, sk, pk, f)
+		if source == "pack":
+			_pack_dives(snap, sk, pk, f)
+			_pack_flight(sk, pk, f)
+		for id: StringName in tags.keys():
+			tags[id] = int(tags[id]) - 1
+			if int(tags[id]) <= 0:
+				h.hud.remove_widget(id)
+				tags.erase(id)
+
+
+func _lit(s: Dictionary, i: int) -> bool:
+	if source == "core":
+		return String(s.get("AbilityArmed", "")) == "shotgun"
+	return int(heat.get(i, 0)) > 0
+
+
+## The burning blade on a lit bot, and the heat ring while it winds up (the human's own are meteor.gd's).
+func _stick(i: int, s: Dictionary, lit: bool, winding: bool, f: int, fresh: bool) -> void:
+	if lit and not flames.has(i):
+		var n := Node3D.new()
+		root.add_child(n)
+		TLVfx.attach("nitro_flame", n, {"color": FIRE, "direction": Vector3.UP, "scale": 1.0})
+		flames[i] = n
+		rings[i] = _ring()
+	if not flames.has(i):
+		return
+	var n: Node3D = flames[i]
+	var ring: Node3D = rings[i]
+	n.visible = lit
+	var bp: Vector2 = s.get("BladePos", s["Pos"])
+	n.position = Vector3(bp.x, 0.15, bp.y)
+	var charge: float = clampf(float(maxi(0, int(s.get("ChargeFrames", 0)))) / float(charge_max), 0.0, 1.0) if winding else 0.0
+	n.scale = Vector3.ONE * (1.0 + 1.8 * charge)
+	ring.visible = winding
+	var pawn: Node3D = view.pawns[i]
+	ring.position = Vector3(pawn.position.x, 0.0, pawn.position.z)
+	var hr: float = 1.0 + 2.0 * charge
+	ring.scale = Vector3(hr, 1.0, hr)
+	ring.rotation.y = f * 0.05
+	if fresh and lit and f % 5 == 0:
+		TLVfx.burst("sparks", n.global_position, root, {"color": HOT if charge < 0.95 else WHITE_HOT, "scale": 0.5 + charge})
+
+
+func _ring() -> Node3D:
+	var mk := TLMesh.new(81)
+	var n: int = 24
+	for k: int in n:
+		var a := Vector2.from_angle(TAU * k / n)
+		var b := Vector2.from_angle(TAU * (k + 1) / n)
+		mk.quad_up(Vector3(a.x * 0.8, 0.03, a.y * 0.8), Vector3(a.x, 0.03, a.y), Vector3(b.x, 0.03, b.y), Vector3(b.x * 0.8, 0.03, b.y * 0.8), "white", FIRE if k % 2 == 0 else HOT)
+	var mi: MeshInstance3D = mk.instance("S4Heat")
+	mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	root.add_child(mi)
+	mi.visible = false
+	return mi
+
+
+## The core's events of the frame: meteors fired (both sources: the core's shotgun releases; source pack's lit shots are
+## counted in _pack_flight), the core's dives and blocks (source core), goals off a bot's meteor.
+func _events(snap: Dictionary, sk: Array, pk: Dictionary, f: int) -> void:
+	var shotgun_by: int = int(pk.get("ShotgunBy", -1)) if int(pk.get("ShotgunFrames", 0)) > 0 else -1
+	for e: Dictionary in snap.get("Events", []):
+		var nm: String = String(e.get("Name", ""))
+		var who: int = int(e.get("Who", -1))
+		var kind: String = String(e.get("Kind", ""))
+		if nm == "ability" and float(e.get("Strength", 0.0)) > 0.5 and who >= 0 and who < sk.size() and who != me:
+			var key: String = "%s_%s" % [kind, "rivals" if _side(int(sk[who]["Team"])) == 1 else "mates"]
+			counts["bot_uses"][key] = int((counts["bot_uses"] as Dictionary).get(key, 0)) + 1   # the core's own F of a bot (arm A): any kind
+		if nm == "shot" and who >= 0 and who < sk.size():
+			if who == me and shotgun_by == me:
+				counts["human_meteors"] += 1
+			elif who != me and shotgun_by == who and source == "core":
+				counts["bot_meteors"][_side(int(sk[who]["Team"]))] += 1
+				last_meteor_by = who
+				last_meteor_f = f
+		elif nm == "dive" and source == "core" and who >= 0 and who < sk.size():
+			_dive_fx(who, sk[who], f)
+		elif nm == "dive_block" and source == "core" and who >= 0 and who < sk.size():
+			_block_fx(who, sk[who], e.get("Where", Vector2.ZERO), kind == "shotgun", f)
+		elif nm == "goal" and who >= 0 and who < sk.size() and who != me and _was_bot_meteor(who, pk):
+			counts["bot_meteor_goals"][_side(int(sk[who]["Team"]))] += 1
+		elif nm == "knockdown" and kind == "shotgun" and shotgun_by >= 0 and shotgun_by != me:
+			counts["bot_meteor_floored"] += 1
+
+
+var last_meteor_by: int = -1
+var last_meteor_f: int = -1000
+func _was_bot_meteor(who: int, pk: Dictionary) -> bool:
+	if int(pk.get("ShotgunFrames", 0)) > 0 and int(pk.get("ShotgunBy", -1)) == who:
+		return true
+	return who == last_meteor_by and last_frame - last_meteor_f < 90
+
+
+func _dive_fx(i: int, s: Dictionary, f: int) -> void:
+	counts["dives"][_side(int(s["Team"]))] += 1
+	(counts["log"] as Array).append([f, "dive", i, _side(int(s["Team"]))])
+	var pn: Node3D = view.pawns[i]
+	var at: Vector3 = pn.position + Vector3(0, 0.3, 0)
+	TLVfx.burst("ice_spray", at, root, {"color": ICE, "scale": 2.0})
+	TLVfx.burst("ice_spray", at + Vector3(0, 0.2, 0), root, {"color": ICE, "scale": 1.4})
+	TLAudio.play("hit_glass", at, -6.0)
+	_tag(StringName("s4_dive_%d" % i), pn, String(t.get("dive_word", "DIVE!")), DIVE_BLUE, int(t.get("word_f", 55)))
+	h._mark("s4_dive", f)
+
+
+func _block_fx(i: int, s: Dictionary, where: Variant, meteor: bool, f: int) -> void:
+	counts["dive_blocks"][_side(int(s["Team"]))] += 1
+	(counts["log"] as Array).append([f, "block_meteor" if meteor else "block", i, _side(int(s["Team"]))])
+	if meteor:
+		counts["dive_blocks_meteor"][_side(int(s["Team"]))] += 1   # rivals' blocks stop the hand's meteors, mates' a rival bot's
+	var w: Vector2 = where if where is Vector2 else Vector2.ZERO
+	var at := Vector3(w.x, 0.4, w.y)
+	TLVfx.burst("goal_flash", at, root, {"color": WHITE_HOT if meteor else ICE, "scale": 1.8 if meteor else 1.0})
+	TLVfx.burst("sparks", at, root, {"color": FIRE if meteor else ICE, "scale": 2.4 if meteor else 1.2})
+	TLVfx.burst("smoke", at, root, {"color": SMOKE, "scale": 1.6 if meteor else 0.6})
+	TLAudio.play("hit_metal", at)
+	ctx.cameras.shake(float(t.get("block_shake_m", 0.3)) if meteor else 0.12, int(t.get("block_shake_f", 12)))
+	var did := StringName("s4_dive_%d" % i)
+	if tags.has(did):
+		h.hud.remove_widget(did)                  # the dive's word gives way to what it did
+		tags.erase(did)
+	_tag(StringName("s4_block_%d" % i), view.pawns[i], String(t.get("block_word", "BLOCKED!")) if meteor else String(t.get("save_word", "STOPPED!")), FIRE if meteor else DIVE_BLUE, int(t.get("word_f", 55)))
+	if meteor:
+		TLVfx.burst("smoke", at + Vector3(0, 0.3, 0), root, {"color": SMOKE, "scale": 2.2})   # the meteor put out
+	h._mark("s4_block_meteor" if meteor else "s4_block", f)
+
+
+## Source pack: who is lit (the meteor-heat effect, from the core's effect events).
+func _pack_heat(snap: Dictionary) -> void:
+	var id: String = String(t.get("heat_effect", "meteor-heat"))
+	for i: int in heat.keys():
+		heat[i] = int(heat[i]) - 1
+		if int(heat[i]) <= 0:
+			heat.erase(i)
+	for e: Dictionary in snap.get("EffectEvents", []):
+		var nm: String = String(e.get("Name", ""))
+		var who: int = int(e.get("Who", -1))
+		if not String(e.get("Kind", "")).begins_with(id) or who < 0:
+			continue
+		if nm == "effect_start":
+			heat[who] = int(t.get("heat_frames", 300))
+		elif nm == "effect_end":
+			heat.erase(who)
+
+
+## Source pack: a lit bot's shot is drawn as a meteor (a release blast, a fireball and a fire trail while that puck flies
+## fast and nobody else touched it). The core gives it the effect's shot speed and nothing else: it fells nobody.
+func _pack_flight(sk: Array, pk: Dictionary, f: int) -> void:
+	for e: Dictionary in _frame_events:
+		if String(e.get("Name", "")) != "shot":
+			continue
+		var who: int = int(e.get("Who", -1))
+		if who < 0 or who == me or who >= sk.size() or int(heat.get(who, 0)) <= 0:
+			continue
+		counts["bot_meteors"][_side(int(sk[who]["Team"]))] += 1
+		last_meteor_by = who
+		last_meteor_f = f
+		b_shot_by = who
+		b_shot_left = 90
+		heat.erase(who)                      # one meteor a heat (the drawing's rule: the effect may run on)
+		var from: Vector3 = (view.pawns[who] as Node3D).position + Vector3(0, 0.4, 0)
+		TLVfx.burst("goal_flash", from, root, {"color": WHITE_HOT, "scale": 1.6})
+		TLVfx.burst("sparks", from, root, {"color": FIRE, "scale": 2.2})
+		TLAudio.play("break", from)
+		TLAudio.play("nitro", from)
+		ctx.cameras.shake(0.25, 10)
+		_tag(StringName("s4_go_%d" % who), view.pawns[who], "METEOR!", HOT, int(t.get("word_f", 55)))
+		if b_trail != null:
+			b_trail.queue_free()
+		b_trail = TLVfx.trail(b_ball, {"color": FIRE, "width": 0.55, "frames": 26})
+		h._mark("s4_bot_meteor", f)
+	var v: Vector2 = pk.get("Vel", Vector2.ZERO)
+	var flying: bool = b_shot_left > 0 and int(pk.get("LastTouch", -1)) == b_shot_by and v.length() > 10.0
+	if b_shot_left > 0:
+		b_shot_left -= 1
+	b_ball.visible = flying
+	if flying:
+		var pp: Vector2 = pk["Pos"]
+		var at := Vector3(pp.x, 0.15 + float(pk.get("Z", 0.0)), pp.y)
+		if view.puck != null and view.puck.visible:
+			at = view.puck.global_position + Vector3(0, 0.05, 0)
+		b_ball.position = at + Vector3(0, 0.38, 0)
+		var back := Vector3(-v.x, 0.0, -v.y).normalized()
+		TLVfx.burst("sparks", at, root, {"color": FIRE, "direction": back, "scale": 1.8})
+		TLVfx.burst("nitro_flame", at, root, {"color": HOT, "direction": back, "scale": 1.6})
+	elif b_shot_left > 0 or b_shot_by >= 0:
+		b_shot_left = 0
+		b_shot_by = -1
+		if b_trail != null:
+			b_trail.queue_free()
+			b_trail = null
+
+
+var _frame_events: Array = []
+## main.gd hands the frame's core events over before tick (the same list tick reads from snap).
+func _pack_dives(snap: Dictionary, sk: Array, pk: Dictionary, f: int) -> void:
+	_frame_events = snap.get("Events", [])
+	for i: int in fake.keys():
+		fake[i]["left"] = int(fake[i]["left"]) - 1
+		if int(fake[i]["left"]) <= 0:
+			fake.erase(i)
+	# a block while a faked dive lies: the core's own shot_blocked (a body or a stick stopped a shot on goal) near the diver
+	for e: Dictionary in _frame_events:
+		if String(e.get("Name", "")) != "shot_blocked" or String(e.get("Kind", "")) != "skater":
+			continue
+		var w: Vector2 = e.get("Where", Vector2.ZERO)
+		for i: int in fake.keys():
+			if (sk[i]["Pos"] as Vector2).distance_to(w) < 1.6:
+				_block_fx(i, sk[i], w, false, f)
+				break
+	var share_m: float = float(t.get("dive_share", 0.0))
+	var share_s: float = float(t.get("dive_shot_share", 0.0))
+	if share_m <= 0.0 and share_s <= 0.0:
+		return
+	var sh: int = int(pk.get("LastTouch", -1))
+	if sh < 0 or sh >= sk.size() or int(snap.get("Carrier", -1)) >= 0 or int(pk.get("PassFrames", 0)) > 0 or float(pk.get("Z", 0.0)) >= 0.45:
+		return
+	var meteor: bool = int(pk.get("ShotgunFrames", 0)) > 0 or (sh == b_shot_by and b_shot_left > 0)
+	var share: float = share_m if meteor else share_s
+	var vel: Vector2 = pk["Vel"]
+	var spd: float = vel.length()
+	if share <= 0.0 or spd < 12.0:
+		return
+	var pp: Vector2 = pk["Pos"]
+	var gx: float = float(t.get("goal_x", 26.0)) * (1.0 if int(sk[sh]["Team"]) == 0 else -1.0)
+	if (gx - pp.x) * vel.x <= 1e-6:
+		return
+	var tg: float = (gx - pp.x) / vel.x
+	if absf(pp.y + vel.y * tg) > float(t.get("goal_half_w", 1.4)) + 0.5:
+		return
+	var dir: Vector2 = vel / spd
+	var serial: int = 0
+	for o: Dictionary in sk:
+		serial += int(o.get("Shots", 0))
+	for i: int in sk.size():
+		var s: Dictionary = sk[i]
+		if i == me or bool(s.get("bHuman", false)) or int(s["Team"]) == int(sk[sh]["Team"]) or not bool(s.get("CanAct", true)) or fake.has(i):
+			continue
+		if int(t.get("dive_team", 1)) == 1 and int(s["Team"]) == my_team:
+			continue
+		var along: float = ((s["Pos"] as Vector2) - pp).dot(dir)
+		if along < 0.3:
+			continue
+		var tt: float = along / spd
+		if tt > 0.6 or tt > tg:
+			continue
+		var near: Vector2 = pp + dir * along
+		var miss: float = (s["Pos"] as Vector2).distance_to(near)
+		if miss > float(t.get("dive_reach_m", 2.5)) + 0.42 or (not meteor and miss < 0.4):
+			continue
+		if int(decided.get(i, -1)) == serial:
+			continue
+		decided[i] = serial
+		if float(hash([serial * 31 + 7, i]) & 0xFFFF) / 65536.0 >= share:
+			continue
+		var to: Vector2 = near - (s["Pos"] as Vector2)
+		fake[i] = {"left": int(t.get("dive_down_frames", 70)), "dir": to.normalized() if to.length() > 1e-3 else Vector2(-dir.y, dir.x)}
+		_dive_fx(i, s, f)
+
+
+func _tag(id: StringName, node: Node3D, text: String, col: Color, frames: int) -> void:
+	if tags.has(id):
+		h.hud.remove_widget(id)
+	h.hud.add_tag(id, node, text, Vector3(0, float(t.get("tag_up_m", 2.0)), 0))   # lower than meteor.gd's 2.9: a near figure's word stays on screen
+	h.hud.set_color(id, col)
+	tags[id] = frames
+
+
+func _reset() -> void:
+	for id: StringName in tags.keys():
+		h.hud.remove_widget(id)
+	tags = {}
+	fake = {}
+	heat = {}
+	decided = {}
+	armed = {}
+	b_shot_by = -1
+	b_shot_left = 0
+
+
+func report() -> Dictionary:
+	return counts.duplicate(true)

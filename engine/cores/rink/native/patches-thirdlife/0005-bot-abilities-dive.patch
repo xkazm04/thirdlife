@@ -1,0 +1,362 @@
+diff -ruN a/thirdjam/Private/JamSim.cpp b/thirdjam/Private/JamSim.cpp
+--- a/thirdjam/Private/JamSim.cpp
++++ b/thirdjam/Private/JamSim.cpp
+@@ -45,6 +45,21 @@
+ 	const FName TriggerMode(TEXT("mode"));
+ 	const FName TriggerPickup(TEXT("pickup"));
+ 	const FName CauseShotgun(TEXT("shotgun"));
++	// THIRDLIFE PATCH 0005: the dive's two events ("dive": Who = the diver, Where = him, Strength = how far the shot would have passed him / 4 m, Kind = shotgun |
++	// shot, Dir = the dive; "dive_block": Who = the diver, Where = the puck, Strength = the shot's speed / puck.max_speed, Kind = shotgun | shot).
++	const FName TlEvDive(TEXT("dive"));
++	const FName TlEvDiveBlock(TEXT("dive_block"));
++	const FName TlKindShot(TEXT("shot"));
++	constexpr int32 TlBotAbilityDropLockFrames = 60;   // no bot ability in the first second after a drop (a meteor off the draw is a free goal, J1's film)
++	constexpr int32 TlBotAbilityWindowFrames = 12;     // one coin per skater and this many frames
++	constexpr double TlDiveLookAheadS = 0.6;           // a shot that passes him later than this is not his to dive at yet
++	constexpr double TlDiveBodyBackM = 0.3;            // the laid-out body: from this far behind his centre ...
++	constexpr double TlDiveBodyFrontM = 0.9;           // ... to this far ahead of it along the dive
++	constexpr double TlDiveBodyR = 0.42;               // ... this thick (a lying man's half-width)
++	constexpr double TlDiveBodyTopM = 0.45;            // a puck above this height flies over him
++	constexpr double TlDiveKeep = 0.25;                // the share of the shot's speed that rings off the body
++	constexpr double TlDiveMaxMps = 10.0;              // the fastest throw
++	constexpr double TlDiveBlockMinMps = 6.0;          // a puck slower than this against the diver is no shot to block
+ 
+ 	constexpr double Gravity = 9.8;
+ 	// Lane A32 read-outs: a shot counts as "on goal" for this many frames, a possession becomes a "carry" after this many, a post rings at most this often.
+@@ -236,6 +251,16 @@
+ 		for (FJamSkaterState& S : Skaters) if (S.bHuman) GrantAbility(S.Index, a);
+ 		break;
+ 	}
++	// THIRDLIFE PATCH 0005 (FTlRules::BotAbilityShare): and every bot of BotAbilityTeam's side, from the drop.
++	if (Config.Tl.BotAbilityShare > 0.0)
++	{
++		for (int32 a = 0; a < Config.Abilities.Num(); ++a)
++		{
++			if (Config.Abilities[a].Trigger != TriggerMode) continue;
++			for (FJamSkaterState& S : Skaters) if (TlBotHolds(S)) GrantAbility(S.Index, a);
++			break;
++		}
++	}
+ 	FireRule(EJamRuleTrigger::OnPeriodStart, -1, -1, NAME_None, 1.f);
+ }
+ 
+@@ -574,7 +599,7 @@
+ {
+ 	// Lane A84 (R-0041 point 3): a human taking a boost while holding no ability is granted one of the pickup abilities, picked by the frame and the taker
+ 	// (deterministic and off the seeded stream, so a cartridge without abilities draws exactly as before).
+-	if (Skaters.IsValidIndex(Who) && Skaters[Who].bHuman && Skaters[Who].AbilitySlot < 0)
++	if (Skaters.IsValidIndex(Who) && (Skaters[Who].bHuman || TlBotHolds(Skaters[Who])) && Skaters[Who].AbilitySlot < 0)   // THIRDLIFE PATCH 0005: or a bot that holds them
+ 	{
+ 		TArray<int32, TInlineAllocator<4>> Pool;
+ 		// Lane A105: a hip check is passed over while body checks are off (it could never land; held, it would block every later pickup).
+@@ -673,6 +698,7 @@
+ 	{
+ 		S.CheckWindow = 0;
+ 		S.KnockFrames = 0;
++		S.TlDiveFrames = 0; S.TlWindupLeft = 0;   // THIRDLIFE PATCH 0005: a faceoff ends a dive and a wind-up (both stay 0 with the switches off)
+ 		S.StumbleFrames = 0;
+ 		S.GraceFrames = 0;   // lane A113: a faceoff sets everybody up; no grace is owed after it
+ 		S.LateFrames = 0;    // lane A151: nor a late press
+@@ -1093,7 +1119,10 @@
+ 		if (S.ShieldFrames > 0) --S.ShieldFrames;   // lane A84: the shield runs while the puck is live
+ 		StepCrossHold(S, In);   // lane A184 (game.contact.cross_hold): the brace, before anything this frame reads it
+ 		StepCrossLive(S);   // lane A215 (game.contact.cross_live_frames; 0 = off): the cross-check's stick stays out after its wind-up and takes the first man it meets
+-		if (!S.CanAct()) { S.ChargeFrames = 0; S.CheckWindupLeft = 0; S.LiftWindupLeft = 0; continue; }   // lane A184: a wind-up dies with the feet
++		if (S.TlDiveFrames > 0) S.TlDiveFrames = S.KnockFrames > 0 ? S.TlDiveFrames - 1 : 0;   // THIRDLIFE PATCH 0005: the dive lies as long as its knockdown
++		if (!S.CanAct()) { S.ChargeFrames = 0; S.CheckWindupLeft = 0; S.LiftWindupLeft = 0; S.TlWindupLeft = 0; continue; }   // lane A184: a wind-up dies with the feet (0005: the bot's meteor wind-up too)
++		if ((Config.Tl.DiveShare > 0.0 || Config.Tl.DiveShotShare > 0.0) && !S.bHuman && TlTryDive(S)) continue;   // THIRDLIFE PATCH 0005: a bot throws itself across a shot's lane
++		if (Config.Tl.BotAbilityShare > 0.0 && TlBotHolds(S)) TlStepBotAbility(S, InBuf);   // THIRDLIFE PATCH 0005: the bot's F, from its own read (In is InBuf)
+ 		StepWindups(S, S.StickLockLeft > 0);   // lane A184: a wind-up pressed on an earlier frame ends here (none at check_windup_frames / cross_windup_frames 0)
+ 		if (In.bAbility) TryAbility(S);   // lane A84 (R-0041 point 3): F, before the shot so a shotgun with the puck fires this frame
+ 		if (In.bShoot) TryShoot(S, 0.f);
+@@ -4087,6 +4116,7 @@
+ 		const FVector2D Prev = Puck.Pos;
+ 		Puck.Pos += Puck.Vel * H;
+ 		if (Puck.ShotExcess > 0.0) StepShotFade(Prev);   // lane A207 (wave 2b, game.shot.fade_m)
++		if (Config.Tl.DiveShare > 0.0 || Config.Tl.DiveShotShare > 0.0) { const int32 Tb = TlDiveBlock(Prev, R); if (Tb >= 0) Touched[Tb] = true; }   // THIRDLIFE PATCH 0005: a diver's body first
+ 		if (Puck.ShotgunFrames > 0) StepShotgun(Prev);   // lane A84: the bodies on the path go down before any of them can stop it
+ 
+ 		// R-0035 (lane A52): the crease skater's save by height, before any body or blade touches the puck (its own rule, see TryGoalieSave).
+@@ -4587,6 +4617,193 @@
+ 	}
+ }
+ 
++// ---------------------------------------------------------------------------------------------------------------------
++// THIRDLIFE PATCH 0005 (FTlRules::BotAbilityShare / DiveShare, JamCartridge.h): the bots' abilities and the dive.
++// ---------------------------------------------------------------------------------------------------------------------
++
++bool UJamSim::TlBotHolds(const FJamSkaterState& S) const
++{
++	if (S.bHuman || Config.Tl.BotAbilityShare <= 0.0) return false;
++	if (Config.Tl.BotAbilityTeam == 0) return true;
++	const int32 Ht = Skaters.IsValidIndex(HumanIndex) ? Skaters[HumanIndex].Team : -1;
++	if (Ht < 0) return true;   // nobody human (a bot match): every bot
++	return Config.Tl.BotAbilityTeam == 1 ? S.Team != Ht : S.Team == Ht;
++}
++
++double UJamSim::TlCoin(int64 Salt, int32 Who) const
++{
++	// A fixed coin of the frame window (or the shot) and the skater, off the seeded stream (as NotifyPickupTaken picks a pickup ability): a cartridge whose
++	// switches are off draws exactly as before. splitmix64's finaliser, 53 bits.
++	uint64 X = static_cast<uint64>(Salt) * 0x9E3779B97F4A7C15ull ^ (static_cast<uint64>(Who) + 1ull) * 0xC2B2AE3D27D4EB4Full;
++	X ^= X >> 30; X *= 0xBF58476D1CE4E5B9ull; X ^= X >> 27; X *= 0x94D049BB133111EBull; X ^= X >> 31;
++	return static_cast<double>(X >> 11) * (1.0 / 9007199254740992.0);
++}
++
++void UJamSim::TlArmAbility(FJamSkaterState& S)
++{
++	// TryAbility's bookkeeping without its shot: the shotgun is armed on the blade and the wind-up fires it (TryAbility would fire it this frame).
++	const FJamAbilityConfig* A = HeldAbility(S.Index);
++	if (!A) return;
++	S.AbilityReadyFrame = Frame + (A->CooldownFrames > 0 ? A->CooldownFrames : AbilityDefaultCooldown(A->Kind));
++	++S.AbilitiesUsed;
++	S.bAbilityThisFrame = true;
++	if (S.AbilityCharges > 0) --S.AbilityCharges;
++	Emit(JamEvents::Ability, S.Index, S.Pos, 1.f, A->Kind);
++	S.AbilityArmed = A->Kind;
++}
++
++void UJamSim::TlStepBotAbility(FJamSkaterState& S, FJamInput& In)
++{
++	const FJamAbilityConfig* A = HeldAbility(S.Index);
++	if (!A) { S.TlWindupLeft = 0; return; }
++	const bool bCarry = CarrierIndex() == S.Index;
++	// A meteor wind-up that runs: the shot is held and nothing else is pressed until the last frame lets it go (StepCharge fires it with its charge). A bot
++	// that lost the puck stops winding; its stick stays armed and its brain's next shot is the meteor.
++	if (S.TlWindupLeft > 0)
++	{
++		if (!bCarry || S.AbilityArmed != AbShotgun) { S.TlWindupLeft = 0; return; }
++		In.bShoot = false; In.bPass = false; In.bPassHeld = false; In.bDeke = false; In.bSpin = false; In.bAbility = false;
++		In.bShootHeld = --S.TlWindupLeft > 0;
++		return;
++	}
++	if (S.AbilityCharges == 0 || Frame < S.AbilityReadyFrame || !S.AbilityArmed.IsNone() || S.ShieldFrames > 0) return;
++	if (bDrawOpen || Frame - DropFrame < TlBotAbilityDropLockFrames) return;
++	const double Skill = FMath::Clamp(Config.Tl.BotAbilitySkill, 0.0, 1.0);
++	const FName Kind = A->Kind;
++	const FVector2D Fwd = S.Forward();
++	bool bRead = false;
++	if (Kind == AbShotgun)
++	{
++		if (!bCarry) return;
++		const FVector2D ToGoalV = FVector2D(AttackGoalX(S.Team), 0.0) - S.Pos;
++		const double Dg = ToGoalV.Size();
++		if (Dg < 6.0 || Dg > 12.0 + 16.0 * Skill || Dot(Fwd, ToGoalV / Dg) < 0.7) return;   // in range, facing the net (thirdjam's playtester: 0.7)
++		int32 Crowd = 0, InLane = 0;
++		for (const FJamSkaterState& O : Skaters)
++		{
++			if (O.Team == S.Team || O.IsDown() || O.InBox()) continue;
++			const FVector2D D = O.Pos - S.Pos;
++			const double Along = Dot(D, Fwd);
++			if (Along <= 0.5 || Along >= Dg) continue;
++			const double Off = FMath::Abs(Fwd.X * D.Y - Fwd.Y * D.X);
++			if (Off <= 1.0) ++Crowd;                                // the meteor floors him on its way (StepShotgun's 1 m)
++			if (Off <= 1.2 && !InCreaseStance(O)) ++InLane;          // a standing body in the lane (the keeper in his crease does not close it)
++		}
++		bRead = Crowd > 0 || In.bShoot || (Skill >= 0.5 && InLane == 0 && Dg <= 20.0) || Skill < 0.34;   // a crowd, the brain's own shot, a clear lane; a poor bot any time
++	}
++	else if (Kind == AbHipCheck)
++	{
++		const int32 C = CarrierIndex();
++		bRead = In.bCheck || (C >= 0 && Skaters[C].Team != S.Team && FVector2D::Distance(Skaters[C].Pos, S.Pos) <= 1.2 + 0.8 * Skill);
++	}
++	else if (Kind == AbShield)
++	{
++		const int32 O = bCarry ? NearestOpponent(S) : -1;
++		bRead = O >= 0 && FVector2D::Distance(Skaters[O].Pos, S.Pos) <= 4.0;
++	}
++	else if (Kind == AbSlowPuck) bRead = bCarry && (In.bPass || In.bShoot);
++	if (!bRead || TlCoin(Frame / TlBotAbilityWindowFrames, S.Index) >= Config.Tl.BotAbilityShare) return;
++	if (Kind == AbShotgun && Config.Shot.ChargeFramesMax > 0)
++	{
++		TlArmAbility(S);
++		S.TlWindupLeft = FMath::Max(Config.Shot.TapFrames + 2, FMath::RoundToInt32(Config.Shot.ChargeFramesMax * (0.35 + 0.65 * Skill)));
++		In.bShoot = false; In.bPass = false; In.bPassHeld = false; In.bDeke = false; In.bSpin = false;
++		In.bShootHeld = true;
++		return;
++	}
++	In.bAbility = true;   // TryAbility: thirdjam's own use (a shotgun with no charge fires at once)
++}
++
++bool UJamSim::TlTryDive(FJamSkaterState& S)
++{
++	const int32 Sh = Puck.LastTouch;
++	if (!Skaters.IsValidIndex(Sh) || Sh == S.Index || Skaters[Sh].Team == S.Team || bDrawOpen) return false;
++	if (RidingCarrier() >= 0 || CarrierIndex() == S.Index || Puck.PassFrames > 0 || Puck.Z >= TlDiveBodyTopM) return false;
++	const bool bMeteor = Puck.ShotgunFrames > 0;
++	const double Share = bMeteor ? Config.Tl.DiveShare : Config.Tl.DiveShotShare;
++	const double V = Puck.Vel.Size();
++	if (Share <= 0.0 || V < ShotBlockMinMps) return false;
++	// heading inside the net he defends (EmitShotBlocked's test)
++	const double Gx = AttackGoalX(Skaters[Sh].Team);
++	if ((Gx - Puck.Pos.X) * Puck.Vel.X <= 1e-6) return false;
++	const double Tg = (Gx - Puck.Pos.X) / Puck.Vel.X;
++	if (FMath::Abs(Puck.Pos.Y + Puck.Vel.Y * Tg) > Config.Rink.GoalWidthM * 0.5 + 0.5) return false;
++	// where it passes him, and when
++	const FVector2D Dir = Puck.Vel / V;
++	const double Along = Dot(S.Pos - Puck.Pos, Dir);
++	if (Along < 0.3) return false;
++	const double T = Along / V;
++	if (T > TlDiveLookAheadS || T > Tg) return false;
++	const FVector2D Near = Puck.Pos + Dir * Along;
++	const double Miss = FVector2D::Distance(S.Pos, Near);
++	if (Miss > Config.Tl.DiveReachM + TlDiveBodyR) return false;
++	if (!bMeteor && Miss < SkaterRadius) return false;   // an ordinary shot at his body: the body takes it standing
++	// one decision a shot (the shot = the sum of every skater's Shots when it was taken)
++	int32 Serial = 0;
++	for (const FJamSkaterState& O : Skaters) Serial += O.Shots;
++	if (S.TlDiveSerial == Serial) return false;
++	S.TlDiveSerial = Serial;
++	if (TlCoin(static_cast<int64>(Serial) * 31 + 7, S.Index) >= Share) return false;
++	// the throw: towards the line, fast enough that the laid-out body is across it when the puck gets there (a downed skater slides at (1 - 2 DT) a frame)
++	const FVector2D To = Near - S.Pos;
++	const double Dn = To.Size();
++	const FVector2D DirD = Dn > 1e-6 ? To / Dn : FVector2D(-Dir.Y, Dir.X);
++	const double Need = FMath::Max(0.0, Dn - TlDiveBodyFrontM * 0.6);
++	const double Throw = FMath::Min(TlDiveMaxMps, 2.0 * Need / FMath::Max(0.15, 1.0 - FMath::Exp(-2.0 * FMath::Max(T, DT))));
++	S.Vel = S.Vel * 0.3 + DirD * Throw;
++	S.Yaw = FMath::Atan2(DirD.Y, DirD.X);
++	S.KnockFrames = FMath::Max(1, Config.Tl.DiveDownFrames);
++	S.KnockDir = DirD;
++	S.TlDiveFrames = S.KnockFrames;
++	S.ChargeFrames = 0; S.CheckWindupLeft = 0; S.LiftWindupLeft = 0; S.TlWindupLeft = 0; S.CheckWindow = 0;
++	++S.TlDives;
++	Emit(TlEvDive, S.Index, S.Pos, static_cast<float>(Miss / 4.0), bMeteor ? CauseShotgun : TlKindShot, DirD);
++	return true;
++}
++
++int32 UJamSim::TlDiveBlock(const FVector2D& Prev, double R)
++{
++	if (Puck.Z >= TlDiveBodyTopM) return -1;
++	for (FJamSkaterState& S : Skaters)
++	{
++		if (S.TlDiveFrames <= 0 || S.InBox() || Puck.LastTouch == S.Index || S.TlDiveBlocks >= S.TlDives) continue;   // one shot a dive: after it he is a body on the ice
++		if (Skaters.IsValidIndex(Puck.LastTouch) && Skaters[Puck.LastTouch].Team == S.Team) continue;   // his mates' pucks pass
++		if (RidingCarrier() >= 0 || (Puck.Vel - S.Vel).Size() < TlDiveBlockMinMps) continue;   // a shot, not a carried or a slow puck (a ring at his side would take it back and forth)
++		// the closest points of the puck's substep path and the laid-out body (both segments; the path sampled finely enough for a 0.42 m body)
++		const FVector2D A = S.Pos - S.KnockDir * TlDiveBodyBackM;
++		const FVector2D B = S.Pos + S.KnockDir * TlDiveBodyFrontM;
++		const FVector2D Ab = B - A;
++		const double Ab2 = FMath::Max(1e-9, Ab.SizeSquared());
++		double Best = 1e9;
++		FVector2D BestP = Puck.Pos, BestQ = S.Pos;
++		for (int32 k = 0; k <= 4; ++k)
++		{
++			const FVector2D P = Prev + (Puck.Pos - Prev) * (k / 4.0);
++			const FVector2D Q = A + Ab * FMath::Clamp(Dot(P - A, Ab) / Ab2, 0.0, 1.0);
++			const double D = FVector2D::Distance(P, Q);
++			if (D < Best) { Best = D; BestP = P; BestQ = Q; }
++		}
++		if (Best > TlDiveBodyR + R) continue;
++		const double SpBefore = Puck.Vel.Size();
++		EmitShotBlocked(S, SpBefore);   // thirdjam's own read-out, Variant 1: a shot on goal stopped by a skater
++		const bool bMeteor = Puck.ShotgunFrames > 0;
++		FVector2D N = BestP - BestQ;
++		N = N.SizeSquared() > 1e-12 ? N.GetSafeNormal() : (SpBefore > 1e-6 ? -Puck.Vel / SpBefore : FVector2D(1, 0));
++		const FVector2D Rel = Puck.Vel - S.Vel;
++		const double Vn = Dot(Rel, N);
++		Puck.Vel = S.Vel + (Vn < 0.0 ? Rel - N * (2.0 * Vn) : Rel) * TlDiveKeep;
++		Puck.Pos = BestQ + N * (TlDiveBodyR + R + 1e-3);
++		Puck.ShotgunFrames = 0; Puck.ShotgunBy = -1; Puck.ShotgunMul = 1.0;   // a meteor stops being one on him
++		Puck.LastTouch = S.Index;
++		S.DeflectCooldown = 10;
++		++S.TlDiveBlocks;
++		const double MaxSpeed = FMath::Max(1.0, Eff(EJamStat::PuckMaxSpeed, -1));
++		Emit(TlEvDiveBlock, S.Index, Puck.Pos, static_cast<float>(FMath::Min(1.0, SpBefore / MaxSpeed)), bMeteor ? CauseShotgun : TlKindShot);
++		return S.Index;
++	}
++	return -1;
++}
++
+ void UJamSim::ApplySlowPuck(FJamSkaterState& S)
+ {
+ 	// Lane A105: the slow puck's own skater playing it again (a plain shot or pass inside the window) spends it quietly: no wake-up doubles the new puck.
+@@ -4723,6 +4940,11 @@
+ 			H.AddI(S.AbilitySlot); H.AddI(S.AbilityCharges); H.AddI(S.AbilityReadyFrame); H.AddI(S.ShieldFrames); H.AddI(S.AbilitiesUsed);
+ 			H.AddI(S.AbilityArmed == AbShotgun ? 1 : S.AbilityArmed == AbHipCheck ? 2 : S.AbilityArmed == AbSlowPuck ? 3 : 0);
+ 		}
++		// THIRDLIFE PATCH 0005: the wind-up, the dive and its memory once they left their defaults, behind a tag (the switches off: never).
++		if (S.TlWindupLeft != 0 || S.TlDiveFrames != 0 || S.TlDives != 0 || S.TlDiveBlocks != 0 || S.TlDiveSerial >= 0)
++		{
++			H.AddI(-5005); H.AddI(S.TlWindupLeft); H.AddI(S.TlDiveFrames); H.AddI(S.TlDives); H.AddI(S.TlDiveBlocks); H.AddI(S.TlDiveSerial);
++		}
+ 	}
+ 	if (DekeCommitFrames != 0) { H.AddI(DekeCommitFrames); H.AddI(DekeCommitSide); H.AddI(DekeCommitSkater); }
+ 	if (Config.Stick.TakeGraceFrames > 0) H.AddI(TakeOwner);   // lane A121: who would not win the puck by carrying it next
+diff -ruN a/thirdjam/Public/JamCartridge.h b/thirdjam/Public/JamCartridge.h
+--- a/thirdjam/Public/JamCartridge.h
++++ b/thirdjam/Public/JamCartridge.h
+@@ -693,6 +693,27 @@
+ 	// other frame: the gym's carrier sprints 290 of 401 frames on a 180-frame bar), so the bar never ends a held sprint. With this share above 0 a sprint
+ 	// that is not already running STARTS only with at least this share of the full bar; one that runs goes on to the last tick as before. 0 = thirdjam.
+ 	double SprintRestartShare = 0.0;
++	// THIRDLIFE PATCH 0005 (lane S4-core, 27 Nov; CARTRIDGE.md section 6 "a new verb": the owner's ask 4 "bots that use abilities, and a dive block"). Two
++	// things thirdjam's bots never do. 1) They hold the cartridge's abilities (game.abilities: thirdjam grants them to the human only, JamSim.cpp Restart and
++	// NotifyPickupTaken) and use them from their own reads, as thirdjam's playtester does (JamPlaytester.cpp PlaytesterAbility): the shotgun from a carry
++	// facing the net inside a range, with a crowd in the lane, a clear lane or a shot the brain wanted, after a wind-up (the shot held, so the meteor has a
++	// visible charge and the charging bot stands at contact.spin_stability); the hip check on an opposing carrier in reach; the shield carrying under
++	// pressure; the slow puck on a pass or a shot. BotAbilityShare is how often (the share of the 12-frame windows whose read holds that it takes, a fixed
++	// coin per window and skater, off the seeded stream); BotAbilitySkill how well (the shotgun's range 12..28 m, a clear-lane read from 0.5, the wind-up
++	// 35..100 % of shot.charge_frames_max, the hip check's reach 1.2..2.0 m); BotAbilityTeam whose bots: 0 both teams', 1 the human's rivals, 2 his mates.
++	// Never in the first second after a drop. 0 = thirdjam: bots never hold one.
++	double BotAbilityShare = 0.0;
++	double BotAbilitySkill = 0.5;
++	int32 BotAbilityTeam = 0;
++	// 2) The dive: a bot that is not carrying throws itself across the lane of an opposing shot heading inside the net it defends, when the shot will pass it
++	// within DiveReachM in the next 0.6 s and the coin says so (one decision a shot and skater): it slides to the line and lies there for DiveDownFrames (it
++	// cannot act: the dive's price), and its laid-out body (1.2 m along the dive) stops any puck at ice level from the other team: the shot rings off at a
++	// quarter of its speed, and a shotgun shot stops being one (thirdjam's shotgun goes through every body it fells; a diver is not felled, it blocks).
++	// DiveShare: the share of shotgun shots (the meteor) a bot in reach dives in front of; DiveShotShare: the share of ordinary shots. 0 and 0 = thirdjam.
++	double DiveShare = 0.0;
++	double DiveShotShare = 0.0;
++	double DiveReachM = 2.5;
++	int32 DiveDownFrames = 70;
+ };
+ // The host's one entry: sets a switch by its rules.json key. false = an unknown key (the host reports it: unknown keys are errors).
+ inline bool TlSetRule(FTlRules& R, const char* Key, double Value)
+@@ -704,6 +725,13 @@
+ 	if (K == "carry_holds_body") { R.bCarryHoldsBody = Value != 0.0; return true; }   // 0003
+ 	if (K == "over_top_decel_mps2") { if (Value < 0.0 || Value > 60.0) return false; R.OverTopDecelMps2 = Value; return true; }   // 0004
+ 	if (K == "sprint_restart_share") { if (Value < 0.0 || Value > 1.0) return false; R.SprintRestartShare = Value; return true; }   // 0004
++	if (K == "bot_ability_share") { if (Value < 0.0 || Value > 1.0) return false; R.BotAbilityShare = Value; return true; }   // 0005
++	if (K == "bot_ability_skill") { if (Value < 0.0 || Value > 1.0) return false; R.BotAbilitySkill = Value; return true; }   // 0005
++	if (K == "bot_ability_team") { if (Value < 0.0 || Value > 2.0) return false; R.BotAbilityTeam = static_cast<int32>(Value); return true; }   // 0005
++	if (K == "dive_share") { if (Value < 0.0 || Value > 1.0) return false; R.DiveShare = Value; return true; }   // 0005
++	if (K == "dive_shot_share") { if (Value < 0.0 || Value > 1.0) return false; R.DiveShotShare = Value; return true; }   // 0005
++	if (K == "dive_reach_m") { if (Value < 0.5 || Value > 4.0) return false; R.DiveReachM = Value; return true; }   // 0005
++	if (K == "dive_down_frames") { if (Value < 20.0 || Value > 240.0) return false; R.DiveDownFrames = static_cast<int32>(Value); return true; }   // 0005
+ 	return false;
+ }
+ 
+diff -ruN a/thirdjam/Public/JamSim.h b/thirdjam/Public/JamSim.h
+--- a/thirdjam/Public/JamSim.h
++++ b/thirdjam/Public/JamSim.h
+@@ -403,6 +403,14 @@
+ 	UPROPERTY(BlueprintReadOnly, Category = "Jam|Sim") int32 ShieldFrames = 0;
+ 	UPROPERTY(BlueprintReadOnly, Category = "Jam|Sim") int32 AbilitiesUsed = 0;
+ 	UPROPERTY(BlueprintReadOnly, Category = "Jam|Sim") bool bAbilityThisFrame = false;
++	// THIRDLIFE PATCH 0005 (FTlRules::BotAbilityShare, DiveShare): a bot's meteor wind-up (frames of the held shot left; 0 = none), a dive (frames laid out
++	// across a shot's lane left; 0 = none), the dives and the shots they stopped (counters), and the shot this skater last decided on (the sum of every
++	// skater's Shots then; -1 = none yet). Stay at their defaults, and out of the hash, while the switches are off.
++	UPROPERTY(BlueprintReadOnly, Category = "Jam|Sim") int32 TlWindupLeft = 0;
++	UPROPERTY(BlueprintReadOnly, Category = "Jam|Sim") int32 TlDiveFrames = 0;
++	UPROPERTY(BlueprintReadOnly, Category = "Jam|Sim") int32 TlDives = 0;
++	UPROPERTY(BlueprintReadOnly, Category = "Jam|Sim") int32 TlDiveBlocks = 0;
++	int32 TlDiveSerial = -1;
+ 
+ 	FVector2D Forward() const { return FVector2D(FMath::Cos(Yaw), FMath::Sin(Yaw)); }
+ 	bool IsDown() const { return KnockFrames > 0; }
+@@ -997,6 +1005,13 @@
+ 	// Lane A84: F pressed: the held ability's use, its cooldown and charge; the shotgun puck's knockdowns per substep; the slow puck's clock after the puck moved.
+ 	void TryAbility(FJamSkaterState& S);
+ 	void StepShotgun(const FVector2D& Prev);
++	// THIRDLIFE PATCH 0005: the bots' abilities (who holds one, the read and the wind-up before the press) and the dive (the read, the throw, the block per substep).
++	bool TlBotHolds(const FJamSkaterState& S) const;
++	double TlCoin(int64 Salt, int32 Who) const;
++	void TlArmAbility(FJamSkaterState& S);
++	void TlStepBotAbility(FJamSkaterState& S, FJamInput& In);
++	bool TlTryDive(FJamSkaterState& S);
++	int32 TlDiveBlock(const FVector2D& Prev, double R);
+ 	void StepSlowPuck();
+ 	void ApplySlowPuck(FJamSkaterState& S);
+ 	void StepSpin(FJamSkaterState& S);
