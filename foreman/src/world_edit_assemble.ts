@@ -8,7 +8,7 @@ export const KINDS = ["wall", "tower", "house", "stair", "bridge", "platform"];
 export const ASSEMBLE_KEYS = ["kind", "at", "size", "rot", "mat", "trim", "opts"];
 const OPTS: Record<string, string[]> = {
   wall: ["door", "windows", "crenels"], tower: ["door", "windows", "crenels", "stairs"],
-  house: [], stair: [], bridge: [], platform: [],
+  house: ["windows"], stair: [], bridge: [], platform: [],
 };
 export const SIZE_NOTES: Record<string, string> = {
   wall: "[length, height, unused]", tower: "[side, height, unused]", house: "[width, height, depth]",
@@ -68,7 +68,11 @@ export function assembleError(o: ModelOp, ask: Ask, inside: (c: number[]) => boo
     const [lo, hi] = o.kind === "tower" ? [1, w - 2] : [0, w - 1];
     if (!isInt(opts.door) || opts.door < lo || opts.door > hi) return `opts.door is the door's cell along the ${o.kind}'s front, ${lo}..${hi}`;
   }
-  if (opts.windows !== undefined && (!isInt(opts.windows) || opts.windows < WINDOWS.min || opts.windows > WINDOWS.max))
+  if (opts.windows !== undefined && o.kind === "house") {       // round 4 (Q-A8): a count on the front, beside the door
+    const max = Math.max(0, w - 3);
+    if (!isInt(opts.windows) || opts.windows < 0 || opts.windows > max)
+      return `opts.windows is how many windows on the house's front beside the door, 0..${max} for ${w} wide`;
+  } else if (opts.windows !== undefined && (!isInt(opts.windows) || opts.windows < WINDOWS.min || opts.windows > WINDOWS.max))
     return `opts.windows is a window every N cells, N ${WINDOWS.min}..${WINDOWS.max}`;
   if (opts.crenels !== undefined && opts.crenels !== true) return "opts.crenels is written only when true";
   if (opts.stairs !== undefined && opts.stairs !== "inside" && opts.stairs !== "outside") return "opts.stairs is \"inside\" or \"outside\"";

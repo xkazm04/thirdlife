@@ -54,7 +54,7 @@ test("assemble: the prompt teaches it first under # Operations only when the ask
 test("assemble: a good one of every kind passes as written; the footprint turns as the exe's", () => {
   const good = [tower,
     { op: "assemble", kind: "wall", at: [95, 10, 55], size: [9, 4, 1], rot: 1, mat: 3, opts: { door: 4, windows: 3, crenels: true } },
-    { op: "assemble", kind: "house", at: [110, 10, 60], size: [7, 4, 5], rot: 2, mat: 3, trim: 2 },
+    { op: "assemble", kind: "house", at: [110, 10, 60], size: [7, 4, 5], rot: 2, mat: 3, trim: 2, opts: { windows: 4 } },
     { op: "assemble", kind: "stair", at: [120, 10, 45], size: [2, 6, 1], rot: 3, mat: 1 },
     { op: "assemble", kind: "bridge", at: [100, 12, 70], size: [3, 1, 9], rot: 0, mat: 1, trim: 3 },
     { op: "assemble", kind: "platform", at: [115, 14, 70], size: [5, 1, 4], rot: 0, mat: 3, trim: 2 }];
@@ -76,7 +76,8 @@ test("assemble: every bad form is refused with the exe's words, and the ask's ta
     [{ opts: { stairs: "spiral" } }, /opts.stairs is "inside" or "outside"/], [{ opts: { roof: true } }, /a tower takes no opt 'roof' \(only door, windows, crenels, stairs\)/],
     [{ opts: { door: 0 } }, /opts.door is the door's cell along the tower's front, 1..5/], [{ opts: { windows: 1 } }, /opts.windows is a window every N cells, N 2..16/],
     [{ size: [3, 10, 1], opts: { stairs: "inside" } }, /at least 5 wide/], [{ size: [7, 3, 1] }, /at least 4 high/],
-    [{ kind: "house", opts: { door: 2 } }, /a house takes no opts/], [{ kind: "house", size: [2, 4, 5], opts: undefined }, /at least 3 x 3/],
+    [{ kind: "house", opts: { door: 2 } }, /a house takes no opt 'door' \(only windows\)/],
+    [{ kind: "house", size: [7, 4, 5], opts: { windows: 5 } }, /opts.windows is how many windows on the house's front beside the door, 0..4 for 7 wide/], [{ kind: "house", size: [2, 4, 5], opts: undefined }, /at least 3 x 3/],
     [{ kind: "wall", size: [6, 2, 1], opts: { door: 2 } }, /a wall with a door is at least 3 high/],
     [{ colour: "red" }, /assemble takes no "colour"/], [{ at: [100, 10] }, /at must be \[x, y, z\]/],
     [{ at: [140, 10, 50] }, /outside the region/], [{ at: [126, 10, 50] }, /footprint x 126..132, z 50..56 \(turned by rot 0\) leaves the region/],

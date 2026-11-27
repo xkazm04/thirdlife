@@ -20,7 +20,7 @@ const MATS := [1, 2, 3, 4, 5, 6, 7, 8, 9, 11, 12]
 const PRESETS := {
 	"wall": [{}, {"crenels": true}, {"door": -1, "windows": 3}, {"door": -1, "windows": 3, "crenels": true}],
 	"tower": [{"stairs": "outside", "crenels": true}, {"stairs": "inside", "crenels": true, "windows": 3}, {"crenels": true, "windows": 3}, {}],
-	"house": [{}], "stair": [{}], "bridge": [{}], "platform": [{}]}
+	"house": [{}, {"windows": 4}, {"windows": 0}], "stair": [{}], "bridge": [{}], "platform": [{}]}
 const SIZES := {"wall": [7, 3, 1], "tower": [7, 10, 1], "house": [7, 4, 5], "stair": [2, 5, 1], "bridge": [3, 1, 9], "platform": [5, 1, 5]}
 const DEFAULT_MATS := {"wall": [1, 2], "tower": [1, 2], "house": [3, 6], "stair": [1, 2], "bridge": [1, 4], "platform": [3, 4]}
 const KEY_HELP := "1-6 kind   wheel height   [ ] options   R turn   Tab / Shift+Tab material / trim   LMB build here (drag: the footprint)   Ctrl+Z undo   hold MMB or Alt look   T tool   B or Esc leave"
@@ -101,6 +101,8 @@ func opts_now() -> Dictionary:
 	var o: Dictionary = (list[int(preset.get(kind, 0)) % list.size()] as Dictionary).duplicate()
 	if o.has("door"):
 		o.door = int(size_now()[0]) / 2
+	if kind == "house" and o.has("windows"):              # a count: no more than the front holds
+		o.windows = mini(int(o.windows), Assembly.house_windows_max(int(size_now()[0])))
 	return o
 
 

@@ -38,6 +38,7 @@ cell: (deck y + 1) - (that ground y) steps, each on its own column, the first on
 
 # Columns the Home refuses (measured; ops there are refused, so do not build there)
 {{refused}}
+{{land_refused}}
 
 # Blocks already in the region (x,y,z shape(id) material(id) rot)
 {{blocks}}

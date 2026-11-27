@@ -51,6 +51,7 @@ build mode is on again.
 | `blocks` | `[[x, y, z, shape, mat, rot, flip 0/1], ...]` in the region (`read_region`) |
 | `ground` | `{min: [x, z], rows}`: `rows[z - min z][x - min x]` is the y of the cell a block takes standing on the ground there (the land layer's `height_at` once M2 gives it, else `home/hook.gd` `ground_y`) |
 | `refused` | `[{reason, runs: [[z, x0, x1], ...]}]`: the columns protection refuses at their ground cell ("game lot", "authored structure (...)", "tree"), asked with the visitor out of the way. Absent: none |
+| `land_refused` | round 4 (lane A6, Q-A7): `[{reason, runs: [[z, x0, x1], ...]}]`, the columns where the ground ops (land, paint, path, plant, flood, pour) are refused, apart from the blocks' `refused`: each column answers for its 3 m ground cell (protect.gd `refusal_area` of the cell for a paint: the village and 72 m round it, game sites, lanes, the river band, authored structures, columns holding blocks), the visitor out of the way. A land vertex under a ploughed field is refused too and not marked. Absent: none (never `[]`). The prompt: one line under the refused columns, "Paths, land, paint, plants and water are refused on these columns (blocks may still go there): ..." as boxes; the Foreman feeds back a ground op that meets one (`world_edit_land.ts`) |
 | `shapes`, `mats` | `[{id, name, note}]`: the 8 shapes and the block materials play has unlocked (1-9 always; M5: 11 brick and 12 plaster once granted, unlocks.gd), with what each is for |
 | `paints`, `parts` | the paint names and the kit parts play has unlocked (`{kind, note}`; M5: locked kinds are left out), only when paint and put are in `ops` |
 | `water` | M5: `[{y, runs: [[z, x0, x1], ...]}]`, the measured water: the valley's river and ponds (home/valley.gd `water`, where it stands above the ground) merged with the water layer's `water_runs` (the layer's wins in a column); `y` is the cell holding the surface (`floor(level)`). In a water column `ground` is the bed. Absent: none |
@@ -318,3 +319,9 @@ alone (steps of 0.55 m, no jump) reaches no coin and no finish: it is a jumping 
   roof trim + a stone path) -> 115 blocks, the path refused "village" (land_protect.gd's 72 m round the village).
   Neither copied the example's 7 x 10. The house's front had no window (the every-3 rule put its only front window in
   the door's place): the front's windows now flank the door.
+- **Round 4**: a house's `opts.windows` (contracts/BUILD.md, Q-A8): how many windows on its front, beside the door,
+  0..w-3 (`assembly.gd` `house_windows_max`), nearest the door first (`assembly_kinds.gd` `front_windows`: the cells 2,
+  5, 8 ... from the door, then 1, 3, 4, ...); absent: round 3's default (a 7-wide house: 2, either side). The
+  Foreman checks it in the exe's words; the Shapes tool's ] walks house presets (default, 4, 0). And the ask's
+  `land_refused` (above): at the house call's spot (-69, 2, 21) the village's band covers x -84..-64, z 15..36 for
+  ground ops, which is why that answer's path was refused; it adds 314 bytes to that prompt.

@@ -71,6 +71,9 @@ static func make(build: RefCounted, land: Node, sentence: String, cursor: Vector
 	var refused := refused_columns(build, lo, hi, g)
 	if not refused.is_empty():
 		ask["refused"] = refused
+	var land_no := land_refused(build, lo, hi)
+	if not land_no.is_empty():
+		ask["land_refused"] = land_no
 	ask["shapes"] = table(Blocks.SHAPE_NAMES, SHAPE_NOTES)
 	ask["mats"] = mats(unlocks)
 	if (ask.ops as Array).has("paint"):
@@ -240,6 +243,50 @@ static func refused_columns(build: RefCounted, lo: Vector3i, hi: Vector3i, rows:
 			run_why = why
 			x0 = i
 	protect.set("visitor_at", was)
+	var out := []
+	for r: String in order:
+		out.append({"reason": r, "runs": by[r]})
+	return out
+
+
+## Round 4 (lane A6, Q-A7): the columns where the ground ops (land, paint, path, plant, flood, pour) are refused, in
+## `refused`'s shape: [{"reason", "runs": [[z, x0, x1], ...]}]. A column takes the answer of its 3 m ground cell
+## (floor(x / 3), floor(z / 3)): protect.gd `refusal_area` of that cell for a paint (the village and its band, game
+## sites, lanes, the river band, authored structures, columns holding blocks), asked with the visitor out of the way
+## (he moves). A land vertex may also be refused under a ploughed field (land only), not marked here. [] when none.
+static func land_refused(build: RefCounted, lo: Vector3i, hi: Vector3i) -> Array:
+	var protect: RefCounted = build.protect
+	if protect == null or not protect.has_method("refusal_area"):
+		return []
+	var was: Callable = protect.get("visitor_at")
+	protect.set("visitor_at", func() -> Vector3: return Vector3(1e7, -1e6, 1e7))   # far in x and z too (land_protect.gd reads the rect)
+	var land: RefCounted = build.layer("land")
+	var asking: bool = land != null and land.has_method("begin_asking")
+	if asking:
+		land.call("begin_asking", Rect2(lo.x - 3, lo.z - 3, hi.x - lo.x + 7, hi.z - lo.z + 7))
+	var cell_why := {}
+	for j: int in range(floori(lo.z / 3.0), floori(hi.z / 3.0) + 1):
+		for i: int in range(floori(lo.x / 3.0), floori(hi.x / 3.0) + 1):
+			cell_why[Vector2i(i, j)] = str(protect.call("refusal_area", Rect2(i * 3, j * 3, 3, 3), "paint"))
+	if asking:
+		land.call("end_asking")
+	protect.set("visitor_at", was)
+	var by := {}
+	var order := []
+	for z: int in range(lo.z, hi.z + 1):
+		var run_why := ""
+		var x0 := lo.x
+		for x: int in range(lo.x, hi.x + 2):
+			var why := "" if x > hi.x else str(cell_why[Vector2i(floori(x / 3.0), floori(z / 3.0))])
+			if why == run_why:
+				continue
+			if run_why != "":
+				if not by.has(run_why):
+					by[run_why] = []
+					order.append(run_why)
+				(by[run_why] as Array).append([z, x0, x - 1])
+			run_why = why
+			x0 = x
 	var out := []
 	for r: String in order:
 		out.append({"reason": r, "runs": by[r]})

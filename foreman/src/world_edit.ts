@@ -32,6 +32,7 @@ export const askSchema = obj({
   blocks: { type: "array", items: { type: "array", minItems: 7, maxItems: 7, items: int } },
   ground: obj({ min: ints(2), rows: { type: "array", minItems: 1, items: { type: "array", minItems: 1, items: int } } }),
   refused: { type: "array", items: obj({ reason: words, runs: { type: "array", minItems: 1, items: ints(3) } }) },
+  land_refused: { type: "array", minItems: 1, items: obj({ reason: words, runs: { type: "array", minItems: 1, items: ints(3) } }) },
   shapes: table, mats: table,
   paints: { type: "array", minItems: 1, items: words },
   parts: { type: "array", minItems: 1, items: obj({ kind: words, note: words }) },
@@ -46,7 +47,7 @@ export const askSchema = obj({
   // ops as shown and the check's findings (command_space.gd `findings`)
   fix: obj({ ops: { type: "array", minItems: 1, items: { type: "object" } }, findings: { type: "array", minItems: 1, items: words } }),
   caps: obj({ ops: { type: "integer", minimum: 1 }, blocks_left: { type: "integer", minimum: 0 } }),
-}, ["refused", "paints", "parts", "layers", "water", "zones", "rules", "rules_room", "fix"]);
+}, ["refused", "land_refused", "paints", "parts", "layers", "water", "zones", "rules", "rules_room", "fix"]);
 
 export function readAsk(file: string): Ask {
   let value: unknown;
@@ -95,6 +96,10 @@ export function facts(ask: Ask): Record<string, string> {
   const refused = ask.refused?.length
     ? ask.refused.map((r) => `${r.reason}: ` + boxes(r.runs).join("; ")).join("\n")
     : "none: every column of the region may be built on";
+  const landRefused = ask.land_refused?.length      // round 4 (A6): one line, then the columns as boxes
+    ? "Paths, land, paint, plants and water are refused on these columns (blocks may still go there): " +
+      ask.land_refused.map((r) => `${r.reason}: ` + boxes(r.runs).join("; ")).join("; ")
+    : "";
   const names = new Map(ask.shapes.map((s) => [s.id, s.name])), mats = new Map(ask.mats.map((m) => [m.id, m.name]));
   const blocks = ask.blocks.length
     ? ask.blocks.map(([x, y, z, s, m, r, f]) => `${x},${y},${z} ${names.get(s as number) ?? s}(${s}) ${mats.get(m as number) ?? m}(${m}) rot ${r}${f ? " flip" : ""}`).join("\n")
@@ -112,7 +117,7 @@ export function facts(ask: Ask): Record<string, string> {
     region: `${min.join(", ")} to ${max.join(", ")} (inclusive). Every cell you touch must be inside it`,
     ops: kinds.join(", "),
     caps: `at most ${Math.min(MAX_OPS, ask.caps.ops)} operations after boxes are expanded; room for ${ask.caps.blocks_left} more blocks in the Home`,
-    tables, ground, refused, blocks, water: waterFacts(ask.water),
+    tables, ground, refused, land_refused: landRefused, blocks, water: waterFacts(ask.water),
     layers: ask.layers && Object.keys(ask.layers).length ? "Other layers in the region (as the Home reads them):\n" + JSON.stringify(ask.layers) : "",
     assemble: ask.ops.includes("assemble") ? ASSEMBLE_TEXT : "",       // round 3: first under "# Operations"
     more_ops: moreOps(ask.ops),
@@ -161,7 +166,8 @@ export const ASSEMBLE_TEXT = `- {"op":"assemble","kind":k,"at":[x,y,z],"size":[w
     walls from the ground just east of the door's step (rot 0), east along the north face, then south, west, north,
     stair n at y+n (a coin's feet cell), a landing at each corner and after 6 stairs; or "inside" (side >= 5); door
     (1..side-2, default the middle), windows (N), crenels (true).
-  house [width, height, depth]: floor, door mid-front with a step, windows, a pitched roof of trim.
+  house [width, height, depth]: floor, door mid-front with a step, a pitched roof of trim; windows (how many on
+    the front, beside the door: 0..width-3).
   stair [width, steps, 1]: 1 up per cell toward +z (rot 0; 1 +x, 2 -z, 3 -x), a landing every 6; top walked at y+steps.
   bridge [width, 1, length]: a deck at y along z (walked at y+1), railings if width >= 3; the Home adds piers and the
     steps down to the ground at both ends.

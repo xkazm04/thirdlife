@@ -6,7 +6,7 @@
 # cells left out with the place ops' reasons; home_build.gd `expand_input` expands it; the Shapes tool builds ONE batch
 # equal to the same assemble's expansion. No model is called. Frames, not wall clock. Runs on its own:
 # `bash engine/tools/selftest.d/794-home-assembly.sh` prints `HOME assembly ok` when it passes.
-home_assembly_cases=(home.assembly.kinds home.assembly.compose home.assembly.stairside home.assembly.refusals home.assembly.protect home.assembly.input home.assembly.tool)
+home_assembly_cases=(home.assembly.kinds home.assembly.compose home.assembly.stairside home.assembly.windows home.assembly.refusals home.assembly.protect home.assembly.input home.assembly.tool)
 if ! declare -F verdict >/dev/null; then
   HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
   OUT="${TL_SELFTEST_DIR:-$(mktemp -d)}"
