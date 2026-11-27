@@ -154,3 +154,46 @@ NEXT THREE THINGS
 2. Street lamp pools a little larger and warmer at night: a "night" multiplier per kind, or the kit lamp's
    omni_range. Today the mast dominates.
 3. The Home's sky "mood" slider in the designer panel (TWO-WORLDS "Sky and mood"), reusing day/style_day.gd look(t).
+
+ROUND 2 (after the Director's 12:50 message; tree at the integration tip, merge of d27-m6)
+1. Stars and a moon: MET. dn-night-2.jpg, same camera as dn-night.jpg.
+   - sky_cel.gdshader has two new uniforms, both 0 by default, so every look that does not name them draws as before.
+   - `stars`: small cut dots fixed to the sky, about one per 0.8 degree cell in 7 % of cells, 1-2 px, dimmer towards
+     the horizon. They are drawn under the glow, the disc and the clouds.
+   - `moon`: the disc gets a flat shadow on one side (0.5: a gibbous) and three darker maria, all cut edges.
+   - The night look draws the moon at 12 degrees, yawed so it stands upper left in the spawn's and the street's view
+     (sky.sun_draw_yaw -150), disc_r 0.032.
+   - style_day.gd: sky keys sun_draw_yaw (mixed the short way round, like azimuth), stars and moon. A key the style
+     file does not name is now written only while it differs from noon, and at noon its override is cleared (set to
+     null), so noon leaves exactly what install left.
+   - Window check, the real renderer: 48 of 48 values byte-identical at noon, and again after night then noon; 35 move
+     at night.
+2. Street-lamp pools: MET. dn-lamps-night-2.jpg, same camera as dn-lamps-night.jpg.
+   - A street lamp's socket burns at 2.4x the kit's energy and 1.6x its range (17 m), falls off flatter (attenuation
+     0.9) and is warmer (#ffb04c). It burns only at dusk and at night.
+   - The values are day_lamps.gd's NIGHT table, keyed by part. The kit is untouched.
+   - The road down the street is lit warm lamp to lamp. The tree beside the far lamps is lit bright yellow.
+   - The light mast is still the strongest single pool.
+3. M6 rules at night: SKIPPED as instructed. Lane P's looks are not in this tree (no P commit in d27-m6).
+Gates, round 2:
+- 776: HOME daynight ok, 14/14.
+- tl check --tier fast: PASS 5/5 (devx.test 230/230).
+- tl check --tier full --only world: PASS 9/9, every game hashes as alone.
+- The pins the sky change could move, rerun through the runner: style.frame.* 4/4, style.cel.* 3/3, celsurf.* 9/9,
+  n3.* 3/3. All PASS.
+- Not run: the uncapped suite (the Director runs it).
+- look.skater.shaders_kept: a working-tree guard. It will FAIL until sky_cel.gdshader and style_crisp.json are
+  committed, as in round 1.
+Files, round 2:
+- engine/style/shaders/sky_cel.gdshader
+- engine/style/day/style_day.gd
+- engine/style/style_crisp.json (night sky keys)
+- engine/style/STYLE.md
+- engine/kernel/world/home/day_lamps.gd
+- PATCHES-DN.md (§2 marked applied), STANDUP.md, this report, dn-night-2.jpg, dn-lamps-night-2.jpg
+All files keep LF as in git.
+Next three:
+1. The M6 rules at night once lane P's looks land: a lit course, coins and pads glowing.
+2. A moon phase that moves day to day (the `moon` uniform from the clock's day count).
+3. Lamp light on the cel bands: give a lit wall its own warm band, not only the additive pool.
+   This needs toon_cel.gdshader, which is LP's file.

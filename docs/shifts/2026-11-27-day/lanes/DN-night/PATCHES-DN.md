@@ -13,7 +13,9 @@ Wanted:
 Why: lane DN draws a house, street lamp and light mast instanced like every other piece; their lights are sockets that
 `home/day_lamps.gd` lights by time of day and by distance to the camera (BUILD.md "Keys": N, H).
 
-## 2. (optional, the look lane) stars in the night sky: `engine/style/shaders/sky_cel.gdshader`
+## 2. (APPLIED in round 2 by lane DN, approved by the Director 12:50) stars in the night sky: `engine/style/shaders/sky_cel.gdshader`
+
+What landed differs from the sketch below: stars are drawn under the glow, the disc and the clouds; a second uniform `moon` draws the disc as a moon. See STYLE.md "Time of day".
 
 Not needed for this lane's acceptance; the night sky is the cel sky's own colours today. If the look lane wants stars,
 one uniform (`stars`, 0 = none, the default, so every look and pin stays byte-identical) and, at the end of `sky()`
