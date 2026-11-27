@@ -21,6 +21,7 @@ import { CARTRIDGE_DIFF, FIGURE_MISSED } from "./coregate.js";
 import { REMOVED, entriesText, type Removal } from "./removal.js";
 import { NOT_DONE, noteLines, notMadeSince } from "./halfmade.js";
 import { BALANCE_MOVED } from "./boundlift.js";
+import { botsCardLines } from "./botsdefault.js"; // S1-bots A
 
 /** N27 (lane T): the start of a what-changed line naming a rule the builder added that the person did not ask for. */
 export const UNASKED_RULE = "unasked rule";
@@ -136,6 +137,7 @@ export function whatChangedNote(events: readonly JobEvent[], version: string, fo
   // N27: the balance the person's change moved (the newest note's first line) and every rule they did not ask for, each on its own line
   const moved = files.length === 0 ? [] : since.flatMap((e) => (e.type === "note" && e.text.startsWith(BALANCE_MOVED) ? [(e.text.split("\n")[0] ?? "").slice(FOREMAN_NOTE.length)] : [])).slice(-1);
   const rules = files.length === 0 ? [] : unaskedRules(since).map((l) => `${UNASKED_RULE} (the builder's words; you did not ask for it): ${clip(l.replace(/^RULE:\s*/, ""), 300)}`);
-  const lines = [...new Set([...notMade, ...named, ...unnamed, ...missed, ...moved, ...rules])].map((l) => `\n${l}`).join("");
+  const bots = files.length === 0 ? [] : botsCardLines(since); // S1-bots A: what the Foreman told the bots by default
+  const lines = [...new Set([...notMade, ...named, ...unnamed, ...missed, ...moved, ...rules, ...bots])].map((l) => `\n${l}`).join("");
   return `${`${FOREMAN_NOTE}${WHAT_CHANGED} in v${version}${was !== "" ? ` (since v${was})` : ""}: ${asked.length > 0 ? `asked ${asked.join(", ")}; ` : ""}${made}`.slice(0, 1500)}${lines}`;
 }

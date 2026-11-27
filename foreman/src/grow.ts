@@ -19,6 +19,7 @@ import { clip, FOREMAN_NOTE } from "./conduct.js";
 import fs from "node:fs";
 import path from "node:path";
 import { PKG_ROOT } from "./paths.js";
+import { BOTS_PROPERTIES, botsProblems, botsPromptText } from "./botsdefault.js";
 
 /** The owner answer that says no package owns the request: it adds something new. */
 export const NEW_PACKAGE = "new";
@@ -51,6 +52,7 @@ Rules:
 - Answer "new" only when the request ADDS something the game does not have at all and that belongs in none of these
   packages' files (a new mechanic, a new kind of object, a new screen). Bigger, faster, stronger, slower, another
   colour or another number is never "new": name the package that owns it.
+{{bots}}
 
 Answer with ONE JSON object and nothing else, matching this JSON schema exactly:
 
@@ -58,14 +60,26 @@ Answer with ONE JSON object and nothing else, matching this JSON schema exactly:
 
 - \`package\`: one id from the list above, exactly as written, or "new".
 - \`reason\`: one sentence.
+- \`move\`, \`bots\`, \`bot_packages\`, \`use\`, \`answer\`: as the section on a new move says; omit them all when the request adds no move.
 {{feedback}}`;
 
 const ownerSchema = {
   type: "object",
   additionalProperties: false,
   required: ["package", "reason"],
-  properties: { package: { type: "string" }, reason: { type: "string" } },
+  properties: { package: { type: "string" }, reason: { type: "string" }, ...BOTS_PROPERTIES }, // S1-bots A: a new move and the bots (botsdefault.ts)
 } as const;
+
+/** The owner answer: a package (or "new") and why; with a new move, what the bots do with it (botsdefault.ts). */
+export interface OwnerAnswer {
+  package: string;
+  reason: string;
+  move?: string;
+  bots?: string;
+  bot_packages?: string[];
+  use?: string;
+  answer?: string;
+}
 
 /**
  * Which package owns a change request, or NEW_PACKAGE. The prompt keeps the old owner question's words ("Decide which
@@ -75,17 +89,17 @@ export function ownerOrNew(
   builder: Builder,
   input: { sentence: string; title: string; text: string; packages: PackageLine[] },
   opts: GenerateOptions = {},
-): Promise<Generated<{ package: string; reason: string }>> {
+): Promise<Generated<OwnerAnswer>> {
   const ids = input.packages.map((p) => p.id);
-  return generate<{ package: string; reason: string }>(
+  return generate<OwnerAnswer>(
     builder,
     "planner",
     OWNER_PROMPT,
-    { sentence: input.sentence, title: input.title, text: input.text, packages: packageLinesText(input.packages) },
+    { sentence: input.sentence, title: input.title, text: input.text, packages: packageLinesText(input.packages), bots: botsPromptText(input.packages) },
     ownerSchema,
     (v) => {
       const pkg = (v as { package: string }).package;
-      return ids.includes(pkg) || pkg === NEW_PACKAGE ? [] : [`"package" must be one of: ${ids.join(", ")}, or "${NEW_PACKAGE}"`];
+      return [...(ids.includes(pkg) || pkg === NEW_PACKAGE ? [] : [`"package" must be one of: ${ids.join(", ")}, or "${NEW_PACKAGE}"`]), ...botsProblems(v as OwnerAnswer, ids)];
     },
     { timeoutMs: 3 * 60_000, ...opts },
   );

@@ -19,7 +19,7 @@ import { PKG_ROOT, REPO_ROOT, stripBom, toPosix } from "./paths.js";
 import { CARRIED_FIELDS, MANIFEST_FILE, PACK_VERSION, kernelApiFor, acceptedCarriedFields, engineKnowsBase, carriedOf, composeManifest, depClosure, dependants, manifestText, mergeCarried, type Carried } from "./manifest.js";
 import { builderFeelSection, servesLine } from "./roomtext.js"; // JOB.md 2026-11-21: builders read the design
 import { briefText, critic, render, replanPackages, type GenerateCall, type PackageLine, type PlannerInput, type ReplanInput } from "./designer.js";
-import { NEW_PACKAGE, grow, ownerOrNew, wireWaits, type GrowHost } from "./grow.js";
+import { NEW_PACKAGE, grow, ownerOrNew, wireWaits, type GrowHost } from "./grow.js"; import { botsBriefText, botsEvents, botsPlanOf, type BotsPlan } from "./botsdefault.js"; // S1-bots A
 import { FINAL_NOTE, fastFinal, fastMerge, fastPromotion, mergeNote, roundAcceptance, whatChangedNote } from "./fastchange.js"; // E4b: a data-only change // E4 (24-25 Nov): a change may add a package
 import { removedSince } from "./removal.js"; import { promotionErrors } from "./promogate.js"; import { answeredThisChange, askedAgain, plainQuestion } from "./asktwice.js"; import { longerMatch, tofuGate } from "./tofugate.js"; import { withGrants } from "./scopegrant.js"; import { afterMerge } from "./halfmade.js"; // H1 (E5e): what a change removed, named; H1d: promotion pictures with script errors refuse
 import { criticRubric, inReach, phaseLine, phaseStep, replanPhases, stuckText, waitsForVerdict } from "./phases.js"; // JOB.md 2026-11-20: phases
@@ -163,7 +163,7 @@ export class Foreman {
   }
 
   /** P10: the Planner's answer to "which package owns this change request", by the request's seq (this run only). */
-  private readonly askedOwners = new Map<number, { owner: string; how: string }>();
+  private readonly askedOwners = new Map<number, { owner: string; how: string; bots?: BotsPlan }>();
 
   /**
    * True when a pending change request could be applied now: its package (named, or already chosen by the Planner)
@@ -1289,10 +1289,12 @@ export class Foreman {
         let known = this.askedOwners.get(c.seq);
         if (known === undefined) {
           const model = this.o.plannerModel ?? this.o.model;
-          const res = await ownerOrNew(this.o.builder, { sentence: this.s.sentence ?? "", title: this.s.title ?? "", text: c.text, packages: changeCandidates(this.packageLines(), this.s.plan, jobCore(this.gateHost)) }, model ? { model } : {});
+          const cands = changeCandidates(this.packageLines(), this.s.plan, jobCore(this.gateHost));
+          const res = await ownerOrNew(this.o.builder, { sentence: this.s.sentence ?? "", title: this.s.title ?? "", text: c.text, packages: cands }, model ? { model } : {});
           this.logGenerateCalls(res.calls, model);
+          const bots = res.ok ? botsPlanOf(res.value, cands) : undefined; // S1-bots A: a new move tells the bots by default
           known = res.ok
-            ? { owner: res.value.package, how: res.value.package === NEW_PACKAGE ? clip(res.value.reason, 200) : `the Planner names the package: ${clip(res.value.reason, 200)}` }
+            ? { owner: res.value.package, how: res.value.package === NEW_PACKAGE ? clip(res.value.reason, 200) : `the Planner names the package: ${clip(res.value.reason, 200)}`, ...(bots ? { bots } : {}) }
             : { owner: this.rootId(), how: `the Planner gave no usable answer (${clip(res.reason, 160)}), so the root package takes it` };
           this.askedOwners.set(c.seq, known);
         }
@@ -1318,6 +1320,7 @@ export class Foreman {
       const sk = c.text.startsWith(FOREMAN_NOTE) ? undefined : skinSplit(this.s.plan, owner, c.text); // H1h: the game's text (title, tagline, names, commentary) goes to the skin's owner
       const text = sk === undefined ? c.text : sk.rest === "" ? ([owner, how] = [sk.to, `${how}; ${sk.why}`], c.text) : (this.append({ type: "change_requested", package: sk.to, text: skinPartText(c.seq, sk.why, sk.skinText) }), (how = `${how}; ${sk.why}`), sk.rest);
       this.reopen(owner, `${changeReason(c.seq)}; ${how}: ${clip(text, 300)}`, `${CHANGE_ROUND}: ${text}`);
+      const bp = c.package === undefined ? this.askedOwners.get(c.seq)?.bots : undefined; if (bp !== undefined) { const ev = botsEvents(bp, owner, c.seq, text); if (ev.note !== undefined) this.append({ type: "note", package: owner, round: this.pkg(owner).round, text: ev.note }); for (const w of ev.wires) this.append({ type: "change_requested", package: w.package, text: w.text }); } // S1-bots A (botsdefault.ts)
       await cartridgeChange(this.gateHost, owner, this.pkg(owner).round, text); // E3b: on a core, a cartridge diff first (coregate.ts)
       applied += 1;
     }
@@ -1720,7 +1723,7 @@ export class Foreman {
       roundLimit: String(Math.max(round, this.cap(id))),
       changes:
         (this.pkg(id).changes ?? []).length > 0
-          ? `\n## Change requests from the player (made after this package was first finished; they are part of your brief, newest last, and win over the contract where the two disagree)\n${(this.pkg(id).changes ?? []).map((c, i) => `${i + 1}. ${c}`).join("\n")}\n${this.presentValues(id, spec)}`
+          ? `\n## Change requests from the player (made after this package was first finished; they are part of your brief, newest last, and win over the contract where the two disagree)\n${(this.pkg(id).changes ?? []).map((c, i) => `${i + 1}. ${c}`).join("\n")}\n${botsBriefText(this.s.notes, id)}${this.presentValues(id, spec)}`
           : "",
       depNotes: this.depNotesText(id),
       timeLimit: `${Math.max(1, Math.round(this.o.builderTimeoutMs / 60_000))} minutes`,
