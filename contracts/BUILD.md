@@ -344,6 +344,29 @@ jump pad, a coin, a hazard, and a **run** (start, checkpoints, finish) that time
   that rest on nothing, a pad or a flag with no floor under it, a coin inside a solid block, a run whose finish cannot
   be reached from its start (an estimate over standable cells: walking, steps of at most 0.55 m, and jumps of at most
   1.2 m up and 4 m across).
+- **Fix it** (round 2): when the check found something, R sends one follow-up ask with the same sentence and cursor
+  and an optional key `fix`: `{"ops": [the answer's ops], "findings": ["<a finding naming cells and distances>", ...]}`
+  (omitted in every other ask). The answer replaces the ghost; only Enter keeps it. It counts as a call.
+
+### Assemblies (M6, round 3)
+
+On input only (an LLM answer, or the hand's assembly tool), `{"op":"assemble", "kind":"<kind>", "at":[x,y,z],
+"size":[w,h,d], "rot":0-3, "mat":<id>, "trim":<id>, "opts":{...}}` asks the exe to build a parametric big shape;
+the exe expands it into `place` ops when it shows the answer (as `pour` is expanded into `flood`): an `assemble` is
+never journaled or saved. `at` is the low corner cell before the turn, `size` in cells (each 1-48), `mat` and `trim`
+block materials from the ask's tables (trim omitted = mat). Kinds (v1) and their `opts` (each optional):
+- `wall`: a straight wall `w` long, `h` high, 1 thick; `opts.door` (cell offset along it, a 1x2 opening),
+  `opts.windows` (every N cells at sill height 1), `opts.crenels` (true: merlons on top).
+- `tower`: a hollow square tower `w` x `w`, `h` high, walls 1 thick; `opts.door`, `opts.windows`, `opts.crenels`,
+  `opts.stairs` (`"inside"` or `"outside"`: a stair run climbing to the top, with landings).
+- `house`: walls `w` x `d` x `h` with a door, windows, a floor, and a pitched roof of roof blocks over the long side.
+- `stair`: a stair run `w` wide climbing `h` cells along +z (turned by `rot`), with a landing every 6 steps.
+- `bridge`: a deck `w` wide and `d` long at y of `at`, railings (fences) on both sides, piers every 6 cells down to
+  the ground or bed, and steps at both ends down to the ground.
+- `platform`: a floor `w` x `d` at y of `at` with a railing round it and posts down to the ground.
+Blocks an assembly would place in a protected or occupied cell are left out with the place ops' reasons; the shape
+is the same for the same input (deterministic, no randomness).
+
 
 ## Laws
 
