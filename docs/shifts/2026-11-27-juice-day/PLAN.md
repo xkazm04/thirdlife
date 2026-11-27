@@ -68,3 +68,4 @@ findings, then a second crazy ability per game through the editor (the same juic
 - The full tier on main 8be26d61 runs in d25-kart (detached), log `.tl/d27-full.log`.
 - ~10:05: S4-core done (arms committed: d27-sp-core 4490f92a, d27-sp-core-b f2ebac62, pushed). JB-back launched in its slot: Opus, d25-shield / d27-back, agent ae071b1603133b2f6. T got S4/S35 findings as items 7-9 (rules.json scope, exe crash on a refused rules file, a frozen measure must be said).
 - 11:16: J2nd launched (second crazy ability for karts, biplane, half-court through the fixed editor; Opus, d25-kart / d27-second).
+- 16:14: J2b launched (second crazy ability for robots and shield wall; Opus, d25-biplane / d27-second-b). JB-back and S4 done; S2, S35 done earlier.
