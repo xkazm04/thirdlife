@@ -1,9 +1,9 @@
-# Third Life kernel API (kernelApi 1.30)
+# Third Life kernel API (kernelApi 1.31)
 
-**Version 1.30 (major 1 frozen by P7 on 2026-11-11; minors are additions).** The version is the `KERNEL_API` constant of
+**Version 1.31 (major 1 frozen by P7 on 2026-11-11; minors are additions).** The version is the `KERNEL_API` constant of
 `kernel/runner/manifest.gd`. Every class, method, signal, property and constant a pack may use is written down by a
-machine in `docs/generated/API-V1.json` and `tl arch` guards it: section 22. `"kernelApi": "1.30"` in `pack.json` (any
-`"1.x"` up to 1.30 runs; `"0.1"`, the name the 1.0 surface had before, still runs).
+machine in `docs/generated/API-V1.json` and `tl arch` guards it: section 22. `"kernelApi": "1.31"` in `pack.json` (any
+`"1.x"` up to 1.31 runs; `"0.1"`, the name the 1.0 surface had before, still runs).
 
 What a pack may use. A pack is a directory (`contracts/PACK.md`); the kernel loads it, runs it at a fixed 60 physics
 frames per second and verifies it (`contracts/RUNNER.md`). Everything a pack needs is a global class starting with
@@ -1367,3 +1367,17 @@ core's part (`ctx.cores.part("rink", "audio")`, section 24).
 - Under the pack's pause (the dungeon pauses the tree; the pack's sound node is pausable) every player stops where it is
   and goes on at resume, the loops and the line alike, as Unreal pauses every non-UI sound under `SetGamePaused`.
   Selftest `842-rink-booth.sh` (`core.rink.booth.duck`, `.pause`).
+
+## 29. Kit parts for a town: `bench` and `street_lamp` (1.31)
+
+- Additions in 1.31 (spark world-sandbox M5, lane K: the kernel API records what the M3-M5 rounds added): two kit parts,
+  `TLKit.build("bench", {length = 1.8 (1.0..3.0 m), back = true})` (a town bench of planks on two end frames, centred
+  on the origin, a person sits facing +Z; wood) and `TLKit.build("street_lamp", {height = 4.2 (3.0..6.0 m), light =
+  true})` (stone foot, iron post, an arm over +Z with a lantern; steel; its light is skipped headless). Both are in
+  `TLKit.PARTS` and `res://kits/KIT.md`, and usable in a layout's `props[]`. The Home grants them from play
+  (`kernel/world/build/unlocks.json`: `bench` after the first dungeon, `street_lamp` after three). No class, method,
+  signal or property changed (`docs/generated/API-V1.json` lists `TLKit.PARTS` by name, not by its entries).
+- Not API (the visitor's side, never a pack's): the visitor steps up the risers of the Home's blocks
+  (`kernel/world/terrain/walker_riser.gd`, `world_body.gd` `step_risers`, off for every `TLBiped`: a pack's walker and
+  its state hash are what they were; selftest 766), and a results card follows a person's dungeon in the exe
+  (`kernel/dungeon/results_card.gd`; selftest 767).

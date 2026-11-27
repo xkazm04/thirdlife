@@ -40,6 +40,8 @@ const List: GDScript = preload("res://kernel/dungeon/dungeons.gd")
 const UI: GDScript = preload("res://kernel/dungeon/look_ui.gd")
 const Watch: GDScript = preload("res://kernel/dungeon/watch.gd")
 const Trophies: GDScript = preload("res://kernel/world/build/trophies.gd")   # spark world-sandbox M3: the Home's trophies
+const Unlocks: GDScript = preload("res://kernel/world/build/unlocks.gd")
+const Results: GDScript = preload("res://kernel/dungeon/results_card.gd")   # M5 lane K: the card after a dungeon
 
 const CENSUS_EVERY: int = 10            # as the worker (kernel/runner/worker.gd)
 const MAX_ERRORS: int = 20              # RUNNER.md: more than this stops a run
@@ -316,7 +318,12 @@ func close(why: String) -> void:
 		var snap: Dictionary = _logger.call("snapshot")
 		result["script_errors"] = int(snap.get("script_errors", 0))
 		result["engine_errors"] = int(snap.get("engine_errors", 0))
-		Trophies.record(run, result, frames_target)   # M3: a person's play -> trophies.json (TLRules winner, scores)
+		# M3: a person's play -> trophies.json (TLRules winner, scores); M5 lane K: what it newly unlocked, for the card
+		var home: String = Trophies.home_dir()
+		var u: RefCounted = Unlocks.new(home) if frames_target == 0 and not home.is_empty() else null
+		var entry: Dictionary = Trophies.record(run, result, frames_target)
+		if not entry.is_empty() and u != null:
+			result["trophies"] = Results.of_play(title, entry, u.locks(), Unlocks.new(home).locks(), u.of(str(result.get("pack", ""))))
 		life.teardown()
 	if not problem.is_empty():
 		result["problem"] = problem

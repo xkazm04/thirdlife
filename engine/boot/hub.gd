@@ -5,7 +5,9 @@ extends RefCounted
 ## A person's start with no arguments (and no TL_EXE_* instrument in the environment) shows the main menu (boot/menu.gd):
 ##   World     the village, as before; Esc there ends the walk and returns to the menu (the world and its viewer freed)
 ##   Dungeons  engine/boot/dungeons.json: one pack alone (kernel/dungeon/dungeon.gd) with its own camera, HUD and look;
-##             no world is loaded; Esc opens the pause card (Resume, Leave: back to the menu, the default look again)
+##             no world is loaded; Esc opens the pause card (Resume, Leave: back to the menu, the default look again);
+##             M5 lane K: when the play was recorded (trophies.json), a results card first (plays, wins, best, what this
+##             end newly unlocked for building; kernel/dungeon/results_card.gd), closed by any key or a click
 ##   Create    res://ui/create/create.tscn when it is in the build (its root: open(), signal closed); else "coming tonight"
 ##   Quit
 ## Every flag path (check, probe, tag, --record, --input, --site-job, --games, ...) and every unattended start
@@ -31,6 +33,7 @@ const MENU_SCRIPT: String = "res://boot/menu.gd"
 const DUNGEON_SCRIPT: String = "res://kernel/dungeon/dungeon.gd"
 const DUNGEON_LIST: String = "res://kernel/dungeon/dungeons.gd"
 const CREATE_SCENE: String = "res://ui/create/create.tscn"
+const RESULTS_SCRIPT: String = "res://kernel/dungeon/results_card.gd"   # M5 lane K: the card after a person's dungeon
 const WORLD_SCRIPT: String = "res://kernel/world/world.gd"
 ## the instruments of unattended starts: any of them in the environment means "the village, as before" (not the menu)
 const UNATTENDED_ENV: Array = ["TL_EXE_CAPTURE", "TL_EXE_CAPTURE_AT", "TL_EXE_QUIT_AT", "TL_EXE_KEYS", "TL_EXE_WARM", "TL_EXE_TRACE", "TL_EXE_FRAMES"]
@@ -39,6 +42,7 @@ var b = null                            # the boot node (untyped: its members ar
 var menu: CanvasLayer = null
 var dungeon: Node = null
 var create_node: Node = null
+var results: CanvasLayer = null         # M5 lane K: the results card shown between a dungeon and the menu
 var dungeon_rows: Array = []            # [{pack, title, look?, dir, pack_id?}]
 var census: Array = []                  # the census lines (and the trips' world and dungeon results)
 var _menus_shown: int = 0
@@ -357,9 +361,21 @@ func _on_dungeon_left(why: String) -> void:
 		census.append(res)
 	elif DisplayServer.get_name() != "headless":
 		_set_aa_of_style()                         # the default look's antialiasing again
+	var card: GDScript = load(RESULTS_SCRIPT) as GDScript
+	if b.verb != "trips" and bool(card.call("wanted", res)):
+		results = card.new()                       # M5 lane K: what this play recorded and unlocked; a key or a click: the menu
+		b.add_child(results)
+		results.call("open", res)
+		results.connect("closed", _on_results_closed)
+		return
 	show_menu()
 	if b.verb == "trips":
 		_trip_next.call_deferred()
+
+
+func _on_results_closed() -> void:
+	results = null
+	show_menu()
 
 
 ## --dungeon=<pack dir>: that pack straight as a dungeon, a window and a "Back to Create" that ends the process; headless

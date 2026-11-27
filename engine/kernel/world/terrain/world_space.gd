@@ -28,6 +28,8 @@ var _keep: Array = []                 # Shape3D resources that must outlive thei
 var _cap: CapsuleShape3D = null
 var _cyl: Dictionary = {}             # radius key -> CylinderShape3D (shared by every trunk of that size)
 var _spheres: Dictionary = {}
+var step_risers := true              # lane K (M5): the visitor steps up risers (walker_riser.gd); packs never use this file
+const Riser: GDScript = preload("res://kernel/world/terrain/walker_riser.gd")
 var _mover: Mover = null         # walker-feel: the body with weight (world_body.gd), made on the first drive()
 const Mover: GDScript = preload("res://kernel/world/terrain/world_body.gd")
 const DrawBase: GDScript = preload("res://kernel/world/draw/draw_base.gd")     # bugfix-37 Q17: `edge_height` (pad_rim)
@@ -422,13 +424,18 @@ func walk(from: Vector3, delta: Vector3) -> Dictionary:
 	var drop: float = up.y + 0.9
 	var grounded: bool = false
 	var ground_n: Vector3 = Vector3.UP
+	var edge := RID()                               # lane K: what the foot met (walker_riser.gd)
 	if _test(Transform3D(Basis(), pos), Vector3(0.0, -drop, 0.0)):
 		pos += _res.get_travel()
 		ground_n = _res.get_collision_normal(0)
+		edge = _res.get_collider_rid(0)
 		grounded = true
 	else:
 		pos.y -= drop                               # nothing under him within reach: a ledge; he steps down by the reach
 	var slope_ok: bool = not grounded or ground_n.y >= cos(deg_to_rad(max_slope_deg))
+	if not slope_ok and step_risers and (not is_nan(Riser.top_ahead(self, pos, delta, from.y)) if pos.y >= from.y - 0.001
+			else Riser.steps_on(self, edge) and not is_nan(Riser.floor_under(self, pos, step_up))):
+		slope_ok = true                             # lane K: the foot on a step's edge, up or down it (walker_riser.gd)
 	if not slope_ok:
 		# refuse: the move ends on something too steep to stand on; stay where he was
 		hit = true
@@ -459,6 +466,7 @@ func ensure_mover() -> Mover:
 		_mover.grips.ledges = true
 		_mover.grips.bars = true
 		_mover.grips.soft_swing = true               # round 4: the soft end of a hard swing (visitor only)
+		_mover.step_risers = step_risers             # lane K (M5): risers stepped up (visitor only)
 	return _mover
 
 
