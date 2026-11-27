@@ -6,7 +6,9 @@
 // count of expanded ops is capped (MAX_OPS). The answer file never holds a box: only tl.edit/1 ops without v, author
 // and batch. M5 (lane C): a place may name only a material of the ask's table and a put only a part of its parts table
 // (the ask lists what play has unlocked); paint, path and plant names, a path's points and width are held to the
-// contract's lists and ranges (contracts/BUILD.md "Milestone 5").
+// contract's lists and ranges (contracts/BUILD.md "Milestone 5"). M6 (lane C): zone, unzone, rule and unrule are checked
+// in order with every limit and refusal of the contract (world_edit_rules.ts), so the model hears them.
+import { rulesChecker } from "./world_edit_rules.js";
 
 export const MAX_OPS = 4000;
 export const SHAPES = 8;
@@ -16,6 +18,7 @@ export const PATH_PAINTS = ["dirt", "sand", "stone", "rock_warm", "grass_dry", "
 export const PLANTS = ["meadow", "flowers", "tall_grass", "valley"];
 export const PATH = { ptsMin: 2, ptsMax: 64, stepMin: 100, stepMax: 4800, widthMin: 150, widthMax: 800 };   // cm
 const LATTICE = 3;
+const M6 = ["zone", "unzone", "rule", "unrule"];
 /** Every op kind an ask's `ops` may name (tl.world-edit-ask/1): the layers' kinds and `pour`, which the exe expands. */
 export const ASK_OPS = ["place", "remove", "land", "paint", "put", "lift", "flood", "pour", "drain", "path", "unpath", "plant",
   "zone", "unzone", "rule", "unrule"];
@@ -24,7 +27,7 @@ const OTHER: Record<string, string[]> = {
   land: ["verts"], paint: ["cells"], put: ["at", "part", "params", "rot", "seed"], lift: ["at", "part", "params", "rot", "seed"],
   flood: ["cells"], drain: ["cells"], plant: ["cells"], pour: ["at"],
   path: ["id", "pts", "width_cm", "paint"], unpath: ["id", "pts", "width_cm", "paint"],
-  zone: ["id", "box", "look", "name"], unzone: ["id", "box", "look", "name"],          // M6 seam: wire names and shapes only
+  zone: ["id", "box", "look", "name"], unzone: ["id", "box", "look", "name"],          // M6: world_edit_rules.ts checks them
   rule: ["id", "when", "if", "do"], unrule: ["id", "when", "if", "do"],
 };
 
@@ -80,6 +83,7 @@ export function expand(ask: Ask, given: ModelOp[]): { ops: EditOp[]; problems: s
   const ops: EditOp[] = [];
   let placed = 0, removed = 0;
   const say = (i: number, text: string) => problems.push(`ops[${i}] (${given[i]?.op}): ${text}`);
+  const rules = rulesChecker(ask, given);
   const record = (op: "place" | "remove", c: number[], b: Block): EditOp => {
     const r: EditOp = { op, at: [c[0], c[1], c[2]], shape: b[0], mat: b[1], rot: b[2] };
     if (b[3]) r.flip = true;
@@ -151,7 +155,8 @@ export function expand(ask: Ask, given: ModelOp[]): { ops: EditOp[]; problems: s
     }
     if (Object.hasOwn(OTHER, o.op)) {
       if (!kinds.has(o.op)) { say(i, `the Home does not take "${o.op}" yet: use only ${[...kinds].join(", ")}${blockOps ? ", fill, clear" : ""}`); return; }
-      const why = otherOp(o, inside, lo, hi, ask, parts);
+      if (M6.includes(o.op) && !only(i, o, OTHER[o.op] as string[])) return;
+      const why = M6.includes(o.op) ? rules(i, o) : otherOp(o, inside, lo, hi, ask, parts);
       if (why) { say(i, why); return; }
       const { op, ...rest } = o;
       ops.push({ op, ...rest });
@@ -176,18 +181,6 @@ function otherOp(o: ModelOp, inside: (c: number[]) => boolean, lo: Cell, hi: Cel
     if (o.op === "put" && (typeof o.part !== "string" || !isInt(o.rot))) return "put needs part and rot";
     if (o.op === "put" && !parts.has(o.part as string)) return `the part "${o.part}" is not in the parts table (unknown, or not unlocked yet): use one of ${[...parts].join(", ")}`;
     if (o.op === "put" && ((o.rot as number) < 0 || (o.rot as number) > 3)) return "rot must be 0, 1, 2 or 3";
-    return "";
-  }
-  if (o.op === "zone" || o.op === "unzone") {      // M6 seam: the shapes; the exe's rules layer holds every limit (lane C: more)
-    if (!isInt(o.id) || o.id < 1) return "id must be a positive integer";
-    if (!Array.isArray(o.box) || o.box.length !== 2 || !o.box.every(isCell)) return "box must be [[x0, y0, z0], [x1, y1, z1]] of integers";
-    if (typeof o.look !== "string") return "look must be none, pad, coin or flag";
-    return "";
-  }
-  if (o.op === "rule" || o.op === "unrule") {
-    if (!isInt(o.id) || o.id < 1) return "id must be a positive integer";
-    if (typeof o.when !== "object" || o.when === null || Array.isArray(o.when)) return "when must be one trigger {\"on\": ...}";
-    if (!Array.isArray(o.do) || o.do.length === 0) return "do must be a non-empty list of effects";
     return "";
   }
   if (o.op === "path" || o.op === "unpath") {

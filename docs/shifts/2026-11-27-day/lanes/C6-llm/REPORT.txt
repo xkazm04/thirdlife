@@ -1,0 +1,115 @@
+C6 LANE (M6 LLM: say what it does), 27 Nov 2026 day shift. Worktree .claude/worktrees/d27-m6-c, branch d27-m6-c from
+the seam 6690ad32. Nothing committed (lane rules: no git that writes). Selftest block 785 (Director's Q12 answer).
+
+ACCEPTANCE
+- foreman npm test green with counts and new tests: MET. npm test: 465 tests, 459 pass, 0 fail, 6 skipped (the seam had
+  461 / 454 pass / 1 fail, the explain.test load flake; it did not recur here). node --test dist/test/world_edit.test.js:
+  17/17 (13 seam + 4 new: the prompt section and a course passing whole; each op's bad form fed back and fixed on
+  attempt 2 for zone, unzone (two ways), rule, unrule; 36 limit rows of expand() with the contract's words plus three
+  legal batches; a malformed ask zones/rules refused before any call). Locks unchanged (the M5 locks test passes as was).
+- 785-home-command-m6.sh -> HOME command-m6 ok: MET, 6/6 (ask, floating, reach, course, replay, ask_foreman):
+    ask       top-level zones / rules / rules_room, none in layers; the Foreman's readAsk reads the exe's ask
+    floating  note '... check: 1 block floats; the pad Sky has no floor; a coin is inside a block', 3 red marks, Esc reverts
+    reach     [true, false, false] for a 2-cell gap / a 5-cell gap / a 2-block wall; lines '', 'finish not reachable' x2
+    course    note '17 blocks, 5 zones, 5 rules: Hop', no check line; Enter keeps 1 batch; zone ids 1..6 (the answer's
+              1..5 after the Home's 1), the finish rule names the renumbered flag (3); 6 rules
+    replay    the kept course over the check's walk: run Hop starts, 2/2 coins taken, finish recorded
+    ask_foreman  the real ask's prompt 35,856 bytes, 4,000 of them the zones-and-rules section (cap 4,096 held by the test)
+- ONE real Opus call in the exe (a window): MET, one call (the editor binary in a window, res://boot/boot.tscn, a fresh
+  Home folder, TL_BUILD_DEVICES / TL_COMMAND_DEVICES / TL_EXE_START), the sentence verbatim from the brief, cursor on
+  the grass at (-69, 2, 21), 25 m from the spawn, looking north:
+    duration 106.2 s (model), 6,435 frames ask -> ghost; tokens 41,791 in / 11,554 out; 548 ops (418 blocks placed,
+    9 zones, 9 rules); refused 2: the 'Fall' zone (x -72..-62, z 10..18 at ground y 2: "game lot", see Q-C1) and the
+    respawn rule naming it ("rule 9 names zone 9, which is not there"); space-check warnings: none (483 feet cells,
+    48.9 ms). Ghost note: '"Stone tower ahead of you with stairs and jumps winding round it: the Tower Climb run, three
+    coins, flag on top."  418 blocks, 8 zones, 8 rules: Tower Climb; 2 refused: game lot, rule 9 names zone 9, which
+    is not there'. Accepted: one batch (batch 1), the Home saved as tl.build/4 with 8 zones and 8 rules.
+    Attempts: not logged by the Foreman; tokens in are about twice the M5 single attempt for a prompt of this size
+    (26.0 KB), so one problem was probably fed back once. Unmeasured, not called one attempt.
+  Walk/run it: lane P's play is not in this tree, so the kept Home was replayed headless (command_m6_case.gd -- replay):
+    the walk from the Start pad reaches all 3 coins and the finish; rules_run over that walk: run "Tower Climb" started,
+    3/3 coins taken, finish recorded (96 frames of scripted walk), both say lines fired. Stricter walkers on the same
+    Home: hops of at most 2 m across and 1.2 m up still reach 3/3 coins and the finish; walking only (0.55 m steps, no
+    jump) reaches no coin and no finish.
+  Captures: docs/shifts/2026-11-27-day/lanes/C6-llm/c6-ghost.jpg (the holo tower and the note), c6-built.jpg (kept).
+  Judgement (honest): it built a real tower course: a 9 x 9 stone tower 10 high with windows and crenellations, dark
+  stone stairs and landings winding up its east, north and west sides, three checkpoint landings, coins on the way
+  and the flag on the roof, and by the estimate a person who can hop a 1-block step and a 1-cell gap can finish it.
+  What a person would NOT see yet in this tree: the pad, the coins and the flag (lane P's looks) and the zones in the
+  ghost (lane T's preview_node): the ghost showed blocks only. Not proven: a body actually making those 1-block-up hops
+  (world_body.gd JUMP_V gives 1.0 m of jump height; the brief's 1.2 m is what the estimate uses: see Q-C3), and the
+  fall respawn the model asked for was refused, so a fall from the tower means walking back to the start.
+- Gates per M6-COMMON:
+    tl check --tier fast: PASS 5/5 (arch 12/12, assets 4/4, cards 3/3, devx.test 230/230, foreman.typecheck).
+    bash engine/tools/selftest.sh home. : "selftest: 134 passed, 0 failed" (the seam's 126 + 785's 6 + the 774/775 stubs).
+    tl check --tier full --only world: PASS [9/9], 247 s; the 9 hashes and frame counts are identical to main's
+    .tl/gate-world.log (diff of the table: empty).
+    Uncapped bash engine/tools/selftest.sh: SEE THE LAST LINE OF THIS SECTION (filled in when it ends or is stopped).
+    Foreman full suite: 465 / 459 pass / 0 fail / 6 skipped (the explain.test flake did not show).
+
+DELIVERED (files, all in the C rows of LANES.md)
+New:
+  engine/kernel/world/build/command_space.gd    the space check: floating blocks, pad/flag floor, coin in a block, run
+                                                reachability over feet cells (walk, step, jump, drop, launch, teleport,
+                                                open zones passable), the note line, the red marks node
+  engine/kernel/world/build/command_replay.gd   a Home's runs walked (start, coins, finish) and replayed through
+                                                rules_run.gd with a recording facade
+  engine/kernel/world/build/command_m6_case.gd  the 785 case; `-- replay <home dir>`, `-- site <x> <z>` tools
+  engine/tools/selftest.d/785-home-command-m6.sh
+  foreman/src/world_edit_rules.ts               the M6 checks (every shape, limit and refusal; reference resolution as
+                                                rules_layer.gd renumber; unzone/unrule whole and in order)
+  foreman/prompts/world_edit_rules.md           the zones-and-rules prompt section (3.82 KB template)
+  .gd.uid files made by --import
+Changed:
+  engine/kernel/world/build/command_ask.gd      zones / rules / rules_room top level from rules_layer.ask_part (RULES_KEYS),
+                                                taken out of `layers`
+  engine/kernel/world/build/command_answer.gd   counts: "N zones", "M rules: <run names>", "zones removed", "rules removed"
+  engine/kernel/world/build/tools/command_tool.gd  the space check on show, marks beside the ghost, "check: ..." in the
+                                                hotbar note and over the ghost, freed on accept/revert; command_ghost
+                                                prints space, space_nodes, space_marks, space_ms
+  engine/kernel/world/build/COMMAND.md          the M6 section and the real call's figures
+  foreman/src/world_edit.ts                     askSchema: zones / rules in the file's shapes; facts.rules (rulesFacts)
+  foreman/src/world_edit_check.ts               M6 ops go to rulesChecker (the seam's shape-only checks removed)
+  foreman/prompts/world_edit.md                 {{rules}} after {{more_ops}}; the note names a run
+  foreman/src/test/world_edit.test.ts           4 new tests; one seam fixture moved (below)
+No PATCHES-C6.md: nothing outside C's files was needed.
+
+BEHAVIOUR CHANGES
+- The ask: `zones`, `rules` are top level (were inside `layers`); `rules_room` is in every ask whose ops offer `zone`
+  (every Home now). 759 and 765 unchanged and green.
+- The prompt grows by ~3.95 KB when the ask offers `zone` (3,853 bytes measured on the real ask with no zones; 4,000
+  with one listed zone). The note instruction asks for the run's name.
+- The Foreman now refuses (and feeds back) M6 ops the exe would refuse, plus a zone box over a refused column of the
+  ask. TEST EXPECTATION MOVED: the seam's test "expand: the M6 ops pass through..." had a good zone box reaching z 52,
+  which is the fixture's game-lot row; with the full checks it is refused, so the box now ends at z 51 (commented in
+  the test). Nothing loosened.
+- The note counts zones and rules ("5 zones, 5 rules: Hop"); before, a zone op fell to the default "0 zone".
+- The ghost may carry red marks and a "check: ..." line; nothing is refused by it. An answer with no problem looks as
+  before. 765's ghost-node list is unaffected (the marks are not under layer_ghosts).
+
+WHAT THE OWNER SHOULD LOOK AT, AND HOW
+- c6-ghost.jpg and c6-built.jpg in this folder: the tower from 20 m. Then, once P and T have landed, the same ask in a
+  window: `bash .tl/c6/real-call.sh` in this worktree shows how it was driven (one Opus call each time it runs).
+- To read a kept course: `Godot --headless --path engine --script res://kernel/world/build/command_m6_case.gd -- replay
+  <home dir>` prints the zones, the rules as lines, the walk and whether the run finishes.
+
+QUESTIONS FOR THE DIRECTOR
+Q-C1 protect.gd refusal_box (seam, frozen) tests a box against a rotated lot rect by the box's half DIAGONAL round its
+     centre: a large zone near a lot is refused "game lot" though none of its columns is a refused column. The real
+     call's 11 x 9 'Fall' zone was refused that way, and its respawn rule with it. The ask's refused columns cannot
+     predict it, so the Foreman cannot feed it back. Either an exact rect overlap in refusal_box, or the ask names the
+     lots' rects. (Measured: the box x -72..-62, z 10..18 touches no refused run of the ask; refused "game lot".)
+Q-C2 The ghost shows no zones until T's preview_node lands (command_ghost "layers": []); no change on C's side then.
+Q-C3 The estimate's 1.2 m jump (brief, contract) vs world_body.gd's jump height 1.0 m (JUMP_V 6.93, g 24): a 1-block
+     climb is "reachable" to the check; whether a body makes it (riser step-up, ledge grab) is P's to show. The real
+     tower needs such hops.
+Q-C4 The Foreman logs no attempt count in the answer; the real call's attempts are inferred from tokens only. A
+     `attempts` key would be a contract change (tl.world-edit/1), so it is a question, not done.
+
+NEXT THREE
+1. Feed the space check back in the Foreman too (a floating block, a floorless pad, an unreachable finish found on the
+   ask's blocks + ground before the answer is written), so the model fixes space before the person sees it.
+2. After P and T land: the same real ask in a window with the looks and the zone ghost, and a person (or the visit's
+   devices) walking the tower; compare to the replay.
+3. The respawn-on-fall pattern without a big ground zone (Q-C1): teach "a zone of look none under each jump" or a
+   rule "every 60 frames if running and feet below y: respawn" once the contract has a height condition.

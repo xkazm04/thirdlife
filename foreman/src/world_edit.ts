@@ -15,6 +15,8 @@ import { generate, type GenerateOptions } from "./designer.js";
 import { UsageError } from "./cli_args.js";
 import { PKG_ROOT } from "./paths.js";
 import { ASK_OPS, expand, MAX_OPS, type Ask, type ModelOp } from "./world_edit_check.js";
+import { LOOKS } from "./world_edit_rules.js";
+import { render } from "./generate.js";
 
 const int = { type: "integer" }, words = { type: "string", pattern: "\\S" };
 const ints = (n: number) => ({ type: "array", minItems: n, maxItems: n, items: int });
@@ -35,8 +37,10 @@ export const askSchema = obj({
   parts: { type: "array", minItems: 1, items: obj({ kind: words, note: words }) },
   layers: { type: "object" },
   water: { type: "array", items: obj({ y: int, runs: { type: "array", minItems: 1, items: ints(3) } }) },
-  zones: { type: "array", items: { type: "object" } },       // M6 seam: the wire names (lane C: the shapes)
-  rules: { type: "array", items: { type: "object" } },
+  zones: { type: "array", items: obj({ id: { type: "integer", minimum: 1 }, box: { type: "array", minItems: 2, maxItems: 2, items: ints(3) },
+    look: { enum: LOOKS }, name: words }, ["name"]) },             // M6 (lane C): the file's shapes (rules_layer.gd `read_region`)
+  rules: { type: "array", items: obj({ id: { type: "integer", minimum: 1 }, when: { type: "object" }, if: { type: "array", minItems: 1, items: { type: "object" } },
+    do: { type: "array", minItems: 1, items: { type: "object" } } }, ["if"]) },
   rules_room: obj({ zones_left: { type: "integer", minimum: 0 }, rules_left: { type: "integer", minimum: 0 }, counters: { type: "array", items: words } }),
   caps: obj({ ops: { type: "integer", minimum: 1 }, blocks_left: { type: "integer", minimum: 0 } }),
 }, ["refused", "paints", "parts", "layers", "water", "zones", "rules", "rules_room"]);
@@ -108,7 +112,20 @@ export function facts(ask: Ask): Record<string, string> {
     tables, ground, refused, blocks, water: waterFacts(ask.water),
     layers: ask.layers && Object.keys(ask.layers).length ? "Other layers in the region (as the Home reads them):\n" + JSON.stringify(ask.layers) : "",
     more_ops: moreOps(ask.ops),
+    rules: rulesFacts(ask),
   };
+}
+
+/** M6 (lane C): the zones and rules section (prompts/world_edit_rules.md) with the ask's measured `zones`, `rules` and
+ *  `rules_room`, only when the Home offers the zone op (its rules layer is built). */
+export function rulesFacts(ask: Ask): string {
+  if (!ask.ops.includes("zone")) return "";
+  const room = ask.rules_room;
+  const list = (l: Record<string, unknown>[] | undefined) => (l?.length ? "\n" + l.map((x) => JSON.stringify(x)).join("\n") : "none");
+  return render(fs.readFileSync(path.join(PKG_ROOT, "prompts", "world_edit_rules.md"), "utf8"), {
+    zones: list(ask.zones), rules: list(ask.rules),
+    room: room ? `${room.zones_left} more zones, ${room.rules_left} more rules; counters in use: ${room.counters.length ? room.counters.join(", ") : "none"}` : "512 more zones, 512 more rules; counters in use: none",
+  });
 }
 
 /** How to write the land, paint, put and lift ops (M2, M3) and pour, drain, path, unpath and plant (M5), each only when
