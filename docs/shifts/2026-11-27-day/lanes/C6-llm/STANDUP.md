@@ -1,0 +1,8 @@
+10:45 | state: working | did: read briefs, LANES, BUILD M6, seam report | next: read command_*.gd, foreman world_edit | gates: -
+10:57 | state: working | did: foreman M6 checks (world_edit_rules.ts), prompt section world_edit_rules.md (3.8 KB), 4 new tests; world_edit.test 17/17 | next: command_ask top-level zones/rules, counts, command_space.gd | gates: world_edit.test 17/17 PASS
+11:09 | state: working | did: command_ask top-level M6 keys, counts zones/rules/run, command_space.gd + marks, command_replay.gd, 785 case | next: gates (home., fast, foreman suite), then the real Opus call | gates: 785 HOME command-m6 ok 6/6
+11:17 | state: working | did: gates: fast 5/5, foreman npm test 465 tests 459 pass 0 fail, 785 6/6 | next: the one real Opus call in a window, then home. selftest | gates: foreman 459/465 0 fail
+11:22 | state: working | did: REAL call: 106 s, 41,791/11,554 tokens, 548 ops, 2 refused (game lot zone + its rule), space line empty, kept; replay: Tower Climb finished, 3/3 coins | next: home. selftest, world gate | gates: 785 6/6, foreman 459/465 0 fail, fast 5/5
+11:27 | state: working | did: home. selftest 134 passed 0 failed (785 6/6 inside) | next: world gate, fast tier, report | gates: home. 134/134
+11:32 | state: working | did: world gate PASS 9/9, hashes and frames identical to main's gate-world.log; fast 5/5 | next: uncapped selftest (long), report | gates: world 9/9 = main
+11:32 | state: working | did: landable: round 1 complete (ask, Foreman checks, prompt, space check, replay, 785, real call); touching no source file from here | next: uncapped selftest running (long under load), REPORT.txt | gates: fast 5/5, foreman 459/465 0 fail, home. 134/134, 785 6/6, world 9/9 = main

@@ -12,6 +12,9 @@ extends RefCounted
 ## M5 (lane C): the ask lists only what play has unlocked (unlocks.gd); an answer that still names a locked material,
 ## shape or part has those ops refused "locked: <condition>" when it is shown, and again at accept, and the rest is
 ## applied. Every layer draws its part of the ghost (home_build.gd `preview_nodes`), and the note counts every kind.
+## M6 (lane C): the ask carries the zones, rules and room (command_ask.gd); the note counts zones and rules and names
+## the runs ("4 zones, 6 rules: Tower climb"); before accept the space check (command_space.gd) marks the problem cells
+## in the ghost in red and adds its line to the note ("check: 2 blocks float; finish not reachable"). It never refuses.
 
 const HomeBuild := preload("res://kernel/world/build/home_build.gd")
 const Ask := preload("res://kernel/world/build/command_ask.gd")
@@ -23,6 +26,7 @@ const Marker := preload("res://kernel/world/build/command_marker.gd")
 const PreviewMesh := preload("res://kernel/world/build/preview_mesh.gd")
 const Devices := preload("res://kernel/world/build/command_devices.gd")
 const Unlocks := preload("res://kernel/world/build/unlocks.gd")
+const Space := preload("res://kernel/world/build/command_space.gd")
 const LOCKED_AT := -100000              # refused indices below this are locked ops of the expanded answer
 const KEY_HELP := "T next tool   Shift+T previous tool   Ctrl+Z undo   Ctrl+Y redo   hold MMB or Alt look   B or Esc leave"
 const MAX_PENDING := 2
@@ -38,6 +42,7 @@ var calls: RefCounted = null            # command_calls.gd
 var bar: CanvasLayer = null
 var preview: Node3D = null              # the blocks' ghost (preview_mesh.gd)
 var layer_ghosts: Node3D = null         # every other layer's ghost (home_build.gd `preview_nodes`), under one node
+var space_marks: Node3D = null          # M6: the space check's marks over the problem cells (command_space.gd)
 var devices: RefCounted = null
 var pending: Array = []                 # asks waiting: {id, sentence, cell, facing, ask, out, frame0, marker, rec}
 var ready: Array = []                   # answers that came, waiting to be shown (the oldest first)
@@ -99,6 +104,8 @@ func status() -> Dictionary:
 	var info := ""
 	if not shown.is_empty():
 		info = "\"%s\"  %s" % [shown.answer.note, Answer.counts(shown.preview, int(shown.placed), shown.ops)]
+		if str(shown.get("space", {}).get("line", "")) != "":
+			info += "   check: " + str(shown.space.line)
 	elif bar != null and bar.is_open():
 		info = "> type what to build, Enter asks (%s)" % _today()
 	elif frame - _said_at < SAY_FRAMES and not said.is_empty():
@@ -320,7 +327,16 @@ func _show(p: Dictionary) -> void:
 	for s: Vector2i in (r.store as RefCounted).get("sections"):
 		for idx: int in (r.store as RefCounted).get("sections")[s]:
 			top = maxf(top, float((r.store as RefCounted).call("cell_of", s, idx).y) + 1.0)
-	(p.marker as Node3D).call("note", str(p.answer.note), top - float((p.cell as Vector3i).y))
+	var t0 := Time.get_ticks_usec()
+	var sp: Dictionary = Space.check(build, host.get("land"), r)
+	p["space"] = sp
+	var space_ms := (Time.get_ticks_usec() - t0) / 1000.0
+	space_marks = Space.marks_node(sp.marks)
+	if space_marks != null:
+		host.add_child(space_marks)
+	var note := str(p.answer.note) + ("" if str(sp.line) == "" else "
+check: " + str(sp.line))
+	(p.marker as Node3D).call("note", note, top - float((p.cell as Vector3i).y))
 	shown = p
 	ghosts += 1
 	for k: int in KEYS:
@@ -329,7 +345,8 @@ func _show(p: Dictionary) -> void:
 		host.call("switch_tool", 0, "command")
 	print(JSON.stringify({"schema": "tl.view/1", "kind": "command_ghost", "id": p.id, "applied": int(r.applied),
 		"refused": (r.refused as Array).size(), "placed": p.placed, "counts": Answer.counts(r, int(p.placed), ops),
-		"layers": layer_ghosts.get_children().map(func(n: Node) -> String: return str(n.get_meta(&"tl_layer", ""))), "frame": frame}, "", false))
+		"layers": layer_ghosts.get_children().map(func(n: Node) -> String: return str(n.get_meta(&"tl_layer", ""))), "space": sp.line,
+		"space_nodes": sp.nodes, "space_marks": (sp.marks as Array).size(), "space_ms": snappedf(space_ms, 0.1), "frame": frame}, "", false))
 
 
 ## Enter on a ghost: its ops applied as ONE batch by "llm" (one undo step), the counts as they are now.
@@ -376,6 +393,9 @@ func revert() -> void:
 func _decided(p: Dictionary, keep: bool, r: Dictionary) -> void:
 	preview.call("clear")
 	_clear_layer_ghosts()
+	if space_marks != null:
+		space_marks.queue_free()
+		space_marks = null
 	_latched = true
 	(p.marker as Node).queue_free()
 	shown = {}

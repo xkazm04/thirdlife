@@ -213,7 +213,7 @@ test("expand: the M6 ops pass through with shape checks once the ask offers them
     zones: [{ id: 1, box: [[100, 10, 50], [101, 10, 51]], look: "pad" }], rules: [],
     rules_room: { zones_left: 511, rules_left: 512, counters: [] } } as never;
   const good = [
-    { op: "zone", id: 1, box: [[100, 10, 50], [102, 12, 52]], look: "coin", name: "Coin" },
+    { op: "zone", id: 1, box: [[100, 10, 50], [102, 12, 51]], look: "coin", name: "Coin" },      // M6 lane C: z 52 is the fixture's game lot
     { op: "rule", id: 1, when: { on: "enter", zone: 1 }, do: [{ do: "take", zone: 1 }, { do: "add", counter: "coins", by: 1 }] }];
   const r = expand(m6, good);
   assert.deepEqual(r.problems, []);
@@ -228,4 +228,112 @@ test("expand: the M6 ops pass through with shape checks once the ask offers them
     "rule: do must be a non-empty list of effects", 'rule: when must be one trigger {"on": ...}']);
   const ok = worldEdit(m6 as never, [{ note: "A coin.", ops: good }]);
   assert.equal(ok.code, 0, ok.error);
+});
+
+// M6 (lane C): zones and rules taught in the prompt, checked with every limit and refusal of the contract, fed back.
+const m6ask = { ...m5ask, ops: ["place", "remove", "zone", "unzone", "rule", "unrule"],
+  zones: [{ id: 3, box: [[110, 10, 60], [111, 11, 61]], look: "none", name: "Gate" }, { id: 4, box: [[112, 10, 60], [113, 10, 61]], look: "pad" }],
+  rules: [{ id: 7, when: { on: "use", zone: 4 }, do: [{ do: "toggle", zone: 3 }] }],
+  rules_room: { zones_left: 510, rules_left: 511, counters: [] } };
+const course = { note: "A stone step course, the run Hop.", ops: [
+  { op: "fill", from: [100, 10, 49], to: [101, 10, 49], shape: 1, mat: 1, rot: 0 },
+  { op: "zone", id: 1, box: [[100, 10, 50], [101, 10, 51]], look: "pad", name: "Start" },
+  { op: "zone", id: 2, box: [[101, 11, 49], [101, 12, 49]], look: "coin" },
+  { op: "zone", id: 3, box: [[100, 11, 49], [100, 11, 49]], look: "flag", name: "Finish" },
+  { op: "rule", id: 1, when: { on: "enter", zone: 1 }, do: [{ do: "start", run: "Hop" }, { do: "say", text: "Go!", frames: 60 }] },
+  { op: "rule", id: 2, when: { on: "enter", zone: 2 }, if: [{ running: true }], do: [{ do: "take", zone: 2 }, { do: "add", counter: "coins", by: 1 }] },
+  { op: "rule", id: 3, when: { on: "enter", zone: 3 }, if: [{ running: true }, { counter: "coins", min: 1 }], do: [{ do: "finish" }] },
+  { op: "rule", id: 4, when: { on: "use", zone: 4 }, do: [{ do: "say", text: "The gate", frames: 90 }] }] };
+const m6problems = (a: unknown, ops: unknown[]) => expand(a as never, ops as never).problems.map((p) => p.replace(/^ops\[\d+\] \((\w+)\): /, "$1: "));
+
+test("world-edit M6: the prompt teaches zones and rules with the measured zones, rules and room; a course answer passes whole", () => {
+  const f = facts(m6ask as never);
+  for (const k of ['{"op":"zone"', '{"op":"rule"', "A door that opens and closes on E", "A short run", '"look":"pad"', "Name the run in the note",
+    'Zones in the region now: \n{"id":3,"box":[[110,10,60],[111,11,61]],"look":"none","name":"Gate"}', '{"id":7,"when":{"on":"use","zone":4}',
+    "510 more zones, 511 more rules; counters in use: none"]) assert.ok((f.rules as string).includes(k), k);
+  assert.equal(facts(m5ask as never).rules, "", "no zone op offered: no rules section");
+  const grown = (facts({ ...m6ask, zones: [], rules: [] } as never).rules as string).length;
+  assert.ok(grown <= 4096 - 64, `the rules section is ${grown} bytes on a Home with no zones (the prompt grows at most 4 KB in all)`);
+  const r = worldEditSteps(m6ask, [{ includes: "# Zones and rules", json: course }]);
+  assert.equal(r.code, 0, r.error);
+  assert.deepEqual(r.result.ops.slice(2), course.ops.slice(1));
+  assert.deepEqual(r.result.ops.slice(0, 2).map((o: { op: string }) => o.op), ["place", "place"]);
+});
+
+test("world-edit M6: each op's bad form is fed back and the fixed answer taken on attempt 2 (zone, unzone, rule, unrule)", () => {
+  const gate = { op: "unrule", id: 7, when: { on: "use", zone: 4 }, do: [{ do: "toggle", zone: 3 }] };
+  const cases: [unknown[], unknown[], string][] = [
+    [[{ op: "zone", id: 1, box: [[100, 10, 50], [100, 10, 90]], look: "pad" }], [{ op: "zone", id: 1, box: [[100, 10, 50], [100, 10, 51]], look: "pad" }], "leaves the region"],
+    [[gate, { op: "unzone", id: 3, box: [[110, 10, 60], [111, 11, 61]], look: "none" }], [gate, { op: "unzone", ...m6ask.zones[0] }], "unzone carries the whole zone as listed"],
+    [[{ op: "unzone", ...m6ask.zones[1] }], [gate, { op: "unzone", ...m6ask.zones[1] }], "is named by rule 7: remove (unrule) that rule first"],
+    [[{ op: "rule", id: 1, when: { on: "enter", zone: 9 }, do: [{ do: "finish" }] }], [{ op: "rule", id: 1, when: { on: "enter", zone: 4 }, do: [{ do: "finish" }] }], "zone 9 is neither made by this answer nor listed"],
+    [[{ ...gate, do: [{ do: "open", zone: 3 }] }], [gate], "unrule carries the whole rule as listed"],
+  ];
+  for (const [bad, fixed, why] of cases) {
+    const r = worldEditSteps(m6ask, [{ includes: "# Zones and rules", json: { note: "x", ops: bad } }, { includes: why, json: { note: "Fixed.", ops: fixed } }]);
+    assert.equal(r.code, 0, `${why}: ${r.error} ${JSON.stringify(r.result)}`);
+    assert.deepEqual(r.result.ops, fixed);
+  }
+});
+
+test("expand M6: every limit of a zone and a rule is held, with the contract's words", () => {
+  const z = (o: Record<string, unknown>) => ({ op: "zone", id: 1, box: [[100, 10, 50], [101, 10, 51]], look: "pad", ...o });
+  const rule = (o: Record<string, unknown>) => ({ op: "rule", id: 1, when: { on: "enter", zone: 3 }, do: [{ do: "finish" }], ...o });
+  const big = { ...m6ask, region: { min: [0, 0, 0], max: [99, 40, 99] }, ground: { min: [0, 0], rows: Array.from({ length: 100 }, () => Array(100).fill(10)) }, blocks: [] };
+  const tight = { ...m6ask, rules_room: { zones_left: 1, rules_left: 0, counters: [] } };
+  const rows: [unknown, unknown[], string][] = [
+    [m6ask, [z({ box: [[101, 10, 50], [100, 10, 51]] })], "zone: box: the low corner comes first (x0 <= x1, y0 <= y1, z0 <= z1)"],
+    [big, [z({ box: [[0, 10, 0], [64, 10, 1]] })], "zone: box: at most 64 cells a side (65 x 1 x 2)"],
+    [m6ask, [z({ look: "spring" })], "zone: look must be one of none, pad, coin, flag"],
+    [m6ask, [z({ name: "x".repeat(25) })], "zone: name must be 1-24 printable characters"],
+    [m6ask, [z({ name: "a\u0007b" })], "zone: name must be 1-24 printable characters"],
+    [m6ask, [z({}), z({})], "zone: the answer makes zone 1 twice: give each new zone its own id"],
+    [tight, [z({}), z({ id: 2 })], "zone: the Home has room for 1 more zones"],
+    [tight, [rule({})], "rule: the Home has room for 0 more rules"],
+    [m6ask, [rule({ when: { on: "enter", zone: 1 } }), z({})], "rule: when: zone 1 is made later in this answer: put the zone op before the rules that name it"],
+    [m6ask, [z({ look: "spring" }), rule({ when: { on: "enter", zone: 1 } })], "zone: look must be one of none, pad, coin, flag"],
+    [m6ask, [rule({ when: { on: "jump", zone: 3 } })], "rule: when: on must be one of enter, leave, use, every, count, start, finish"],
+    [m6ask, [rule({ when: { on: "enter" } })], 'rule: when: "enter" needs zone'],
+    [m6ask, [rule({ when: { on: "start", zone: 3 } })], 'rule: when: "start" takes no "zone" (it takes nothing else)'],
+    [m6ask, [rule({ when: { on: "every", frames: 30 } })], "rule: when: every's frames must be an integer 60..36000 (60 frames are 1 s)"],
+    [m6ask, [rule({ when: { on: "count", counter: "coins", at: 0 } })], "rule: when: at must be an integer 1..999"],
+    [m6ask, [rule({ when: { on: "count", counter: "Coins", at: 3 } })], "rule: when: counter must be 1-16 of a-z and _"],
+    [m6ask, [rule({ if: [] })], "rule: if must be a non-empty list (leave it out when there are no conditions)"],
+    [m6ask, [rule({ if: [{ running: true, counter: "a" }] })], 'rule: if: {"running": true|false} stands alone'],
+    [m6ask, [rule({ if: [{ counter: "coins" }] })], "rule: if: counter coins needs min or max"],
+    [m6ask, [rule({ if: [{ counter: "coins", min: 5, max: 2 }] })], "rule: if: min is above max (it never holds)"],
+    [m6ask, [rule({ if: Array(9).fill({ running: true }) })], "rule: if: at most 8 conditions"],
+    [m6ask, [rule({ do: Array(9).fill({ do: "finish" }) })], "rule: do must be 1-8 effects"],
+    [m6ask, [rule({ do: [{ do: "explode" }] })], 'rule: do[0]: "explode" is not an effect (start, checkpoint, finish, respawn, add, take, open, close, toggle, launch, teleport, say)'],
+    [m6ask, [rule({ do: [{ do: "launch", up_cm: 4000, fwd_cm: 0 }] })], "rule: do[0] launch: up_cm must be an integer 0..3000 (cm per second)"],
+    [m6ask, [rule({ do: [{ do: "say", text: "hi", frames: 10 }] })], "rule: do[0] say: frames must be an integer 30..600 (60 frames are 1 s)"],
+    [m6ask, [rule({ do: [{ do: "say", text: "x".repeat(61), frames: 60 }] })], "rule: do[0] say: text must be 1-60 printable characters"],
+    [m6ask, [rule({ do: [{ do: "add", counter: "coins", by: 0 }] })], "rule: do[0] add: by must be an integer -99..99, not 0"],
+    [m6ask, [rule({ do: [{ do: "start", run: "" }] })], "rule: do[0] start: run must be 1-24 printable characters"],
+    [m6ask, [rule({ do: [{ do: "teleport", zone: 8 }] })], "rule: do[0] teleport: zone 8 is neither made by this answer nor listed in the region's zones"],
+    [m6ask, [rule({ do: [{ do: "finish", zone: 3 }] })], 'rule: do[0] finish: takes no "zone" (it takes nothing else)'],
+    [m6ask, [rule({}), rule({})], "rule: the answer makes rule 1 twice: give each new rule its own id"],
+    [{ ...m6ask, rules_room: { zones_left: 9, rules_left: 9, counters: ["a", "b", "c", "d", "e", "f", "g"] } },
+      [rule({ do: [{ do: "add", counter: "h", by: 1 }, { do: "add", counter: "i", by: 1 }] })], "rule: the Home would use 9 counters (a, b, c, d, e, f, g, h, i); at most 8"],
+    [m6ask, [{ op: "unzone", id: 5, box: [[110, 10, 60], [111, 11, 61]], look: "none" }], "unzone: no zone 5 is listed in the region's zones (unzone names one that is there)"],
+    [m6ask, [{ op: "unrule", id: 8, when: { on: "start" }, do: [{ do: "finish" }] }], "unrule: no rule 8 is listed in the region's rules (unrule names one that is there)"],
+    [m6ask, [z({ box: [[100, 10, 51], [101, 10, 52]] })], "zone: the box covers columns the Home refuses (game lot, x 99..102, z 52): zones are refused there"],
+    [m6ask, [z({ colour: "red" })], 'zone: zone takes no "colour"'],
+  ];
+  for (const [a, ops, want] of rows) assert.deepEqual(m6problems(a, ops).slice(0, 1), [want], want);
+  // the rule naming a refused zone hears why too
+  assert.equal(m6problems(m6ask, [z({ look: "spring" }), rule({ when: { on: "enter", zone: 1 } })])[1], "rule: when: zone 1 was refused above (fix it, and this holds)");
+  // a new zone that reuses a listed zone's id is the answer's own: the rule names it, the listed one stays (renumber)
+  assert.deepEqual(m6problems(m6ask, [z({ id: 3 }), rule({ when: { on: "enter", zone: 3 } })]), []);
+  // unrule, then unzone, then a new zone and rule in its place: one batch the Home applies in order
+  assert.deepEqual(m6problems(m6ask, [{ op: "unrule", ...m6ask.rules[0] }, { op: "unzone", ...m6ask.zones[1] }, z({}),
+    rule({ when: { on: "use", zone: 1 }, do: [{ do: "open", zone: 3 }] })]), []);
+});
+
+test("world-edit M6: an ask's zones and rules are read in the file's shapes; a malformed one is refused before any call", () => {
+  const bad = worldEdit({ ...m6ask, zones: [{ id: 3, box: [[110, 10, 60]], look: "none" }] }, []);
+  assert.equal(bad.code, 2);
+  assert.match(bad.error, /--in.*zones/);
+  const odd = worldEdit({ ...m6ask, rules: [{ id: 7, when: { on: "use", zone: 4 }, do: [], extra: 1 }] }, []);
+  assert.equal(odd.code, 2);
 });
