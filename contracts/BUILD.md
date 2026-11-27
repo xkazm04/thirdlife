@@ -360,7 +360,7 @@ block materials from the ask's tables (trim omitted = mat). Kinds (v1) and their
   `opts.windows` (every N cells at sill height 1), `opts.crenels` (true: merlons on top).
 - `tower`: a hollow square tower `w` x `w`, `h` high, walls 1 thick; `opts.door`, `opts.windows`, `opts.crenels`,
   `opts.stairs` (`"inside"` or `"outside"`: a stair run climbing to the top, with landings).
-- `house`: walls `w` x `d` x `h` with a door, windows, a floor, and a pitched roof of roof blocks over the long side.
+- `house`: walls `w` x `d` x `h` with a door, windows (`opts.windows`: how many on the front, beside the door; default by width), a floor, and a pitched roof of roof blocks over the long side.
 - `stair`: a stair run `w` wide climbing `h` cells along +z (turned by `rot`), with a landing every 6 steps.
 - `bridge`: a deck `w` wide and `d` long at y of `at`, railings (fences) on both sides, piers every 6 cells down to
   the ground or bed, and steps at both ends down to the ground.
