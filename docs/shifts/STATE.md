@@ -518,3 +518,4 @@ on the frame and the figure and Fable on surfaces and nature, looping for 10 hou
 - ~16:20: T round 4 landed (merge 4c7ce613; merged: fast 5/5 after renaming JB's stray .gd in docs, npm 489/482/0/7, create. 29/0). T next: round 5 (23-28, 25 first). Disk 27 GB.
 - 15:31 standup: 5 lanes on track (T r5, S1 r2, JB r4, J2nd r2, S4 r2); disk 25 GB and falling (not this shift's trees; Home session told).
 - 15:43 standup: F2 landed + feet reach; F1 status asked; disk 26 GB after freeing three trees (the growth is another project's session).
+- ~16:10: S4 round 2: Create still cannot drive arm A's switches (a fast cartridge edit promoted without a builder; T item 29). JB round 4: Arsenal glass met v0.1.27; queued-round join seen live.

@@ -168,3 +168,52 @@ goes in). Before A ships to the owner: (1) lane T makes a rules sidecar writable
 run shows the builder already knows the exact keys); (2) the Director decides the default numbers (0.6 / 0.6 is strong
 against a regular hand); (3) the exe is rebuilt from a main that has the DLL, and the base stops crashing when a rules file
 is refused.
+
+## A after T's fix (round 2, 27 Nov 15:31-16:10)
+
+The first results above are kept as they were. This round asks one question: with lane T's item 7 on the tree, can Create
+drive arm A's switches?
+
+- **The tree:** d27-sp-core at 9e565f8e (main merged in by the Director, lane T items 1-22). Foreman rebuilt, engine
+  re-imported (0 errors), patched core still in bin/ (debug 1613824 bytes, release 1536512). Foreman's `knownRules()` lists
+  all seven 0005 switches.
+- **The job:** a fresh copy of the v0.1.23 job (`d25-arsenal/.tl/jobs/s4a2-arsenal` from the untouched `s4-base-arsenal`,
+  promoted 0.1.23 the latest), its `ref/cores/rink/` refreshed with A's CARTRIDGE.md and SNAPSHOT.md as before. The
+  hip-check sentence was sent word for word (`.tl/s4/gen_sentence.txt`, 367 characters), with the same change flags. One job only.
+- **Time and tokens:** 15:32:38 to 15:51:23, 18.7 min (round 1: 45.8 min). 0.87M tokens in (0.78M cache reads), 9.5k out.
+- **What Create did:**
+  - The Planner named the cartridge again (event 1076).
+  - This time the change took the **quick cartridge diff**, not a builder round (event 1080). The diff edits only
+    `data/harbour.cartridge.json`:
+    - F became `hip_check`, magnitude 2, `cooldown_frames` 600;
+    - `game.rink.goal_width_m` 2.8 -> 2.3 and `game.skater.goalie.reach_m` 1.4 -> 1.7 (the measured check found a goal flood);
+    - `game.ai.body_check` "1 -> 1", a no-op: the diff took "the rival bots use the hip check" for the body-check key.
+  - The diff's own words: "These keys can't set the 3 m shove or make bots dive in front of shots, so a builder needs to
+    add both."
+  - No builder round followed. The cartridge was promoted at r13, and only the dependent drawing package (harbour) was
+    rebuilt (r16).
+  - v0.1.24 was promoted (event 1131). Its what-changed card lists the cartridge keys and says "part of your change was NOT
+    made" only about the moves landing.
+- **Whether the builder wrote the rules file:** no. No `data/harbour.rules.json` exists anywhere in the job (ws, pack or
+  promoted). No package ever saw the sidecar: lane T's item 7 widens the cartridge **builder's** scope and prompt, and this
+  change never reached a builder.
+- **The rival bots' hip checks a minute** (v0.1.24 as promoted, plus the shared drawing/counting, `.tl/s4/gen_hip2`, the
+  blind hand, 3600 frames, seeds 1-3 twice):
+
+  | | value |
+  |---|---|
+  | hip checks a minute | **0 / 0 / 0** (no sidecar, so the plain core, where bots never hold one) |
+  | dives | 0 |
+  | script errors | 0 |
+  | run hash, twice each | 2789a91a / 626117b3 / e8b054bd |
+  | core hash, twice each | 980486f9 / 5499fbbe / ea941d5c |
+
+  For comparison, round 1's builder values written by hand gave 5 / 4 / 5 hip checks a minute.
+- **Answer to the round's question: not yet.** The sidecar path works when the cartridge change goes to a builder, but this
+  sentence went down the quick diff. That path cannot see the sidecar, and its "a builder needs to add both" was not carried
+  to a builder.
+- **Blocked-editor for lane T** (job s4a2-arsenal, events 1076, 1080, 1081, 1090, 1131). Two fixes would close it:
+  1. When a person's change asks for a bot behaviour or a new verb that only a rules switch says, the quick diff should
+     either include the rules sidecar (`ruleSwitches()` already lists the keys and their ranges) or hand the remainder to the
+     cartridge builder, which item 7 now lets write the file.
+  2. The diff's own "a builder needs to add ..." should open that builder round instead of promoting.
