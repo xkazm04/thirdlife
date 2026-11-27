@@ -516,3 +516,4 @@ on the frame and the figure and Fable on surfaces and nature, looping for 10 hou
 - ~15:45: JB-back round 3 (Arsenal v0.1.26 net of cords, no glass in the camera's way; shield v0.1.11 braces 1.8/min vs hand 4.8) and J2nd done (second crazy abilities, all by the editor: karts red shells v0.1.10, biplane harpoon v0.1.8, court alley-oop v0.1.8). Menu 61 rows, 600 f 0/0.
 - 15:20 standup: A r3/r4 and F3 landed, F3-1 applied; integration suite 769/6 (all explained); F1, F2 running; disk 30 GB.
 - ~16:20: T round 4 landed (merge 4c7ce613; merged: fast 5/5 after renaming JB's stray .gd in docs, npm 489/482/0/7, create. 29/0). T next: round 5 (23-28, 25 first). Disk 27 GB.
+- 15:31 standup: 5 lanes on track (T r5, S1 r2, JB r4, J2nd r2, S4 r2); disk 25 GB and falling (not this shift's trees; Home session told).
