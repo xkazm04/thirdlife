@@ -191,6 +191,40 @@ What the builders did with the new default:
 Clips: `clips/a2_shield_v018_throw.mp4` (seed 2, 10-30 s), `clips/a2_court_shove.mp4` (seed 1, 8-28 s); stills
 `a2_shield_sheet.jpg`, `a2_shield_flying.jpg`, `a2_court_sheet.jpg`, `a2_court_wham.jpg`, all looked at.
 
+### B on main's fixes (round 3, 16:42-19:15): B gets what A got from main
+Arm B's tree was moved to main f5e30ff4, which carries lane T's items 1-22: the rivals routing, and "off balance" read as
+a play change. B's first sentence was sent word for word on fresh copies of half-court v0.1.6 and shield wall v0.1.7.
+B's second sentence ("The rivals use the X too, and dodge it when they see it coming.") was sent only where the bots
+stayed under the bar.
+- The runs went one job at a time, each behind `room.sh`, after the disk was freed. They were counted the same way
+  (seeds 1-3, 3600 frames, seed 1 twice).
+- The counting runs used B's own engine (`S1_ENGINE`).
+- No third sentence was sent in this round.
+- B does NOT have arm A's own fixes (the default itself, and A2's rate and events): that is the difference under test.
+
+| | **A after fixes, sentence 1** (round 2) | **B on main's fixes** (round 3) |
+|---|---|---|
+| **Half-court**, sentence 1 | at the bar: all 5 bots shove 10.3 a minute, answer 17.0 a minute; promoted v0.1.7 (72.9 min, 3.97M in) | **0 / 0**: no bot shoves or answers; the sentence names no bots, so the rivals routing has nothing to route. Promoted v0.1.7 (55.1 min, 1.46M in; court_exchange r13 only). Newcomer 12, perfect 20 of 20 |
+| half-court, sentence 2 | not needed | routed to court_exchange AND crews_stakes (lane T's "rivals' part" request). Rivals shove **1.3 / min** (crane, moss: **2 of 5**), answer 4.3 / min (`shove_read`, sprint away). Promoted v0.1.8 (53.2 min, 1.46M in). Newcomer 12, perfect 19 of 20. **Still under the bar** after 2 sentences |
+| **Shield wall**, sentence 1 | at the bar: 4 of 5 bots throw 4.0 a minute, answer 4.7 a minute; v0.1.8 (27.4 min, 4.35M in) | **1.7 / 1.0**: only Oda throws (**1 of 5**); core r17 only. v0.1.8 (15.9 min, 1.47M in) |
+| shield wall, sentence 2 | not needed | routed to core AND crew. **3 of 5 bots** (Sable, Pip, Finn) throw **3.0 / min**, answer 2.0 / min (blocks; the new sidesteps publish no event). **At the bar after 2 sentences**. Promoted v0.1.9 (26.0 min, 4.56M in; core r18 + crew r5, then rally r3 re-verify; the measured pack hashed the same as the promoted one) |
+| sentences to the bar | **1 and 1** | **shield 2; half-court more than 2** (not reached in this round) |
+| tokens in, all sentences | half-court 3.97M (72.9 min); shield 4.35M (27.4 min) | half-court 2.92M (1.46M + 1.46M), 108.3 min, and not at the bar; shield 6.03M (1.47M + 4.56M), 41.9 min |
+
+**What this says, plainly.**
+- Lane T's routing fix does what it promises: a sentence that names the rivals now reaches every package that drives a
+  bot (crews_stakes, crew). On shield wall that cut B from 3 sentences (round 1) to 2.
+- It does nothing for the first sentence, because a person who adds a move does not name the bots. On both games B's
+  first sentence gave bots that do not use the move (half-court 0, shield one bot of five).
+- The second sentence ("the rivals use it too") then reaches only the rivals. On half-court that is 2 of 5 bots at
+  1.3 a minute: the person's own mates never shove, and a person would type a third sentence.
+- Arm A's default (with its A2 rate and events) gave 4-5 of 5 bots on the FIRST sentence on both games, mates and
+  rivals alike.
+- So yes: with T's fixes in, the default still earns its place. It saves one sentence on shield wall and at least two
+  on half-court, and it reaches the mates, which no "rivals" sentence does.
+- The cost is unchanged: the bots change difficulty unasked. Half-court's newcomer hand read 12 of 20 on both arms here,
+  so the card note appears either way.
+
 ### Every count above
 - 3600 frames per seed, seeds 1-3, seed 1 run twice with the same hash, 0 script errors on every run (reports in
   `d25-court/.tl/s1/film/<arm>-<game>-<version>.out/`).
@@ -255,6 +289,8 @@ For the Director, the menu rows (pack path -> menu title):
 | A court (not promoted) | `C:/Users/kazda/kiro/third-life/.claude/worktrees/d25-court/.tl/s1/jobs/half-court-3-v-20261125-1/reports/change-not-made-s1679/pack` (lint and smoke passed in the final verification; the Foreman refused only the newcomer hand count) | Half-court: NBA Jam shove, bots by default (S1 A, refused by the hand check) |
 | A2 shield (round 2) | `C:/Users/kazda/kiro/third-life/.claude/worktrees/d25-court/.tl/s1/jobs-a2/shield-wall-3-v-20261125-1/promoted/game.shield_wall_3_v@0.1.8` | Shield wall: shield throw, bots by default after fixes (S1 A2, 1 sentence) |
 | A2 court (round 2) | `C:/Users/kazda/kiro/third-life/.claude/worktrees/d25-court/.tl/s1/jobs-a2/half-court-3-v-20261125-1/promoted/game.half_court_3_v@0.1.7` | Half-court: NBA Jam shove, bots by default after fixes (S1 A2, 1 sentence) |
+| B2 court (round 3, main's fixes) | `C:/Users/kazda/kiro/third-life/.claude/worktrees/d27-sp-bots-b/.tl/s1/jobs-b2/half-court-3-v-20261125-1/promoted/game.half_court_3_v@0.1.8` | Half-court: NBA Jam shove, as now on main's fixes (S1 B2, 2 sentences) |
+| B2 shield (round 3, main's fixes) | `C:/Users/kazda/kiro/third-life/.claude/worktrees/d27-sp-bots-b/.tl/s1/jobs-b2/shield-wall-3-v-20261125-1/promoted/game.shield_wall_3_v@0.1.9` | Shield wall: shield throw, as now on main's fixes (S1 B2, 2 sentences) |
 | B court | `C:/Users/kazda/kiro/third-life/.claude/worktrees/d27-sp-bots-b/.tl/s1/jobs/half-court-3-v-20261125-1/promoted/game.half_court_3_v@0.1.9` | Half-court: NBA Jam shove, as now (S1 B, 3 sentences) |
 
 To feel what one first sentence gives on each arm, these rows too (optional):

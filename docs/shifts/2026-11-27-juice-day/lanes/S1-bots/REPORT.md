@@ -110,3 +110,28 @@ ROUND 2 (15:00-16:35): arm A after fixes. A got two fixes B did not need, and no
   - the shield crew builder kept its rate under "every 10-20 s" (core's ai.json gaps of 10-18 s).
 - Menu rows for both A2 versions are in SPIKE.md section 6. The A after fixes section is in SPIKE.md section 4. The
   pick has a dated round-2 addendum; the first-round text is kept.
+
+ROUND 3 (16:42-19:20): B on main's fixes. B's tree on main f5e30ff4 carries lane T's items 1-22, including the rivals
+routing and "off balance" read as play. It does not carry arm A's default or A2.
+- One B job at a time, behind room.sh, on fresh copies; B's first sentence word for word, and the second only where
+  the bots stayed under the bar.
+  - Counted the same way: seeds 1-3, 3600 frames, seed 1 twice with the same hash, 0 script errors.
+  - Counting runs used B's own engine.
+  - Captures folders deleted after measuring, as ruled.
+- half-court:
+  - sentence 1: v0.1.7 (55.1 min, 1.46M in). Bots shove 0 a minute and answer 0 a minute; the sentence names no bots.
+  - sentence 2: routed to court_exchange AND crews_stakes. v0.1.8 (53.2 min, 1.46M in). Rivals shove 1.3 a minute
+    (2 of 5) and answer 4.3 a minute. Still under the bar.
+- shield wall:
+  - sentence 1: v0.1.8 (15.9 min, 1.47M in). Only Oda throws (1.7 a minute, 1 of 5); answers 1.0 a minute.
+  - sentence 2: routed to core AND crew. v0.1.9 (26.0 min, 4.56M in). 3 of 5 bots throw 3.0 a minute and answer 2.0 a
+    minute. At the bar after 2 sentences.
+- Against A after fixes (1 sentence on both games: half-court all 5 bots at 10.3 a minute, shield 4 of 5 at 4.0):
+  - T's routing cuts B's second-sentence cost (shield 3 -> 2 sentences);
+  - it cannot help the first sentence, which names no bots;
+  - its "rivals" sentence never reaches the person's mates.
+- The default still earns its place with T's fixes in: at least one sentence fewer per game, and mates as well as
+  rivals. SPIKE.md section 4, "B on main's fixes", says it in plain words.
+- Wall time and tokens: B's two sentences cost about the same as A's one on shield (41.9 min and 6.0M in, against
+  27.4 min and 4.35M). On half-court B's two cost 108 min and 2.9M in and did not reach the bar, against A's 72.9 min
+  and 3.97M.
