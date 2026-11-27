@@ -11,9 +11,12 @@ extends RefCounted
 ##             stairs arrive); opts.stairs "outside": a stair (trim) round the walls from the ground by the door to the
 ##             top, a landing at each corner and after every 6 steps; "inside": the same round the inner ring from the
 ##             floor by the door, the top floor opened over the last turn (the hatch)
-##   house     a floor, walls w x d x h, a door in the middle of the front with a slab step, a window every 3 cells in
-##             row 2, a pitched roof (trim) of roof blocks rising from the two long walls to a ridge (a ridge row of
-##             cubes when the span is odd), gables of the wall's material
+##             (round 3) outside stairs: a stringer of trim on the outer side at each stair's level, a slab-high
+##             parapet at each landing, a fence on each; nothing to the ground (the door's front stays open)
+##   house     a floor, walls w x d x h, a door in the middle of the front with a slab step, windows in row 2 (the
+##             front's 2 cells either side of the door, then every 3; the other walls every 3), a pitched roof (trim)
+##             of roof blocks rising from the two long walls to a ridge (a ridge row of cubes when the span is odd),
+##             gables of the wall's material
 ##   stair     w wide, h steps climbing +z, each step a stair block on a cube (trim) under it, a landing every 6 steps
 ##   bridge    a deck w x d at y 0 (mat), fence railings (trim) on its two long edges when w >= 3, piers (trim) every 6
 ##             cells along both edges down to the ground or bed, and steps at both ends down to the ground (each on a
@@ -157,7 +160,11 @@ static func climb(s: RefCounted, path: Array, corners: Dictionary, start: int, f
 
 
 ## Outside stairs: round the ring one cell out from the walls, from the ground just past the door's step to the wall
-## top, then a landing beside the wall; returns the wall cell they arrive on (its merlon is left out).
+## top, then a landing beside the wall; returns the wall cell they arrive on (its merlon is left out). Round 3 (the
+## Director's Q-A5, after the body fell off at a run): on the outer side of every stair a cube of trim at the stair's
+## level (a stringer: its top is the stair's top), and of every landing a slab-high parapet (a slab on a cube), at the
+## corners on both outer sides and the diagonal, each with a fence on top (without it the stringer's tops were a second
+## stair of 1 m steps that the estimate and the body took). Nothing reaches the ground: the door's front stays open.
 static func _outside_stairs(s: RefCounted, door: int) -> Vector2i:
 	var w: int = s.w
 	var path := ring(-1, w)
@@ -165,12 +172,38 @@ static func _outside_stairs(s: RefCounted, door: int) -> Vector2i:
 	var c := climb(s, path, corners, path.find(Vector2i(door, -1)) + 1, 0, int(s.h), s.trim)
 	var i: int = c.next
 	var at: Vector2i = path[posmod(i, path.size())]
+	var cells: Array = c.cells
 	for k in 4:
 		at = path[posmod(i + k, path.size())]
 		s.put(at.x, int(s.h) - 1, at.y, Blocks.CUBE, s.trim)
+		cells.append([at, int(s.h), "landing"])
 		if not corners.has(at):
 			break
+	for e: Array in cells:
+		var f: int = e[1]
+		for o: Vector2i in _outside_of(e[0], w):
+			if e[2] == "stair":
+				s.put(o.x, f, o.y, Blocks.CUBE, s.trim)
+				s.put(o.x, f + 1, o.y, Blocks.FENCE, s.trim)  # a rail on it: the stringer is no second stair
+			elif f >= 1:
+				s.put(o.x, f - 1, o.y, Blocks.CUBE, s.trim)
+				s.put(o.x, f, o.y, Blocks.SLAB, s.trim)
+				s.put(o.x, f + 1, o.y, Blocks.FENCE, s.trim)
 	return Vector2i(clampi(at.x, 0, w - 1), clampi(at.y, 0, w - 1))
+
+
+## The cells just outside ring cell `c` of a tower `w` wide (one side; a corner: both sides and the diagonal).
+static func _outside_of(c: Vector2i, w: int) -> Array:
+	var dx := -1 if c.x < 0 else (1 if c.x >= w else 0)
+	var dz := -1 if c.y < 0 else (1 if c.y >= w else 0)
+	var out := []
+	if dx != 0:
+		out.append(c + Vector2i(dx, 0))
+	if dz != 0:
+		out.append(c + Vector2i(0, dz))
+	if dx != 0 and dz != 0:
+		out.append(c + Vector2i(dx, dz))
+	return out
 
 
 ## Inside stairs: round the inner ring from the floor just past the door's inner cell to the top floor, which is left
@@ -204,9 +237,9 @@ static func house(s: RefCounted) -> void:
 					s.put(x, y, z, Blocks.CUBE, s.mat)
 	var door := w / 2
 	for t in range(1, w - 1):
+		if absi(t - door) >= 2 and (absi(t - door) - 2) % 3 == 0:     # round 3: the front's windows flank the door
+			s.put(t, 2, 0, Blocks.WINDOW, s.mat, 0)
 		if posmod(t - w / 2, 3) == 0:
-			if absi(t - door) > 1:
-				s.put(t, 2, 0, Blocks.WINDOW, s.mat, 0)
 			s.put(t, 2, d - 1, Blocks.WINDOW, s.mat, 0)
 	for t in range(1, d - 1):
 		if posmod(t - d / 2, 3) == 0:

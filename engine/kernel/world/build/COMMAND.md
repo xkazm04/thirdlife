@@ -306,3 +306,15 @@ alone (steps of 0.55 m, no jump) reaches no coin and no finish: it is a jumping 
   a run (9 m/s autopilot) it finished but fell off twice where the stair turns a corner (the outside stairs have no
   railing). The model's assembled tower: walk 694 frames, finished, 3 coins, 1 stuck (the estimate's path joined the
   stair run from its side, not its foot).
+- **Round 3**: outside stairs have a stringer of trim on their outer side at each stair's level and a slab-high
+  parapet at each landing (the Director's Q-A5), each under a fence (without it the stringer's tops were a second stair
+  of 1 m steps that the estimate and the body took); nothing reaches the ground, so the door's front stays open. The
+  estimate joins a stair only along its rise (its foot, or its top from a landing) or onto a run's first step from the
+  side as a walk (`Grid.stair_entry`, Q-A6). The body probe at a run round an assembled tower's corners: 0 stuck, no
+  fall (walk 452 frames, run 349), the path through the door step onto the first stair. Two more real calls (one each,
+  a window): "a tall stone watchtower, 5 wide, stairs inside, a lookout on top with a flag": 11.4 s, 17,248 / 809, 2 ops
+  (a tower 5 x 14, stairs inside, windows, crenels + a Lookout flag on its top) -> 268 blocks, clean; "a little wooden
+  house with a door, two windows and a stone path to it": 15.0 s, 17,236 / 915, 2 ops (a house 7 x 3 x 5 of planks,
+  roof trim + a stone path) -> 115 blocks, the path refused "village" (land_protect.gd's 72 m round the village).
+  Neither copied the example's 7 x 10. The house's front had no window (the every-3 rule put its only front window in
+  the door's place): the front's windows now flank the door.

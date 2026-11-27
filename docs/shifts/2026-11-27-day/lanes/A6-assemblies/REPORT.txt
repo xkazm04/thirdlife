@@ -202,3 +202,79 @@ NEXT THREE
 2. Three more tower/house/bridge sentences in varied sizes to see whether the model varies the assembly or copies the
    example; and the Foreman logging attempts (Q-C4) to explain the 37k tokens in.
 3. The Shapes tool's "course" preset (a pad at the stair foot, a flag on top) so the hand gets the same run in one go.
+
+====================================================================================================================
+ROUND 3 (Director, after round 2 landed as baee10d3; tree = that tip). Nothing committed.
+
+1. Q-A5 (railing for outside stairs): DONE, with one change to the spec, measured.
+   As asked: on the outer side of every outside stair a cube of trim at the stair's level (the stringer; its top is
+   the stair's top), at every landing a slab-high parapet (a slab on a cube), at the corners on both outer sides and
+   the diagonal; nothing reaches the ground, so the door's front stays open. Inside stairs unchanged.
+   The change: the first probe at a run with the bare stringer showed the estimate's path (and so the body) climbing
+   the STRINGER'S TOPS: a cube at each stair's level is itself a staircase of 1 m steps beside the stair. So each
+   stringer cube and parapet slab carries a fence on top (the same trim): the stringer is a solid curb with a rail, not
+   a second stair. Not loosened anywhere; it is more blocks (tower 7 x 12: 365 -> 413).
+   Body probe (lane P's play_llm_probe.gd) round an assembled tower 7 x 10, stairs outside, crenels, on flat ground
+   at (29, 1, 34), a pad in front, the flag on the top floor:
+     before (round 2): walk 441 frames 0 stuck; run finished but FELL twice at the corners.
+     bare stringer:   walk 388 / run 679 frames, 0 stuck, but up the stringer tops, not the stairs.
+     stringer + rail and Q-A6: walk 452 frames, run 349 frames, 0 stuck, NO FALL; the path goes through the door step
+       onto the first stair, up the north face, the corner landing, the east face, onto the top.
+2. Q-A6: DONE. command_space.gd `Grid.stair_entry(c, n)` (its own function; the constants block untouched; a `rots`
+   array beside `shapes` in Grid): a walk enters a stair cell only along its rise axis (from its foot, or from its high
+   side: a landing), or from the side onto the FIRST step of a run (no stair one lower behind it) as a walk or step;
+   never onto a stair from the side above its first step. Called once in `walk` after a move is found possible.
+   New case 794 `assembly.stairside`: onto the first step from the side: allowed; onto the second step from a ledge
+   beside it: refused; along the run: allowed; the walk from the ledge reaches step 2 only by going down and round to
+   the foot. 785/786/787 unchanged and green (their courses join stairs at the foot).
+3. Variety: TWO real calls (a window, one each, the round-2 prompt). Both USED assemble, neither copied the example:
+     "a tall stone watchtower, 5 wide, stairs inside, a lookout on top with a flag":
+       11.4 s, 17,248 in / 809 out (one attempt by its tokens), 2 ops: {"kind":"tower","size":[5,14,1],"rot":2,
+       "opts":{"stairs":"inside","windows":3,"crenels":true}} + a flag zone "Lookout" on the top floor -> 268 blocks,
+       0 refused, space check clean. 5 wide as asked, 14 high ("tall"), inside stairs, the door turned to face the
+       person (rot 2). No run (none was asked).
+     "a little wooden house with a door, two windows and a stone path to it":
+       15.0 s, 17,236 / 915, 2 ops: {"kind":"house","size":[7,3,5],"rot":2,"mat":3,"trim":5} + a stone path -> 115
+       blocks; the path was refused "village" (land_protect.gd: the village's rectangle and 72 m round it; the cursor
+       spot is inside it for paths, not for blocks). So no path in the kept Home.
+     Against the round-2 tower (31.6 s, 37.0k / 3.2k, 11 ops) and round 1 (53.7 s, 18.3k / 5.5k, 226 ops): the
+     cheapest calls of the day (809 and 915 output tokens, 11-15 s).
+     Found and fixed: the house assembly put its front window where the door is (w 7: every-3 from the middle lands on
+     the door), so the "two windows" house showed only a door from the front. The front's windows now flank the door
+     (2 cells either side, then every 3); the other walls unchanged. The kept a6-house.jpg is from BEFORE this fix.
+     Captures: a6-watchtower.jpg (+ ghost), a6-house.jpg (+ ghost).
+
+GATES (round 3)
+- 794 HOME assembly 7/7 (kinds, compose, stairside (new), refusals, protect, input, tool); 785 6/6; 786 4/4; 787 3/3.
+- bash engine/tools/selftest.sh home. : "selftest: 195 passed, 0 failed" (run on the tree before the comment-only trim of
+  command_space.gd to 600 lines; 794 alone after it: 7/7).
+- tl check --tier fast: PASS 5/5 (a first run FAILED arch size-ratchet: command_space.gd at 604 lines; comments
+  trimmed to 600, then PASS; devx.test's 2 fails were the same real-tree arch check).
+- foreman: no change this round (the prompt is round 2's).
+- world gate: not re-run (no pack, world or kernel file outside the Home's build mode changed).
+
+FILES (round 3)
+Changed: engine/kernel/world/build/assembly_kinds.gd (outer stringer + parapet + rail on outside stairs; the house's
+     front windows), command_space.gd (`Grid.stair_entry`, `rots`; comments trimmed to stay at 600 lines),
+     assembly_case.gd (stairside case), engine/tools/selftest.d/794-home-assembly.sh (7 cases), COMMAND.md (round 3).
+     Lane folder: a6-watchtower.jpg, a6-watchtower-ghost.jpg, a6-house.jpg, a6-house-ghost.jpg. Line endings as in git
+     (command_space.gd CRLF, the rest LF).
+
+BEHAVIOUR CHANGES (round 3)
+- Towers with outside stairs have more blocks (the stringer, parapets, rails) and a railed look.
+- The estimate refuses climbing onto a stair from its side above the first step; courses whose only way up was that
+  side-step become "finish not reachable" (correctly: the body stuck there in round 2).
+- Houses: the front's windows sit either side of the door.
+
+QUESTIONS (round 3)
+Q-A7 The path in the house answer was refused "village" (land_protect.gd: 72 m round the village) although blocks
+     there are fine and the ask's refused columns do not say so for paths. The Foreman could be told (an ask key of the
+     path-refused area), or paths allowed where blocks are: whose call?
+Q-A8 The window spacing rule is fixed per kind (front: either side of the door; other walls every 3). "Two windows"
+     cannot be asked for; an opts.windows for house (as wall and tower have) would be a contract change.
+
+NEXT THREE
+1. house opts.windows (Q-A8) and a porch / path-to-door detail the model can add without overlapping the assembly.
+2. A run preset in the Shapes tool (pad at the stair foot, a flag on top), so the hand gets the course the model gets.
+3. Probe the inside-stairs watchtower with the body (a run on it), and assemblies on sloping ground (the stringer and
+   the steps where the ground rises under them).

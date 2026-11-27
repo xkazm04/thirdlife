@@ -382,6 +382,7 @@ class Grid:
 	var hi: Vector3i
 	var size: Vector3i
 	var shapes := PackedByteArray()
+	var rots := PackedByteArray()          # round 3 (A6): a stair's rot (the side it rises toward), by cell
 	var heights: Array                    # rows[z - lo.z][x - lo.x]: the ground in m
 	var nodes := {}                       # Vector3i feet cell -> feet height in m
 	var columns := {}                     # Vector2i (x, z) -> [Vector3i feet cells], low first
@@ -394,6 +395,7 @@ class Grid:
 		size = b - a + Vector3i.ONE
 		heights = hs
 		shapes.resize(size.x * size.y * size.z)
+		rots.resize(size.x * size.y * size.z)
 		var s0: Vector2i = store.call("section_of", a)
 		var s1: Vector2i = store.call("section_of", b)
 		var secs: Dictionary = store.get("sections")
@@ -406,9 +408,10 @@ class Grid:
 					var c: Vector3i = store.call("cell_of", Vector2i(sx, sz), idx)
 					if inside(c):
 						shapes[_i(c)] = Blocks.shape_of(int((d as Dictionary)[idx]))
+						rots[_i(c)] = Blocks.rot_of(int((d as Dictionary)[idx]))
 
-	## How far up a plain jump `dist` m across (cell centre to cell centre) may climb: MANTLE_UP from the next cell, JUMP_UP
-	## within JUMP_ACROSS, GAP_UP within GAP_ACROSS (a flat gap; any drop), -INF farther (no plain jump reaches).
+	## How far up a plain jump `dist` m across may climb: MANTLE_UP from the next cell, JUMP_UP within JUMP_ACROSS,
+	## GAP_UP within GAP_ACROSS (a flat gap; any drop), -INF farther.
 	static func reach_up(dist: float) -> float:
 		if dist <= MANTLE_ACROSS + 0.001:
 			return MANTLE_UP
@@ -417,6 +420,19 @@ class Grid:
 		if dist <= GAP_ACROSS + 0.001:
 			return GAP_UP
 		return -INF
+
+	## Round 3 (Q-A6): stair cell `n` is entered from `c` only along its rise (its foot, its top: a landing) or from the
+	## side onto a run's first step (no stair one lower behind it) as a walk; never from the side above it.
+	func stair_entry(c: Vector3i, n: Vector3i) -> bool:
+		if shape_at(n) != Blocks.STAIR or (c.x == n.x and c.z == n.z):
+			return true
+		var r: int = rots[_i(n)]
+		var up: Vector2i = [Vector2i(0, -1), Vector2i(-1, 0), Vector2i(0, 1), Vector2i(1, 0)][r]
+		var d := Vector2i(n.x - c.x, n.z - c.z)
+		if d.x * up.y - d.y * up.x == 0:
+			return true
+		var first: bool = shape_at(Vector3i(n.x - up.x, n.y - 1, n.z - up.y)) != Blocks.STAIR
+		return first and absi(d.x) + absi(d.y) == 1 and absf(float(nodes[n]) - float(nodes[c])) <= STEP
 
 	func inside(c: Vector3i) -> bool:
 		return c.x >= lo.x and c.x <= hi.x and c.y >= lo.y and c.y <= hi.y and c.z >= lo.z and c.z <= hi.z
@@ -572,6 +588,8 @@ class Grid:
 							ok = true                   # a walk or a step
 						elif dh <= (up if launched else minf(up, reach_up(dist))):
 							ok = clear(c, n)            # a jump, a mantle, a drop
+						if ok and not stair_entry(c, n):
+							ok = false                  # round 3: onto a stair only at its foot or its top
 						if ok:
 							seen[n] = [c, steps]
 							queue.append(n)

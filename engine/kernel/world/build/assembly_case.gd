@@ -9,6 +9,8 @@ extends SceneTree
 ##                      space check's estimate AND by a stricter walker that never jumps (steps of 0.55 m, and 1 m only
 ##                      up or down a stair block toward its high side)
 ##   assembly.compose   a stair assembly meeting a platform's railing opening: the ground reaches the platform's top
+##   assembly.stairside a stair run joined only at its foot or its top (round 3, Q-A6): from the ground beside its first
+##                      step yes, from a ledge beside its second step no, from the ground at its foot yes
 ##   assembly.refusals  bad kinds, sizes, mats, opts, too small for what it says: refused with the reason
 ##   assembly.protect   a tower over a protected box and over an occupied cell: the place ops there are refused with
 ##                      the protection's reason and "occupied" by the dry run, `left_out` names the same cells
@@ -50,6 +52,7 @@ func wait(n: int) -> void:
 func run() -> void:
 	kinds_case()
 	compose_case()
+	stairside_case()
 	refusals_case()
 	protect_case()
 	input_case()
@@ -256,6 +259,35 @@ func compose_case() -> void:
 	say("compose", bool(w.estimate) and bool(w.strict) and int(w.floating) == 0 and not bool(only_plat.strict),
 		"platform 5 x 4 at 5 m + a 5-step stair to its opening: ground -> top estimate %s, strict %s, %d floating; the platform alone from the ground: strict %s (%s)" % [
 		w.estimate, w.strict, w.floating, only_plat.strict, w.why])
+
+
+func stairside_case() -> void:
+	var gnd := func(_x: int, _z: int) -> int: return BASE
+	var st_op := {"op": "assemble", "kind": "stair", "at": [AT.x, AT.y, AT.z], "size": [1, 3, 1], "rot": 0, "mat": 1}
+	var ops: Array = Assembly.expand(st_op, gnd).ops
+	ops.append({"op": "place", "at": [AT.x + 1, AT.y + 1, AT.z + 1], "shape": 1, "mat": 2, "rot": 0})   # a ledge beside step 2
+	var st: RefCounted = Blocks.new(16)
+	for o: Dictionary in ops:
+		st.put(Vector3i(int(o.at[0]), int(o.at[1]), int(o.at[2])), Blocks.code(int(o.shape), int(o.mat), int(o.rot)))
+	var lo := AT - Vector3i(4, 2, 4)
+	var hi := AT + Vector3i(4, 6, 6)
+	var rows := []
+	for z in range(lo.z, hi.z + 1):
+		rows.append(range(lo.x, hi.x + 1).map(func(_x: int) -> float: return BASE + 0.5))
+	var g: RefCounted = Space.Grid.new(lo, hi, st, rows)
+	g.build_nodes()
+	var step1 := AT
+	var step2 := AT + Vector3i(0, 1, 1)
+	var side_ground := AT + Vector3i(1, 0, 0)
+	var ledge := AT + Vector3i(1, 2, 1)
+	var foot := AT + Vector3i(0, 0, -1)
+	var a: bool = g.stair_entry(side_ground, step1)
+	var b: bool = g.stair_entry(ledge, step2)
+	var c: bool = g.stair_entry(foot, step1) and g.stair_entry(step1, step2)
+	var w: Dictionary = g.walk([ledge], {}, [], [])
+	var direct: bool = w.has(step2) and w[step2][0] == ledge
+	say("stairside", a and not b and c and w.has(step2) and not direct and (g.nodes as Dictionary).has(ledge),
+		"onto the first step from the side %s, onto the second from a ledge beside it %s, along the run %s; the walk from the ledge reaches step 2 %s, straight from the ledge %s (it goes down and round to the foot)" % [a, b, c, w.has(step2), direct])
 
 
 func refusals_case() -> void:
