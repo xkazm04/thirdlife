@@ -95,12 +95,24 @@ func refusal_box(lo: Vector3i, hi: Vector3i) -> String:
 		var p: Vector2 = (c[0] as Vector2).clamp(rect.position, rect.end)
 		if p.distance_to(c[0]) <= float(c[1]):
 			return c[2]
-	var reach := rect.size.length() * 0.5 + 0.21           # a cell's 0.71 m reach, round the box's half diagonal
+	# Integration (Q-C1): the box against each rotated lot rect exactly (separating axes), the box grown by a cell's
+	# 0.21 m reach past its half: a big zone next to a lot is no longer refused by its half diagonal.
+	var bh := rect.size * 0.5 + Vector2(0.21, 0.21)
 	for r: Array in rects:
-		var local := (rect.get_center() - (r[0] as Vector2)).rotated(float(r[2]))
+		var rot := float(r[2])
+		var local := (rect.get_center() - (r[0] as Vector2)).rotated(rot)
 		var half: Vector2 = r[1]
-		if absf(local.x) <= half.x + reach and absf(local.y) <= half.y + reach:
-			return r[3]
+		var u := Vector2(1, 0).rotated(rot)
+		var v := Vector2(0, 1).rotated(rot)
+		if absf(local.x) > half.x + bh.x * absf(u.x) + bh.y * absf(v.x):
+			continue
+		if absf(local.y) > half.y + bh.x * absf(u.y) + bh.y * absf(v.y):
+			continue
+		if absf(local.dot(u)) > bh.x + half.x * absf(u.x) + half.y * absf(u.y):
+			continue
+		if absf(local.dot(v)) > bh.y + half.x * absf(v.x) + half.y * absf(v.y):
+			continue
+		return r[3]
 	var box := AABB(Vector3(lo) + Vector3.ONE * 0.01, Vector3(hi - lo + Vector3i.ONE) - Vector3.ONE * 0.02)
 	for b: Array in boxes:
 		if (b[0] as AABB).intersects(box):

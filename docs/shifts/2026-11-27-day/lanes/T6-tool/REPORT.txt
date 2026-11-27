@@ -1,0 +1,137 @@
+T6 TOOL (M6: the Rules hand tool), 27 Nov 2026 day shift. Worktree .claude/worktrees/d27-m6-t, branch d27-m6-t from the
+seam 6690ad32. Nothing committed (lane rules: no git that writes). Opus.
+
+WHAT A PERSON GETS
+The Rules tool (T cycle, between Plants and Command) places a zone and its rules from a preset, ONE batch (one Ctrl+Z):
+  1 Start (pad)  2 Checkpoint (pad)  3 Finish (flag)  4 Coin (coin)  5 Door (none)  6 Jump pad (pad)  7 Hazard (none)
+  8 Message (none). Two ways in, both on the hotbar's card row and in the side card's text:
+  - preset first: 1-8 arms it (slot lit); every click places one on the cell under the cursor, a drag one over the box.
+    The same key or 0 stops. The coin trail is "4, click, click, click". While armed the ghost is the preset where it
+    would go (rules_layer.preview_node over build.preview), red with the reason when refused (e.g. "Coin refused:
+    box: out of range"); a refused preset is never placed.
+  - box first (the brief's): with nothing armed, drag (or click) a box, the wheel raises its top, then 1-8.
+  The first Start asks the run's name (command_bar field, "Run 1" selected; Enter places, Esc places nothing; the
+  closing Enter/Esc neither opens the command bar nor leaves build mode: the stamp tool's latch copied); later Starts
+  use it. A Message asks its text the same way.
+  Edit: with nothing armed a click on a zone (or on the blocks of a door) selects it (yellow); the side card lists its
+  rules as describe() sentences and its knobs: [ ] coin value / door seconds / pad up / message seconds, Shift+[ ] pad
+  forward, G run name / message text; Delete or Backspace removes the zone and every rule naming it (one batch).
+  With nothing selected the card lists every rule of the Home (12 lines, "and N more") and the run's name.
+  Zones show in build mode in every tool (zone_draw.gd: box frame, look icon, name; holo; the selected one yellow),
+  hidden in play. Keys used: 0-8, [ ], G, Delete, Backspace, wheel, LMB. None of B, Esc, T, Enter, Ctrl+Z/Y, not E.
+
+PRESETS (rules_tool_presets.gd; every rule built with next_zone_id / next_rule_id)
+  start       when you enter Start: start the run <run>
+  checkpoint  when you enter Checkpoint N if a run is going: checkpoint at Checkpoint N, say "Checkpoint"
+  finish      when you enter Finish if a run is going: finish the run
+  coin        when you enter Coin N: take Coin N, add 1 to coins                           (value knob)
+  door        the drawn box (the door's BLOCKS, clicked on the wall's face) grown one cell each way through the wall,
+              so he stands in it in front and behind. Default (seconds 0): when you press E in Door N: open Door N;
+              when you leave Door N: close Door N (no counter). Seconds S (knob 1..30): use if door_<id> is at most
+              0: open, add S; every 1 s if door_<id> is 1-1: close, take 1; every 1 s if door_<id> is at least 2:
+              open (a no-op on an open zone; it makes the rule name the door so Delete finds it), take 1. Closes
+              S-1..S s after E (the every clock's phase), measured 119 frames for S = 2.
+  pad         when you enter Jump pad N: launch 10 m/s up, 4 m/s forward                  (up, forward knobs)
+  hazard      when you enter Hazard N: back to the respawn
+  message     when you enter Message N: say "<text>" (3 s)                                  (text, seconds knobs)
+  Zones stand at least 2 cells (start, checkpoint, finish, coin, message) or 1 (door, pad, hazard) unless the wheel set
+  the top (then exactly as shown). A knob is offered only while the zone's rules are exactly its preset's (an LLM's or a
+  changed rule: Delete only, no knob that would drop its extra effects).
+
+ACCEPTANCE
+- 775 -> HOME rules-tool ok: MET. `bash engine/tools/selftest.d/775-home-rules-tool.sh`: 9/9
+  presets (8 presets through build mode's keys + the tool's press/drag/release; each 1 batch, look, rule count, kind;
+  door box [[9,0,6],[11,1,6]] grown through the wall; box-first + two wheel notches = 3 high), undo (one Ctrl+Z per
+  preset, 8 Ctrl+Y back to the same save_part), delete (click on the door's blocks selects it, Delete removes zone + 2
+  rules in 1 batch, undo; Backspace on a coin), field (first Start asks 'Run 1' selected + focus; Enter HELD 8 frames
+  after it closes: still rules tool, still building, latched; let go: free; Message + Esc: nothing placed, building;
+  second Start does not ask), describe (the card's lines for all 8 equal describe(); the Home list 9 lines), knobs
+  (coin ]] -> 3 in 2 batches; door ] -> 3 rules, [ -> 2; pad ] Shift+] -> 1100/500; message G text + ] 240 frames),
+  ghost (preview_node: a preset 1 node '+ Coin 2'; an answer with 2 zones + a rule through home_build.preview_nodes:
+  2 nodes; a delete: red '- ...'; nothing / blocks only: null; the armed tool's ghost after a steady aim: 1 node; at
+  the grid's top: red + reason, a click places nothing), draw (8 zone nodes while building, on the command tool too,
+  selected yellow, card on, hidden in play), runs (the presets as placed, played by rules_run.gd over a recording
+  facade: run_started > say > look_taken > set_open(open) > set_open(close) > launch > teleport(checkpoint floor) >
+  run_finished; a 2 s door open 119 frames).
+- The exe (a window): MET with a caveat on "by hand" (see JUDGEMENT). The editor binary windowed on this tree's boot
+  scene (not a cooked export), 1920x1080, TL_EXE_START=485,-473 facing the course, TL_HOME_BUILD_DIR a scratch Home.
+  The stage (a stone floor, a wall, a 4-high tower) was put down by TL_BUILD_DEVICES `fill` (3 batches): blocks are not
+  this lane's. The rules were then made by the Rules tool only, through build mode's real input (TL_BUILD_DEVICES
+  pointer at world points, lmb, keys): Start (drag, the name field, Enter), 3 coins (armed, 3 clicks), a door (armed,
+  a drag up the door's two blocks on the wall's face), a jump pad (click), the finish (click on the tower's top). All 7
+  presets ok (build_edit lines), saved as tl.build/4 on leaving.
+  Count from the first click to the last preset: 7 mouse actions (2 drags, 5 clicks) and 11 keys (1, Enter, 1, 4, 4,
+  5, 5, 6, 6, 3, 3; the second press of each only disarms: 6 keys are enough, since another number re-arms) in 395
+  physics frames (frame 312 -> 707, 6.6 s) with a scripted 20-frame settle per aim. Reaching the tool: 8 T presses
+  (or Shift+T twice).
+  Captures (1440x810 JPG, 120-130 KB) in docs/shifts/2026-11-27-day/lanes/T6-tool/: t6-presets.jpg (the card row,
+  Start armed, its ghost, the empty Home card), t6-ghost.jpg (Coin armed: '+ Coin 2' ghost over the cursor, Coin 1
+  selected with its sentence and knob in the card), t6-zones.jpg (the course: Start pad, 3 coins, Jump pad 1, Door 1
+  selected in yellow inside the wall, Finish flag on the tower; the card reads the door's 2 rules and its knob).
+  Raw: .tl/exe/ (gitignored).
+- Gates: see GATES.
+
+JUDGEMENT (could a newcomer do it?)
+- Yes for start, coins, pad, finish: arm a number, click where you want it, the ghost shows it first and the card
+  says in a sentence what it will do. Nobody has to know the words zone, trigger or effect.
+- The door is the hard one: you must click the door's blocks on the wall's face (not the air in front); the card says
+  what it did, but the first try of a person is likely the air. The scripted run hit the face exactly; a person's
+  aim was not measured.
+- Not seen yet as a person meets it: the rules in play (lane P's looks and facade), so "made in minutes" is measured
+  for placing only; whether the course is fun or even reachable (the pad's 10/4 m/s onto a 4-high tower) is not.
+- Seen in the captures: adjacent zones' names overlap (Coin 1 / Coin 2 one cell apart); names are now staggered by id
+  (3 heights) but two neighbours can still touch. The ghost and the placed zones are both holo cyan; the ghost's names
+  carry "+ " (new), "- " (removed), "~ " (changed) to tell them apart. The coin icon is a disc facing z: edge-on from
+  x. No sound or pulse on a placement.
+
+GATES
+- 775 alone (final files): HOME rules-tool ok, 9/9.
+- selftest home. : 136 cases, 135 PASS, 1 FAIL home.command.ask_foreman "could not run: no foreman/dist/world_edit.js"
+  (my worktree had no foreman build); after `npm run build` in foreman/, that case alone: PASS. Blocks: seam 10, build
+  8, mode 5, land 10, pieces 7, stamp 4, command 11, command-m5 5, unlocks 4, water 10, paths 10, plants 7, look 6,
+  walker-steps 8, results-card 4, a 5, home 4, rules-seam 8 (773 green), rules-play 1 (P's stub), rules-tool 9.
+  (Run before the last two cosmetic edits: ghost marks, the info line's wheel top; 775 re-run after them: 9/9.)
+- tl check --tier fast: PASS 5/5 (arch 12/12 after the .uid of the case was imported, assets 4/4, cards 3/3,
+  devx.test 230/230, foreman.typecheck).
+- world: PASS [9/9] (256.8 s). The 9 rows of .tl/gate-world.log (pack, own ticks, hash in the world, verdict) diff
+  empty against main's last gate log (third-life/.tl/gate-world.log, 25 Nov): seed.drive a2940a1735bc2b72@3441 ...
+  game.hokej fd162294891897fc@9072. (A first run also passed 9/9 but my own shell redirect wrote over the gate's log
+  file, so it was re-run for the comparison.)
+- Uncapped `bash engine/tools/selftest.sh`: UNCAPPED_LINE
+
+FILES
+New (engine/kernel/world/build/): zone_draw.gd (the zones in build mode, ghost_node), rules_tool_presets.gd (presets,
+knobs, delete as ops), rules_tool_card.gd (the side card), rules_tool_case.gd (the 775 case), PATCHES-T6.md, their .uid.
+Replaced: tools/rules_tool.gd (the stub), engine/tools/selftest.d/775-home-rules-tool.sh (the stub).
+Changed: rules_layer.gd `preview_node` only (calls zone_draw.gd ghost_node; loaded at call time, no new const).
+Lane folder: BRIEF.md, ../M6-COMMON.md (copies), STANDUP.md, REPORT.txt, t6-presets.jpg, t6-zones.jpg, t6-ghost.jpg.
+
+BEHAVIOUR CHANGES
+- The Rules tool is no longer a stub: 754 seam.tools reads it as built (any non-empty line); no expectation moved.
+- The rules layer's preview_node now returns nodes: the command tool's ghost of an LLM answer with zones or rules now
+  shows them (through home_build.preview_nodes) with no change on lane C's side; null when nothing changed.
+- Build mode now always has a ZoneDraw node and a RulesCard canvas under it (made by the rules tool's tick once the
+  host is in the tree); the card is visible only with the Rules tool current, the zones only while building.
+
+QUESTIONS FOR THE DIRECTOR
+T1 BUILD.md is frozen: the rules tool's row text is in PATCHES-T6.md T6-1 (keys named there).
+T2 describe() reads a min == max counter condition as "door_a is 1-1" (the timed door shows it). Suggested one-line
+   change to rules_check.gd in PATCHES-T6.md T6-2.
+T3 The brief's look list says "others none" for the Jump pad; I gave it `pad` (a glowing disc): an invisible launcher
+   is a trap in play. Say if it must be `none`.
+T4 The door is one zone grown through its wall (use and leave on the same zone), not a separate doorstep zone: Delete
+   then removes everything with no partner-zone rule. A door whose wall is more than 1 thick needs the box drawn
+   through it (the grow is 1 cell each way).
+T5 A timed door closes S-1..S s after E (the `every` clock runs from the visit's begin, not from the press): the
+   contract has no "after N frames" trigger. Exact timing would need an `every` relative to an event, or a counter
+   decremented every frame (60 per second: counters cap 999, so at most 16 s).
+T6 The 8-counter cap: each timed door takes a counter (door_<letters>); coins share `coins`. A Home can hold at most
+   7 timed doors with coins; the refusal is the layer's, shown red.
+T7 Selftest numbers: the brief named T 782-784, but 782 is already 782-create-pauses.sh on this seam; I used only 775.
+
+NEXT THREE
+1. Play the course in the visit once lane P lands (looks, open/launch/teleport): time a person placing it by hand
+   with the mouse (not the device script), and fix what the door's aim costs him.
+2. Use P's play_looks.look_of for the build-mode icons so a coin looks like the coin he will meet.
+3. A zone's height and box editable after placing (wheel on a selected zone: unrule, unzone, zone, rule in one batch),
+   and a stamp that carries zones and rules (seam Q14).

@@ -339,7 +339,7 @@ static func describe(r: Dictionary, names: Dictionary = {}) -> String:
 		if c.has("running"):
 			conds.append("a run is going" if bool(c.running) else "no run is going")
 		elif c.has("min") and c.has("max"):
-			conds.append("%s is %d-%d" % [str(c.counter), int(c.min), int(c.max)])
+			conds.append("%s is %d" % [str(c.counter), int(c.min)] if int(c.min) == int(c.max) else "%s is %d-%d" % [str(c.counter), int(c.min), int(c.max)])
 		elif c.has("min"):
 			conds.append("%s is at least %d" % [str(c.counter), int(c.min)])
 		else:

@@ -310,10 +310,14 @@ func copy() -> RefCounted:
 	return c
 
 
-## The ghost of this layer's part of a dry run: lane T draws it (tools/rules_tool.gd's zone look in holo). The seam
-## shows nothing.
-func preview_node(_sc: Variant) -> Node3D:
-	return null
+## The ghost of this layer's part of a dry run (`sc`: its scratch copy after the ops, home_build.gd `preview`): lane
+## T's (zone_draw.gd `ghost_node`): one node per zone added or changed, or named by a rule added or changed, in holo;
+## removed ones (and the zones of removed rules) in red; null when nothing changed. The command tool shows it through
+## `home_build.preview_nodes`, the rules tool for a preset before it is placed.
+func preview_node(sc: Variant) -> Node3D:
+	if not (sc is RefCounted) or (sc as RefCounted).get("zones") == null or (sc as RefCounted).get("rules") == null:
+		return null
+	return (load("res://kernel/world/build/zone_draw.gd") as GDScript).call("ghost_node", self, sc)
 
 
 func free_all() -> void:
