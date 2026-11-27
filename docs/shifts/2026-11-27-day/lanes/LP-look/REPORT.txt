@@ -12,7 +12,14 @@ OUTCOME PER LOOK (judged by eye in the exe, windowed, before = main's engine cop
 2. Growth -- MET at 10 and 25 m; PARTLY at 50 m. lp-growth-{10m,25m,50m}-{before,after}.jpg, lp-growth-10m-after-crop.jpg.
    Meadow: lusher two-green grass with tufts; flowers: dense yellow/cream/pink/violet dots; tall grass: lighter straw
    field with light tufts and a wind sheen. At 50 m meadow and flowers still read (dotted green); tall grass reads only as
-   a lighter strip that is close to the valley's own light grass. The capture site's bands lie beyond a gentle rise, so
+   a lighter strip that is close to the valley's own light grass.
+   ROUND 3 (after landing): far off (from 28 m, fully by 45 m) tall grass turns to a cool silvery sage, a tone the valley
+   never uses (its greens are all yellow-greens), combed into wind bands with a dark cool underside where the pixel
+   footprint allows. lp-growth-50m-after-2.jpg (same camera) and lp-growth-50m-crop-after-vs-after-2.jpg (top: round 1,
+   bottom: round 3): the tall band now reads as its own pale sage field at 50 m. 10 m and 25 m shots: only pixels of the
+   band's far part (over 28 m away) change (10 m: 4,198 px in a 24 px tall strip at the horizon; 25 m: 8,634 px in a 44 px
+   strip); the near grass draws as before. Frame p50/p99 at the 50 m camera: a 5.42/19.47, b 3.10/12.73, a 2.80/11.73 ms
+   (machine loaded: noise again larger than the difference). The capture site's bands lie beyond a gentle rise, so
    at 25/50 m they are a thin sliver from walking eye height (same camera as the before set). Shader-only, no instances.
    Headless: 768 look2.growth (meadow ratio 0.70, flowers 3.08, tall 0.04 -> each cut into its own kind).
 3. Stone path -- MET. lp-stone-path-before/after.jpg (near), lp-stone-path-far-before/after.jpg.
@@ -47,13 +54,19 @@ with 4 Opus lanes running Godot, so the noise is larger than any difference):
   quiet machine before calling it neutral.
 
 GATES
-  (filled below)
+  Fast gate (tl check --tier fast): PASS 5/5 (arch 12/12, assets 4/4, cards 3/3, devx.test 230/230, foreman.typecheck),
+  after rounds 1+2 and again after round 3.
+  Lane blocks through selftest.sh's verdict harness: 764 home.look 6/6, 768 home.look2 3/3, 761 home.water 10/10,
+  763 home.plants, 762 home.paths, 610 celsurf, 770 n3 world look: all green after rounds 1+2 (39/39 for 763+610+770+762+761);
+  after round 3: 764+768+610 18/18, 770 3/3.
+  Uncapped selftest.sh: STOPPED by the Director's order at 81 PASS / 0 FAIL of the run (not a pass: a stopped run); the
+  Director runs it and `tl check --tier full --only world,packs` once on the merged tree. NOT RUN here: world,packs.
 
 CHANGED FILES
   engine/kernel/world/build/land_mesh.gd        rock per triangle (shader), colour alpha = rock allowance; _rock removed
   engine/kernel/world/build/land_look_case.gd   764 look.terrace rewritten for per-triangle rock (expectation moved: M5
                                                 checked vertex colour toward rock_warm; that colour no longer exists)
-  engine/style/shaders/toon_cel.gdshader         terrace face, growth kinds, flower dots, stone path (all behind the
+  engine/style/shaders/toon_cel.gdshader         (round 3: the tall grass's far tone and wind bands) terrace face, growth kinds, flower dots, stone path (all behind the
                                                 Home-land UV.y <= -8 or UV2.y < -500: celsurf 610 and n3 770 green)
   engine/kernel/world/build/path_mesh.gd         stone = terrain ribbon with the dirt field + UV2 (hash includes uv2)
   engine/kernel/world/build/water_mesh.gd        bank depth per vertex, fine bank cells, fans
@@ -79,6 +92,6 @@ QUESTIONS FOR THE DIRECTOR
   - frame-time A/B needs a quiet machine.
 
 NEXT THREE
-  1. Tall grass at 50 m: a stronger far tone (it is the weakest of the five reads).
+  1. Judge round 3's sage in the exe at 50-100 m on open ground (the capture site's band sits behind a rise: a thin strip).
   2. Water mesh cost: build the pond surface as an ArrayMesh with shared vertices (as path_mesh does) to get back to ~1 ms.
   3. A quiet-machine frame-time A/B of all six cameras.

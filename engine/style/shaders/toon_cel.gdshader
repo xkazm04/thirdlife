@@ -711,6 +711,20 @@ void fragment() {
 					float tk2 = ground_marks(gq / (gk_s * 0.6) + 37.0, tall_a).x * fade * mfade;
 					c = mix(c, c * vec3(0.56, 0.70, 0.44), tk_d * (1.0 - tk_l) * gr_tall * 0.85);
 					c = mix(c, c * vec3(1.26, 1.22, 1.00) + 0.04, max(tk_l, tk2 * 0.8) * gr_tall);
+					// LP round 3: far off (from 28 m, all of it by 45 m: 10 and 25 m draw as above) the tufts are gone and
+					// the straw came close to the valley's own light grass. There tall grass turns to a tone the valley
+					// never uses, a cool silvery sage, combed by the wind into bands with a dark, cool green underside
+					// (the shadow under the bent blades), so it reads as its own field at 50 m and beyond.
+					float far_t = smoothstep(28.0, 45.0, vdepth) * gr_tall;
+					if (far_t > 0.0) {
+						vec3 sage = m0.rgb * vec3(0.36, 0.56, 0.40) * 1.12 + vec3(0.012, 0.02, 0.03);
+						float cv = dot(gq, vec2(0.6, -0.8)) / 2.6 + (vn2(gq * 0.11 + 7.0) - 0.5) * 1.6;
+						float cfw = pxm * 0.5 + 1e-4;              // (the footprint taken outside the branches: no derivative here)
+						float cb = fract(cv);
+						float under = (smoothstep(0.62 - cfw, 0.62 + cfw, cb) - smoothstep(0.9 - cfw, 0.9 + cfw, cb)) * (1.0 - smoothstep(0.18, 0.45, cfw));
+						vec3 far_c = mix(sage, sage * vec3(0.58, 0.68, 0.72), under);
+						c = mix(c, far_c, far_t);
+					}
 				}
 			}
 			c = mix(c, c * 1.30 + 0.03, gk.y * (1.0 - gk.z) * em_k);
