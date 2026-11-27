@@ -17,6 +17,10 @@ extends RefCounted
 ## and rules as ONE batch with the Home's next free ids, and the ghost shows the zones (rules_layer.gd `preview_node`).
 ##   Ctrl+C / Ctrl+V   the current stamp's share code ("TL1-...", its length in the info line) to the clipboard / a code
 ##                     from it, checked as a stamp file, added like an import (headless: `fake_clip`, a case's hook)
+## Round 3: the sharing is stamp_code.gd's. The starter courses (res://kernel/world/build/starters, read-only) are the
+## first page ("Starters"; Tab: your own stamps); `stamps` holds your own first, then the starters (so an index of
+## your own is what it was). Placing a course whose run name the Home already has asks once in a field prefilled
+## "<name> (2)": Enter places it with that run name, Esc places it sharing the record (contracts/BUILD.md).
 
 const HomeBuild := preload("res://kernel/world/build/home_build.gd")
 const Blocks := preload("res://kernel/world/build/blocks.gd")
@@ -24,8 +28,11 @@ const StampFile := preload("res://kernel/world/build/stamp_file.gd")
 const Unlocks := preload("res://kernel/world/build/unlocks.gd")
 const PreviewMesh := preload("res://kernel/world/build/preview_mesh.gd")
 const PieceGhost := preload("res://kernel/world/build/piece_ghost.gd")
+const Check := preload("res://kernel/world/build/rules_check.gd")
 const Catalog := preload("res://kernel/world/build/piece_catalog.gd")
 const Bar := preload("res://kernel/world/build/command_bar.gd")
+const StampCode := preload("res://kernel/world/build/stamp_code.gd")
+const ZoneDraw := preload("res://kernel/world/build/zone_draw.gd")
 const NAME_KEYS := [KEY_ENTER, KEY_KP_ENTER, KEY_ESCAPE]
 const PAGE := 9
 const SCAN_UP := 48                     # cells above the box's floor the automatic top looks for content
@@ -57,6 +64,9 @@ var _latched := false                   # Enter or Esc closed the name field and
 var zghost: Node3D = null               # M6: the stamp's zones where they would go (the rules layer's ghost)
 var fake_clip := ""                     # the clipboard where there is none (headless: a case's test hook)
 var copied := ""                        # the last share code copied
+var page := 0                           # the page shown while no stamp is current (0: Starters when there are any)
+var run_bar: CanvasLayer = null         # command_bar.gd: a placed course's run name (R5)
+var _placing := {}                      # {"ops", "run", "cell"}: a placing waiting for the run name
 
 
 func setup(h: Node) -> void:
@@ -77,19 +87,22 @@ func stamps_dir() -> String:
 func selected(on: bool) -> void:
 	reason = ""
 	if not on and naming():
-		name_bar.close()
+		for b: Variant in [name_bar, run_bar]:
+			if b != null and (b as CanvasLayer).call("is_open"):
+				(b as CanvasLayer).call("close")
+		_placing = {}
 	_checked = ""
 	_hide()
 	if on:
 		turn = 0
 		unlocks = Unlocks.new(str(host.get("dir")))
-		import_inbox()
+		StampCode.import_inbox(self)
 		refresh()
 
 
 func refresh() -> void:
 	var dir := stamps_dir()
-	stamps = StampFile.list(dir).stamps if dir != "" else []
+	stamps = (StampFile.list(dir).stamps if dir != "" else []) + StampCode.starters()
 	if current >= stamps.size():
 		current = stamps.size() - 1
 	_drawn = ""
@@ -99,14 +112,43 @@ func stamp() -> Dictionary:
 	return stamps[current].stamp if current >= 0 and current < stamps.size() else {}
 
 
+## The pages of the slot row: the starters first (one page), then your own stamps nine a page; each a list of indices.
+func pages() -> Array:
+	var own := []
+	var starts := []
+	for i: int in stamps.size():
+		(starts if bool(stamps[i].get("starter", false)) else own).append(i)
+	var out := [] if starts.is_empty() else [starts.slice(0, PAGE)]
+	for k: int in range(0, own.size(), PAGE):
+		out.append(own.slice(k, k + PAGE))
+	return out
+
+
+## The page shown: the current stamp's, else `page`.
+func shown() -> int:
+	var ps := pages()
+	for p: int in ps.size():
+		if (ps[p] as Array).has(current):
+			return p
+	return clampi(page, 0, maxi(ps.size() - 1, 0))
+
+
+func own_stamps() -> Array:
+	return stamps.filter(func(e: Dictionary) -> bool: return not bool(e.get("starter", false)))
+
+
 func slots() -> Array:
 	var out := [{"key": "0", "label": "new box", "lit": current < 0}]
-	var page := maxi(current, 0) / PAGE
-	for i: int in range(page * PAGE, mini(page * PAGE + PAGE, stamps.size())):
+	var ps := pages()
+	var items: Array = ps[shown()] if not ps.is_empty() else []
+	for j: int in items.size():
+		var i: int = items[j]
 		var label := str(stamps[i].stamp.name)
 		if locked_in(stamps[i].stamp) != "":
 			label += "\nlocked"
-		out.append({"key": str(i - page * PAGE + 1), "label": label, "lit": i == current})
+		elif bool(stamps[i].get("starter", false)):
+			label += "\nstarter"
+		out.append({"key": str(j + 1), "label": label, "lit": i == current})
 	return out
 
 
@@ -123,15 +165,19 @@ func status() -> Dictionary:
 			info = "box %d x %d x %d   wheel top   G save" % [s.x, s.y, s.z]
 	else:
 		var d := stamp()
-		info = "%s   %d blocks   %d pieces   rot %d" % [str(d.name), (d.get("blocks", []) as Array).size(), (d.get("pieces", []) as Array).size(), turn]
+		info = ("starter: " if bool(stamps[current].get("starter", false)) else "") + "%s   %d blocks   %d pieces   rot %d" % [str(d.name), (d.get("blocks", []) as Array).size(), (d.get("pieces", []) as Array).size(), turn]
 		if d.has("zones") or d.has("rules"):
 			info += "   %d zones   %d rules" % [(d.get("zones", []) as Array).size(), (d.get("rules", []) as Array).size()]
+	if current < 0 and corner_a == null and not pages().is_empty():
+		info += "   %s (Tab: more)" % ("Starters" if bool(stamps[(pages()[shown()] as Array)[0]].get("starter", false)) else "your stamps")
 	if note != "":
 		info += "   (%s)" % note
 	return {"info": info, "reason": reason}
 
 
 func hint() -> String:
+	if run_bar != null and run_bar.is_open():
+		return "Enter place with this run name   Esc place sharing the record"
 	return "Enter save   Esc cancel" if naming() else KEY_HELP
 
 
@@ -141,7 +187,7 @@ func blocks_input() -> bool:
 
 
 func naming() -> bool:
-	return name_bar != null and name_bar.is_open()
+	return (name_bar != null and name_bar.is_open()) or (run_bar != null and run_bar.is_open())
 
 
 ## The selection box [lo, hi] (inclusive cells), or [] while a corner is missing.
@@ -178,26 +224,28 @@ func key(e: InputEvent) -> bool:
 		corner_a = null
 		corner_b = null
 	elif code >= KEY_1 and code <= KEY_9:
-		var i: int = (maxi(current, 0) / PAGE) * PAGE + code - KEY_1
-		if i < stamps.size():
-			current = i
+		var ps := pages()
+		var items: Array = ps[shown()] if not ps.is_empty() else []
+		if code - KEY_1 < items.size():
+			current = items[code - KEY_1]
 	elif code == KEY_TAB:
-		if not stamps.is_empty():
-			var pages := ceili(float(stamps.size()) / PAGE)
-			current = mini(posmod(maxi(current, 0) / PAGE + (-1 if k.shift_pressed else 1), pages) * PAGE, stamps.size() - 1)
+		var ps := pages()
+		if not ps.is_empty():
+			page = posmod(shown() + (-1 if k.shift_pressed else 1), ps.size())
+			current = (ps[page] as Array)[0]
 	elif code == KEY_R:
 		turn = (turn + 1) % 4
 	elif code == KEY_G:
 		ask_name()
 	elif code == KEY_X:
-		export_current()
+		StampCode.export_current(self)
 	elif code == KEY_I:
-		import_inbox()
+		StampCode.import_inbox(self)
 		refresh()
 	elif code == KEY_C and k.ctrl_pressed:
-		copy_code()
+		StampCode.copy(self)
 	elif code == KEY_V and k.ctrl_pressed:
-		paste_code()
+		StampCode.paste(self)
 	else:
 		return false
 	_checked = ""
@@ -258,87 +306,12 @@ func save_box(name := "") -> String:
 	return reason
 
 
-## Writes the current stamp as <stamps>/export/<slug>.tlitem. Returns its path, or "".
 func export_current() -> String:
-	if current < 0 or stamps_dir() == "":
-		reason = "choose a stamp to export"
-		return ""
-	var path := stamps_dir().path_join("export").path_join(str(stamps[current].slug) + ".tlitem")
-	var r: Dictionary = StampFile.export_item(stamp(), path)
-	reason = "" if bool(r.ok) else str(r.reason)
-	if reason == "":
-		note = "exported %s" % path.get_file()
-		print(JSON.stringify({"schema": "tl.view/1", "kind": "build_stamp", "exported": path, "bytes": int(r.bytes), "frame": host.frames}, "", false))
-	return path if reason == "" else ""
+	return StampCode.export_current(self)
 
 
-## Imports every .tlitem in <stamps>/inbox: a good one becomes a stamp and leaves the inbox; a bad one stays and its
-## reason is shown. Returns how many were imported.
 func import_inbox() -> int:
-	var dir := stamps_dir()
-	if dir == "":
-		return 0
-	var inbox := dir.path_join("inbox")
-	var da := DirAccess.open(inbox)
-	if da == null:
-		return 0
-	var n := 0
-	var names: Array = Array(da.get_files())
-	names.sort()
-	for f: String in names:
-		if f.get_extension() != "tlitem":
-			continue
-		var r: Dictionary = StampFile.import_item(inbox.path_join(f))
-		if bool(r.ok):
-			var w: Dictionary = StampFile.save(dir, r.stamp)
-			if bool(w.ok):
-				DirAccess.remove_absolute(inbox.path_join(f))
-				n += 1
-				continue
-			r.reason = w.reason
-		reason = "%s: %s" % [f, str(r.reason)]
-		print(JSON.stringify({"schema": "tl.view/1", "kind": "build_stamp", "refused": f, "reason": str(r.reason)}, "", false))
-	if n > 0:
-		note = "imported %d" % n
-		refresh()
-	return n
-
-
-## Ctrl+C: the current stamp's share code to the clipboard. Returns the code, or "" (the reason in the hotbar).
-func copy_code() -> String:
-	if current < 0 or stamp().is_empty():
-		reason = "choose a stamp to copy"
-		return ""
-	copied = StampFile.code_of(stamp())
-	if DisplayServer.get_name() == "headless":
-		fake_clip = copied
-	else:
-		DisplayServer.clipboard_set(copied)
-	note = "copied: a code of %d characters" % copied.length()
-	print(JSON.stringify({"schema": "tl.view/1", "kind": "build_stamp", "copied": str(stamp().name), "chars": copied.length(), "code": copied if host.scripted() else ""}, "", false))
-	return copied
-
-
-## Ctrl+V: a share code from the clipboard, read as a stamp file is, saved with the stamps and made current. Returns ""
-## or why it was refused.
-func paste_code() -> String:
-	var text := fake_clip if DisplayServer.get_name() == "headless" else DisplayServer.clipboard_get()
-	var r: Dictionary = StampFile.from_code(text)
-	if not bool(r.ok):
-		reason = "paste refused: %s" % str(r.reason)
-		return reason
-	var w: Dictionary = StampFile.save(stamps_dir(), r.stamp) if stamps_dir() != "" else {"ok": false, "reason": "no Home file here"}
-	if not bool(w.ok):
-		reason = "paste refused: %s" % str(w.reason)
-		return reason
-	refresh()
-	for i: int in stamps.size():
-		if str(stamps[i].path) == str(w.path):
-			current = i
-	reason = ""
-	note = "pasted %s (%d zones, %d rules)" % [str(r.stamp.name), (r.stamp.get("zones", []) as Array).size(), (r.stamp.get("rules", []) as Array).size()]
-	print(JSON.stringify({"schema": "tl.view/1", "kind": "build_stamp", "pasted": str(w.path), "chars": text.strip_edges().length(), "frame": host.frames}, "", false))
-	return ""
+	return StampCode.import_inbox(self)
 
 
 ## "" or the condition of the first locked part or material stamp `d` holds.
@@ -414,25 +387,8 @@ func check_at(cell: Vector3i) -> String:
 	if why != "":
 		return why
 	var r: Dictionary = host.build.preview(ops_at(cell))
-	_zone_ghost(r)
+	StampCode.zone_ghost(self, r)
 	return "" if bool(r.ok) else "%d of %d refused: %s" % [(r.refused as Array).size(), (r.refused as Array).size() + int(r.applied), str(r.reason)]
-
-
-## M6: the stamp's zones from dry run `r` (none when the stamp has none).
-func _zone_ghost(r: Dictionary) -> void:
-	if zghost == null or not is_instance_valid(zghost):
-		zghost = Node3D.new()
-		zghost.name = "StampZones"
-		host.add_child(zghost)
-	for c: Node in zghost.get_children():
-		zghost.remove_child(c)
-		c.queue_free()
-	var rl: RefCounted = host.build.layer("rules")
-	if rl != null and (stamp().has("zones")) and (r.get("scratch", {}) as Dictionary).has("rules"):
-		var n: Node3D = rl.preview_node(r.scratch.rules)
-		if n != null:
-			zghost.add_child(n)
-	zghost.visible = true
 
 
 func _draw_stamp() -> void:
@@ -470,38 +426,10 @@ func _show_box(h: Dictionary) -> void:
 	_box_mesh(lo, hi)
 
 
-## The selection's outline: a thin frame along the box's 12 edges in the style's holo look.
+## The selection's outline: a thin frame along the box's 12 edges in the style's holo look (zone_draw.gd's frame).
 func _box_mesh(lo: Vector3i, hi: Vector3i) -> void:
-	var mn := Vector3(lo) - Vector3.ONE * 0.02
-	var mx := Vector3(hi + Vector3i.ONE) + Vector3.ONE * 0.02
-	var st := SurfaceTool.new()
-	st.begin(Mesh.PRIMITIVE_TRIANGLES)
-	var w := 0.05
-	for ax: int in 3:
-		var u := (ax + 1) % 3
-		var v := (ax + 2) % 3
-		for a: float in [mn[u], mx[u] - w]:
-			for b: float in [mn[v], mx[v] - w]:
-				var p := Vector3.ZERO
-				var q := Vector3.ZERO
-				p[ax] = mn[ax]
-				q[ax] = mx[ax]
-				p[u] = a
-				q[u] = a + w
-				p[v] = b
-				q[v] = b + w
-				_cube(st, p, q)
-	box_ghost.mesh = st.commit()
+	box_ghost.mesh = ZoneDraw.frame_mesh(lo, hi)
 	box_ghost.visible = true
-
-
-static func _cube(st: SurfaceTool, p: Vector3, q: Vector3) -> void:
-	var c := [Vector3(p.x, p.y, p.z), Vector3(q.x, p.y, p.z), Vector3(q.x, q.y, p.z), Vector3(p.x, q.y, p.z),
-		Vector3(p.x, p.y, q.z), Vector3(q.x, p.y, q.z), Vector3(q.x, q.y, q.z), Vector3(p.x, q.y, q.z)]
-	for f: Array in [[0, 3, 2, 1], [4, 5, 6, 7], [0, 1, 5, 4], [3, 7, 6, 2], [0, 4, 7, 3], [1, 2, 6, 5]]:
-		for i: int in [0, 1, 2, 0, 2, 3]:
-			st.set_uv(Vector2(0, 0))
-			st.add_vertex(c[f[i]])
 
 
 func _nodes() -> void:
@@ -553,7 +481,17 @@ func place_at(cell: Vector3i) -> String:
 	reason = check_at(cell)
 	if reason != "":
 		return reason
-	var r: Dictionary = host.build.apply(ops_at(cell))
+	var ops := ops_at(cell)
+	var clash := StampCode.run_clash(host.build, ops)
+	if clash != "":                     # R5: the Home has a run of this name: ask once
+		_placing = {"ops": ops, "run": clash, "cell": cell}
+		StampCode.ask_run(self, clash)
+		return "asked"
+	return _put(ops, cell)
+
+
+func _put(ops: Array, cell: Vector3i) -> String:
+	var r: Dictionary = host.build.apply(ops)
 	reason = "" if bool(r.ok) else str(r.reason)
 	_checked = ""
 	if host.scripted():
@@ -592,8 +530,9 @@ func dragging() -> bool:
 
 
 func tick(_frame: int) -> void:
-	if naming() and not (name_bar.line as LineEdit).has_focus():
-		(name_bar.line as LineEdit).grab_focus()     # a click in the world took the keyboard from the field: give it back
+	var bar: CanvasLayer = run_bar if run_bar != null and run_bar.is_open() else name_bar
+	if naming() and not (bar.line as LineEdit).has_focus():
+		(bar.line as LineEdit).grab_focus()     # a click in the world took the keyboard from the field: give it back
 	if _latched and NAME_KEYS.all(func(k: int) -> bool: return not Input.is_physical_key_pressed(k)):
 		_latched = false
 	if preview != null and is_instance_valid(preview) and (not bool(host.get("active")) or host.call("tool") != self or bool(host.get("looking"))):

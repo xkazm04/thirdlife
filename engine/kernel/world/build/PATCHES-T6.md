@@ -28,3 +28,33 @@ condition ("every 1 s if door_a is 1-1: close Door 1, take 1 from door_a"). Sugg
 ```
 
 No test of 773 reads that line (checked: rules_case.gd describes no min == max condition); 775 does not either.
+
+## T6-3 kernel/runner/visit.gd (not lane T's): C with Ctrl held while building is the stamp tool's, not the visitor's
+
+Ctrl+C in the stamp tool (copy a stamp's share code) also reaches the visit: `steer` reads `slide` (KEY_C, ACTIONS)
+for the walker's slide (`input.just_pressed(&"slide")`) and for the flight's descent (`input.axis(&"slide", &"jump")`),
+so Ctrl+C held while flying in build mode sinks him (and on foot while running starts a slide). Fix in `steer`, the
+`wish` call (around line 205); `_building()` is already there (non-null only while build mode is on, so a replay or
+a visit without the Home is unchanged; the raw Ctrl read happens only then):
+
+```gdscript
+	if vis.get("space") != null:
+		# T6-3: while building, C with Ctrl held is a tool's (the stamp tool's Ctrl+C): it neither slides nor sinks him
+		var c_tool: bool = _building() != null and Input.is_physical_key_pressed(KEY_CTRL)
+		var climb: float = input.strength(&"jump") if c_tool else input.axis(&"slide", &"jump")
+		vis.call("wish", want, input.just_pressed(&"jump") and not in_flight and not toggle_fly,
+			input.just_pressed(&"slide") and not in_flight and not toggle_fly and not c_tool, toggle_fly, climb)
+```
+
+replacing
+
+```gdscript
+	if vis.get("space") != null:
+		vis.call("wish", want, input.just_pressed(&"jump") and not in_flight and not toggle_fly,
+			input.just_pressed(&"slide") and not in_flight and not toggle_fly, toggle_fly, input.axis(&"slide", &"jump"))
+```
+
+(`TLInput.strength(action)` exists, line 101 of kernel/api/tl_input.gd; `axis(neg, pos)` is strength(pos) -
+strength(neg), so with C ignored the climb is the jump's strength alone.) Ctrl+V needs nothing: V is no visit action.
+The world gate stays 9/9 (no pack's input path changes). How to see it: fly (F), hold Ctrl+C in the stamp tool: he
+holds his height.
