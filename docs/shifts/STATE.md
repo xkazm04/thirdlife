@@ -485,3 +485,7 @@ on the frame and the figure and Fable on surfaces and nature, looping for 10 hou
   - J4b: the hand layer sent back as one sentence came out about as juicy as the hand version.
   - Exe 6522394: export.sh check PASS; 10 new packs ran 600 frames in it with 0/0 errors; the owner menu has 26 rows.
   - Full tier NOT RUN (disk). Pushed to origin.
+
+### 2026-11-27 day: plan (the sandbox engine past Minecraft and Roblox; owner away 24 h)
+- Owner ~07:50: push main (already on origin 8be26d61), then "use this time to master the sandbox engine, deep research Minecraft/Roblox ... where can outshine those two ... balanced level of freedom ... our graphics and LLM builder". No handshake; Director decides. Plan docs/shifts/2026-11-27-day/PLAN.md.
+- 08:05 lanes: R1 Minecraft+Hytale, R2 Roblox, R3 smart builders + AI, R4 engine scout (research, Opus); LP look polish (Opus, d27-look). RAM 33 GB free, disk 94 GB.
