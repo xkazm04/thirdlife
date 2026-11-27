@@ -475,3 +475,8 @@ on the frame and the figure and Fable on surfaces and nature, looping for 10 hou
 - 05:51 standup: J2, J4, J11 landed (Create made the hammer, Sky Jam and every biplane stunt; hand versions for J2/J4);
   J5, J4b, J11b, J19, J1 working. Disk fell to 12 GB (not this shift's trees: 4.5 GB in .tl). The Director removed its
   own merged trees d25-hard-b and d26-browse (tl trees remove; a leftover was removed after a no-link walk): 17 GB.
+- ~06:25: J5 karts landed (99a5d932: jump, flip, aerial, air bump and bots using it, all from Create v0.1.4-v0.1.7);
+  J11b (55f750b8, v0.1.4 graze rule out, as asked in one round); J1 arsenal (0d01da0b: meteor rules from Create v0.1.23 on
+  the second try; the look by hand; the core's bots cannot use it). Menu 23 rows. Main at 0d01da0b: fast 5/5, create.
+  29/0, menu. 2/0, dungeon. 7/0. Full tier NOT RUN: disk fell to 5.4 GB (another project, kiro/gtai-wt, writing AVIs);
+  the Director deleted only its own scratch (ref/thirdjam copy, base copies): 16 GB.
