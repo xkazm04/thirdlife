@@ -55,3 +55,14 @@ findings, then a second crazy ability per game through the editor (the same juic
 ## The machine
 - RAM at most 80 %, disk floor 12 GB: `bash C:/Users/kazda/kiro/third-life/.claude/worktrees/d25-main/docs/shifts/2026-11-27-night/tools/room.sh --wait` before every heavy step.
 - 08:05: RAM 33 GB free of 63, disk 94 GB free, Godot 0.
+
+## Launched (27 Nov 08:20)
+| Lane | Model | Tree / branch | Agent |
+|---|---|---|---|
+| T-editor | Opus | d25-hard-a / d27-tofu | afc8d4a043aaaba2c |
+| S1-bots | Opus | d25-court / d27-sp-bots, d27-sp-bots-b | a135346cf9707fbec |
+| S2-juice | Opus | d25-robot / d27-sp-juice, d27-sp-juice-b | a6501167640509a75 |
+| S4-core | Opus | d25-arsenal / d27-sp-core, d27-sp-core-b | aa817277ec7862b99 |
+| S35-packs | Opus | d25-biplane / d27-sp-packs | a59bff4e2efa2b504 |
+- Timers: standups cron 924acbe6 (every 2 h at :47; the scheduler's offset puts the first at 09:17); verdict cron e3c0a5a1 (28 Nov 06:13, one-shot).
+- The full tier on main 8be26d61 runs in d25-kart (detached), log `.tl/d27-full.log`.
