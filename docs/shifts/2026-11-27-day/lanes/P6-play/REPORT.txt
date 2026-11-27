@@ -1,0 +1,115 @@
+P6 PLAY (M6 rules and runs: the rules in the visit), 27 Nov 2026 day shift. Worktree .claude/worktrees/d27-m6-p,
+branch d27-m6-p from the seam 6690ad32. Opus. Nothing committed (lane rules: no git that writes).
+
+ACCEPTANCE
+- 774-home-rules-play.sh -> HOME rules-play ok: MET, 5/5 (mask, walk, same, looks, build), no SCRIPT ERROR / ERROR
+  lines (exit leaks fixed: the case frees its world spaces and the shared look meshes).
+  mask   door 3x3 masked: drawn tris 126 -> 104, collider triangles 114 -> 92, a ray through the door 4 -> 0 hits,
+         the faces the door hid drawn (0 -> 6 triangles in the gap's side plane); mask off: chunk hash, tris, section
+         arrays and collider byte-identical to before (0bfdbab29e = 0bfdbab29e); a mask meeting no section: same arrays.
+  walk   a real visitor (visitor.gd, steered as keys steer it) in a world space of its own, build mode with the real
+         facade: start -> coin -> blocked at the door (stop z 3.35) -> E on the Switch (the game's "enter" request of
+         that frame taken back from tiers.gd) -> door open, ray passes, the slide sinks, say line shown -> Jump pad:
+         launched (highest feet 2.90 m), landed on the 2 m platform -> door closes, ray hits again (solid) ->
+         checkpoint (respawn = its floor centre) -> off the side onto Lava: respawned there -> put out of the world
+         (no ground, y -40): respawn_now -> back at the checkpoint -> Flag: finish 300 frames, new best, card
+         "New best! | Tower | 00:05.00 | ...", records.json tl.records/1 {"plays":1,"finishes":1,"best_frames":300}
+         -> back on the Start: a new run, plays 2, the coin back, the card gone -> E outside any use zone: the
+         game's enter request stays (1 left). HUD lines (run, clock = clock(state.frames), "coins 1") checked mid-run.
+  same   the walk twice in two fresh worlds: the facade's calls equal, in order; both finishes 300 frames.
+  looks  roles start/checkpoint/finish from the rules; pad at the zone's floor centre; flag with 0 bodies; none -> null;
+         100 coins = 100 nodes and ONE shared mesh; a taken coin hidden after its 14-frame fly-up; clock(3725) 01:02.08.
+  build  B mid-run with the door open: run_stopped "build", masks empty at once, no slide, looks and HUD hidden; B
+         again: the rules run again.
+- The exe (a window): MET with one honest difference: the run is the EDITOR BINARY (Godot 4.7.2 console exe, not
+  --headless) in a window on boot.tscn, the same unattended path export.sh check uses, not the exported ThirdLife.exe
+  (no export was made in this worktree). Fixture Home made through the op path (HomeBuild place/apply, author hand):
+  `play_fixture.gd` -> 1806 blocks at (700, 35, -60) in the village landscape: three stairs onto a stone slab, a Start
+  pad, coin 1, a plank wall 4 high with a 3x3 door (Switch pad: use -> open + say), a Jump pad (launch up 15 m/s, on
+  4 m/s, close the door) with coin 2 in its arc, a 3-high ledge with the Checkpoint pad, three stairs to a top 6
+  blocks high with coin 3 and the Flag (finish only with 3 coins, else a say), Lava round the foot (respawn), a count
+  rule (3 coins -> say). Played twice by TL_EXE_KEYS (W, E, Shift; one mouse nudge to lift the camera):
+    run 1 (walk): run_started f304, launch f471, run_finished f657: 353 frames (00:05.88), new best (first finish)
+    walked off the top -> Lava -> respawn (no run: where the visit began) f881
+    run 2 (Shift): run_started f952, launch f1042, run_finished f1145: 193 frames (00:03.21), new best, card "best was
+    00:05.88"; records.json {"Tower Run":{"plays":2,"finishes":2,"best_frames":193}}.
+  Captures in this folder: p6-start.jpg (f330: start pad, pill, coin chip, say), p6-door.jpg (f425: the door sinking
+  mid-slide), p6-pad.jpg (f479: the jump pose leaving the pad), p6-finish-card.jpg (f1200: run 2's card by the flag,
+  confetti), p6-run.mp4 (19.7 s, physics frames 240-1420 at 60 fps, both runs). Raw frames and logs: .tl/p6/runs/.
+  Frame times (vsync off, TL_EXE_FRAMES_TIMES, drawn frames, the machine shared with ~20 Godot processes of other
+  lanes, one run each, so p99 is mostly their noise):
+    whole run window f304-1145: p50 2.53 ms, p99 14.76 ms (3534 drawn frames)
+    run 2 f952-1145: p50 2.60 ms, p99 14.85 ms
+    the same walk segment f304-415 with the course's rules vs the same Home with zones/rules removed: p50 1.64 vs
+    1.44 ms (p99 35 vs 34 ms); before any run (f200-300, looks shown, no HUD pill) 1.50 vs 1.51 ms. So the HUD costs
+    about 0.2 ms p50 a drawn frame while a run goes; the looks no measurable cost. Unmeasured: a Home of many looks.
+  Does it feel like a game? Honest read from the stills and the clip (not a person's hands): YES in its loop: a goal
+  line on start, a ticking clock, coins counted with an icon, a door you open with E that slides, a pad that throws
+  him up in his jump pose, a checkpoint, a flag with confetti and a "New best!" card, and a second faster run that
+  beats the first. WEAKER: the follow camera sits close and low, so at the door the wall fills the screen and the jump
+  pad is hard to see coming; the pads read pastel more than glowing; the launch has no wind-up and the dust puff I
+  added is barely visible; no sound. It reads as a small game, not a debug overlay, but not yet as a polished one.
+- Gates per M6-COMMON:
+  tl check --tier fast: PASS 5/5 (arch 12/12, assets 4/4, cards 3/3, devx.test 230/230, foreman.typecheck).
+  selftest home.: 131 passed, 1 failed = home.command.ask_foreman "could not run: no foreman/dist/world_edit.js"
+    (my worktree's foreman was not built). After `npm run build` in foreman/, 759 alone: 2/2, HOME command-ask ok. So
+    132/132 counting it; the home. run itself is 131 + 1 could-not-run, named here, not called green. Every block
+    752-767, 773, 774 passed in it (774 5/5; 773 8/8; 752 8/8; 754 10/10).
+  773 and 774 re-run alone after the last code edit (rules_play burst): HOME rules-seam ok, HOME rules-play ok.
+  world: PASS [9/9]; its table (.tl/gate-world.log of this worktree) is identical to main's .tl/gate-world.log of
+    25 Nov (diff empty: the 9 hashes and frame counts).
+  uncapped selftest.sh: see the line under UNCAPPED below.
+
+CHANGED FILES
+New (engine/kernel/world/build/): play_facade.gd (the facade), play_doors.gd (mask + slide), play_looks.gd (pad, coin,
+  flag; `static func look_of(zone, role := "") -> Node3D` for lane T), play_hud.gd (run pill and clock, counter
+  chips, say line, finish card in the results card's look, the teleport dip), play_case.gd + play_case_course.gd (774),
+  play_fixture.gd (the exe course), PATCHES-P6.md; their .gd.uid files from --import.
+Changed: rules_play.gd (P's: the real facade, doors, looks, HUD, records on build mode's dir, E claim, out-of-world
+  respawn, fx bursts; `tick`'s on/off rules and E from the visit's TLInput kept; new case hooks `visitor`, `use_at`,
+  `sched`), block_mesh.gd (only `mask` and `_cells_of`: masked cells read as empty for the mesh and the collider; no
+  mask = the store's own Dictionary, untouched), blocks_layer.gd (only its M6 section: set_mask hands `masks` to the
+  mesher), engine/tools/selftest.d/774-home-rules-play.sh (the stub replaced), engine/kernel/world/visitor.gd
+  (PATCHES-P6.md E1 `put(at, yaw, from_sky := true)`, E2 `launch(v) -> bool`; 599 lines).
+Lane folder: STANDUP.md, REPORT.txt, BRIEF.md and ../M6-COMMON.md (copies), p6-*.jpg, p6-run.mp4.
+
+BEHAVIOUR CHANGES
+- With zones and rules in a Home, walking it now shows the looks, the HUD and moves the world (no rules: rules_play
+  returns before anything; nothing new is drawn without zones).
+- visitor.gd put: unchanged for every existing caller (from_sky defaults true; same expression). No test moved.
+- E in a zone a rule triggers `on: use` (and not taken) no longer enters a nearby game (Director's decision); E
+  elsewhere unchanged.
+- Build mode on: open doors shut at once (no slide), looks and HUD hidden; the run is dropped (as the seam had).
+- The exe log gains one `tl.view/1` line of kind `rules` per run start / finish / stop, launch and teleport.
+
+WHAT THE OWNER SHOULD LOOK AT, AND HOW
+- p6-run.mp4 (20 s: both runs, the door, the pad, the card), then the four stills.
+- To play it himself: from the worktree, make the course (`<godot> --headless --path engine --script
+  res://kernel/world/build/play_fixture.gd -- --out=<abs dir>`), then start the village with TL_HOME_BUILD_DIR=<that
+  dir> and TL_EXE_START=700.5,-41.5,700.5,-80 (`.tl/p6/run.sh` shows the exact environment). Walk forward, E at the
+  wall, keep walking, jump off the top to go again.
+
+QUESTIONS FOR THE DIRECTOR
+Q1 E rule: implemented by taking the visit's "enter" request of the frame back out of tiers.gd `_requests` (private).
+   A hook in kernel/runner/visit.gd `steer` asking build mode's play before requesting would be cleaner (PATCHES-P6 A1).
+Q2 launch writes world_body.gd's `_jumped` and `_buffer` through `set` (PATCHES-P6 E2); a public world_body `launch`
+   would be cleaner. world_body.gd is not P's file.
+Q3 Selftest range: the brief gives P 779-781, but 780-create-go.sh and 781-create-iterate.sh already exist. P used
+   only 774 (the seam's stub); no 779-781 block was made.
+Q4 records.json is written in build mode's `dir` (user://home for a person, as the contract says; a fixture Home's own
+   dir otherwise).
+Q5 Out of the world = feet below Blocks.Y_MIN - 8 m with no ground under them in the visitor's space, or below -200 m
+   (the Home's valley floor can be below -24 m, so y alone would respawn a person standing on low ground).
+Q6 A launch "sets" the velocity (contract): a pad with fwd 0 stops a running person dead horizontally; he steers in
+   the air. Kept literal.
+
+THE NEXT THREE THINGS
+1. The camera for play: pull it back and up while a run goes (and through a launch), so the course ahead and the pad
+   are seen; today the wall fills the view at the door.
+2. Pad and launch juice: a brighter glow ring that pulses, a wind-up squash and a visible burst on launch, a coin
+   chime; sound once the kernel has it for the Home.
+3. A person's hands on it: the owner plays the fixture course (keys, not a script) and says whether the timing of
+   the door, the pad and the card feels right; then tune OPEN/CLOSE frames and the card's 300 frames from that.
+
+UNCAPPED
+(filled in below when the run ends)

@@ -201,11 +201,12 @@ func _place_cam() -> void:
 
 
 ## P11. Puts him at `at` (feet, x and z; the ground decides y) facing `yaw`, the camera behind him, the figure back
-## in its locomotion (no held clip).
-func put(at: Vector3, yaw: float) -> void:
+## in its locomotion (no held clip). Lane P (M6, a rule's teleport or respawn): `from_sky` false keeps `at`'s height:
+## the floor just under it (looked for from 0.6 m above, at most 1.5 m down), so a respawn under a roof stays there.
+func put(at: Vector3, yaw: float, from_sky := true) -> void:
 	if space != null:
-		var g: float = space.call("ground_at", at.x, at.z, 200.0)
-		at.y = g if not is_nan(g) else feet.y
+		var g: float = space.call("ground_at", at.x, at.z, 200.0 if from_sky else at.y + 0.6)
+		at.y = g if not is_nan(g) and (from_sky or g >= at.y - 1.5) else (feet.y if from_sky else at.y)
 		space.call("place", at)
 	feet = at
 	_last = at
@@ -234,6 +235,21 @@ func put(at: Vector3, yaw: float) -> void:
 		_clip(&"")                              # a teleport ends any held clip: he stands where he is put (D7)
 	reset_physics_interpolation()
 	snap()
+
+
+## Lane P (M6, a jump pad): the body's velocity becomes `v` (m/s), in the air, his jump pose, no coyote jump. Not steered: false.
+func launch(v: Vector3) -> bool:
+	if space == null or not steer or not visible:
+		return false
+	var m: RefCounted = space.call("ensure_mover")
+	(m.get("grips") as RefCounted).call("reset")
+	for kv: Array in [["vel", v], ["mode", "air"], ["grounded", false], ["air_ticks", 0], ["_jumped", true], ["_buffer", 0]]:
+		m.set(kv[0], kv[1])
+	vel = v
+	mode = "air"
+	if rig != null:
+		_clip(&"jump")
+	return true
 
 
 func step(pos: Vector3, frame: int) -> void:

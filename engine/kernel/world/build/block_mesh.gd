@@ -32,6 +32,9 @@ var look: Material = null               # SEAM: drawn in this material instead (
 ## collider's counter-clockwise-from-outside order; a face its neighbour hides collides no more than it draws.
 var stair_steps := true
 static var _ccw := {}                   # Shapes.Entry instance id * 8 + side -> its drawn triangles, collider winding
+## Lane P (M6): the open zones' cells, left out of the drawing and the collider (blocks_layer.gd `masks`, the same
+## Dictionary: key -> [lo, hi] inclusive cells). Empty (no zone open): every section is meshed exactly as before.
+var mask: Dictionary = {}
 
 
 func _init(blocks: RefCounted, parent: Node3D, space: Object) -> void:
@@ -92,7 +95,7 @@ func rebuild(s: Vector2i) -> void:
 ## The section's triangles: {"v", "n", "cu", "gv", "gn", "gcu", "col" (the collider's), "tris", "hash"} in section-local metres (x and z from the
 ## section's corner, y world), or {} when it holds no block.
 func arrays(s: Vector2i) -> Dictionary:
-	var own: Variant = store.sections.get(s)
+	var own: Variant = _cells_of(s)
 	if own == null or (own as Dictionary).is_empty():
 		return {}
 	var S: int = store.sec
@@ -106,7 +109,7 @@ func arrays(s: Vector2i) -> Dictionary:
 	grid.resize(plane * h)
 	for dz: int in range(-1, 2):
 		for dx: int in range(-1, 2):
-			var d: Variant = store.sections.get(s + Vector2i(dx, dz))
+			var d: Variant = _cells_of(s + Vector2i(dx, dz))
 			if d == null:
 				continue
 			var near := dx == 0 and dz == 0
@@ -171,6 +174,39 @@ func arrays(s: Vector2i) -> Dictionary:
 		hc.update(part if not part.is_empty() else PackedByteArray([0]))
 	return {"v": v, "n": n, "cu": cu, "gv": gv, "gn": gn, "gcu": gcu, "col": col, "tris": (v.size() + gv.size()) / 3,
 		"hash": hc.finish().hex_encode()}
+
+
+## Lane P (M6): section `s`'s cells (index -> code) without the cells of an open zone (`mask`). No mask, or none
+## that meets the section: the store's own Dictionary, untouched (so nothing changes while no zone is open). A masked
+## cell is read as empty by its neighbours too, so the faces it hid are drawn and collide while it is open.
+func _cells_of(s: Vector2i) -> Variant:
+	var d: Variant = store.sections.get(s)
+	if mask.is_empty() or d == null:
+		return d
+	var S: int = store.sec
+	var x0 := s.x * S
+	var z0 := s.y * S
+	var boxes := []
+	for k: int in mask:
+		var lo: Vector3i = mask[k][0]
+		var hi: Vector3i = mask[k][1]
+		if hi.x >= x0 and lo.x < x0 + S and hi.z >= z0 and lo.z < z0 + S:
+			boxes.append([lo, hi])
+	if boxes.is_empty():
+		return d
+	var out := {}
+	for idx: int in (d as Dictionary):
+		var c: Vector3i = store.cell_of(s, idx)
+		var hidden := false
+		for b: Array in boxes:
+			var lo: Vector3i = b[0]
+			var hi: Vector3i = b[1]
+			if c.x >= lo.x and c.x <= hi.x and c.y >= lo.y and c.y <= hi.y and c.z >= lo.z and c.z <= hi.z:
+				hidden = true
+				break
+		if not hidden:
+			out[idx] = (d as Dictionary)[idx]
+	return out
 
 
 ## A stair's drawn triangles on one side in the collider's winding (cached per entry and side).
