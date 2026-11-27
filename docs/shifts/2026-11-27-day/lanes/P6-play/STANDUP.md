@@ -1,0 +1,7 @@
+10:50 | state: working | did: read briefs, LANES, runtime, facade, mesher, visitor | next: mesher mask, facade, HUD, looks | gates: -
+11:06 | state: working | did: mesher mask, facade, doors, looks, HUD, visitor launch/teleport_to, 774 case 5/5 | next: home. block, exe course + captures | gates: 774 HOME rules-play ok 5/5
+11:23 | state: working | did: exe-style window run of a fixture tower course (2 runs, 353 -> 193 frames, new best), captures + clip in lane folder, frame times | next: PATCHES-P6, gates (fast, home., world) | gates: 774 ok 5/5, 773 ok 8/8, 752 ok
+11:25 | state: working | did: visitor.gd trimmed to 599 (put from_sky, launch), PATCHES-P6.md, 774 5/5 again | next: home. block, world gate, uncapped selftest | gates: PASS tl check --tier fast 5/5 (arch 12/12, devx.test 230/230)
+11:31 | state: working | did: home. 131/132 (+ask_foreman alone PASS after foreman build: 132/132), launch dust puff | next: world gate, uncapped selftest | gates: selftest home. 131 passed 1 could-not-run (no foreman/dist), 759 alone 2/2
+11:38 | state: working | did: world gate | next: uncapped selftest (background), report | gates: PASS world [9/9], table identical to main's .tl/gate-world.log (25 Nov)
+11:55 | state: working | did: landable: 774 5/5, home. 131+1 (ask_foreman could-not-run, alone 2/2), fast 5/5, world 9/9 = main; REPORT.txt drafted | next: uncapped selftest running (82 cases at 11:54), touching no code file meanwhile | gates: PASS world [9/9]

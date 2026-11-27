@@ -280,6 +280,8 @@ var masks := {}                         # key -> [lo: Vector3i, hi: Vector3i]
 
 
 func set_mask(key: int, lo: Vector3i, hi: Vector3i, hidden: bool) -> void:
+	if mesh != null:
+		mesh.set("mask", masks)            # lane P: the mesher reads these boxes (block_mesh.gd `mask`, the same Dictionary)
 	if hidden:
 		masks[key] = [lo, hi]
 	elif masks.has(key):
