@@ -76,3 +76,36 @@ test("juice 5: a change the pass runs on also names what the pass adds, for the 
   const plain = askedChange([events[0] as JobEvent, ev(2, { type: "change_requested", text: "Make it look like a sunny seaside rooftop." })]);
   assert.ok(plain !== undefined && !/hit-stop/.test(plain.text));
 });
+
+// ---- round 2: the Foreman reads the builder's JUICE: line (juiceGaps / juiceMore). The lines are the real ones of
+// round 1 (robots A core r13, shield A core r17, shield B-juicy core r17, robots B-juicy core r13 from its transcript).
+const ROBOT_A = "JUICE: size big+signature | tell yes (4-step head heat, throbbing reach ring, rising engine sound, raised-hammer pose) | exaggeration yes (2.0–3.8 m, 1.5–3 turns; flight time unchanged) | hit-stop yes (5–9 frames) | camera yes (shake 0.25–0.45, lens narrowed 8° and back over 12 frames; no follow-up when you are launched) | word yes (BONK! / KA-BONK!! for 40 frames) | particles+sound yes | slow beat small (no camera close-in) | world answers yes (victim tumbles, drops the ball, the ball is driven, skittles reuse the existing rule)";
+const SHIELD_A = "JUICE: size big | tell yes | exaggeration no | hit-stop yes | camera yes | word yes | particles+sound yes | slow beat no | world answers small";
+const SHIELD_BJ = "JUICE: size big | tell yes (red lane rings that grow along the throw line in 4 steps) | exaggeration small (disc spin; no body launch) | hit-stop yes (8 f) | camera yes (shake plus 7° fov kick) | word yes | particles+sound yes | slow beat no | world answers yes";
+const ROBOT_BJ = "JUICE: size big (signature at full charge) | tell yes: the head heats through 4 colour steps | exaggeration yes: 3.6–5.4 m up, 42–58 frames in the air, 1.5–3 turns | hit-stop yes: 5–9 frames on both bodies | camera yes: shake 0.25–0.45 m, lens kick 5–9° over 12 frames, and the camera follows you when you are launched | word yes | particles+sound yes | slow beat yes | world answers yes";
+
+test("juice 6: the checklist line says which big parts were skipped (round 1's real lines)", async () => {
+  const { juiceGaps } = await import("../juicepass.js");
+  const a = juiceGaps(["JUICE: camera following you up when you are the one launched: not done (camera unchanged).", ROBOT_A]);
+  assert.equal(a.length, 2, a.join(" / "));
+  assert.ok(a[0]?.startsWith("the launch") && a[1]?.startsWith("the camera following"));
+  assert.deepEqual(juiceGaps([SHIELD_A]).map((g) => g.split(" ")[1]), ["launch", "slow"]);
+  assert.deepEqual(juiceGaps([SHIELD_BJ]).map((g) => g.split(" ")[1]), ["launch", "slow"]);
+  assert.deepEqual(juiceGaps([ROBOT_BJ]), [], "everything made: no more round");
+  assert.deepEqual(juiceGaps(["JUICE: size small | tell yes | exaggeration no | hit-stop yes | camera yes | word no | particles+sound yes | slow beat no | world answers no"]), [], "a small move gets a small pass");
+  assert.deepEqual(juiceGaps(["the same as the list in my previous message."]), [], "no checklist line: nothing is assumed");
+});
+
+test("juice 7: after the merge of a pass round, a skipped big part sends ONE more round to the same package, with the pass", async () => {
+  const { juiceMore, JUICE_MORE } = await import("../juicepass.js");
+  const ev = (seq: number, e: Record<string, unknown>): JobEvent => ({ v: 1, seq, ts: "2026-11-27T12:00:00.000Z", job: "j", ...e }) as unknown as JobEvent;
+  const events = [ev(10, { type: "reopened", package: "core", reason: "change request (event 9)" }), ev(12, { type: "note", package: "core", round: 17, text: `DEVIATIONS:\n- New action throw on G\n- ${SHIELD_A}` })];
+  const out = juiceMore(events, "core", 17, `${SHIELD} Make it juicy.`, 10, "choice");
+  assert.equal(out.length, 2);
+  const req = out[1] as { type: string; package: string; text: string };
+  assert.ok(req.type === "change_requested" && req.package === "core" && req.text.startsWith(`[foreman] ${JUICE_MORE}: core's JUICE: checklist`) && req.text.includes("the slow beat"));
+  assert.ok(juicePart(`CHANGE REQUEST: ${req.text}`, "choice") === juicePassText(), "the follow-up round carries the pass");
+  assert.deepEqual(juiceMore(events, "core", 18, req.text, 10, "choice"), [], "the follow-up's own merge sends nothing more");
+  assert.deepEqual(juiceMore(events, "core", 17, SHIELD, 10, "choice"), [], "a plain change (arm B, not picked) is never sent back for juice");
+  assert.equal(juiceMore(events, "core", 17, SHIELD, 10, "auto").length, 2, "arm A: the pass ran, so the check runs");
+});
