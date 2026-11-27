@@ -301,6 +301,25 @@ jump pad, a coin, a hazard, and a **run** (start, checkpoints, finish) that time
 
 - Sorted by `id`; omitted when empty; `name` and `if` omitted when absent. zone, unzone, rule and unrule need version 4.
 
+### Courses travel: `tl.stamp/2` and the share code (M6, round 2)
+
+```
+{"schema":"tl.stamp/2", ...every tl.stamp/1 key...,
+ "zones": [{"id":<int>, "box":[[x0,y0,z0],[x1,y1,z1]], "look":"...", "name":"..."}, ...],   relative cells, ids local to the stamp
+ "rules": [{"id":<int>, "when":{...}, "if":[...], "do":[...]}, ...]}                         naming the stamp's zone ids
+```
+
+- A stamp box takes the zones whose box lies wholly inside it and every rule that names only those zones (a rule
+  with no zone is not taken). A stamp with no zones and no rules is written as `tl.stamp/1`, byte for byte as before.
+- Placing a `tl.stamp/2` turns and moves the zones as it does the blocks (a box stays a box: its corners turned, then
+  sorted), and writes the zones and rules in the same batch as the blocks, with the next free ids and the rules'
+  references rewritten (as an LLM answer's ids are). A rule `start` whose run name already exists in the Home keeps
+  the name (the records are by name).
+- **The share code** is a stamp as one line of text: `TL1-` followed by the URL-safe base64 (no padding) of the
+  deflate-compressed UTF-8 of the stamp's JSON. Copying a stamp puts its code on the clipboard; pasting a code (Ctrl+V
+  in the stamp tool) checks it as a stamp file is checked (unknown keys and bad shapes refused with a reason) and adds
+  it to the stamps like an import. A code longer than 65,536 characters is refused.
+
 ### The LLM command bar, M6 additions
 
 - The ask gains `zones` and `rules`: the zones whose box meets the region and the rules that name them (and every rule
