@@ -162,3 +162,41 @@ NEXT THREE
 2. Lane T: findings 8-10 (judge RULE lines even when the sentence talks about the screen; let a fairness round run the hand
    test; never bundle a queued sentence into a running change's guard).
 3. A person plays karts v0.1.11 and biplane v0.1.9 from the menu without skipping the lessons.
+
+==========================================================================================================================
+ROUND 3 (Director ~17:40; 17:43-20:45): the court newcomer fix ALONE on a fresh copy at v0.1.8, then "make it fairer"
+Details: PROOF-J2nd.md, "Round 3". Job copy: .tl/jobs/j2nd3/half-court-3-v-20261125-1 (a copy of my court copy after its
+failed change; pack/ == v0.1.8).
+
+RESULT
+1. The cue-alone sentence (word for word as round 2) FAILED: newcomer 11 of 20 vs the card's 13, "The change was NOT
+   made" (event 2046). 94 min, 2.35M in / 18.2k out. In its unpromoted build the cue DID show inside the first minute
+   in the exe (C: ALLEY-OOP + glow ball + ring at 52 s, SPACE: JUMP TO STEAL IT at 44 s), so the cue was not the problem.
+2. Why it was judged on fairness at all (finding 12, now lane T item 40): askedChange() joins every change request since
+   the last promotion; my failed "make it fairer" (15:42) still counted, so the cue sentence was a "fair" change and the
+   newcomer card guarded it. And (finding 11) the failed change's tier-1 tuning came back from the package workspaces.
+   => On this job the editor would take no change until fairness reached 13 of 20.
+3. A stronger, specific "make it fairer" (sent 19:18, before the Director's stop message reached me; it names what to
+   weaken and a target, and asks to keep the cue) -> v0.1.9 PROMOTED at 20:26 (69 min, 3.41M in / 26.9k out):
+   newcomer 17 of 20, perfect 20 of 20; 0 script errors, hash 51f6dd83 twice. Vague fairness asks moved nothing in two
+   tries; the specific one worked first time.
+4. BUT v0.1.9 has no alley-oop cue (finding 13): bodies_first_minute was only re-verified, so its cue never left its
+   workspace; teach/mod.gd and clips.json equal v0.1.8, and the exe shows no cue in 80 s. Its builder still wrote "The
+   C: ALLEY-OOP cue ... unchanged", which a person reads as "it is in". SPACE: JUMP TO STEAL IT is in (main.gd).
+No more court sentences were sent after 19:18 (Director's order).
+
+MENU (only what promoted)
+- C:/Users/kazda/kiro/third-life/.claude/worktrees/d25-kart/.tl/jobs/j2nd3/half-court-3-v-20261125-1/promoted/game.half_court_3_v@0.1.9
+    "Half-court v0.1.9: fairer for newcomers (made in Create, juice day)"  (newcomer 17/20; no C cue)
+  The unpromoted cue builds stay unpromoted (reports/change-not-made-s1858/pack and s2046/pack in the copies).
+
+FINDINGS FOR LANE T (11-13; 12 is item 40)
+11. After "change NOT made", only pack/ is reset: package workspaces keep the unmade edits and the next change that
+    reopens those packages merges them back (crews_stakes r18 "no data changed" yet merged data/crews.json, event 1925).
+12. askedChange() joins every request since the last promotion: a failed fairness ask makes every later change a "fair"
+    change (event 1981; foreman/src/boundlift.ts).
+13. The leak is partial: packages only re-verified keep their unmade edits in ws/ and never merge them, while a builder
+    says the feature is "unchanged" (event 2063). A person cannot tell what is in the promoted game.
+
+GATES: node devx/bin/tl.mjs check --tier fast PASS 5/5 at 20:45 (devx.test 230/230, arch 12/12). Only docs and .tl/
+changed. Captures deleted after measuring (.tl/j2nd/raw and r2 hold only sheets, key streams and logs).

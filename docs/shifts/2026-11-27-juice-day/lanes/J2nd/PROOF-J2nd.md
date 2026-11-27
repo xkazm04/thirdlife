@@ -583,3 +583,86 @@ not with my own hands.)
   14:41: none with `report_missing` / `stdout_not_json`, and no `starved_stalls` lines since 14:40.** The only start
   failures today stay the two of 12:32:58 (biplane `harvest_look-r1-reverify-lint-s841`, 907 ms; court
   `final-hand-perfect-seed7-s1417`, 1494 ms), the second the karts copy promoted v0.1.8. One event, not reproduced.
+
+---
+
+# Round 3 (Director 17:4x): the court newcomer fix ALONE on a fresh copy at v0.1.8, then "make it fairer" alone
+
+- Fresh copy at 17:43: `.tl/jobs/j2nd3/half-court-3-v-20261125-1` (a plain copy of my court copy after its failed change:
+  `pack/` = `promoted/game.half_court_3_v@0.1.8`, checked by `diff -rq`). The newcomer sentence word for word
+  (`SENTENCES.md`, "Round 2: court newcomer follow-up") sent 17:43:44, log `.tl/jobs/_ui_logs/1795797824-j2nd3-court5-change.log`.
+- Routed as before: bodies_first_minute r4 (the cue, the glow), court_exchange r17 and crews_stakes r18 (the rivals' part).
+
+## Editor finding 11 (18:12): a change that was "NOT made" comes back with the next change
+- After the failed job (event 1858: "The change was NOT made. pack/ was put back to ... 0.1.8"), only `pack/` was reset.
+  The package workspaces kept the unmade change's edits: in the copy, `ws/court_exchange/data/tuning.json` and
+  `ws/crews_stakes/data/tuning.json` hold tier 1 `bite 0.8, read 0.12, error_f 10` (v0.1.8: 0.7, 0.2, 8), and
+  `ws/crews_stakes/data/crews.json` holds `rival_error_f [24, ...]` (v0.1.8: 18).
+- The resent newcomer fix merged them back: crews_stakes r18 wrote "No game script or data changed this round" (event
+  1906) and its merge still lists `data/crews.json` (event 1925). The merged pack differs from the failed change's
+  `reports/change-not-made-s1858/pack` only in three files of this round (`data/clips.json`, `scripts/teach/mod.gd`,
+  `tests/bot_crews.gd`: the cue's hint text and a test metric); `data/tuning.json` and `data/crews.json` carry the
+  failed change's tier-1 values. Headless seed 1, 3600 frames: hash 375a0941 twice, the same hash as that pack, 0 errors.
+  (Correction at 18:20: my 18:13 standup line said "== the failed pack"; it is equal in every game number, not in
+  every file.)
+- So the "make it fairer" tuning that failed the card twice is riding in the newcomer fix I sent alone, and a person
+  would never know: the card will not list it as part of this change. Asking for the fix alone is not possible on this
+  job through Create.
+
+## Editor finding 12 (18:55): a failed "make it fairer" keeps guarding every later change of the job
+- The cue-alone change hit the same card that v0.1.8 passed with a note: "hand check failed ... newcomer hand: 11 of 20
+  won ... the card asks at least 13. Sent back to crews_stakes" (event 1981); crews_stakes r19 tuned tier 1 again
+  (rival_gap 2.4 -> 2.8 ...) and failed its own bot (events 1985, 1994).
+- Why, read in `foreman/src/boundlift.ts` (read only): `askedChange()` joins EVERY change request since the last
+  promotion ("asks.map((e) => e.text).join(" / ")"), and `changeKind()` returns "fair" when any of it matches
+  `FAIR_WORDS`. No promotion happened since v0.1.8, so my failed 15:42 "Make it fairer ..." is still part of "the
+  change in flight", and the newcomer row is guarded for the cue sentence too. Same root as finding 11: a change that
+  was "NOT made" is not forgotten, neither its files (ws/) nor its words (job.jsonl). On this job, every later change
+  is judged as "make it fairer" until one reaches 13 of 20.
+- The job also logged "resumed (was failed)" for my new sentence (event 1860), not a fresh change.
+
+## The cue-alone change: FAILED (19:17)
+- Event 2046: "hand check of card.team_possession failed, nothing promoted: newcomer: 11 of 20 won ... the card asks at
+  least 13. The change was NOT made. pack/ was put back to ... 0.1.8; the unpromoted files ... in
+  reports/change-not-made-s2046/pack/." Perfect hand 19 of 20. **Cost: 5 model calls, 2.35M tokens in (2.06M cache
+  reads), 18.2k out, 94 min.**
+- What the newcomer saw in that build (exe, `r2/r3_court_cue_alone_newcomer_exe.mp4`, 30 s from 40 s;
+  `r2/r3_court_cue_alone.jpg`, `r2/r3_court_cue_alone_80s_sheet.jpg`): SPACE: JUMP TO STEAL IT at 44 s, then **C:
+  ALLEY-OOP over the open mate with the glowing ball and a yellow ring, and a second hint line "C: ALLEY-OOP TO YOUR
+  OPEN MATE" at 52 s, inside the first minute**; STOLEN! at 61 s. The two hint lines stack at the bottom ("HOLD E ON THE
+  CHALK" under it), as its builder warned. 0 SCRIPT ERROR lines, exit 0.
+- **The result, as the Director asked it said plainly: the cue did not promote.** Not because of the cue: because this
+  job now judges every change as "make it fairer" (finding 12) and the newcomer card is below 13.
+
+## One more try, the only way left on this job (sent 19:18:05)
+Since any change on this job is now judged as a fairness change until the newcomer reaches 13 of 20, a person's next
+step is the fairness ask itself, stronger, keeping the cue: SENTENCES.md "Round 3: court make it fairer, stronger",
+log `.tl/jobs/_ui_logs/1795803485-j2nd3-court6-change.log`. If it promotes, the cue comes with it; if not, that is the
+answer to "make it fairer" on this job.
+
+## The stronger "make it fairer" -> court v0.1.9, PROMOTED (sent 19:18:05, promoted 20:26:40: 69 min)
+- court_exchange r18 (refused: its bot failed), r19 (refused on the tofu bounds), r20 merged: four new tier-1 keys in
+  `data/tuning.json` (rivals' shot odds x0.62, swat 6 frames late, alley-oops 2.1x rarer, contest x0.38); its NOT DONE
+  for `data/crews.json` went on to crews_stakes r20 (the hand-off routing worked this time). Several "unasked rule" lines
+  on the card, each saying "The player asked for this". **Cost: 5 model calls, 3.41M tokens in (3.11M cache reads),
+  26.9k out.**
+- **The Foreman's final hand checks: newcomer 17 of 20 (the card asks 13; v0.1.8: 11), perfect 20 of 20.** So the
+  stronger, specific "make it fairer" (what to weaken, a target number) worked on the first try, where the two vague
+  ones moved nothing.
+- Headless v0.1.9, seed 1, 3600 frames: **0 script errors, hash 51f6dd83 twice**; the newcomer hand pressing C, a whole
+  match: 21-16 won, he catches and slams 2 of his mates' alley-oops, rival oops 2 thrown 2 caught.
+- **But the cue is not in v0.1.9.** `diff -rq` v0.1.9 vs v0.1.8: `data/crews.json`, `data/tuning.json`, `scripts/core/
+  ai.gd`, `ballsim.gd`, `oop.gd`, `scripts/main.gd`, `tests/bot_crews.gd` differ; `scripts/teach/mod.gd` and
+  `data/clips.json` (bodies_first_minute: the C: ALLEY-OOP cue, the ring, the pulsing ball) are unchanged from v0.1.8.
+  In the exe (newcomer stream, 80 s, `r2/r3_court_v019_newcomer_exe_80s_sheet.jpg`): ALLEY-OOP! and STOLEN! show, the
+  crew leads 10-4, **no C: ALLEY-OOP cue anywhere**. SPACE: JUMP TO STEAL IT (court_exchange's part, in `main.gd`) did
+  come along, and so did the unasked "Space swat counts as a steal" rule.
+- **Editor finding 13:** the leak of finding 11 is partial. Workspace edits come back only from packages the next change
+  reopens; bodies_first_minute was only re-verified, so its cue stayed in its workspace and never reached the pack. My
+  sentence said "Keep the C: ALLEY-OOP cue ... as they are", and court_exchange answered "The C: ALLEY-OOP cue, your
+  mate's glow and the steal hint are unchanged" (event 2063), which is true of v0.1.8 and tells a person the cue is in
+  the game. It is not.
+
+## Round 3 result, in one line
+On the court job the editor would take no change until fairness reached 13 of 20 (finding 12); the specific fairness ask
+then reached 17 of 20 and promoted v0.1.9, but the alley-oop cue the newcomer needed never reached a promoted version.
