@@ -11,6 +11,7 @@ import { copyDir, hashFile, listFiles } from "./scope.js";
 import type { JobEvent } from "./events.js";
 import { FOREMAN_NOTE, clip } from "./conduct.js";
 import { NOT_MADE } from "./halfmade.js";
+import { endsSincePromotion, lastPromotion } from "./changeend.js";
 
 /** What of the Foreman these need: its gate host (p10gate.ts), state and log read live. */
 export type UnmadeHost = Pick<GateHost, "o" | "s" | "events" | "dir" | "append">;
@@ -98,14 +99,6 @@ export function dropWorkspaces(h: Pick<GateHost, "dir">, ids: readonly string[])
   return out;
 }
 
-/** A job's reason when a change ended without a promotion (endJob, the final verification's last send-back). */
-export const UNMADE_END = /\bThe change was NOT made\b|^the change was NOT made\b/;
-
-/** The seq of the last "change NOT made" ending among `events` (-1 when none). */
-export function lastUnmadeEnd(events: readonly JobEvent[]): number {
-  return events.reduce((n, e) => (e.type === "job_state" && e.reason !== undefined && UNMADE_END.test(e.reason) ? e.seq : n), -1);
-}
-
 /**
  * D27b item 42 (J2nd's court copy j2nd3, v0.1.9, event 2063: the C: ALLEY-OOP cue was made only in a change that ended
  * "NOT made" (event 2046); the next change's builder wrote "The C: ALLEY-OOP cue, your mate's glow and the steal hint are
@@ -113,13 +106,13 @@ export function lastUnmadeEnd(events: readonly JobEvent[]): number {
  * promotion that ended NOT made is told as not in this version, in the person's words, with why.
  */
 export function earlierUnmade(events: readonly JobEvent[], pkg: string, round: number): { type: "note"; package: string; round: number; text: string }[] {
-  const last = events.reduce((n, e) => (e.type === "promoted" ? e.seq : n), -1);
   const out: { type: "note"; package: string; round: number; text: string }[] = [];
-  let from = last;
-  for (const end of events) {
-    if (end.seq <= last || end.type !== "job_state" || end.reason === undefined || !UNMADE_END.test(end.reason)) continue;
+  let from = lastPromotion(events);
+  // the Director's ruling: one boundary (changeend.ts); every job ending since the last promotion closes the change before it
+  for (const end of endsSincePromotion(events)) {
+    if (end.type !== "job_state") continue;
     const asks = events.filter((e) => e.type === "change_requested" && e.seq > from && e.seq < end.seq && !e.text.startsWith(FOREMAN_NOTE)).map((e) => (e.type === "change_requested" ? `"${clip(e.text, 300)}"` : ""));
-    const why = clip(end.reason.split(/ ?The change was NOT made/)[0]?.replace(/^the change was NOT made: /, "") ?? "", 240);
+    const why = clip((end.reason ?? end.state).split(/ ?The change was NOT made/)[0]?.replace(/^the change was NOT made: /, "") ?? "", 240);
     if (asks.length > 0) out.push({ type: "note", package: pkg, round, text: `${FOREMAN_NOTE}${NOT_MADE}: your earlier change ${asks.join(" / ")} ended NOT made (${why}); nothing of it is in this version unless this change made it again` });
     from = end.seq;
   }

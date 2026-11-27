@@ -298,3 +298,70 @@ SAID PLAINLY
   after, from the Director's message and from the biplane run. The court copy ended NOT made on the old code, so its
   workspaces were not dropped there.
 - Several STANDUP times were wrong (a misread clock); correction lines say so.
+
+==========================================================================================================================
+ROUND 5: the Director's rulings after the landing (2ae9d644, merged as 37a3f288), 21:50-
+Tree d25-court on 37a3f288. Nothing is committed.
+
+RULING 1. One boundary for "the change in flight": MET.
+- What was on main: two boundaries.
+  - Lane T's item 40 was in boundlift.ts askedChange: any job ending (done, failed, cancelled) since the last
+    promotion starts a new change.
+  - My items 41/42 used unmade.ts lastUnmadeEnd: only a job whose reason says "The change was NOT made".
+  - They differ on an ending like "all packages promoted; no merge since the last promotion (a change that was asked
+    for was not made ...)". That ending started a new change for askedChange, but my card still listed the old ask.
+- Now: one leaf module, foreman/src/changeend.ts, with lastPromotion, isJobEnd, endsSincePromotion and changeBoundary.
+  It keeps lane T's rule.
+  - askedChange (what is asked now), whatChangedNote (what this version made) and earlierUnmade (each earlier change
+    that ended unmade, told at the next promotion) all read it.
+  - UNMADE_END and lastUnmadeEnd are removed. earlierUnmade takes its "why" from the ending's reason, or its state
+    when it has no reason.
+- Tests:
+  - D27b "ruling 1", on the ending above: all three agree. askedChange is the new ask only, and it is "play", not
+    "fair"; the card does not ask the old one; one note tells it as NOT made. The promotion's own ending closes
+    nothing, and before a first version there is no boundary.
+  - D27b 42's boundary assert is now changeBoundary = 2046 on j2nd3's real events: the resume at 2048 is no ending.
+- Not proven "fails before" on main's code: the case shows the two boundaries disagreeing, and main has no single
+  function to fail.
+
+RULING 2. A package that asked again after an answer leaves no trace in its workspace: MET.
+- asktwice.ts askedAgain: both endings drop the asking package's workspace and baseline (unmade.ts dropWorkspaces).
+  The two endings are "cannot make this change ... the change was NOT made" and "the change goes to <owner>"; neither
+  merges its round. The host takes an optional dir, so h1d's tests without one are unchanged.
+- Test D27b "ruling 2": ws/harbour and its baseline are gone, and another package's workspace stays.
+
+RULING 3 (noted). Item 24's general case:
+- Today a failed round hands a fix over only when EVERY error of the failed check is a script error in files that ONE
+  other package owns and has merged.
+- Not covered:
+  - errors in two owners' files at once;
+  - a mix of the round's own error with another package's;
+  - a failure that is not a script error but comes from another package's file (a bot that fails on another
+    package's data, a watchdog stall inside its script);
+  - an owner that has not merged the file yet.
+- The general rule would be: for each error whose file another package owns, hand that part on, and keep the round's
+  own part as its own.
+
+GATES (round 5, on 37a3f288 plus this round)
+- foreman npm test: 522 tests, 515 pass, 0 fail, 7 skipped (37a3f288: 520/513/0/7; +2: D27b ruling 1 and 2) (.tl/t2e/npm5.log).
+- fast tier: PASS 5/5 (arch 12/12, assets 4/4, cards 3/3, devx.test 230/230, foreman.typecheck) (.tl/t2e/fast4.log).
+- selftest create.: not re-run; engine/ui is unchanged since the landing (29/0 there).
+- Full tier: NOT RUN (no kernel, kits, rigs, style or seeds).
+
+CHANGED FILES (round 5)
+- New: foreman/src/changeend.ts.
+- foreman/src/boundlift.ts (askedChange reads changeBoundary), fastchange.ts (the card cut), unmade.ts (earlierUnmade on
+  endsSincePromotion; UNMADE_END and lastUnmadeEnd removed), asktwice.ts (dropWorkspaces in both endings),
+  test/d27b_editor.test.ts (+2 tests; D27b 42 asserts changeBoundary). foreman.ts unchanged (2005 lines).
+- Lane T3 files (34, 35, 37-39, 43-45) not touched.
+
+PROPOSED JOB.md TEXT, round 5 (replaces the last bullet of the list above)
+- The change in flight begins after the last promotion, or after the last job ending (done, failed or cancelled) since
+  it. That earlier change ended without a promotion: NOT made.
+  - Its words no longer make the next change a fairness (or any other) change.
+  - Every package workspace is cut again from pack/ when it ends.
+  - At the next promotion it is told: "[foreman] part of your change was NOT made: your earlier change "<words>" ended
+    NOT made (<why>); nothing of it is in this version unless this change made it again".
+  - The what-changed card ("asked", the builders' words, the files) reads only the events after that ending.
+- A package kept on its earlier files (a re-opening that never passed, or one that asked again after an answer) loses
+  its workspace. Its next round starts from pack/.

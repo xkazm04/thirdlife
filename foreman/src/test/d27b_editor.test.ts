@@ -18,12 +18,13 @@ import { movesTestFor } from "../movestest.js";
 import { NOT_MADE, REST_OF, afterMerge, handsOff, processRemark } from "../halfmade.js";
 import { blockedByOwner, ownerWaits } from "../ownerfix.js";
 import { asksOwnTest, ownTestAnswer } from "../owntest.js";
-import { answeredThisChange } from "../asktwice.js";
+import { answeredThisChange, askedAgain } from "../asktwice.js";
 import { unaskedRules } from "../fastchange.js";
 import { isRuleLine } from "../rulelines.js";
 import { askedChange, changeKind } from "../boundlift.js";
 import { fairChecks, fairText, perSeed } from "../fairseeds.js";
-import { earlierUnmade, lastUnmadeEnd } from "../unmade.js";
+import { earlierUnmade } from "../unmade.js";
+import { changeBoundary } from "../changeend.js";
 import { whatChangedNote } from "../fastchange.js";
 
 after(cleanup);
@@ -320,7 +321,7 @@ test("D27b 32 (J2nd's court copy, events 1664-1858: court_exchange \"could not m
 test("D27b 42 (J2nd's court copy j2nd3, events 1629-2180: the cue change ended NOT made at 2046, the next change promoted v0.1.9 without the cue, and its card asked all four sentences while court_exchange wrote \"The C: ALLEY-OOP cue ... unchanged\"): every change that ended NOT made since the last promotion is told as not in this version, and the card names only what this version made", () => {
   const j = fixture<{ events: JobEvent[] }>("j2nd3-court-unmade.json");
   const upto = j.events.filter((e) => e.seq < 2179);
-  assert.equal(lastUnmadeEnd(upto), 2046);
+  assert.equal(changeBoundary(upto), 2046, "the job ended at 2046 (its resume at 2048 is no ending): the asks after 2046 are the change in flight");
   const notes = earlierUnmade(upto, "court_exchange", 20);
   assert.equal(notes.length, 2);
   assert.match(notes[0]?.text ?? "", /^\[foreman\] part of your change was NOT made: your earlier change "As a newcomer I never found out the alley-oop exists[^"]*" \/ "Make it fairer: a newcomer now wins only 11 of 20[^"]*" ended NOT made \(hand check of card\.team_possession failed, nothing promoted: newcomer: 11 of 20 won/);
@@ -372,4 +373,47 @@ test("D27b 41 (J2nd's court copy j2nd3, events 1858-1925: after \"The change was
   assert.match(text, /asked "Make the walls 1\.5 m high\."; /);
   assert.doesNotMatch(text.split("\n")[0] ?? "", /Raise the court walls/);
   assert.match(text, /\npart of your change was NOT made: your earlier change "Raise the court walls and make the corners bouncier\." ended NOT made \(/);
+});
+
+// ---------------------------------------------------------------- the Director's rulings after the landing (27 Nov, 21:5x)
+
+test("D27b ruling 1: one boundary for the change in flight (changeend.ts): what is asked now, what the card says this version made, and which earlier changes ended NOT made all start after the last job ending since the last promotion, whatever its words", () => {
+  const ev = [
+    { seq: 1, type: "promoted", packId: "game.x", version: "0.1.1", dest: "promoted/x@0.1.1" },
+    { seq: 2, type: "job_state", state: "done", reason: "pack verified V0 to V4 and promoted" },
+    { seq: 3, type: "change_requested", text: "Make it fairer: the rivals are too strong." },
+    // an ending without the words "The change was NOT made" (main's 24b ending on the paddle fixture) is an ending too
+    { seq: 4, type: "job_state", state: "done", reason: "all packages promoted; no merge since the last promotion (a change that was asked for was not made: see the package's detail)" },
+    { seq: 5, type: "change_requested", text: "Give my mates a faster alley-oop." },
+    { seq: 6, type: "job_state", state: "running", reason: "reopened by a change request (was done)" },
+    { seq: 7, type: "merge", package: "court_exchange", files: ["data/tuning.json"] },
+  ] as unknown as JobEvent[];
+  assert.equal(changeBoundary(ev), 4);
+  assert.equal(askedChange(ev)?.text, "Give my mates a faster alley-oop.");
+  assert.equal(askedChange(ev)?.kind, "play", "the earlier fairness ask no longer colours it (lane T's item 40)");
+  const card = whatChangedNote(ev, "0.1.2");
+  assert.match(card, /asked "Give my mates a faster alley-oop\."; /);
+  assert.doesNotMatch(card, /Make it fairer/);
+  const notes = earlierUnmade(ev, "court_exchange", 3);
+  assert.equal(notes.length, 1);
+  assert.match(notes[0]?.text ?? "", /your earlier change "Make it fairer: the rivals are too strong\." ended NOT made \(all packages promoted; no merge since the last promotion/);
+  // the promotion's own ending closes nothing; before a first version there is no boundary
+  assert.equal(earlierUnmade(ev.slice(0, 3), "court_exchange", 3).length, 0);
+  assert.equal(changeBoundary([{ seq: 1, type: "job_state", state: "failed", reason: "x" }] as unknown as JobEvent[]), -1);
+});
+
+test("D27b ruling 2: a package that asked again after an answer and ended NOT made (asktwice.ts) has its workspace dropped too", () => {
+  const dir = tempDir("d27b-asktwice");
+  fs.mkdirSync(path.join(dir, "ws", "harbour", "data"), { recursive: true });
+  fs.writeFileSync(path.join(dir, "ws", "harbour", "data", "skin.json"), "{\"unmade\": true}\n");
+  fs.writeFileSync(path.join(dir, "ws", "harbour.baseline.json"), "{}\n");
+  fs.mkdirSync(path.join(dir, "ws", "skin"), { recursive: true });
+  const appended: Record<string, unknown>[] = [];
+  const plan = [{ id: "harbour", title: "harbour", milestone: "blockout", deps: [], scope: ["data/skin.json"], contract: "", acceptance: [] }] as unknown as PackageSpec[];
+  const h = { s: { plan, packages: { harbour: { state: "running" } } }, pkg: () => ({ changes: ["Make the hull red."] }), append: (e: Record<string, unknown>) => (appended.push(e), e), dir: (...p: string[]) => path.join(dir, ...p) } as unknown as Parameters<typeof askedAgain>[0];
+  const said = askedAgain(h, undefined, "harbour", 4, "Which red?", { question: "Which hull?", answer: "The big one." });
+  assert.match(said, /the change was NOT made/);
+  assert.ok(!fs.existsSync(path.join(dir, "ws", "harbour")), "the unmade round's workspace is gone");
+  assert.ok(!fs.existsSync(path.join(dir, "ws", "harbour.baseline.json")));
+  assert.ok(fs.existsSync(path.join(dir, "ws", "skin")), "another package's workspace stays");
 });
