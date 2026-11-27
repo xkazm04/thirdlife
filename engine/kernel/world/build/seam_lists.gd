@@ -9,9 +9,9 @@ const LAYERS := ["blocks", "land", "pieces", "water", "paths", "plants", "rules"
 const OPS := {"blocks": ["place", "remove"], "land": ["land", "paint"], "pieces": ["put", "lift"],
 	"water": ["flood", "drain"], "paths": ["path", "unpath"], "plants": ["plant"], "rules": ["zone", "unzone", "rule", "unrule"]}
 ## Ops an LLM answer may carry that are never journaled: a layer's `expand_input` turns them into ops (home_build.gd).
-const INPUT_OPS := {"pour": "water"}
+const INPUT_OPS := {"pour": "water", "assemble": "blocks"}   # M6 round 3 (lane A6): assemble
 ## The tools of build mode's strip, in order (build_mode.gd TOOLS), and each one's hotbar line while it is a stub.
-const TOOLS := ["blocks", "sculpt", "paint", "piece", "stamp", "water", "path", "plant", "rules", "command"]
+const TOOLS := ["blocks", "sculpt", "paint", "piece", "stamp", "water", "path", "plant", "shapes", "rules", "command"]   # M6 round 3: shapes (A6), before rules (775 wants T from rules to reach command)
 const STUB_LINES := {"sculpt": "Sculpt: coming in M2", "paint": "Paint: coming in M2", "piece": "Pieces: coming in M3",
 	"stamp": "Stamps: coming in M3", "water": "Water: coming in M5", "path": "Paths: coming in M5",
 	"plant": "Plants: coming in M5", "rules": "Rules: coming in M6", "command": "Command: coming in M4"}

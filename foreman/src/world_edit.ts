@@ -144,10 +144,35 @@ export function rulesFacts(ask: Ask): string {
   });
 }
 
+/** M6 round 3 (lane A6): how to write an assemble (contracts/BUILD.md "Assemblies"; the exe's assembly_kinds.gd), at most
+ *  2 KB with its worked example (world_edit.test.ts holds the size). */
+export const ASSEMBLE_TEXT = `- {"op":"assemble","kind":k,"at":[x,y,z],"size":[w,h,d],"rot":r,"mat":m,"trim":t,"opts":{...}} builds a big shape
+  right every time (walkable stairs, landings, railings, roofs): the Home writes the blocks.
+  PREFER ASSEMBLIES for walls, towers, houses, stairs, bridges and platforms (a course too: its zones on
+  them); place or fill single blocks only for details. at: the low corner, its y the ground y (the floor row sits in
+  it). rot 0 covers x at..at+w-1, z at..at+d-1, its front (door, step) facing north (-z); rot 1, 2, 3 turn it about
+  the at cell so the front faces west, south, east. mat: walls, floors, deck; trim: crenels, roof, stairs, rails,
+  piers (none: mat). size, opts (each optional; no opts: leave it out):
+  wall [length, height, 1] along x: door (cell along it: a sill, a 2-high gap, a step each side), windows (every N
+    cells), crenels (true).
+  tower [side, height, 1]: floor, hollow walls, top walked at y+height; stairs "outside": the ring of cells round the
+    walls from the ground just east of the door's step (rot 0), east along the north face, then south, west, north,
+    stair n at y+n (a coin's feet cell), a landing at each corner; or "inside" (side >= 5); door (1..side-2), windows
+    (N), crenels (true).
+  house [width, height, depth]: floor, door mid-front with a step, windows, a pitched roof of trim.
+  stair [width, steps, 1]: 1 up per cell toward +z (rot 0; 1 +x, 2 -z, 3 -x), a landing every 6; top walked at y+steps.
+  bridge [width, 1, length]: a deck at y along z (walked at y+1), railings if width >= 3; the Home adds piers and the
+    steps down to the ground at both ends.
+  platform [width, 1, depth]: a floor at y, a railing with a gap mid-front, posts to the ground.
+  Examples: a tower 7 x 7, 12 high, ground y 10; the water example's bridge as one op:
+{"op":"assemble","kind":"tower","at":[100,10,50],"size":[7,12,1],"rot":0,"mat":1,"trim":2,"opts":{"stairs":"outside","crenels":true}}
+{"op":"assemble","kind":"bridge","at":[102,12,53],"size":[5,1,7],"rot":1,"mat":2,"trim":4}`;
+
 /** How to write the land, paint, put and lift ops (M2, M3) and pour, drain, path, unpath and plant (M5), each only when
  *  the Home offers it (its layer is built), with worked examples of a pond (land, then pour) and a path. */
 function moreOps(kinds: string[]): string {
   const out: string[] = [];
+  if (kinds.includes("assemble")) out.push(ASSEMBLE_TEXT);
   if (kinds.includes("land")) out.push(
     `- {"op":"land","verts":[[i,j,to_cm],...]} moves ground vertices on the 3 m lattice: vertex [i, j] is at world (3i, 3j);
   to_cm is its new absolute height in whole cm (the "ground" layer above gives today's cm). Shape terrain with a few

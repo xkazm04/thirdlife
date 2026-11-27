@@ -10,8 +10,11 @@ extends RefCounted
 ##                                ramp or roof
 ##   a finish out of reach        for each run an added rule starts: none of the finish zones' feet cells is reached
 ##                                from a feet cell of the start zone over the standable cells: walking (steps of at most
-##                                STEP m up or down), jumps of at most JUMP_UP m up and JUMP_ACROSS m across (cell centre
-##                                to cell centre, nothing solid in the way), any drop within JUMP_ACROSS, a launch zone's
+##                                STEP m up or down), a jump as the body makes it (round 3, lane A6, from lane P's
+##                                measurement of world_body.gd: about 1.0 m up with about 2.5 m across at a run, a 3 m +
+##                                1 m hop failed at a walk): up to MANTLE_UP from the next cell only (MANTLE_ACROSS), up to
+##                                JUMP_UP over at most JUMP_ACROSS, a flat gap (up at most GAP_UP) or any drop over at most
+##                                GAP_ACROSS (cell centre to cell centre, nothing solid in the way), a launch zone's
 ##                                longer jump and a teleport. The blocks of a zone some rule opens are passable (the
 ##                                estimate is kind to doors). Coins of the run's answer out of reach are counted too.
 ## A feet cell is where the visitor's feet cell (rules_run.gd `feet_cell`) is while he stands: an empty cell over a cube
@@ -23,11 +26,17 @@ const Blocks := preload("res://kernel/world/build/blocks.gd")
 const Check := preload("res://kernel/world/build/rules_check.gd")
 const Ask := preload("res://kernel/world/build/command_ask.gd")
 const STEP := 0.55                      # m: a walker's step up or down (stairs, slabs: half a block)
-const JUMP_UP := 1.2                    # m up a jump climbs
-const JUMP_ACROSS := 4.0                # m across, cell centre to cell centre (3 empty cells)
+const JUMP_UP := 1.0                    # m up a running jump climbs (lane P's body: about 1.0 m) ...
+const JUMP_ACROSS := 2.5                # ... over at most this, cell centre to cell centre (about 2.5 m at a run)
+const MANTLE_UP := 1.2                  # m up a climb from the next cell (a ledge grabbed; never from farther)
+const MANTLE_ACROSS := 1.0              # m: the next cell
+const GAP_ACROSS := 3.0                 # m across a flat gap or a drop, cell centre to cell centre (2 empty cells)
+const GAP_UP := 0.25                    # m up a gap may rise and still be flat (a step's riser)
 const HEAD := 1.8                       # m of headroom a standing person needs
 const GRAVITY := 24.0                   # m/s2 (kernel/world/terrain/world_body.gd GRAVITY): a launch zone's jump
 const LAUNCH_MAX := 16.0                # m across a launch is searched at most
+## The jump limits in words (the findings, the prompt's "Walking").
+const JUMPS := "A step climbs 0.55 m (stairs, slabs); a jump climbs at most 1.0 m over at most 2.5 m (cell centre to cell centre), 1.2 m only from the next cell (a ledge), and a flat gap or a drop is at most 3 m across (2 empty cells)"
 const PAD := 6                          # cells round the answer's blocks and zones the walk is searched in
 const MARKS_MAX := 64                   # problem cells marked in the ghost at most
 const SIDE_MAX := 96                    # cells a side of the searched box at most (larger is clipped, and said)
@@ -262,8 +271,8 @@ static func _runs(g: Grid, zones: Dictionary, rules: Dictionary, new_rules: Arra
 
 
 ## Where a walk stops short of the finish, from the reached feet cells to the finish zones' feet cells: "gap", the
-## shortest jump across among those low enough to climb (up <= JUMP_UP), and "wall", the lowest climb among those near
-## enough (across <= JUMP_ACROSS), each {"from", "to", "across" m, "up" m} or absent; "to_floor" false when no finish zone
+## shortest jump across among those low enough to climb (up <= MANTLE_UP), and "wall", the lowest climb among those
+## near enough (across <= GAP_ACROSS), each {"from", "to", "across" m, "up" m} or absent; "to_floor" false when no finish zone
 ## has a feet cell at all.
 static func _gap(g: Grid, walk: Dictionary, zones: Dictionary, finish: Array) -> Dictionary:
 	var ends := []
@@ -277,9 +286,9 @@ static func _gap(g: Grid, walk: Dictionary, zones: Dictionary, finish: Array) ->
 			var across := Vector2(e.x - c.x, e.z - c.z).length()
 			var up := float(g.nodes[e]) - float(g.nodes[c])
 			var j := {"from": c, "to": e, "across": across, "up": up}
-			if up <= JUMP_UP and (not out.has("gap") or across < float(out.gap.across) - 0.001):
+			if up <= MANTLE_UP and (not out.has("gap") or across < float(out.gap.across) - 0.001):
 				out["gap"] = j
-			if across <= JUMP_ACROSS + 0.001 and (not out.has("wall") or up < float(out.wall.up) - 0.001):
+			if across <= GAP_ACROSS + 0.001 and (not out.has("wall") or up < float(out.wall.up) - 0.001):
 				out["wall"] = j
 	return out
 
@@ -287,7 +296,7 @@ static func _gap(g: Grid, walk: Dictionary, zones: Dictionary, finish: Array) ->
 ## The findings in words a model can act on, one line each, with cells: "2 blocks float: (3, 12, 5), (4, 12, 5)";
 ## "the pad Start (zone 1, box ...) has no floor: nothing to stand on at (x, y, z)"; "finish of Hop not reachable:
 ## the walk from the start gets as close as feet cell (..), 6.0 m across and 1.0 m up from the finish's (..); a jump
-## crosses at most 4 m (3 empty cells) and climbs 1.2 m". Empty when nothing was found (command_tool.gd's fix ask).
+## climbs 1.0 m over at most 2.5 m ...". Empty when nothing was found (command_tool.gd's fix ask).
 static func findings(s: Dictionary, zones: Dictionary) -> Array:
 	var out := []
 	var cell := func(c: Vector3i) -> String: return "(%d, %d, %d)" % [c.x, c.y, c.z]
@@ -317,10 +326,10 @@ static func findings(s: Dictionary, zones: Dictionary) -> Array:
 						cell.call(gp.gap.to), float(gp.gap.across), maxi(0, roundi(float(gp.gap.across)) - 1)])
 				if gp.has("wall"):
 					why.append("a climb too high: from feet cell %s to the finish's %s is %.1f m up" % [cell.call(gp.wall.from), cell.call(gp.wall.to), float(gp.wall.up)])
-				out.append("finish of %s not reachable from its start; the nearest the walk gets: %s. A step climbs 0.55 m (stairs, slabs), a jump at most 1.2 m up and 4 m across (3 empty cells)" % [
-					run.run, "; ".join(why)])
+				out.append("finish of %s not reachable from its start; the nearest the walk gets: %s. %s" % [
+					run.run, "; ".join(why), JUMPS])
 			else:
-				out.append("finish of %s not reachable: the walk from the start (if its zone has a feet cell at all) reaches nothing within 1.2 m below the finish or 4 m across from it" % run.run)
+				out.append("finish of %s not reachable: the walk from the start (if its zone has a feet cell at all) reaches nothing it could jump to near the finish. %s" % [run.run, JUMPS])
 		for id: int in run.get("coins_away", []):
 			out.append("%s is out of reach of the walk from the start" % zname.call(id))
 	return out
@@ -376,8 +385,8 @@ class Grid:
 	var heights: Array                    # rows[z - lo.z][x - lo.x]: the ground in m
 	var nodes := {}                       # Vector3i feet cell -> feet height in m
 	var columns := {}                     # Vector2i (x, z) -> [Vector3i feet cells], low first
-	var jump_up := JUMP_UP                # the limits of a plain jump (a stricter walker: smaller ones)
-	var jump_across := JUMP_ACROSS
+	var jump_up := MANTLE_UP              # caps on a plain jump's up and across (a stricter walker: smaller ones); under
+	var jump_across := GAP_ACROSS         # them a jump is held to the body's combined limits (`reach_up`)
 
 	func _init(a: Vector3i, b: Vector3i, store: RefCounted, hs: Array) -> void:
 		lo = a
@@ -397,6 +406,17 @@ class Grid:
 					var c: Vector3i = store.call("cell_of", Vector2i(sx, sz), idx)
 					if inside(c):
 						shapes[_i(c)] = Blocks.shape_of(int((d as Dictionary)[idx]))
+
+	## How far up a plain jump `dist` m across (cell centre to cell centre) may climb: MANTLE_UP from the next cell, JUMP_UP
+	## within JUMP_ACROSS, GAP_UP within GAP_ACROSS (a flat gap; any drop), -INF farther (no plain jump reaches).
+	static func reach_up(dist: float) -> float:
+		if dist <= MANTLE_ACROSS + 0.001:
+			return MANTLE_UP
+		if dist <= JUMP_ACROSS + 0.001:
+			return JUMP_UP
+		if dist <= GAP_ACROSS + 0.001:
+			return GAP_UP
+		return -INF
 
 	func inside(c: Vector3i) -> bool:
 		return c.x >= lo.x and c.x <= hi.x and c.y >= lo.y and c.y <= hi.y and c.z >= lo.z and c.z <= hi.z
@@ -513,8 +533,8 @@ class Grid:
 		var jump_in := {}                   # feet cell -> [up m, across m] of the launch zone it is in
 		for l: Array in launches:
 			if zones.has(int(l[0])):
-				var up := JUMP_UP + pow(float(l[1]), 2.0) / (2.0 * GRAVITY)
-				var across := minf(LAUNCH_MAX, JUMP_ACROSS + float(l[2]) * 2.0 * float(l[1]) / GRAVITY)
+				var up := MANTLE_UP + pow(float(l[1]), 2.0) / (2.0 * GRAVITY)
+				var across := minf(LAUNCH_MAX, GAP_ACROSS + float(l[2]) * 2.0 * float(l[1]) / GRAVITY)
 				for c: Vector3i in nodes_in(zones[int(l[0])].box):
 					jump_in[c] = [up, across]
 		var hop := {}                       # feet cell -> [feet cells it teleports to]
@@ -531,7 +551,8 @@ class Grid:
 			var a_y := float(nodes[c])
 			var up := jump_up
 			var across := jump_across
-			if jump_in.has(c):
+			var launched: bool = jump_in.has(c)
+			if launched:
 				up = jump_in[c][0]
 				across = jump_in[c][1]
 			var r := ceili(across)
@@ -549,8 +570,8 @@ class Grid:
 						var ok := false
 						if dist <= 1.001 and absf(dh) <= STEP:
 							ok = true                   # a walk or a step
-						elif dh <= up:
-							ok = clear(c, n)            # a jump, a drop
+						elif dh <= (up if launched else minf(up, reach_up(dist))):
+							ok = clear(c, n)            # a jump, a mantle, a drop
 						if ok:
 							seen[n] = [c, steps]
 							queue.append(n)

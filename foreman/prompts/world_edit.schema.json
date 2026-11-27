@@ -18,7 +18,7 @@
         "additionalProperties": false,
         "required": ["op"],
         "properties": {
-          "op": { "enum": ["place", "remove", "fill", "clear", "land", "paint", "put", "lift", "pour", "flood", "drain", "path", "unpath", "plant", "zone", "unzone", "rule", "unrule"] },
+          "op": { "enum": ["place", "remove", "fill", "clear", "assemble", "land", "paint", "put", "lift", "pour", "flood", "drain", "path", "unpath", "plant", "zone", "unzone", "rule", "unrule"] },
           "at": { "type": "array", "minItems": 3, "maxItems": 3, "items": { "type": "integer" } },
           "from": { "type": "array", "minItems": 3, "maxItems": 3, "items": { "type": "integer" } },
           "to": { "type": "array", "minItems": 3, "maxItems": 3, "items": { "type": "integer" } },
@@ -41,7 +41,11 @@
           "name": { "type": "string" },
           "when": { "type": "object" },
           "if": { "type": "array", "minItems": 1, "items": { "type": "object" } },
-          "do": { "type": "array", "minItems": 1, "items": { "type": "object" } }
+          "do": { "type": "array", "minItems": 1, "items": { "type": "object" } },
+          "kind": { "type": "string" },
+          "size": { "type": "array", "minItems": 3, "maxItems": 3, "items": { "type": "integer" } },
+          "trim": { "type": "integer" },
+          "opts": { "type": "object" }
         }
       }
     }

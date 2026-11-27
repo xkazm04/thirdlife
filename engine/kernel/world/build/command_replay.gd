@@ -75,6 +75,8 @@ static func tour(g: RefCounted, zones: Dictionary, run: Dictionary, mv: Dictiona
 				if walk.has(c) and (best.is_empty() or int(walk[c][1]) < int(best.steps)):
 					best = {"zone": z, "cell": c, "steps": int(walk[c][1])}
 		if best.is_empty():
+			if not left.is_empty():         # round 3 (A6): coins out of reach no longer fence the finish off
+				walk = g.call("walk", [cells[cells.size() - 1]], zones, mv.launches, mv.teleports)
 			for f: int in run.finish:
 				for c: Vector3i in g.call("nodes_in", zones[f].box):
 					if walk.has(c) and (best.is_empty() or int(walk[c][1]) < int(best.steps)):

@@ -1,0 +1,128 @@
+A6 LANE (M6 round 3: assemblies), 27 Nov 2026 day shift. Worktree .claude/worktrees/d27-m6-a, branch d27-m6-a from
+the integration tip 9ca10076. Nothing committed (lane rules: no git that writes). Selftest block 794 (795-796 unused).
+The Director's merge of d27-m6 (a8a98d50) into this tree was asked for in a standup line; it had not happened when I
+finished, so everything below is measured on 9ca10076 + my changes.
+
+ACCEPTANCE
+- 794-home-assembly.sh -> HOME assembly ok: MET, 6/6.
+    kinds     84 walks: wall, tower (outside stairs), tower (inside stairs), house, stair, bridge, platform at 3 sizes each
+              x 4 rots: the op list the same twice; every rot is rot 0's shape turned (each cell turned back, block rots
+              undone); 0 floating blocks (command_space.gd `_floating`); start -> goal reachable by the space check's
+              estimate AND by a stricter walker that never jumps (side steps of <= 0.55 m, and 1 m only up or down a
+              stair block toward its high side, with the estimate's headroom). Wall: through its door only (the walk may
+              not go round its ends); towers: ground -> the top floor; house: ground -> the floor inside; stair: the
+              ground -> the top step; bridge: one bank -> the other over an 8 m trench under its span; platform: across
+              its top. Blocks: wall 17/41/98, tower out 53/365/1005, tower in 124/359/771, house 33/135/263, stair
+              5/33/54, bridge 20/139/448, platform 5/32/95.
+    compose   a 5-step stair assembly meeting a platform's railing gap 5 m up: ground -> platform top, both walkers; the
+              platform alone is not reachable from the ground (the walker must use the stair).
+    refusals  22 bad assemblies refused with their reason (unknown kind, sizes 0/49/short, rot 4, glass, unknown mat,
+              empty opts, crenels false, bad stairs, an opt the kind has not, door/windows ranges, too small for inside
+              stairs / a door / a house, unknown key, wrong op, bad at); the good one taken.
+    protect   a 6 x 6 x 6 tower over a protected box and an existing block: 152 place ops; the dry run refuses 16 'test
+              lot' (all the cells in the box) and 1 'occupied', applies 135; `left_out` names the same 17; Home untouched.
+    input     home_build.gd `expand_input([assemble, place, bad assemble])`: the stair's 14 place ops with author llm,
+              then the place; the bad one refused at its index with "a tower is at least 3 wide"; the ask's ops_now
+              offers assemble; seam_lists.INPUT_OPS == home_build.INPUT_OPS.
+    tool      build mode headless: T to Shapes, 2 (tower), ] (inside stairs), wheel x3 (height 13), hover: the ghost
+              drawn before anything is built; press a corner, drag to the other: the ghost is the dry run of exactly
+              that assemble (384 blocks); release: ONE batch of 384 blocks, equal cell for cell to the expand_input of
+              the same assemble; Ctrl+Z -> 0.
+- foreman npm test green with counts: MET. 471 tests, 465 pass, 0 fail, 6 skipped (lane C's tip: 467 / 461). New file
+  src/test/world_edit_assemble.test.ts, 4 tests: the prompt teaches assemble only when offered, <= 2 KB (2,040 B), with
+  the preference line and examples; a good one of every kind passes as written and the footprint turns as the exe's;
+  22 bad forms refused in the exe's words + the ask's material table and region; a bad assemble fed back and the fixed
+  answer taken on attempt 2 (and an error after 2 bad). world_edit.test + world_edit_assemble.test: 23/23 (re-run after
+  the last prompt edit).
+- The two real calls with figures and an honest judgement: MET as measurement; the hoped-for result NOT shown.
+    Both in a window (editor binary, res://boot/boot.tscn, fresh Homes, the same cursors as lane C), one call each, no
+    fix call (scripts .tl/a6/tower-call.sh, bridge-call.sh).
+    tower sentence: 53.7 s, 18,285 in / 5,510 out, 226 ops (192 blocks, 5 zones, 5 rules), 0 refused, check "1 coin out
+      of reach". Lane C: 106.2 s / 41.8k+11.6k and 92.5 s / 41.3k+10.1k.
+    bridge sentence: 29.8 s, 19,456 / 3,015, 160 blocks, 0 refused, check clean. Lane C: 32.2 s, 18.4k+3.3k, 154 blocks.
+    THE MODEL DID NOT USE `assemble` IN EITHER ANSWER. Both are hand-built (the answer files hold only place ops, the
+    Foreman's expansion of fills). The prompt offered it, said "PREFER ASSEMBLIES ...", and for the bridge call (after
+    the tower showed this) also gave the water example's own bridge as ONE assemble op. So the cost drop against lane
+    C (tower about half the time and tokens) is NOT from assemblies: by tokens both were single attempts where lane C's
+    towers were about two, and this tower is smaller (5 x 5 x 8, 192 blocks against 335-418).
+    Walkable: the tower's replay (command_m6_case.gd -- replay) FINISHES with every hop at most 2 m (11 feet cells; the
+      stricter 2 m walker reaches the finish too; 2 of 3 coins: one coin floats 1 m over its stair cell, which the
+      check said). Lane C's second tower needed 4 m + 1 m hops; this one is a real stair on solid fill. The bridge: a
+      dark-stone deck on piers with plank railings and steps at both ends, check clean.
+    Judgement: assemblies work (cheap to expand, walkable by construction, same blocks from the hand and the model), but
+    today's model, given the choice, keeps hand-placing; the prompt alone did not move it. Cheaper? Not shown (not
+    used). Better? The hand-built answers were decent this time. Walkable? Yes for the tower within <= 2 m hops.
+    Captures: a6-tower.jpg, a6-tower-ghost.jpg, a6-bridge.jpg, a6-bridge-ghost.jpg (kept answers in a window).
+- Captures a6-shapes-tool.jpg (the Shapes ghost of a dragged tower footprint, the strip and the status line) and
+  a6-shapes-built.jpg (the kept tower with its outside stairs; the next hover ghost over it): MET, the window run
+  .tl/a6/shapes-call.sh (no model): T x8 to Shapes, 2, hover, drag (-72,38)-(-66,30), release: 1 batch, 316 blocks,
+  0 refused.
+- Gates per M6-COMMON:
+    tl check --tier fast: PASS 5/5 (arch 12/12, assets 4/4, cards 3/3, devx.test 230/230, foreman.typecheck).
+    bash engine/tools/selftest.sh home. : "selftest: 184 passed, 0 failed" (first run 183/1: 775 rules-tool.draw wants T
+      from Rules to reach Command; the Shapes tool moved before Rules and the re-run was 184/0).
+    785 command-m6 6/6 (re-run last, after the replay fix; the reach fixture moved, below), 786 command-fix 4/4, 787
+      command-findings 3/3. tl check --tier fast re-run last: PASS 5/5.
+    tl check --tier full --only world: PASS [9/9], 229 s; the 9 hashes and frame counts identical to main's .tl/gate-world.log
+      (diff of the table: empty).
+    The uncapped suite: not run (the Director runs it on the merged tree).
+
+THE DIRECTOR'S REQUEST (combined jump limit, command_space.gd): DONE.
+  Grid.reach_up(dist): up to 1.0 m (JUMP_UP) within 2.5 m (JUMP_ACROSS, cell centre to centre), 1.2 m (MANTLE_UP) only
+  from the next cell (MANTLE_ACROSS 1.0), a flat gap (<= 0.25 m up, GAP_UP) or any drop within 3 m (GAP_ACROSS, 2 empty
+  cells). Walks/steps (0.55 m) unchanged; a launch zone keeps its own (base 1.2 m up, 3 m across, was 4); teleports as
+  before; Grid.jump_up/jump_across still cap a stricter walker. Findings end with JUMPS (these limits in words). Named in
+  COMMAND.md "Round 3". Every assembly kind passes the new limits (794 runs with them) and the stricter no-jump walker.
+
+DELIVERED (files)
+New: engine/kernel/world/build/assembly.gd (malformed, expand, left_out, turn/unturn, ground_of), assembly_kinds.gd (the
+     six kinds), tools/assembly_tool.gd (Shapes), assembly_case.gd + assembly_tool_case.gd (794), PATCHES-A6.md,
+     engine/tools/selftest.d/794-home-assembly.sh, foreman/src/world_edit_assemble.ts,
+     foreman/src/test/world_edit_assemble.test.ts, .gd.uid files from --import.
+Changed: blocks_layer.gd (expand_input; offers adds assemble; a `home` weakref kept from ctx: see PATCHES-A6),
+     home_build.gd (INPUT_OPS line), seam_lists.gd (INPUT_OPS; TOOLS + "shapes"), build_mode.gd (TOOLS + the tool),
+     command_space.gd (the combined jump), command_replay.gd (the tour no longer walls the finish off behind an
+     unreachable coin), command_m6_case.gd + command_fix_case.gd (the reachable fixture's gap 2 -> 1 cell), COMMAND.md
+     (Round 3), foreman/src/world_edit.ts (ASSEMBLE_TEXT in more_ops when offered), world_edit_check.ts (assemble in
+     ASK_OPS and OTHER, its check), prompts/world_edit.schema.json (op assemble; kind, size, trim, opts),
+     prompts/world_edit_rules.md (the jump words; the worked run's gap 1 cell).
+Line endings kept as in git (home_build, command_space, command_m6_case, command_replay CRLF; the rest LF).
+
+BEHAVIOUR CHANGES
+- The ask offers `assemble` (every Home); the Foreman accepts and checks it; the exe expands it at show time.
+- The space check is stricter: a 3 m + 1 m hop, a 4 m flat gap, a 1.2 m climb from 2 cells away are no longer
+  reachable. TEST EXPECTATIONS MOVED: 785 command-m6.reach and 787 command-findings.gap used a 2-cell gap onto a pillar
+  1 m up (exactly the hop lane P's body failed) as the reachable course; it is a 1-cell gap now (2 m + 1 m). Nothing
+  loosened: the unreachable 5-cell gap and 2-block wall are unchanged.
+- The strip has a Shapes tool between Plants and Rules (T order: ... Plants, Shapes, Rules, Command).
+- The prompt grows by 2,040 B when assemble is offered (always now). The zones-and-rules section's worked run has a
+  1-cell gap and says the new jump limits.
+- The replay's tour reaches the finish past an unreachable coin.
+
+WHAT THE OWNER SHOULD LOOK AT, AND HOW
+- a6-shapes-tool.jpg / a6-shapes-built.jpg: in build mode press T to Shapes (between Plants and Rules), 1-6 a kind,
+  wheel the height, [ ] its options, R turn, Tab/Shift+Tab material/trim; hover shows the ghost, click builds it there,
+  drag sets the footprint. Climb the tower's outside stairs to the top: that is the walkability claim, met by a person.
+- a6-tower.jpg and a6-bridge.jpg: what Opus built by hand with assemblies on offer.
+
+QUESTIONS FOR THE DIRECTOR
+Q-A1 The model ignores assemble. Options, cheapest first: (a) put assemble FIRST in "# Operations" of world_edit.md and
+     turn the hut and the bridge worked examples into assembles (my brief allowed only +2 KB and I did not rewrite lane
+     C's measured examples); (b) the Foreman feeds back "these N places make a tower/stair/bridge: write one assemble"
+     (shape detection, hard); (c) a two-step ask (layout with assemblies first, then details). Which one, and may I
+     change world_edit.md's examples?
+Q-A2 contracts/BUILD.md: the M6 jump words (1.2 m up, 4 m across) no longer match the estimate; and the conventions
+     "Assemblies" leaves open (at's y = the floor row, turn about the at cell's centre, unused size axes, least sizes):
+     wording in PATCHES-A6.md.
+Q-A3 blocks_layer.gd: beyond the allowed expand_input I changed offers() (the ask's ops come from offers) and kept the
+     ctx's home weakref (the ground). Confirm, or route the ground another way.
+Q-A4 The merge of d27-m6 (a8a98d50, P's play_llm_probe) into this tree was asked for and has not happened; the
+     combined limit is from the Director's figures, not checked against P's probe here.
+
+NEXT THREE
+1. Q-A1 (a): assemble first in the prompt's ops and its worked examples as assembles, then one tower call: does the
+   model use it, and what does it cost?
+2. Check the combined jump limit against lane P's body probe (play_llm_probe.gd) once d27-m6 is merged: the 1-cell
+   gap + 1 m and the tower's outside stairs walked by the body.
+3. The Shapes tool: show the walk on the ghost (the stair path in another holo tint) and a wheel for the width/depth
+   when no drag is made; a "course" preset that adds a start pad at the stair foot and a flag on top as zones.

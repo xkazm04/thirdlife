@@ -9,6 +9,7 @@
 // contract's lists and ranges (contracts/BUILD.md "Milestone 5"). M6 (lane C): zone, unzone, rule and unrule are checked
 // in order with every limit and refusal of the contract (world_edit_rules.ts), so the model hears them.
 import { rulesChecker } from "./world_edit_rules.js";
+import { ASSEMBLE_KEYS, assembleError } from "./world_edit_assemble.js";
 
 export const MAX_OPS = 4000;
 export const SHAPES = 8;
@@ -19,8 +20,9 @@ export const PLANTS = ["meadow", "flowers", "tall_grass", "valley"];
 export const PATH = { ptsMin: 2, ptsMax: 64, stepMin: 100, stepMax: 4800, widthMin: 150, widthMax: 800 };   // cm
 const LATTICE = 3;
 const M6 = ["zone", "unzone", "rule", "unrule"];
-/** Every op kind an ask's `ops` may name (tl.world-edit-ask/1): the layers' kinds and `pour`, which the exe expands. */
-export const ASK_OPS = ["place", "remove", "land", "paint", "put", "lift", "flood", "pour", "drain", "path", "unpath", "plant",
+/** Every op kind an ask's `ops` may name (tl.world-edit-ask/1): the layers' kinds and `pour` and (M6 round 3) `assemble`,
+ *  which the exe expands. */
+export const ASK_OPS = ["place", "remove", "assemble", "land", "paint", "put", "lift", "flood", "pour", "drain", "path", "unpath", "plant",
   "zone", "unzone", "rule", "unrule"];
 /** The kinds besides blocks that pass through with shape checks only (their rules are the exe's layers'), and their keys. */
 const OTHER: Record<string, string[]> = {
@@ -29,6 +31,7 @@ const OTHER: Record<string, string[]> = {
   path: ["id", "pts", "width_cm", "paint"], unpath: ["id", "pts", "width_cm", "paint"],
   zone: ["id", "box", "look", "name"], unzone: ["id", "box", "look", "name"],          // M6: world_edit_rules.ts checks them
   rule: ["id", "when", "if", "do"], unrule: ["id", "when", "if", "do"],
+  assemble: ASSEMBLE_KEYS,                                                              // M6 round 3: world_edit_assemble.ts
 };
 
 export type Cell = [number, number, number];
@@ -64,6 +67,7 @@ export interface ModelOp {
   verts?: unknown[]; cells?: unknown[]; part?: string; params?: Record<string, unknown>; seed?: number;
   id?: number; pts?: unknown[]; width_cm?: number; paint?: string;
   box?: unknown[]; look?: string; name?: string; when?: Record<string, unknown>; if?: unknown[]; do?: unknown[];
+  kind?: string; size?: number[]; trim?: number; opts?: Record<string, unknown>;          // M6 round 3: assemble
 }
 export type EditOp = Record<string, unknown>;
 type Block = [number, number, number, boolean];   // shape, mat, rot, flip
@@ -174,6 +178,7 @@ export function expand(ask: Ask, given: ModelOp[]): { ops: EditOp[]; problems: s
 /** The land, paint, put, lift (M2, M3), flood, drain, pour, path, unpath and plant ops (M5) checked against the region
  *  and for the types of their fields; their own rules are the exe's layers'. */
 function otherOp(o: ModelOp, inside: (c: number[]) => boolean, lo: Cell, hi: Cell, ask: Ask, parts: Set<string>): string {
+  if (o.op === "assemble") return assembleError(o, ask, inside);
   const extra = Object.keys(o).filter((k) => k !== "op" && !(OTHER[o.op] as string[]).includes(k));
   if (extra.length) return `${o.op} takes no ${extra.map((k) => `"${k}"`).join(", ")}`;
   if (o.op === "put" || o.op === "lift" || o.op === "pour") {
