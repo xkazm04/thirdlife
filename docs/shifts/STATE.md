@@ -509,3 +509,4 @@ on the frame and the figure and Fable on surfaces and nature, looping for 10 hou
 - 13:22 standup: LP, DN, C done; P r2, T r3, C r2, DN r2, LP r3 on d27-m6; A assemblies running; uncapped suite on the tip running in d27-int.
 - ~13:40: JB-back done: hand juice back as one sentence + one follow-up each; robots v0.1.8 close to hand (flights 3.5-5.0 m vs 3.7-5.4), shield v0.1.9 (charges 12/11/6 a min vs hand 14/15/6; braces rare), Arsenal v0.1.25 (no faceoff meteor, METEOR plate; bots cannot use it). 6 rows (menu 47), 600 f 0/0.
 - 13:44 standup: A building (home. 183/184 re-running), Q playtest started, integration suite 306/1 (k2 timing) so far; 2 finished worktrees removed; disk 49 GB.
+- ~14:30: T-editor items 12-16 landed (merge 4050c51f; merged: fast 5/5, npm 481/474/0/7, create. 29/0): honest land count (J19 rush 9 of 14 by hand, night 0 of 15), YOU ARE ON FIRE, no duplicate rounds. T next: round 4 (kart tofu rerun, 17-21).
