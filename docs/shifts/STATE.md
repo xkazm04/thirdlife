@@ -472,3 +472,6 @@ on the frame and the figure and Fable on surfaces and nature, looping for 10 hou
   sentence take 800 characters). J2 landed (docs 9bf4f7dc): the editor hammer v0.1.6 promoted after the fix (31 min,
   1.4 M tokens; before it the hammer looped 4x and was thrown away after 61 min and 14 M); a juicier hand version (its own
   id game.robot_soccer_hand); both in the owner menu. J19-shield and J1-arsenal launched 05:10 (time box 07:00).
+- 05:51 standup: J2, J4, J11 landed (Create made the hammer, Sky Jam and every biplane stunt; hand versions for J2/J4);
+  J5, J4b, J11b, J19, J1 working. Disk fell to 12 GB (not this shift's trees: 4.5 GB in .tl). The Director removed its
+  own merged trees d25-hard-b and d26-browse (tl trees remove; a leftover was removed after a no-link walk): 17 GB.
