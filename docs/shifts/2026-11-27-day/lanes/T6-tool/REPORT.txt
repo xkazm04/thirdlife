@@ -1,5 +1,6 @@
 T6 TOOL (M6: the Rules hand tool), 27 Nov 2026 day shift. Worktree .claude/worktrees/d27-m6-t, branch d27-m6-t from the
 seam 6690ad32. Nothing committed (lane rules: no git that writes). Opus.
+LANDED by the Director on d27-m6 (a2a05a75, merged 5ec36881); PATCHES-T6 applied (f138c7e8).
 
 WHAT A PERSON GETS
 The Rules tool (T cycle, between Plants and Command) places a zone and its rules from a preset, ONE batch (one Ctrl+Z):
@@ -97,7 +98,10 @@ GATES
   empty against main's last gate log (third-life/.tl/gate-world.log, 25 Nov): seed.drive a2940a1735bc2b72@3441 ...
   game.hokej fd162294891897fc@9072. (A first run also passed 9/9 but my own shell redirect wrote over the gate's log
   file, so it was re-run for the comparison.)
-- Uncapped `bash engine/tools/selftest.sh`: UNCAPPED_LINE
+- Uncapped `bash engine/tools/selftest.sh`: NOT MET (a stopped run, never a pass). Started 11:34 in this worktree;
+  stopped at 12:07 on the Director's order (12:10 message: the Director runs it once on the merged tree) after 123
+  cases, 123 PASS, 0 FAIL (main has 715). My own shells and the world.sh proof it had started were ended; no other
+  process was touched.
 
 FILES
 New (engine/kernel/world/build/): zone_draw.gd (the zones in build mode, ghost_node), rules_tool_presets.gd (presets,
