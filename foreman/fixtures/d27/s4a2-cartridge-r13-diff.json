@@ -1,0 +1,11 @@
+{
+ "source": "d25-arsenal .tl/jobs/s4a2-arsenal reports/cartridge-r13-diff-s1080.json (lane S4 re-run): the quick cartridge edit promoted as v0.1.24",
+ "change": "Swap my meteor on F for a hip check: my next check knocks him down twice as long and shoves him 3 m, and it comes back 10 seconds after each use. The rival bots get the same hip check and use it on me when I carry the puck close to them, often and well. Any bot that is not carrying should now and then throw itself in front of a hard shot at its own net to block it.",
+ "why": "F is now a hip check instead of the meteor. Your next hit keeps a man down twice as long, and it comes back 10 seconds after each use. The red Crane Gulls get the same hip check, and they throw it at you hard and often whenever you carry the puck near them. That made the game score too much, so the nets are a little narrower and the keepers reach further. These keys can't set the 3 m shove or make bots dive in front of shots, so a builder needs to add both.",
+ "changed": [
+  "game.abilities[0]: {\"kind\":\"shotgun\",\"trigger\":\"mode\",\"magnitude\":2,\"cooldown_frames\":720} -> {\"kind\":\"hip_check\",\"trigger\":\"mode\",\"magnitude\":2,\"cooldown_frames\":600}",
+  "game.ai.body_check: 1 -> 1",
+  "game.rink.goal_width_m: 2.8 -> 2.3",
+  "game.skater.goalie.reach_m: 1.4 -> 1.7"
+ ]
+}

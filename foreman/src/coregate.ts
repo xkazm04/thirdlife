@@ -249,6 +249,11 @@ export async function cartridgeChange(h: GateHost, owner: string, round: number,
       note(`${CARTRIDGE_DIFF} not made: the diff changes nothing (${clip(r.changed.join("; "), 200)}): the change goes to the builder`);
       return false;
     }
+    const unmade = r.ok ? diffLeavesUnmade(why, r.changed) : undefined; // D27 item 29
+    if (unmade !== undefined) {
+      note(`${CARTRIDGE_DIFF} not made: ${unmade}: the change goes to the builder`);
+      return false;
+    }
     if (!r.ok) {
       refused = `\n# Your previous diff was refused by thirdjam's validator\n${r.errors.map((x) => `- ${x}`).join("\n")}\nAnswer again with a diff the validator accepts.\n`;
       continue;
@@ -374,3 +379,18 @@ export async function phaseCheck(h: GateHost, phase: string): Promise<void> {
 
 /** The start of the phase-pause figures note (after FOREMAN_NOTE). */
 export const PHASE_MEASURED = "measured at the phase pause";
+
+/**
+ * D27 item 29 (S4's Arsenal re-run, s4a2 events 1076-1131: the quick cartridge edit said "These keys can't set the 3 m
+ * shove or make bots dive in front of shots, so a builder needs to add both", set game.ai.body_check from 1 to 1 for
+ * "the rival bots get the same hip check", and was promoted as v0.1.24 without a builder): a diff that says a builder is
+ * needed, or leaves part of the ask unmade, or changes a key to the value it had, is not the change; the builder is.
+ * Undefined when the diff may stand.
+ */
+export function diffLeavesUnmade(why: string, changed: readonly string[]): string | undefined {
+  const said = /\b(a builder (needs|must|has) to|needs? (a )?builder|builder needs|(can'?t|cannot|could not) (set|make|do|say)|not (possible|buildable) (with|as)|no key (can|says|for))\b/i.exec(why);
+  if (said) return `it leaves part of the ask unmade, in its own words: "${clip(why, 300)}"`;
+  const same = changed.filter((c) => { const m = /: (.*) -> (.*)$/.exec(c); return m !== null && m[1] === m[2]; });
+  if (same.length > 0) return `it sets ${same.join("; ")} (the value it already had), so that part of the ask is not made`;
+  return undefined;
+}
