@@ -489,3 +489,7 @@ on the frame and the figure and Fable on surfaces and nature, looping for 10 hou
 ### 2026-11-27 day: plan (the sandbox engine past Minecraft and Roblox; owner away 24 h)
 - Owner ~07:50: push main (already on origin 8be26d61), then "use this time to master the sandbox engine, deep research Minecraft/Roblox ... where can outshine those two ... balanced level of freedom ... our graphics and LLM builder". No handshake; Director decides. Plan docs/shifts/2026-11-27-day/PLAN.md.
 - 08:05 lanes: R1 Minecraft+Hytale, R2 Roblox, R3 smart builders + AI, R4 engine scout (research, Opus); LP look polish (Opus, d27-look). RAM 33 GB free, disk 94 GB.
+
+### 2026-11-27 juice day and night: plan (A/B spikes for the five juice-night asks; owner away 24 h)
+- Owner ~08:00: "keep the effort from last night, for decision questions try to create spikes and evaluate both, I will get into this tomorrow and evaluate together". No handshake; last night's carried over (5 Opus, RAM 80 %, editor first, land and push). Plan docs/shifts/2026-11-27-juice-day/PLAN.md. Runs beside the Home session's day shift (claims split in .claude/sessions.json).
+- 08:30 lanes: T-editor (the night's editor queue, lands on main); spikes S1-bots (ask 1), S2-juice (ask 2), S4-core (ask 4), S35-packs (asks 3 and 5), both arms each, held for the owner; queued JB-back (hand juice back as sentences). The full tier on main 8be26d61 runs first (NOT RUN last night). RAM 33 GB free, disk 94 GB.
