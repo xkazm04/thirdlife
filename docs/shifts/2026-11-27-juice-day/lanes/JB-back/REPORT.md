@@ -125,3 +125,72 @@ NEXT THREE THINGS THIS LANE WOULD DO
    them"), measured on braced charges a minute against the hand's 3-6.
 3. Send the merged-hand-off finding (1) and the wrong-owner finding (2) to T as tests, with these two jobs as the
    cases.
+
+======================================================================================================================
+ROUND 2 (Director's second round, 13:29-14:30)
+
+OUTCOME
+1. Arsenal v0.1.25 meteor goal on film: met.
+   - How: a film copy whose blind hand fires from closer in (F within 19 m, a full wind-up from 15 m) scores a meteor
+     goal on seeds 1-4. Its window take of seed 1 scores at about frame 508.
+   - Clip: clips/arsenal_v0125_meteor_goal.mp4.
+   - The net bag reads as a solid white block popping out behind the goal for about 12 frames, not as a net bulging.
+   - The glass: a pale see-through band over the end boards; I cannot see it move at the follow camera's distance.
+   - The pale pane of round 1 IS one of the new panes. A copy with the panes off filmed the same seed: identical frame
+     at 1820 without the pale rectangle (stills/arsenal_ed0125_s2_f1820_panes_vs_nopanes.jpg). When the camera swings
+     behind my own net, the new glass lies across the view: a defect of v0.1.25.
+2. Shield wall braces: one sentence (446 chars, 13:29:49) -> v0.1.10 promoted 14:10:23 (40.6 min, 2.98M in).
+   - Men floored by a charge a minute: 7 / 5 / 9 (hand 10 / 9 / 8; v0.1.9 3 / 7 / 1). Near the target.
+   - Braced charges a minute: 0 / 1 / 2 (hand 5 / 6 / 3). Not met; none on screen in my take.
+   - 0 script errors; seed 1 098f54b9de09e943 twice.
+   - Crew got core's NOT DONE after it had already done the work: the third duplicate hand-off today (crew r11).
+3. Robots: one sentence (439 chars, 13:57:13) -> v0.1.9 promoted 14:26:44 (29.5 min, 0.78M in).
+   - A quick tap now says BONK! (the word followed the launch force, so every hit was KA-BONK!!; core found that bug).
+   - Fat yellow comic words with an outline, hanging at the spot; thick bright reach rings.
+   - Drawing only: the same hashes as v0.1.8.
+   - By eye on a par with the hand version.
+
+MENU ROWS (new)
+- C:/Users/kazda/kiro/third-life/.claude/worktrees/d25-shield/.tl/jobs/shield-wall-3-v-20261125-1-jb/promoted/game.shield_wall_3_v@0.1.10
+  "Shield wall: charge and slam v0.1.10 (made in Create from juice sentences)"
+- C:/Users/kazda/kiro/third-life/.claude/worktrees/d25-shield/.tl/jobs/robot-soccer-3-v-20261125-1/promoted/game.robot_soccer_3_v@0.1.9
+  "Robot soccer: sledgehammer v0.1.9 (made in Create from juice sentences)"
+- Arsenal: no new version.
+
+GATES
+- tl check --tier fast at 14:28: PASS 5/5. arch 12/12, assets 4/4, cards 3/3, devx.test 230/230, foreman.typecheck
+  clean.
+- Every new version: 3600 headless frames on seeds 1-3, 0 script errors, seed 1 twice with the same hash. The promoted
+  packs are file for file the ones measured.
+- No code changed by this lane. Docs and .tl/ only.
+
+NEW FILES (lane folder, untracked)
+- clips:
+  - arsenal_v0125_meteor_goal.mp4 (0.6 MB);
+  - shield_v0110_vs_hand.mp4 (640 wide, 4.4 MB);
+  - robot_v019_vs_hand.mp4 (640 wide, 2.7 MB).
+- stills:
+  - arsenal_g_s1_goal_f470-602, arsenal_g_s1_net_crops, arsenal_g_s1_panes_vs_nopanes,
+    arsenal_ed0125_s2_f1820_panes_vs_nopanes;
+  - shield_ed0110_overview;
+  - robot_ed019_my_f56-144, robot_ed019_f200_f200-332.
+- PROOF-JB-back.md sections 4-6, SENTENCES.md round 2, STANDUP.md.
+- Film copies (.tl/jb only, never the jobs):
+  - arsenal/ed0125g: the scoring hand;
+  - arsenal/ed0125_nopane and ed0125g_nopane: the panes off.
+
+FOR THE DIRECTOR AND T
+- Shield braces: a third sentence would likely need to name the cause a person sees. Men are rarely facing a charge
+  with the shield up when it arrives; the builders set 38-40 % brace chances, but the measured braces stay at 0-2 a
+  minute.
+- Arsenal: one sentence would ask for a net of cords pushed back (not a white box), glass that flexes visibly, and no
+  glass between the camera and the ice.
+- The duplicate NOT DONE hand-off (crew r7, r9, r11) is now 3 of 3 shield sentences that named the rivals.
+
+NEXT THREE
+1. Arsenal: the net, glass and camera sentence above, judged on the same scoring film copy (seed 1, the goal at about
+   frame 508).
+2. Shield: a braces sentence in a person's words about what is seen: men turn to face a charger and raise the shield
+   when the lane rings appear.
+3. A hand test for the editor's shield that counts braces from the BRACED! event, so the hand and editor counts are
+   the same instrument.

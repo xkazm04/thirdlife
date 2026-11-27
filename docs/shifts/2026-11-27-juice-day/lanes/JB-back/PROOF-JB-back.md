@@ -436,3 +436,112 @@ not check whether that pane is one of the new ones or how v0.1.24 frames the sam
 - Raw captures, film copies and measuring runs: `C:/Users/kazda/kiro/third-life/.claude/worktrees/d25-shield/.tl/jb/`
   (`robot/`, `shield/`, `arsenal/`: the `*_s<seed>.json` reports; `clips/` full-size takes; `bot.sh`, `clip2.sh`,
   `vs.sh`). Job logs: `.tl/jobs/_ui_logs/*-jb-*.log`.
+
+---
+
+# Round 2 (27 Nov, 13:29-14:3x): a meteor goal on film, shield braces, robots' words
+
+## 4. Arsenal v0.1.25: a meteor goal, the net bag and the glass
+**How I got a goal on film.** The blind hand on v0.1.25 never scored a meteor in my takes. On a film copy only
+(`.tl/jb/arsenal/ed0125g`, the promoted pack plus the blind hand with two numbers changed: F within 19 m instead of
+30, a full wind-up from 15 m instead of 26) it scores a meteor goal in every headless seed (frames 508 / 3518 / 2158 /
+2436, seeds 1-4, 0 script errors). Its window take of seed 1 (`.tl/jb/clips/arsenal_ed0125g_s1.mp4`, 40 s) scores the
+same goal at the same moment (window runs of one pack and seed repeat each other exactly; they differ from headless
+runs of that hand, because the hand steers by the camera's yaw).
+
+Clip `clips/arsenal_v0125_meteor_goal.mp4` (5.5 s, 960 wide); stills `stills/arsenal_g_s1_goal_f470-602.jpg` (6
+frames a tile) and `stills/arsenal_g_s1_net_crops.jpg` (the net at frames 548, 560, 580, 600), looked at:
+- The shot reads: METEOR! over me, the fireball, the keeper floored with FLOORED! over him, GOAL, the fire and confetti
+  in the mouth, and the camera swinging round to the net.
+- **The net bag:** for a moment (about frame 548) a **solid white box** stands out behind and above the goal frame,
+  then it is gone by 560. It does not read as a net bulging: it reads as a white block popping out of the goal. From
+  the follow camera, about 25-30 m away when the puck goes in, it is visible but not as a net.
+- **The glass:** the panes are a pale grey, see-through band above the end boards. Across frames 536-600 I cannot see
+  them move; a rattle of 0.22 m at that distance does not show.
+- **The pale pane of round 1** (`stills/arsenal_ed0125_s2_f1820.jpg`): **yes, it is one of the new panes.** A copy with
+  the panes turned off (`glass_half_w_m` 0, everything else equal) filmed the same seed: at frame 1820 the frame is
+  identical except that the pale rectangle over my own net is gone (`stills/arsenal_ed0125_s2_f1820_panes_vs_nopanes.jpg`).
+  The same check at the goal (`stills/arsenal_g_s1_panes_vs_nopanes.jpg`) shows the pane band over the end boards, and
+  the bag the same in both. So when the camera swings behind my own net the new glass lies across the view: a defect of
+  v0.1.25 for the owner to know. (The hand version also has its own glass, J1's 66 panes on the straight runs.)
+
+**As a person:** the meteor goal is a moment now (word, fireball, floored keeper, fire and confetti), but the net and
+the glass do not read as a net and glass: a white block and a band I cannot see move. One sentence would ask for a net
+made of cords (or the real net pushed back) and glass that flexes far more, and for no glass between the camera and
+the ice.
+
+## 5. Shield wall: braces and men floored (v0.1.10)
+### The sentence (446 characters, sent 13:29:49, event 989; on v0.1.9)
+> Most charges still hit nobody: in a minute the bots charge a dozen times but floor only a few men. A bot should only
+> charge when rivals stand in the lane in front of him, aimed at them, so nearly every charge meets someone and bowls a
+> line over. And let the brace happen: about a third of the men a charge runs into should be facing it with the shield
+> up, so it stops dead with BRACED! and the charger bounces back open, a few times every minute.
+
+- The rivals' part went to crew at once (event 992), core r19 (2.4 min, 1.17M in): Bram charges only when a standing
+  rival is in his lane, checks again at the start, no longer avoids a raised shield; his answer to a charge is decided
+  by a lane test: brace 40 %, sidestep 15 %, otherwise bowled. NOT DONE (the crew's part) handed to crew.
+- crew r10 (2.5 min, 0.98M in): the same for Oda, Finn, Sable and Pip (`_lane_full`, brace about 38 %, sidestep 15 %).
+  Its own count: "only 1 of 14 charges bowled someone over" in its bot run.
+- crew r11 (1.9 min, 0.83M in): core's NOT DONE arriving after r10, the third duplicate today; this time it added one
+  number (`lane_core_k` 0.6: charge only when a rival stands within 0.6 of the lane's width of the line).
+- **v0.1.10 promoted 14:10:23**, 40.6 min from the sentence; 2.98M tokens in, 22k out. The promoted pack is file for file
+  the one measured and filmed.
+
+### Measured against the hand version (3600 frames, seeds 1/2/3, 0 script errors; seed 1 `098f54b9de09e943` twice)
+
+| | hand | v0.1.9 | **v0.1.10** |
+|---|---|---|---|
+| charges a minute | 14 / 15 / 6 | 12 / 11 / 6 | 7 / 11 / 13 |
+| men floored by a charge a minute | **10 / 9 / 8** | 3 / 7 / 1 | **7 / 5 / 9** |
+| braced charges (into a raised shield) a minute | **5 / 6 / 3** | 2 / 0 / 0 | **0 / 1 / 2** |
+| floored by a slam | 15 / 11 / 7 | 16 / 17 / 11 | 4 / 10 / 10 |
+
+(Hand: `bot_juice_hand.gd`; editor: `bot_juice_editor.gd`, the same captain, each counting its own pack's events.
+The charges include the scripted captain's own.)
+
+Clip `clips/shield_v0110_vs_hand.mp4` (640 wide; Create top, hand bottom, seed 1, frames 330-1530), sheet
+`stills/shield_ed0110_overview.jpg`, looked at: charges and slams through the knot of fighters, BOWLED! and SLAM!
+mid-screen; no BRACED! in this take.
+
+**As a person:** a charge now meets someone: men floored by a charge went from 1-7 to 5-9 a minute, close to the
+hand's 8-10. **Braces did not come:** 0-2 a minute against the hand's 3-6, and none on screen in my take. The builders
+set a 38-40 % brace chance for a man in the lane, but in play few men stand facing a charge with the shield up when it
+arrives. That is the one gap left in shield wall.
+
+## 6. Robot soccer: the words and the ring (v0.1.9)
+### The sentence (439 characters, sent 13:57:13, event 1437; on v0.1.8)
+> Two things still read weaker than in a real brawler. Every hit says KA-BONK!!, even a quick tap: keep KA-BONK!! for a
+> big charged hit and BONK! for a small one, and print them as fat yellow comic letters with a dark outline that pop
+> out where the blow lands and hang there for most of a second, instead of thin pale text drifting up. And the red
+> reach ring is a thin line that is hard to see across the pitch: make it a thick, bright band.
+
+- core r19 (2.9 min, 0.77M in): found the bug itself: "the size of the word came from the launch force. Even the weakest tap
+  launches at 9 of a possible 15, which is already 0.6, so every hit counted as big. The word now follows the charge."
+  Fat yellow letters (#ffd21a) with a dark-brown outline, size 96 -> 150, a pop and settle over 16 frames, 50 frames in
+  all; the ring a 0.5 m band, three times taller, brighter red. Drawing only: the state hash is unchanged
+  (`d7325572...` on seed 1, the same as v0.1.8).
+- **v0.1.9 promoted 14:26:44**, 29.5 min from the sentence; 0.78M tokens in, 8k out; the promoted pack is file for file
+  the one measured and filmed. Headless (seeds 1-3, 3600 frames, 0 script errors): the same hashes as v0.1.8
+  (`d7325572...` twice on seed 1), bots 11 / 10 / 11 swings a minute, hits fly 3.5-5.0 m.
+- In the window (`clips/robot_v019_vs_hand.mp4`, 640 wide, Create top, hand bottom; stills
+  `stills/robot_ed019_my_f56-144.jpg`, `stills/robot_ed019_f200_f200-332.jpg`, looked at): my quick first swing now
+  says **BONK!** (the hand version says BONK! there too), in fat yellow letters with a dark outline that hang over the
+  spot and fade; the bots' reach rings are thick bright bands you see from across the pitch.
+
+**As a person:** with this third sentence I cannot point at a juice part of the hand version that v0.1.9 lacks on
+screen. What still differs is taste: the hand version's head-into-the-court miss and its crash sound at more than half
+charge are not visible or not checkable from my takes in either version.
+
+## Round 2 in short
+| | sentence | time to promotion | tokens in | what a person meets |
+|---|---|---|---|---|
+| Arsenal v0.1.25 (no new sentence) | - | - | - | the meteor goal reads; the net bag is a white block; the glass does not visibly move; the new panes lie across the view behind my own net |
+| Shield wall v0.1.10 | 446 chars | 40.6 min | 2.98M | charges meet men (5-9 floored a minute, hand 8-10); braces still rare (0-2, hand 3-6) |
+| Robot soccer v0.1.9 | 439 chars | 29.5 min | 0.78M | BONK!/KA-BONK!! by charge, fat yellow comic words, thick rings; on a par with the hand version by eye |
+
+**New pack paths and menu titles (round 2):**
+- Shield wall: `C:/Users/kazda/kiro/third-life/.claude/worktrees/d25-shield/.tl/jobs/shield-wall-3-v-20261125-1-jb/promoted/game.shield_wall_3_v@0.1.10`,
+  "Shield wall: charge and slam v0.1.10 (made in Create from juice sentences)".
+- Robot soccer: `C:/Users/kazda/kiro/third-life/.claude/worktrees/d25-shield/.tl/jobs/robot-soccer-3-v-20261125-1/promoted/game.robot_soccer_3_v@0.1.9`,
+  "Robot soccer: sledgehammer v0.1.9 (made in Create from juice sentences)".
+- Arsenal: no new version (v0.1.25 stays; it was only filmed).

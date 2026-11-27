@@ -46,3 +46,20 @@ says "F: SHOTGUN"; the net and the glass do not move (harbour: NOT DONE, the bas
 minute; hand 3-6 braced); a bowled man rises 1.1 m, under his own height (hand 1.6 m with a full turn).
 
 > The charge is still rare and rarely lands. Bots should charge an open line several times a minute each, and the charge should bowl over everyone within a step of its line, not only the man straight in front, throwing each one higher than his own head before he lands. Braces are so rare I never see BRACED!: a rival who sees a charge coming at him should turn his raised shield to it most of the time, and the rest step aside.
+
+## Round 2 (Director's second round, 27 Nov afternoon)
+
+### Shield wall braces, on v0.1.9 (job copy `.tl/jobs/shield-wall-3-v-20261125-1-jb`), sent 13:29:49
+
+446 characters. Aim: the hand's 3-6 braced charges a minute and 8-10 men floored by a charge a minute (v0.1.9: braced
+2 / 0 / 0, floored 3 / 7 / 1, from 12 / 11 / 6 charges a minute: most charges hit nobody).
+
+> Most charges still hit nobody: in a minute the bots charge a dozen times but floor only a few men. A bot should only charge when rivals stand in the lane in front of him, aimed at them, so nearly every charge meets someone and bowls a line over. And let the brace happen: about a third of the men a charge runs into should be facing it with the shield up, so it stops dead with BRACED! and the charger bounces back open, a few times every minute.
+
+### Robot soccer, on v0.1.8 (job copy `.tl/jobs/robot-soccer-3-v-20261125-1`), sent 13:57:13
+
+439 characters. What v0.1.8 still lacks against the hand version by eye: my quick first swing prints KA-BONK!! where
+the hand version prints BONK! (no small/big scale), the words are thin pale text drifting up (hand: fat yellow comic
+letters at the spot), and the reach ring is a thin line (hand: a thick bright band).
+
+> Two things still read weaker than in a real brawler. Every hit says KA-BONK!!, even a quick tap: keep KA-BONK!! for a big charged hit and BONK! for a small one, and print them as fat yellow comic letters with a dark outline that pop out where the blow lands and hang there for most of a second, instead of thin pale text drifting up. And the red reach ring is a thin line that is hard to see across the pitch: make it a thick, bright band.
