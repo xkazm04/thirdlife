@@ -1,0 +1,10 @@
+{
+  "schema": "tl.rink.rules/1",
+  "title": "Arsenal meteor, S4-core arm B (no C++): every back steps onto every shot's path (thirdjam's block_shots read at any distance)",
+  "notes": "Opens the thirdlife core with no switch set (thirdjam's game); only the bots' tune keys move.",
+  "levels": {
+    "rookie": "opp.block_min_dist_m=0;mate.block_shots=1;mate.block_min_dist_m=0",
+    "pro": "opp.block_min_dist_m=0;mate.block_shots=1;mate.block_min_dist_m=0",
+    "all_star": "opp.block_min_dist_m=0;mate.block_shots=1;mate.block_min_dist_m=0"
+  }
+}

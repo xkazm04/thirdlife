@@ -1,0 +1,497 @@
+{
+  "schema": "tj.cartridge/1",
+  "id": "harbour-playmakers",
+  "title": "Harbour Playmakers",
+  "seed": 1,
+  "theme": {
+    "name": "Night Rink",
+    "mood_words": [
+      "night",
+      "crisp",
+      "bright"
+    ],
+    "palette": [
+      {
+        "name": "ice",
+        "hex": "#DCE9F5"
+      },
+      {
+        "name": "blue",
+        "hex": "#1D4ED8"
+      },
+      {
+        "name": "orange",
+        "hex": "#E8651A"
+      },
+      {
+        "name": "trim",
+        "hex": "#38BDF8"
+      },
+      {
+        "name": "dark",
+        "hex": "#0B1220"
+      }
+    ]
+  },
+  "tunables": [
+    {
+      "key": "skater_speed",
+      "type": "number",
+      "min": 3,
+      "max": 16,
+      "default": 11,
+      "description": "Top skating speed in metres per second. Higher is faster and harder to control."
+    },
+    {
+      "key": "skater_turn_rate",
+      "type": "number",
+      "min": 1,
+      "max": 12,
+      "default": 5,
+      "description": "How sharply skaters turn, in radians per second."
+    },
+    {
+      "key": "shot_speed",
+      "type": "number",
+      "min": 5,
+      "max": 40,
+      "default": 18,
+      "description": "How fast the puck leaves the stick after a shot, in metres per second."
+    },
+    {
+      "key": "puck_max_speed",
+      "type": "number",
+      "min": 10,
+      "max": 60,
+      "default": 30,
+      "description": "The fastest the puck can ever travel, in metres per second."
+    },
+    {
+      "key": "ice_friction",
+      "type": "number",
+      "min": 0,
+      "max": 0.1,
+      "default": 0.015,
+      "description": "How slippery the ice is. 0 never slows down, 0.015 is real ice."
+    },
+    {
+      "key": "board_restitution",
+      "type": "number",
+      "min": 0,
+      "max": 1,
+      "default": 0.4,
+      "description": "How bouncy the boards are. 0 is dead, 1 is a perfect bounce."
+    },
+    {
+      "key": "ai_speed_scale",
+      "type": "number",
+      "min": 0.3,
+      "max": 1.5,
+      "default": 1,
+      "description": "How fast the bots skate compared with you. 1 is equal."
+    },
+    {
+      "key": "ai_red_skill",
+      "type": "number",
+      "min": 0,
+      "max": 1,
+      "default": 1,
+      "description": "How sharp the opposing bots are. 0 is clumsy, 1 is sharp."
+    },
+    {
+      "key": "goal_pause_frames",
+      "type": "integer",
+      "min": 30,
+      "max": 600,
+      "default": 120,
+      "description": "How long the game pauses after a goal, in physics frames (60 per second)."
+    }
+  ],
+  "values": {},
+  "rules": [],
+  "entities": [],
+  "ai": [],
+  "game": {
+    "rink": {
+      "length_m": 60,
+      "width_m": 30,
+      "corner_radius_m": 3.75,
+      "board_restitution": 0.4,
+      "ice_friction": 0.015,
+      "goal_width_m": 2.8,
+      "zones": [
+        {
+          "id": "arrow-a",
+          "shape": "rect",
+          "x": -10,
+          "z": -9,
+          "w": 6,
+          "d": 3,
+          "kind": "fast_ice",
+          "strength": 0,
+          "visible": true
+        },
+        {
+          "id": "arrow-b",
+          "shape": "rect",
+          "x": 10,
+          "z": -9,
+          "w": 6,
+          "d": 3,
+          "kind": "fast_ice",
+          "strength": 0,
+          "visible": true
+        },
+        {
+          "id": "arrow-c",
+          "shape": "rect",
+          "x": -10,
+          "z": 9,
+          "w": 6,
+          "d": 3,
+          "kind": "fast_ice",
+          "strength": 0,
+          "visible": true
+        },
+        {
+          "id": "arrow-d",
+          "shape": "rect",
+          "x": 10,
+          "z": 9,
+          "w": 6,
+          "d": 3,
+          "kind": "fast_ice",
+          "strength": 0,
+          "visible": true
+        },
+        {
+          "id": "ring-west",
+          "shape": "circle",
+          "x": -10,
+          "z": 0,
+          "r": 3.5,
+          "kind": "slow_ice",
+          "strength": 0.7,
+          "visible": true
+        },
+        {
+          "id": "ring-east",
+          "shape": "circle",
+          "x": 10,
+          "z": 0,
+          "r": 3.5,
+          "kind": "slow_ice",
+          "strength": 0.7,
+          "visible": true
+        },
+        {
+          "id": "spot-north",
+          "shape": "circle",
+          "x": 0,
+          "z": -9,
+          "r": 1,
+          "kind": "boost_only",
+          "visible": true
+        },
+        {
+          "id": "spot-south",
+          "shape": "circle",
+          "x": 0,
+          "z": 9,
+          "r": 1,
+          "kind": "boost_only",
+          "visible": true
+        }
+      ]
+    },
+    "skater": {
+      "speed": 11,
+      "accel": 12,
+      "turn_rate": 5,
+      "lateral_grip": 3,
+      "mass": 80,
+      "glide_drag": 0.147,
+      "brake_decel": 6,
+      "check_enabled": true,
+      "pass_lead_frames": 20,
+      "goalie": {
+        "reach_m": 1.4,
+        "block_height_m": 0.9
+      },
+      "check_speed_min": 1.5
+    },
+    "stick": {
+      "reception_m": 3
+    },
+    "puck": {
+      "radius_m": 0.12,
+      "max_speed": 30,
+      "drag": 0.5,
+      "colour_hex": "#111111"
+    },
+    "shot": {
+      "reach_m": 1.5,
+      "speed": 18,
+      "cooldown_frames": 24,
+      "charge_frames_max": 45,
+      "charge_speed_bonus": 10,
+      "aim_cone_deg": 8,
+      "one_timer": {
+        "window_frames": 20
+      }
+    },
+    "contact": {
+      "bot_check_windup_frames": 12,
+      "spin_stability": 0.6,
+      "check_reach_m": 2
+    },
+    "rules": {
+      "mode": "timer",
+      "goal_pause_frames": 120,
+      "offside": false,
+      "penalties": false,
+      "hooks": [
+        {
+          "id": "tide-turns",
+          "when": "on_goal",
+          "team": "conceding",
+          "then": [
+            {
+              "do": "apply_modifier",
+              "kind": "second-wind",
+              "frames": 480
+            },
+            {
+              "do": "announce",
+              "text": "TIDE TURNS"
+            }
+          ]
+        }
+      ],
+      "timer_frames": 10800
+    },
+    "teams": [
+      {
+        "id": "blue",
+        "colour_hex": "#1FB5A8",
+        "skaters": [
+          {
+            "role": "player",
+            "spawn": [
+              -1.5,
+              0
+            ]
+          },
+          {
+            "role": "support",
+            "spawn": [
+              -4,
+              -8
+            ]
+          },
+          {
+            "role": "back",
+            "spawn": [
+              -18,
+              0
+            ]
+          }
+        ]
+      },
+      {
+        "id": "orange",
+        "colour_hex": "#E8622C",
+        "skaters": [
+          {
+            "role": "chaser",
+            "spawn": [
+              1.5,
+              0
+            ]
+          },
+          {
+            "role": "support",
+            "spawn": [
+              6,
+              -8
+            ]
+          },
+          {
+            "role": "back",
+            "spawn": [
+              18,
+              0
+            ]
+          }
+        ]
+      }
+    ],
+    "ai": {
+      "difficulty": "pro",
+      "yield_margin_m": 0,
+      "body_check": 1
+    },
+    "pickups": [
+      {
+        "kind": "speed",
+        "zone": "spot-north",
+        "magnitude": 1.1,
+        "duration_frames": 60,
+        "spawn_every_frames": 180,
+        "max_on_ice": 1
+      },
+      {
+        "kind": "precision",
+        "zone": "spot-south",
+        "magnitude": 1.5,
+        "duration_frames": 120,
+        "spawn_every_frames": 180,
+        "max_on_ice": 1
+      }
+    ],
+    "abilities": [
+      {
+        "kind": "shotgun",
+        "trigger": "mode",
+        "magnitude": 2,
+        "cooldown_frames": 720
+      }
+    ],
+    "effects": [
+      {
+        "id": "arrow-a",
+        "trigger": "zone_enter",
+        "zone": "arrow-a",
+        "target": "self",
+        "duration_frames": 75,
+        "stack": "refresh",
+        "stats": [
+          {
+            "stat": "skater_speed",
+            "multiply": 1.35
+          },
+          {
+            "stat": "skater_accel",
+            "multiply": 2
+          }
+        ]
+      },
+      {
+        "id": "arrow-b",
+        "trigger": "zone_enter",
+        "zone": "arrow-b",
+        "target": "self",
+        "duration_frames": 75,
+        "stack": "refresh",
+        "stats": [
+          {
+            "stat": "skater_speed",
+            "multiply": 1.35
+          },
+          {
+            "stat": "skater_accel",
+            "multiply": 2
+          }
+        ]
+      },
+      {
+        "id": "arrow-c",
+        "trigger": "zone_enter",
+        "zone": "arrow-c",
+        "target": "self",
+        "duration_frames": 75,
+        "stack": "refresh",
+        "stats": [
+          {
+            "stat": "skater_speed",
+            "multiply": 1.35
+          },
+          {
+            "stat": "skater_accel",
+            "multiply": 2
+          }
+        ]
+      },
+      {
+        "id": "arrow-d",
+        "trigger": "zone_enter",
+        "zone": "arrow-d",
+        "target": "self",
+        "duration_frames": 75,
+        "stack": "refresh",
+        "stats": [
+          {
+            "stat": "skater_speed",
+            "multiply": 1.35
+          },
+          {
+            "stat": "skater_accel",
+            "multiply": 2
+          }
+        ]
+      },
+      {
+        "id": "second-wind",
+        "trigger": "director",
+        "target": "own_team",
+        "duration_frames": 480,
+        "stats": [
+          {
+            "stat": "skater_speed",
+            "multiply": 1.12
+          }
+        ]
+      },
+      {
+        "id": "meteor-heat",
+        "kind": "custom",
+        "trigger": "zone_enter",
+        "zone": "ring-west",
+        "target": "self",
+        "duration_frames": 600,
+        "stack": "refresh",
+        "icon": "flame",
+        "stats": [
+          {
+            "stat": "shot_speed",
+            "multiply": 2
+          }
+        ]
+      },
+      {
+        "id": "meteor-heat-check",
+        "kind": "custom",
+        "trigger": "check_landed",
+        "target": "self",
+        "duration_frames": 600,
+        "stack": "refresh",
+        "icon": "flame",
+        "stats": [
+          {
+            "stat": "shot_speed",
+            "multiply": 2
+          }
+        ]
+      }
+    ],
+    "barks": {
+      "enabled": true,
+      "intensity": "normal"
+    },
+    "look": {
+      "tier": "l2_night",
+      "trim_colour_hex": "#FFA23A",
+      "fog_density": 0,
+      "wet_ice": false
+    },
+    "camera": {
+      "mode": "third_person",
+      "distance_m": 7,
+      "height_m": 4,
+      "look_ahead_m": 5,
+      "lag_frames": 4,
+      "fov_deg": 70,
+      "radar": true
+    }
+  }
+}

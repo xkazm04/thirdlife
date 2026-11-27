@@ -1,0 +1,4 @@
+extends "bot_s4_ladder.gd"
+
+func _init() -> void:
+	ladder("rookie", "sharp")

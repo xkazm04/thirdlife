@@ -1,0 +1,16 @@
+extends "bot_meteor.gd"
+## Lane S4-core (27 Nov, spike): bot_meteor.gd's scripted hand for one minute, and the bots' side of the meteor counted by
+## scripts/s4_bots.gd: bot meteors lit and fired by team ([the hand's mates, his rivals]), what they scored and felled, bot
+## dives and the shots they stopped. The same test in both arms: arm A's bots are the core's (patch 0005), arm B's the pack's fake.
+
+
+func _bot_result() -> Dictionary:
+	var r: Dictionary = super._bot_result()
+	var s4: Dictionary = ctx.root.get_meta(&"s4", {})
+	var core: Dictionary = ctx.cores.state().get("rink", {})
+	if not r.has("metrics"):
+		r["metrics"] = {}
+	r["metrics"]["s4"] = s4
+	r["metrics"]["core"] = core
+	r["summary"] = "s4 %s | core %s | %s" % [JSON.stringify(s4), JSON.stringify(core), String(r.get("summary", ""))]
+	return r
