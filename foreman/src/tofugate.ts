@@ -80,7 +80,9 @@ export function onlyOutOfFrames(vr: Pick<VerifyResult, "ok" | "verb" | "report">
 }
 
 /** The person's note when their change made the bot's matches outrun its frames (first line for Create). */
-export function longerNote(test: string, had: number, used: number | undefined, given: number): string {
+export function longerNote(test: string, had: number, used: number | undefined, given: number, short = false): string {
+  if (short) return `${BALANCE_MOVED}: built as you asked; matches now run longer (the Foreman's test fit fewer matches than it plays into its ${had} frames). Say "make matches shorter" to tune it.
+figures (${test}): done in ${had} frames with too few matches for its own check; passed when run again with ${given} frames (${used ?? "?"} used; not judged in this change)`;
   const times = used !== undefined ? Math.round((used / had) * 10) / 10 : undefined;
   return `${BALANCE_MOVED}: built as you asked; matches now run longer${times !== undefined ? ` (the Foreman's test needed about ${times} times the frames it planned)` : ""}. Say "make matches shorter" to tune it.\nfigures (${test}): not done within ${had} frames; done in ${used ?? "?"} of ${given} when run again with more (not judged in this change)`;
 }
@@ -91,7 +93,8 @@ export function longerNote(test: string, had: number, used: number | undefined, 
  */
 export async function longerMatch(h: Pick<GateHost, "events" | "append" | "s">, a: Pick<Acceptance, "verb" | "args">, vr: VerifyResult, where: { package?: string; round: number; after?: string }, rerun: (args: string[]) => Promise<VerifyResult>): Promise<VerifyResult | undefined> {
   const asked = askedChange(h.events);
-  if (asked === undefined || asked.kind !== "play" || !onlyOutOfFrames(vr)) return undefined;
+  const short = tofuTooShort(h.s.plan, a, vr); // D27 (b): the tofu bot completed but its own ok wanted more matches
+  if (asked === undefined || asked.kind !== "play" || !(onlyOutOfFrames(vr) || short)) return undefined;
   const set = a.args.find((x) => x.startsWith("--frames="));
   const had = set !== undefined ? Number(set.slice("--frames=".length)) : DEFAULT_BOT_FRAMES;
   if (!(had > 0 && had < LONGER_MAX_FRAMES)) return undefined;
@@ -101,7 +104,23 @@ export async function longerMatch(h: Pick<GateHost, "events" | "append" | "s">, 
   if (!again.ok) return onlyOutOfFrames(again) ? { ...again, summary: `${again.summary}. It was not done with ${given} frames either (three times the ${had} it plans): a match that does not end` } : again;
   const used = (again.report as { bot?: { frames?: unknown } } | undefined)?.bot?.frames;
   const owner = where.package ?? where.after ?? h.s.plan.find((p) => (p.registers?.tests ?? []).includes(test))?.id ?? h.s.plan[0]?.id;
-  const said = (h.events ?? []).some((e) => e.type === "note" && e.seq > asked.seq && e.text.startsWith(BALANCE_MOVED) && e.text.includes(`figures (${test}): not done within`));
-  if (owner !== undefined && !said) h.append({ type: "note", package: owner, round: where.package !== undefined ? where.round : h.s.packages[owner]?.round ?? where.round, text: longerNote(test, had, typeof used === "number" ? used : undefined, given) });
+  const said = (h.events ?? []).some((e) => e.type === "note" && e.seq > asked.seq && e.text.startsWith(BALANCE_MOVED) && e.text.includes("matches now run longer") && e.text.includes(`figures (${test}):`));
+  if (owner !== undefined && !said) h.append({ type: "note", package: owner, round: where.package !== undefined ? where.round : h.s.packages[owner]?.round ?? where.round, text: longerNote(test, had, typeof used === "number" ? used : undefined, given, short) });
   return { ...again, summary: `${again.summary} (run again with ${given} frames: the person's change made its matches longer)` };
+}
+
+/**
+ * D27 round 4 (b) (J2nd's kart copy, events 1503-1514: core r31 wired the item shells; the merge gate's pack test of the
+ * plan's tofu bot completed at its budget and failed on the bot's own ok, "2 matches", wanting 3 in 36,000 frames, because
+ * shells and golden goals made matches longer; longerMatch did not rerun it, since the run had completed): the plan's
+ * tofu bot that completed, with no script or engine error, and failed only on its own ok, is a run too short for the
+ * person's longer matches. In a person's play change it gets the same one rerun with three times the frames.
+ */
+export function tofuTooShort(plan: Parameters<typeof tofuOf>[0], a: Pick<Acceptance, "verb" | "args">, vr: Pick<VerifyResult, "ok" | "verb" | "report">): boolean {
+  const t = tofuOf(plan);
+  if (vr.ok || vr.verb !== "bot" || t === undefined || !a.args.includes(`--test=${t.test}`)) return false;
+  const r = vr.report as { checks?: { id: string; ok: boolean }[]; bot?: { done?: unknown }; errors?: { kind?: string }[] } | undefined;
+  if (r?.bot?.done !== true) return false;
+  const failed = (r.checks ?? []).filter((c) => !c.ok).map((c) => c.id);
+  return failed.length === 1 && failed[0] === "bot.ok" && !(r.errors ?? []).some((e) => e.kind !== undefined && e.kind !== "bot");
 }

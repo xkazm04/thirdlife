@@ -586,3 +586,124 @@ ROUND 4 (queued, from the Director's messages)
 - 21: a builder that edits its own acceptance test to pass is listed on the card ("a test was changed to pass: <why>"),
   with no freeze.
 - 16: done in round 3 (fold).
+
+==========================================================================================================================
+ROUND 4: (b), items 17-22, 14:15-17:00
+Tree d25-hard-a: my files equal main 4050c51f, plus this round. Not committed: the Director lands it.
+
+22 (sent first as "landable T-editor 22"). "stand off balance" read as a fairness ask: no code change on main.
+- S1's tree d25-court is at 311f348e (branch d27-sp-bots). It does not contain bd7c07a5 (item 10), so its foreman
+  still has FAIR_WORDS `balanc\w*`.
+- Main's changeKind reads S1's exact sentence ("... After a shove you stand off balance for a moment ...") as play.
+- Test D27 R4 22 locks it, with S1's sentence as a fixture:
+  - "off balance", "loses his balance", "lost his balance", "balance beam" and "keep his balance" are play;
+  - "Balance the teams", "more balanced" and "Rebalance it" are fair.
+  - It passes on main's code; S1's old pattern reads the sentence as fair, which is what refused the shove.
+- For S1: fast-forward d25-court to main, rebuild foreman, re-run.
+
+(b) J2nd's kart tofu run: BUILT and unit-tested; not run live.
+- tofugate.ts tofuTooShort. In a person's play change, the plan's tofu bot can complete with no script or engine error
+  and fail only on its own ok. That is a run too short for longer matches. longerMatch now gives it the same single
+  rerun with 3x frames (at most 108,000).
+- When the rerun passes, the person gets "matches now run longer (the Foreman's test fit fewer matches than it plays
+  into its 36000 frames)".
+- Test D27 R4b, on J2nd's real core-r31 pack-test report (event 1513):
+  - tofuTooShort is true and onlyOutOfFrames false (why T2's rerun missed it);
+  - the rerun asks --frames=108000 and the note is written;
+  - a run with a script error, or another test, is not rerun.
+- Live: NOT RUN. J2nd's job is live in another lane and its core r31 files are gone (r32 merged since). A rolled-back
+  copy would have to resend J2nd's sentence 1444, which took core r27-r31 to reach this point.
+
+17. A hand-off reached the wrong owner: MET, live.
+- halfmade.ts:
+  - a NOT DONE whose files are all the base's (no builder changes the base) goes back once to its own builder, to
+    make in its own files (OWN_FILES);
+  - a line that names no file never joins another package's line;
+  - a handed-on round that cannot make a line in its own files sends it back once to the package that handed it on.
+- Tests:
+  - D27 R4 17-18 on JB's real harbour r16 note;
+  - D27 R4 17b on this round's live harbour r16 note (event 1080);
+  - D27 R4 17c on JB's real cartridge r13 note (events 1097-1105).
+- Live, on a fresh copy of JB's Arsenal job (v0.1.23), JB's sentence 1073 sent once:
+  - harbour r16 handed "F lights only a second after the drop" to the cartridge (event 1097);
+  - the cartridge had no key, merged 0 files (event 1113), and sent it back to harbour (events 1114-1115);
+  - harbour r17 built it as an input filter in its own scripts/main.gd (event 1129: "made as an input filter in
+    main.gd because no cartridge key exists for it");
+  - v0.1.24 PROMOTED 28.3 min after the sentence (3.32M in).
+  - JB needed a second sentence for this and got it in v0.1.25.
+- Measured: the night's tests/bot_meteor_blind.gd on the promoted v0.1.24, seeds 1-3, 3600 frames, 0 script errors.
+  - The first meteor comes at frames 397 / 333 / 706. v0.1.23 fired at frame 92, straight off the opening drop.
+  - JB's v0.1.25 measured 333 / 706 / 397: the same moments, here from ONE sentence.
+- Two stops on my own runs, said plainly:
+  - run 1 (kept in .tl/d27/runs/r4-ars-run1) loaded the code from before the no-file fix and sent harbour's net/glass
+    line to the skin (event 1097). I stopped it at skin r3 (its claude.exe was already gone) and resent on a fresh copy.
+  - Run 2 met a NEW MOVE parse bug ("NEW MOVE: the meteor (`shotgun`) was added by the cartridge's round, not by mine"
+    gave the moves "the" and "not"). The fix: an id is one word. I stopped it at cartridge r13 queued, before any
+    builder ran, and resumed on the fixed code.
+
+18. An ownerless NOT DONE was a silent note: MET.
+- A no-file line about the base, the arena, the kit, "outside my scope" or "no file" goes back to its own builder once,
+  unless only the core could do it ("inside the core", "core patch", "C++", "bots never hold").
+- Otherwise it stays the person's note, and Create now shows each such note as "Not made: ...".
+  - New: create_notes.gd not_made_note. create_model.gd change_note puts kept, then not made, then balance.
+  - The create.iterate.model case "kept" was extended with one, on purpose.
+- Live: the bots' meteor and dive line ("cannot be made, by me or any other package. The core's bots never hold an
+  ability") stays the person's note (event 1145). On the d27 Arsenal run the net/glass line was not raised in that run.
+
+19. The rivals' copy dropped a sentence: MET, live.
+- rivals.ts: a sentence ends only at . ! ? before a space or the end ("BRACED!: a rival ..." no longer splits).
+- Test D27 R4 19 on JB's real events 866/869.
+- Live, fresh copy of JB's shield job (v0.1.8), sentence 866: event 869 now carries "... before he lands. Braces are so
+  rare I never see BRACED!: a rival who sees a charge coming at him should turn his raised shield to it most of the
+  time, and the rest step aside."
+
+20. Honest merge counts: MET, live.
+- foreman.ts mergeSet: a package that merged before lists only the files that differ from pack/, even none. A first
+  merge redone after a kill still lists its files.
+- Test D27 R4 20 (paddle fixture, a round that writes nothing): it fails on the old line (lists data/ai.json) and passes
+  now ([]).
+- Live: "merge cartridge 0 files" (Arsenal event 1113) for a round that changed nothing. JB's log said "merge crew 7
+  files" in the same spot.
+
+21. "A test was changed" on the card: MET, live.
+- fastchange.ts testsChanged:
+  - every file under tests/ the change merged gets its own what-changed line, with its builder's newest words about
+    it;
+  - it reads "a test was changed to pass: ..." when the words say a check failed or passed because of it (passed,
+    failed, fixed it, less/more often ...).
+- Test D27 R4 21 on JB's real crew r6 events.
+- H1f 5's expectation moved on purpose: G2's card now ends with "a test was changed: tests/bot_player.gd (core)".
+- Live, shield copy v0.1.9 card: "a test was changed: tests/bot_crew.gd (crew): `tests/bot_crew.gd`:
+  `metrics.moves.rush` and `metrics.moves.slam` now carry `last_f`, the frame of the last use."
+  - The same card lists the builders' three RULE: lines as unasked rules.
+  - v0.1.9 was promoted 28.8 min after the sentence, 2.31M in: core r18 and crew r8, no duplicate round. JB's run had
+    crew r7 and r9 re-doing the same work.
+
+GATES ON d25-hard-a (round 4, final source)
+- foreman npm test: 489 tests, 482 pass, 0 fail, 7 skipped (main after round 3: 481/474/0/7; +8 tests).
+- node devx/bin/tl.mjs check --tier fast: PASS 5/5 (arch 12/12, assets 4/4, cards 3/3, devx.test 230/230,
+  foreman.typecheck).
+- selftest create.: 29 passed, 0 failed.
+- Full tier: NOT RUN (no kernel, kits, rigs, style or seeds changed).
+
+CHANGED FILES (round 4)
+- foreman/src:
+  - tofugate.ts (tofuTooShort, the short-run note);
+  - halfmade.ts (OWN_FILES, base-only, no-file lines, back to sender);
+  - landcheck.ts (an id is one word);
+  - rivals.ts (sentence split);
+  - foreman.ts (mergeSet; 2005 lines, the ratchet);
+  - fastchange.ts (testsChanged, TEST_CHANGED).
+- Tests: d27_editor.test.ts (+8 tests: R4b, 17-18, 17b, 17c, 19, 20, 21, 22); h1f_hardening.test.ts
+  (one expectation, named above).
+- Fixtures under foreman/fixtures/d27/:
+  - j2nd-core-r31-tofu.json, jb-arsenal-harbour-r16.json, jb-arsenal-cartridge-r13.json, d27r4-ars-harbour-r16-note.json;
+  - jb-shield-866.json, jb-shield-crew-r6.json, s1-shove-sentence.txt.
+- engine/ui/create: create_notes.gd (not_made_note), create_model.gd (change_note), create_iterate_checks.gd (the
+  "kept" case).
+
+FOR THE OWNER (menu rows, if wanted)
+- .tl/d27/jobs5/three-against-three-hockey-20261125-1/promoted/game.three_against_three_hockey@0.1.24: "Arsenal hockey:
+  meteor look, faceoff lock, one sentence (editor d27)".
+- .tl/d27/jobs4/shield-wall-3-v-20261125-1-jb/promoted/game.shield_wall_3_v@0.1.9: "Shield wall: charges and braces,
+  one sentence (editor d27)".

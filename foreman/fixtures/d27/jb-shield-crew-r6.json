@@ -1,0 +1,137 @@
+{
+ "source": "d25-shield .tl/jobs/shield-wall-3-v-20261125-1-jb (lane JB-back): from the v0.1.7 promotion to crew r6s merge (event 809) that changed tests/bot_crew.gd",
+ "events": [
+  {
+   "v": 1,
+   "seq": 749,
+   "ts": "2026-11-27T05:17:39.773Z",
+   "job": "shield-wall-3-v-20261125-1",
+   "type": "promoted",
+   "packId": "game.shield_wall_3_v",
+   "version": "0.1.7",
+   "dest": "promoted/game.shield_wall_3_v@0.1.7"
+  },
+  {
+   "v": 1,
+   "seq": 751,
+   "ts": "2026-11-27T10:32:08.322Z",
+   "job": "shield-wall-3-v-20261125-1",
+   "type": "change_requested",
+   "text": "Make the charge and slam hit like Gang Beasts. A charger crouches behind his shield with a dust kick, and a lane of red rings lies ahead of the run. Everyone the charge hits flies up and back off the line with a full spin, BOWLED! over him, a crack, sparks and dust, and gets up slowly; the charge runs on to the next man. A raised shield facing it stops it dead with a big clang, gold sparks and BRACED!, and the charger bounces back wide open. The slam is a real leap, higher than a man for near a second, weapon cocked, the camera rising too; the red ring throbs as I fall, and the landing shows SLAM!, a dust ring and a shock wave throwing everyone in it out, a big shake. All bots charge and slam often, brace or sidestep a charge, and run out of the ring. Show F and C READY or counting down."
+  },
+  {
+   "v": 1,
+   "seq": 754,
+   "ts": "2026-11-27T10:32:13.214Z",
+   "job": "shield-wall-3-v-20261125-1",
+   "type": "change_requested",
+   "package": "crew",
+   "text": "[foreman] the rivals' part of change request 751, for the bots your files drive (scripts/crew/mind.gd): \"All bots charge and slam often, brace or sidestep a charge, and run out of the ring.\". \"core\" builds the rest of the change (the moves and rules it names) in the same change, and your package runs after its merge: make the bots you drive do what these words say with what it merged. The whole change, for what the words refer to: \"Make the charge and slam hit like Gang Beasts. A charger crouches behind his shield with a dust kick, and a lane of red rings lies ahead of the run. Everyone the charge hits flies up and back off the line with a full spin, BOWLED! over him, a crack, sparks and dust, and gets up slowly; the charge runs on to the next man. A raised shield facing it stops it dead with a big clang, gold sparks and BRACED!, and the charger bounces back wide open. The slam is a real leap, higher than a man for near a second, weapon cocked, the camera rising too; the red ring throbs as I fall, and the landing shows SLAM!, a dust ring and a shock wave throwing everyone in it out, a big shake. All bots charge and slam often, brace or sidestep a charge, and run out of the ring. Show F and C READY or counting down.\""
+  },
+  {
+   "v": 1,
+   "seq": 755,
+   "ts": "2026-11-27T10:32:13.219Z",
+   "job": "shield-wall-3-v-20261125-1",
+   "type": "reopened",
+   "package": "core",
+   "reason": "change request (event 751); the Planner names the package: The charge and slam moves, their hit reactions, brace outcome, camera rise, bot behaviour and READY/cooldown display all live in core's moves.json, contacts.json, fighter.gd, contact.gd, camera.gd, br\n... (58 more characters cut); the words \"All bots charge and slam often, brace or sidestep a charge, and run out of the ring.\" tell the rivals what to do, and \"crew\" drives bots too (scripts/crew/mind.gd), so they go to it as well: Make the charge and slam hit like Gang Beasts. A charger crouches behind his shield with a dust kick, and a \n... (222 more characters cut)"
+  },
+  {
+   "v": 1,
+   "seq": 757,
+   "ts": "2026-11-27T10:32:13.230Z",
+   "job": "shield-wall-3-v-20261125-1",
+   "type": "reopened",
+   "package": "crew",
+   "reason": "change request (event 754); the request names the package: [foreman] the rivals' part of change request 751, for the bots your files drive (scripts/crew/mind.gd): \"All bots charge and slam often, brace or sidestep a charge, and run out of the ring.\". \"core\" builds the rest of the change (the moves and rules it names) in the same change, and your package run\n... (935 more characters cut)"
+  },
+  {
+   "v": 1,
+   "seq": 761,
+   "ts": "2026-11-27T10:35:37.896Z",
+   "job": "shield-wall-3-v-20261125-1",
+   "type": "note",
+   "package": "core",
+   "round": 17,
+   "text": "- `data/moves.json` `rush.wind` changed from 18 to 22: the crouch is longer, so it reads as a tell of at least 20 frames (tofu `tell_min_f` went from 18 to 21).\n- `data/ai.json` `big.rush_p` changed from 0.3 to 0.45 and `big.slam_p` from 0.6 to 0.8, so rivals charge and slam more often (\"All bots charge and slam often\"). The crew's rates in `data/crew.json` are another package's and are unchanged.\n- New `data/tuning.json` block `big_fx` holds every new number: impact word time, size and colours; flight 40 frames, 1.1 m high, 1 full turn; leap 2.2 m; camera lift 0.5 times the leap; ring throb; lane of 5 rings 1.1 m apart; crack, clang and spark sizes; charge-hit shake 0.14.\n- The leap and the bowled flight-and-spin are drawing only: they lift and turn the rig node and never move the physics body. Contact logic (who the slam hits, the bowled-over knockdown, the braced bounce) is unchanged.\n- `show.leap_y(f)` is a new public function on show.gd, which camera.gd reads to lift the play lens during the captain's slam.\n- A charge or slam contact of type `knockdown` or `blocked_heavy` now uses its own sounds, sparks and words in `show.contact` instead of the generic contact effects.\n- No new moves this round: the charge (`rush`) and slam were already in the game.\n- NOT DONE: making the crew mates charge and slam more often needs `data/crew.json`, which is outside my scope: raise `big.rush_p` from 0.3 to 0.45 and `big.slam_p` from 0.35 to 0.5."
+  },
+  {
+   "v": 1,
+   "seq": 771,
+   "ts": "2026-11-27T10:40:48.081Z",
+   "job": "shield-wall-3-v-20261125-1",
+   "type": "merge",
+   "package": "core",
+   "files": [
+    "data/ai.json",
+    "data/moves.json",
+    "data/tuning.json",
+    "scripts/camera.gd",
+    "scripts/show.gd"
+   ]
+  },
+  {
+   "v": 1,
+   "seq": 772,
+   "ts": "2026-11-27T10:40:48.087Z",
+   "job": "shield-wall-3-v-20261125-1",
+   "type": "note",
+   "package": "core",
+   "round": 17,
+   "text": "[foreman] part of your change was NOT made by core; it goes on to crew, whose files core names: NOT DONE: making the crew mates charge and slam more often needs `data/crew.json`, which is outside my scope: raise `big.rush_p` from 0.3 to 0.45 and `big.slam_p` from 0.35 to 0.5."
+  },
+  {
+   "v": 1,
+   "seq": 773,
+   "ts": "2026-11-27T10:40:48.092Z",
+   "job": "shield-wall-3-v-20261125-1",
+   "type": "change_requested",
+   "package": "crew",
+   "text": "[foreman] the rest of your change, which core did not make (\"NOT DONE: making the crew mates charge and slam more often needs `data/crew.json`, which is outside my scope: raise `big.rush_p` from 0.3 to 0.45 and `big.slam_p` from 0.35 to 0.5.\"): \"Make the charge and slam hit like Gang Beasts. A charger crouches behind his shield with a dust kick, and a lane of red rings lies ahead of the run. Everyone the charge hits flies up and back off the line with a full spin, BOWLED! over him, a crack, sparks and dust, and gets up slowly; the charge runs on to the next man. A raised shield facing it stops it dead with a big clang, gold sparks and BRACED!, and the charger bounces back wide open. The slam is a real leap, higher than a man for near a second, weapon cocked, the camera rising too; the red ring throbs as I fall, and the landing shows SLAM!, a dust ring and a shock wave throwing everyone in it out, a big shake. All bots charge and slam often, brace or sidestep a charge, and run out of the ring. Show F and C READY or counting down.\""
+  },
+  {
+   "v": 1,
+   "seq": 779,
+   "ts": "2026-11-27T10:43:33.914Z",
+   "job": "shield-wall-3-v-20261125-1",
+   "type": "note",
+   "package": "crew",
+   "round": 5,
+   "text": "- `data/crew.json` `ai.big`: `rush_p` 0.3 → 0.45, `slam_p` 0.35 → 0.5, `rush_from` 2.6 → 2.2 m (bots fighting a step or two apart now find room to charge), `crowd` 2 → 1 (one foe close enough now draws a slam, not only two or more). New key `sidestep_p` 0.35.\n- RULE: when a bot sees a charge aimed at it (3 frames into the crouch, within 25° of its line), it raises its shield with chance defend + 0.3 as before. If it does not brace and is free to move, it now dodges sideways off the charge line with chance 0.35. The player sees bots stop a visible charge most of the time, either BRACED! or by stepping aside.\n- I added no new moves; the charge and slam are core's. `tests/bot_crew.gd` does not report `metrics.moves` for `rush` or `slam`, so this run does not prove that the bots' charges and slams land.\n- I did not run invariants this round because of the time limit. All new random choices use `ctx.rng`."
+  },
+  {
+   "v": 1,
+   "seq": 798,
+   "ts": "2026-11-27T10:51:27.616Z",
+   "job": "shield-wall-3-v-20261125-1",
+   "type": "note",
+   "package": "crew",
+   "round": 6,
+   "text": "NEW MOVE: rush\nNEW MOVE: slam\n- `tests/bot_crew.gd`: the captain now uses the charge and the slam in normal fighting (not in the lesson or the light-mashing round), which changes this bot's play compared with earlier rounds.\n- \"Started\" counts the wind-ups of all six fighters, not only the captain's."
+  },
+  {
+   "v": 1,
+   "seq": 805,
+   "ts": "2026-11-27T10:55:36.567Z",
+   "job": "shield-wall-3-v-20261125-1",
+   "type": "note",
+   "package": "crew",
+   "round": 6,
+   "text": "[foreman] new move lands in the Foreman's bot run: rush landed 2 of 4, slam landed 18 of 30 (tests/bot_crew.gd, tests/bot_player.gd)"
+  },
+  {
+   "v": 1,
+   "seq": 809,
+   "ts": "2026-11-27T10:56:38.365Z",
+   "job": "shield-wall-3-v-20261125-1",
+   "type": "merge",
+   "package": "crew",
+   "files": [
+    "data/crew.json",
+    "scripts/crew/mind.gd",
+    "tests/bot_crew.gd"
+   ]
+  }
+ ]
+}

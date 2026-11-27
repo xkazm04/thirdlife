@@ -278,8 +278,13 @@ static func change_note(job: Dictionary) -> String:
 		var why: String = Notes.not_finished(job, int(c.get("seq", 0)))
 		return "Your last change could not be made: \u201c%s\u201d%s" % [JobModel.one_line(str(c["text"]), 60), ("\n" + why) if not why.is_empty() else ""]
 	var kept: String = Notes.measure_note(job, int(c.get("seq", 0)))
+	var lost: String = Notes.not_made_note(job, int(c.get("seq", 0)))   # D27 round 4, item 18
 	var moved: String = Notes.balance_note(job, int(c.get("seq", 0)))
-	return kept + ("\n" if not kept.is_empty() and not moved.is_empty() else "") + moved
+	var parts: PackedStringArray = []
+	for p: String in [kept, lost, moved]:
+		if not p.is_empty():
+			parts.append(p)
+	return "\n".join(parts)
 
 
 ## The packages a change round is working on when every phase has passed (no current phase): those not promoted.

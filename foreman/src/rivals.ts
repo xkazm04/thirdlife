@@ -21,7 +21,9 @@ export const MIND_FILE = /(?:^|\/)(?:brains?|minds?|ai|bots?|rivals?|opponents?|
  * ("the rivals wear gold") is not a bot's. "" when none does.
  */
 export function rivalSentences(text: string): string {
-  const sentences = (text.match(/[^.!?]+(?:[.!?]+|$)/g) ?? []).map((s) => s.trim()).filter((s) => s !== "");
+  // D27 round 4, item 19 (JB-back's shield copy, event 869: "... I never see BRACED!: a rival who sees ..." lost its start,
+  // because "!" inside a sentence ended it): a sentence ends at . ! ? followed by a space or the end, never inside a word
+  const sentences = text.split(/(?<=[.!?])\s+/).map((s) => s.trim()).filter((s) => s !== "");
   return sentences
     .filter((s) => {
       const m = RIVAL_WORDS.exec(s);
