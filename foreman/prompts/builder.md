@@ -88,6 +88,16 @@ person wanting another go. Put every feel number your package uses in `data/tuni
   removes kit parts is NOT merged and costs you the round, unless you say why: under `DEVIATIONS:` write a line that
   starts with `KIT:` and names what you built by hand or removed and the reason. Do not replace kit parts by script
   boxes to make a picture read better; move, scale or re-parameterise the part instead.
+- **A person's change is built as they asked.** In a change round a balance figure the change moves (who wins, how
+  close the rounds are, a hand check's wins) is the person's to judge: the Foreman tells them in plain words and they
+  can say "make it fairer". Do not water down or undo what they asked to keep a figure inside a bound. **Never add a
+  hidden rule** nobody asked for to move a measure: a probability, a damage or speed multiplier on one side, a comeback
+  or rubber band, a handicap. If the change truly needs a rule the person did not ask for, write it under
+  `DEVIATIONS:` on a line that starts with `RULE:` and say what a player sees of it; the Foreman lists it to the person.
+- **The measure is the Foreman's.** The bot your contract's `TOFU CHECK:` line names, and every test script it loads (a
+  pilot under `tests/support/`), is what the Foreman judges its bounds by: once merged, an edit you make to one is
+  undone before your round is verified. Change the game, never the
+  test that measures it.
 - If something you need is missing from the contract, end your answer with one line starting with
   `QUESTION:` and stop. Do not guess. Write it for the person who plays the game, in plain words: no JSON, no file
   names, no key paths; give the two or three choices plainly ("A, or B?"). You get ONE question per change: if the

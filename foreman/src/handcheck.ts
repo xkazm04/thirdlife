@@ -6,11 +6,15 @@
 // The verdict of a row comes from devx/lib/cards/hands.mjs, the same code `tl cards hands` judges with.
 // Kept out of foreman.ts (line ratchet); the Foreman calls runHandChecks after its other final checks.
 import fs from "node:fs";
+import path from "node:path";
 import { handTest, judgeHand } from "../../devx/lib/cards/hands.mjs";
 import { cardOf, type Card } from "./cards.js";
 import type { GateHost } from "./p10gate.js";
 import { readManifest } from "./promoter.js";
 import { HAND_CHECK } from "./rounds.js";
+import { BALANCE_SKIPPED, askedChange, handMovedNote } from "./boundlift.js";
+import type { JobEvent } from "./events.js";
+import { tofuOf } from "./tofu.js";
 
 export interface HandCheck {
   hand: string;
@@ -53,7 +57,7 @@ export function handsOf(card: Card | undefined): { seeds: number; checks: HandCh
  * Runs the job card's hand checks on pack/. Returns {rows, failure}: failure is "" when every check holds (or the
  * card has none), else the sentence for the job's reason. Each run is a logged `verify` (stem final-hand-<hand>-seed<k>).
  */
-export async function runHandChecks(h: Pick<GateHost, "s" | "dir" | "verifyLogged">, packDir: string): Promise<{ rows: HandRow[]; failure: string }> {
+export async function runHandChecks(h: Pick<GateHost, "s" | "dir" | "verifyLogged"> & Partial<Pick<GateHost, "events" | "append">>, packDir: string): Promise<{ rows: HandRow[]; failure: string }> {
   const card = h.s.card !== undefined ? cardOf(h.dir("ref"), h.s.card) : undefined;
   const hands = handsOf(card);
   if (!hands) return { rows: [], failure: "" };
@@ -87,6 +91,7 @@ export async function runHandChecks(h: Pick<GateHost, "s" | "dir" | "verifyLogge
   // so status, explain and the designer panel show them without re-reading every run's report.
   const summary: HandSummary = { schema: HAND_SUMMARY, card: card?.id ?? "", version: card?.version ?? "", title: card?.title ?? "", seeds: hands.seeds, rows: rows.map((r) => ({ ...r, ...boundsOf(hands.checks, r.hand) })) };
   fs.writeFileSync(h.dir("reports", `hand-checks-s${h.s.lastSeq}.json`), JSON.stringify(summary, null, 1) + "\n");
+  personAsked(h, rows, hands.checks);
   const bad = rows.filter((r) => !r.ok);
   return { rows, failure: bad.length === 0 ? "" : `hand check of ${h.s.card ?? "the card"} failed, nothing promoted: ${bad.map((r) => `${r.hand}: ${r.why}`).join("; ")}` };
 }
@@ -123,4 +128,98 @@ export function sendBackHands(h: Pick<GateHost, "s" | "events" | "reopen">, rows
     h.reopen(id, reason, detail);
   }
   return true;
+}
+
+/**
+ * N27 (night of 27 Nov, lane T): in a person's change (boundlift.ts askedChange) a hand count outside the card's bound is
+ * the balance the person moved, not a refusal: a play change keeps it as a note to the person (BALANCE_MOVED, with the
+ * count before the change), a change to the view or the screen only skips it. Never for the idle hand (a player who does
+ * nothing must not win: that is not balance), never for a run that did not finish or a result without `won`, and never
+ * for a look change or a "make it fairer" change: there the bound guards as before.
+ */
+function personAsked(h: Partial<Pick<GateHost, "events" | "append">> & Pick<GateHost, "dir" | "s">, rows: HandRow[], checks: HandCheck[]): void {
+  const asked = askedChange(h.events);
+  if (asked === undefined || (asked.kind !== "play" && asked.kind !== "view")) return;
+  const before = handsBefore(h, h.events ?? [], asked.seq);
+  for (const r of rows) {
+    const b = boundsOf(checks, r.hand);
+    const outside = (b.wins_min !== undefined && r.wins < b.wins_min) || (b.wins_max !== undefined && r.wins > b.wins_max);
+    if (r.ok || r.hand === "idle" || r.completed !== r.seeds || !outside || !r.why.includes("the card asks")) continue;
+    const bound = [b.wins_min !== undefined ? `${b.wins_min} or more` : "", b.wins_max !== undefined ? `${b.wins_max} or less` : ""].filter(Boolean).join(" and ");
+    const text = asked.kind === "play" ? handMovedNote(r.hand, r.wins, r.seeds, before.get(r.hand), bound) : `${BALANCE_SKIPPED}: a change to the view or the screen only; the card's ${r.hand} hand check ${r.wins} of ${r.seeds} (bound ${bound}), not judged`;
+    r.ok = true;
+    r.why = `${r.why}; not judged: your change ${asked.kind === "play" ? "moved it (a note tells you)" : "is to the view only"}`;
+    const owner = h.s.plan.find((p) => (p.registers?.tests ?? []).includes(r.test))?.id ?? h.s.plan[0]?.id;
+    if (owner !== undefined) h.append?.({ type: "note", package: owner, round: h.s.packages[owner]?.round ?? 1, text });
+  }
+}
+
+/** The hand counts of the newest hand-checks report written before the change (seq), by hand. */
+function handsBefore(h: Pick<GateHost, "dir">, events: readonly JobEvent[], seq: number): Map<string, { wins: number; seeds: number }> {
+  const out = new Map<string, { wins: number; seeds: number }>();
+  let dir: string[] = [];
+  try {
+    dir = fs.readdirSync(h.dir("reports"));
+  } catch {
+    return out;
+  }
+  const best = dir.map((f) => ({ f, n: Number(/^hand-checks-s(\d+)\.json$/.exec(f)?.[1] ?? NaN) })).filter((x) => Number.isFinite(x.n) && x.n < seq).sort((a, b) => b.n - a.n)[0];
+  if (best === undefined || events.length === 0) return out;
+  try {
+    const sum = JSON.parse(fs.readFileSync(h.dir("reports", best.f), "utf8")) as HandSummary;
+    for (const r of sum.rows) out.set(r.hand, { wins: r.wins, seeds: r.seeds });
+  } catch {
+    /* unreadable: no figure before */
+  }
+  return out;
+}
+
+// ---------- N27 (night of 27 Nov, lane T): the Foreman's measures are the Foreman's ----------
+// On 25 Nov builders rewrote the tofu bot's own input policy to pass its bounds (G4; G19 core r5 changed
+// tests/bot_tofu.gd; J11 tonight, tests/support/pilot.gd, which the bot loads). The plan's tofu bot and every test script
+// it loads are the measure the Foreman judges its bounds by: from their first merge into
+// pack/ on, a builder round that edits or deletes it is put back to pack/'s version before anything is verified, and the
+// job log names it (MEASURE_KEPT). Before the first merge the builder writes it, as before. The card's hand tests are not
+// frozen yet: the fake runner's fixtures (hands.test.ts 4 and 6) express "the game was fixed" by rewriting the hand test,
+// so freezing them needs the fake runner to read its wins from a game file first (named in lane T's report). A game on a
+// core has no such file in the pack: its measured check is lane E2's lab (engine/cores/rink/lab), which reads only the
+// cartridge and rules file it is handed, and no workspace holds the lab or its bands.
+
+/** The start of the Foreman's note when a builder's edit of a measure was undone. */
+export const MEASURE_KEPT = "[foreman] measure kept";
+
+/** The pack scripts the Foreman judges its bounds by: the plan's tofu bot and the test scripts it loads (as merged in pack/). */
+export function measureTests(h: Pick<GateHost, "s"> & Partial<Pick<GateHost, "dir">>): string[] {
+  const t = tofuOf(h.s.plan);
+  if (t === undefined) return [];
+  // J11 of 27 Nov (biplane r16): the tofu bot's input policy lived in tests/support/pilot.gd, which the bot loads
+  // (ctx.load_script); the builder edited it to pass. Every test script the merged bot loads is the measure too.
+  const out = [t.test];
+  for (let i = 0; i < out.length && h.dir !== undefined; i++) {
+    let text = "";
+    try {
+      text = fs.readFileSync(h.dir("pack", ...(out[i] as string).split("/")), "utf8");
+    } catch {
+      continue;
+    }
+    for (const m of text.matchAll(/\b(?:load_script|preload|load)\(\s*"(?:res:\/\/)?(tests\/[A-Za-z0-9_\/.-]+\.gd)"/g)) if (!out.includes(m[1] as string)) out.push(m[1] as string);
+  }
+  return out;
+}
+
+/** Puts back every measure the round's workspace changed (only those already in pack/); returns the files and appends the note. */
+export function keepMeasures(h: Pick<GateHost, "s" | "dir" | "append">, id: string, round: number, ws: string): string[] {
+  const kept: string[] = [];
+  for (const f of measureTests(h)) {
+    const packed = h.dir("pack", ...f.split("/"));
+    if (!fs.existsSync(packed)) continue; // not merged yet: the builder is still writing it
+    const mine = path.join(ws, ...f.split("/"));
+    const same = fs.existsSync(mine) && fs.readFileSync(mine).equals(fs.readFileSync(packed));
+    if (same) continue;
+    fs.mkdirSync(path.dirname(mine), { recursive: true });
+    fs.copyFileSync(packed, mine);
+    kept.push(f);
+  }
+  if (kept.length > 0) h.append({ type: "note", package: id, round, text: `${MEASURE_KEPT}: ${kept.join(", ")} ${kept.length === 1 ? "is a measure" : "are measures"} the Foreman judges by (merged before this round); this round's edit was undone and the round is verified with the measure as merged. Change the game, never the test that measures it.` });
+  return kept;
 }
