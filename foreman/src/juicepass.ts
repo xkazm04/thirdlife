@@ -14,6 +14,7 @@ import path from "node:path";
 import { PKG_ROOT } from "./paths.js";
 import { FOREMAN_NOTE } from "./conduct.js";
 import { changeKind } from "./boundlift.js";
+import type { JobEvent } from "./events.js";
 
 export type JuiceMode = "auto" | "choice";
 /** The arm of the spike this tree carries (the only line the two arms differ in). */
@@ -62,7 +63,7 @@ export function juicePassText(): string {
 export function juicePart(changeDetail: string | undefined, mode: JuiceMode = JUICE_MODE): string | undefined {
   if (changeDetail === undefined) return undefined;
   const text = changeDetail.replace(/^CHANGE REQUEST:\s*/, "");
-  return juiceRuns(text, mode) ? juicePassText() : undefined;
+  return juiceRuns(text, mode) || text.startsWith(`${FOREMAN_NOTE}${JUICE_MORE}`) ? juicePassText() : undefined;
 }
 
 export const JUICE_NOTE = `${FOREMAN_NOTE}juice pass`;
@@ -81,4 +82,50 @@ export function juiceNoteFor(text: string, owner: string, mode: JuiceMode = JUIC
   if (juiceRuns(text, mode)) return juiceNote(owner, mode);
   if (mode === "choice" && !text.startsWith(FOREMAN_NOTE) && addsMove(text)) return `${JUICE_OFFER}: your change adds a move and was built plain, as you asked. Pick "make it juicy" to give it a tell, an impact word, a camera kick and a slow beat.`;
   return undefined;
+}
+
+// ---- round 2 (the Director, 27 Nov): the Foreman reads the builder's JUICE: checklist line ----
+// Round 1 of the spike: the pass was not always obeyed. Robots A kept the slide's 28-frame flight and had no camera
+// follow; both shield runs skipped the launch and the slow beat ("sized BIG, not signature"; "not done"). Each builder
+// said so in its JUICE: line. Now, after the merge of a round the pass ran on, a big move whose checklist says it
+// skipped the launch, the slow beat or the camera follow goes back to the same package for ONE more round.
+
+/** The start of the Foreman's follow-up request (after FOREMAN_NOTE): the round that makes the skipped parts. */
+export const JUICE_MORE = "juice pass not finished";
+
+/** The big parts a checklist line says were skipped; [] when the move is small, or nothing big was skipped. */
+export function juiceGaps(lines: readonly string[]): string[] {
+  const check = [...lines].reverse().find((l) => /^JUICE:\s*size\b/i.test(l));
+  if (check === undefined) return [];
+  const field = (name: RegExp): string => check.split("|").map((f) => f.replace(/^JUICE:\s*/i, "").trim()).find((f) => name.test(f))?.replace(name, "").trim() ?? "";
+  if (!/\b(big|signature)\b/i.test(field(/^size\b/i))) return [];
+  const no = (v: string): boolean => /^(no|none|not done|skipped)\b/i.test(v);
+  const said = lines.filter((l) => /^JUICE:/i.test(l) && !/^JUICE:\s*size\b/i.test(l) && /\bnot done\b/i.test(l)).join(" ");
+  const gaps: string[] = [];
+  const ex = field(/^exaggeration\b/i);
+  if (no(ex) || /^small\b/i.test(ex) || /\bno (body )?launch\b|\bflight time (is )?(still|unchanged)\b|launch\w*: not done/i.test(`${ex} ${said}`)) gaps.push("the launch (a hit body at least two body heights up, 40 frames or more in the air, spinning)");
+  if (no(field(/^slow beat\b/i))) gaps.push("the slow beat on the move at its biggest");
+  if (/\bno (camera )?follow|\bfollow\w*:? (no|not done)|\bwithout (a )?follow|\bnot follow|\bcamera follow\w*[^|]*not done|\bcamera unchanged\b/i.test(`${field(/^camera\b/i)} ${said}`)) gaps.push("the camera following a launched player");
+  return gaps;
+}
+
+/** The lines of package `id`'s own notes after event `since` (the builders', not the Foreman's), without list marks. */
+function ownLines(events: readonly JobEvent[], id: string, since: number): string[] {
+  return events.flatMap((e) => (e.type === "note" && e.package === id && e.seq > since && !e.text.startsWith(FOREMAN_NOTE) ? e.text.split(/\r?\n/) : [])).map((l) => l.replace(/^\s*[-*]\s*/, "").trim()).filter(Boolean);
+}
+
+/**
+ * After the merge of a change round the pass ran on (halfmade.ts afterMerge): when the builder's JUICE: line says a big
+ * move skipped the launch, the slow beat or the camera follow, one more round for the same package, with the pass. Only
+ * once per change: the follow-up's own text is the Foreman's, so the pass does not run a third time.
+ */
+export function juiceMore(events: readonly JobEvent[], id: string, round: number, request: string, since: number, mode: JuiceMode = JUICE_MODE): Record<string, unknown>[] {
+  if (!juiceRuns(request, mode)) return [];
+  const gaps = juiceGaps(ownLines(events, id, since));
+  if (gaps.length === 0) return [];
+  const text = `${FOREMAN_NOTE}${JUICE_MORE}: ${id}'s JUICE: checklist says this big move skipped ${gaps.join("; ")}. Make ${gaps.length === 1 ? "it" : "them"} now in your own files, as the juice pass asks, with the numbers under DEVIATIONS, and keep the rules of the move as they are. The change was: "${request}"`;
+  return [
+    { type: "note", package: id, round, text: `${FOREMAN_NOTE}${JUICE_MORE}: ${id} skipped ${gaps.join("; ")}; it gets one more round for them` },
+    { type: "change_requested", package: id, text: text.length > 3000 ? `${text.slice(0, 2999)}…` : text },
+  ];
 }

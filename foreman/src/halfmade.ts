@@ -12,6 +12,7 @@ import { pathsIn, widenedNote } from "./scopegrant.js";
 import fs from "node:fs";
 import { NO_KEY, catalogRows, keyHint, type CatalogRow } from "./keyfind.js";
 import { cartridgeOwner } from "./coreowner.js";
+import { juiceMore } from "./juicepass.js";
 
 /** A builder's line that says part of the change is not made here. */
 // D27 item 2 (lane J1, event 1012): "RULE: not done. ... It needs `data/harbour.cartridge.json`, which is outside my
@@ -56,6 +57,7 @@ export function afterMerge(plan: readonly PackageSpec[], events: readonly JobEve
   // only a change round: the package's last re-opening was for a change request (the person's, or the rest of one)
   const reason = [...events].reverse().find((e) => e.type === "reopened" && e.package === id);
   if (request === undefined || request === "" || reason?.type !== "reopened" || !/change request|rest of your change/.test(reason.reason)) return out;
+  out.push(...juiceMore(events, id, round, request, reason.seq)); // S2-juice round 2: a big move whose JUICE: line skipped the launch, slow beat or camera follow gets one more round
   // D27 item 2: every round since the re-opening (a NOT DONE line of a round that failed is still not done)
   const rest = [...new Set(noteLines(builderNote(events, id, reason.seq)).filter((l) => NOT_DONE.test(l)))];
   if (rest.length === 0) return out;

@@ -10,6 +10,7 @@ robot hammer, a shield charge, a slapshot and a dunk beat the editor's on exactl
    - BIG: a move that floors, launches or steals, used a few times a minute (a charge, a slam, a hammer blow): all of
      2 to 7 below.
    - The SIGNATURE moment: the move at its biggest (a full charge, a dunk, a hit that scores or floors two): BIG plus 6.
+     Every BIG move has one, so a BIG move gets the launch, the camera follow and the slow beat too.
 
 2. A TELL THAT GROWS: the wind-up shows from its first frame and grows until the release, so a rival (bot or person)
    can read it from across the field: a glow on the weapon or body that heats in 3-4 steps, and a ring or lane on the
