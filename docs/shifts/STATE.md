@@ -522,3 +522,4 @@ on the frame and the figure and Fable on surfaces and nature, looping for 10 hou
 - ~16:20: JB-back done (13 sentences, all promoted: robots v0.1.9 on a par with the hand version by eye; Arsenal v0.1.27; shield v0.1.13 braces 2.7 vs 4.8, bowled 4.8 vs 7.0, charges 11.0 vs 10.3). Menu 63.
 - ~17:05: S1 round 2: A after fixes (A2 + T's fixes) reached 'bots use it' in ONE sentence on half-court (promoted, 72.9 min) and shield wall (27.4 min); B not re-run. Menu 65.
 - 16:44 standup: F1 stopped (branch kept, not landed); final list running on d27-m6 (merged with main); disk 18 GB.
+- 16:47: disk crisis over: C: fell to 9 GB (gtai raw AVIs ~80 GB in kiro/gtai-wt); the gtai session deleted them and now deletes each AVI once encoded: C: back to ~97 GB. %TEMP%/claude/46f132430c565ee6 (25 GB, a gravitone-gcloud session) left for the owner. The Director freed 6.8 GB of its own (job captures in finished trees, S1 base copies).
