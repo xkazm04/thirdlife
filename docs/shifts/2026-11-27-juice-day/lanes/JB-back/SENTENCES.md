@@ -79,3 +79,21 @@ screen, `bot_braced_count.gd`); the men in a charge's lane keep fighting and are
 move, and a pale pane across the view when the camera is behind my own net.
 
 > On a meteor goal the net bulges back as a solid white box, and from my camera I cannot see the glass move at all. Make it look like a real net of cords that the puck drives a metre back and that swings back after, and make the glass panes over that end bow out and wobble far enough to see from where I stand. And when the camera swings behind my own net a big pale glass pane lies across the view: the glass must never come between the camera and the ice.
+
+## Round 4
+
+### Arsenal glass wobble, on v0.1.26, sent 15:19:27
+
+325 characters. v0.1.26 hides the panes whenever I am within 12 m of that end, which is always the case when I score.
+
+> The glass wobble never shows: when I score a meteor I am always close to that end, and the glass is hidden then. After every meteor goal show the panes over that end bowing out and wobbling, however close I am, big enough to see from my camera; only hide a single pane while it actually stands between the camera and the ice.
+
+### Shield wall: bowling and braces together, on v0.1.11, sent 15:19:27
+
+495 characters. Aim: the hand's 7.0 bowled and 4.8 braced a minute (v0.1.11: 4.5 and 1.8). Built also for item 3: its
+last sentence ("The bots should charge where ...") matches the Foreman's rivals' words and a doing verb, so the rivals'
+part goes to crew; the per-man brace for Oda, Finn, Sable and Pip lives in crew's data, so core is expected to hand a
+NOT DONE to crew in the same change. ("brace" is not in the Foreman's verb list, so the brace sentence itself is not
+part of the rivals' copy.)
+
+> Now the charge bowls fewer men than before; I want both at once. A charge should throw everyone standing within a step of its line, not only the man it runs into, so a line of men goes over like pins, while a man who turns his raised shield to it in time stops it dead with BRACED!. The bots should brace by character: Bram the big one nearly always, Oda often, Sable half the time, Finn rarely and Pip the dancer almost never. The bots should charge where two or three rivals stand in the lane.

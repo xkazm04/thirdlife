@@ -666,3 +666,105 @@ letters, gold sparks, and the blue charger is thrown back onto the stones behind
   "Arsenal hockey: meteor slapshot v0.1.26 (made in Create from juice sentences)".
 - Shield wall: `C:/Users/kazda/kiro/third-life/.claude/worktrees/d25-shield/.tl/jobs/shield-wall-3-v-20261125-1-jb/promoted/game.shield_wall_3_v@0.1.11`,
   "Shield wall: charge and slam v0.1.11 (made in Create from juice sentences)".
+
+---
+
+# Round 4 (27 Nov, 15:19-15:50): the glass wobble, bowling with braces, T's queued-round join
+
+**A gate slip of mine first.** Round 3 put a copy of the counting test into this folder as `bot_braced_count.gd`. Main
+has it (landed in d6828f15). A `.gd` file under docs/ fails `tl check --tier fast`:
+- arch: `uid-orphans: docs/shifts/2026-11-27-juice-day/lanes/JB-back/bot_braced_count.gd .gd without its .gd.uid`;
+- devx.test: 228 of 230.
+
+In this tree it is now `bot_braced_count.gd.txt`, and the fast tier is green again (below). **Main needs the same
+rename.** My 15:09 gate ran before I copied the file in, so it did not catch this.
+
+## 9. Arsenal v0.1.27: the glass wobble shows even when the player is close
+### The sentence (325 characters, sent 15:19:27, event 1217; on v0.1.26)
+> The glass wobble never shows: when I score a meteor I am always close to that end, and the glass is hidden then.
+> After every meteor goal show the panes over that end bowing out and wobbling, however close I am, big enough to see
+> from my camera; only hide a single pane while it actually stands between the camera and the ice.
+
+- **harbour r19** (2.6 min, 0.87M in):
+  - the 12 m rule is gone;
+  - each pane is tested against the camera on its own (`camera_near_m` 0.6, `camera_lateral_m` 0.4), and only a pane
+    in the camera's line is hidden.
+- **v0.1.27 promoted 15:34:06**, 14.7 min from the sentence; 0.88M tokens in, 8k out.
+  - It is drawing only: the hashes of seeds 1-3 are the same as v0.1.25/26's, with 0 script errors.
+  - The promoted pack is file for file the one filmed.
+
+**Judged** on the scoring copy (seed 1 window take, the goal at about frame 508), looked at:
+- clip `clips/arsenal_v0127_meteor_goal_glass.mp4` (3.5 s);
+- stills `stills/arsenal_g7_goal_f500-620.jpg`, `stills/arsenal_g7_glass_strip.jpg` (the top of the frame at 512, 530,
+  548, 566, 584 and 602) and `stills/arsenal_ed0127_s2_f1820.jpg`.
+
+What I see:
+- **The glass wobble shows.** From the goal on, a row of framed glass panes stands over the end boards behind the net.
+  At 548 and 566 they lean one way and the other, out of step with each other.
+- **The glass is gone again by 584,** when the wobble ends: it appears for the goal and vanishes after. That is
+  harbour's rule, "visible only during the wobble". A person may find glass that appears from nowhere odd; the base
+  rink has no glass of its own there.
+- **The net** still bulges as the cord bag.
+- **Nothing pale lies across my view behind my own net:** seed 2 at frame 1820 is clear.
+
+**As a person:** all three parts of round 3's ask now show: the cords, the glass flexing, and a clear view. The one
+oddity is that the panes exist only for the second after a meteor goal.
+
+## 10. Shield wall v0.1.12: bowling and braces together, and T's queued-round join (items 2 and 3 in one sentence)
+### The sentence (495 characters, sent 15:19:27, event 1173; on v0.1.11)
+> Now the charge bowls fewer men than before; I want both at once. A charge should throw everyone standing within a step
+> of its line, not only the man it runs into, so a line of men goes over like pins, while a man who turns his raised
+> shield to it in time stops it dead with BRACED!. The bots should brace by character: Bram the big one nearly always,
+> Oda often, Sable half the time, Finn rarely and Pip the dancer almost never. The bots should charge where two or
+> three rivals stand in the lane.
+
+It was built for item 3 too:
+- its last sentence carries the Foreman's rivals' words with a doing verb ("The bots should charge"), so the rivals'
+  part goes to crew;
+- the per-man brace for Oda, Finn, Sable and Pip is crew's data, so core should hand crew a NOT DONE in the same change.
+
+### What happened
+- 15:19:35, the rivals' part: `change_requested crew` (event 1176), then **crew queued r13**, waiting for core.
+- **core r21** (3.6 min, 0.94M in; `scripts/contact.gd`, `scripts/brain.gd`, `data/ai.json`):
+  - a charge now knocks down every open man in its 1.6 m lane before a braced man can stop it;
+  - a per-man brace table `brace_by` (Bram 0.92, Oda 0.75, Sable 0.5, Finn 0.15, Pip 0.05);
+  - Bram charges only when two rivals stand in his lane;
+  - two NOT DONE lines for crew: the brace table, and the two-in-the-lane rule.
+- 15:26:29, core merged. The NOT DONE went to crew (event 1196) **while crew's r13 was still queued.** The Foreman
+  then queued crew **r14** and ran it at once. **r13 never ran.**
+- **crew r14** (2.8 min, 0.62M in) had both requests in its prompt: the rivals' part of 1173 and core's NOT DONE. Its
+  first words: "**Both parts of the change are in.**" It added `brace_by` to `data/crew.json`, `rush_lane_n` 2, and a
+  lane check at the full charge width.
+- No later crew round. **T's queued-round join works: crew ran once for the two requests**, where rounds 1-2 ran a
+  second, empty round each time (r7, r9, r11).
+- **v0.1.12 promoted 15:45:30**, 26.1 min from the sentence; 1.56M tokens in, 13k out. The promoted pack is file for
+  file the one measured.
+
+### Measured with the counting test (six seeds, 3600 frames each, 0 script errors; seed 1 `430fb6ced33256d1` twice)
+
+| a minute, seeds 1-6 | hand | v0.1.11 | **v0.1.12** |
+|---|---|---|---|
+| BRACED! | 5 / 6 / 3 / 4 / 7 / 4 (mean **4.8**) | 1 / 3 / 2 / 1 / 0 / 4 (mean 1.8) | 0 / 1 / 3 / 1 / 1 / 0 (mean **1.0**) |
+| BOWLED! | 10 / 9 / 8 / 5 / 4 / 6 (mean **7.0**) | 2 / 5 / 2 / 6 / 7 / 5 (mean 4.5) | 5 / 4 / 3 / 4 / 7 / 6 (mean **4.8**) |
+| bots' charges | 14 / 15 / 6 / 8 / 10 / 9 | 5 / 14 / 10 / 7 / 12 / 9 | 6 / 5 / 5 / 2 / 5 / 7 (mean 5.0) |
+
+Window take (seed 3; `clips/shield_v0112_vs_hand.mp4`, 640 wide; `stills/shield_ed0112_s3_overview.jpg`, looked at):
+slams, one BOWLED!, no BRACED! in its 25 s.
+
+**As a person: not met.** Bowling held (4.8 BOWLED! a minute, against 4.5), and braces fell (1.0, against 1.8). The
+"two or three rivals in the lane" rule halved the bots' charges (5 a minute, against 9.5), so there are fewer charges
+to bowl or brace. Each charge now does more, but the minute has less in it. The hand version's mix (7.0 bowled, 4.8
+braced) is not reached by four sentences. My last sentence cost charges by asking for crowds.
+
+## Round 4 in short
+| | sentence | time | tokens in | what a person meets |
+|---|---|---|---|---|
+| Arsenal v0.1.27 | 325 chars | 14.7 min | 0.88M | the glass bows and wobbles over the end boards after a meteor goal, seen from the follow camera; the cord net; nothing pale across the view; the panes exist only during the wobble |
+| Shield wall v0.1.12 | 495 chars | 26.1 min | 1.56M | crew ran once for two requests (T's join works); BRACED! 1.0 and BOWLED! 4.8 a minute (hand 4.8 / 7.0): not met, the bots charge half as often |
+
+**Pack paths and menu titles (round 4):**
+- Arsenal: `C:/Users/kazda/kiro/third-life/.claude/worktrees/d25-shield/.tl/jobs/three-against-three-hockey-20261125-1/promoted/game.three_against_three_hockey@0.1.27`,
+  "Arsenal hockey: meteor slapshot v0.1.27 (made in Create from juice sentences)".
+- Shield wall: `C:/Users/kazda/kiro/third-life/.claude/worktrees/d25-shield/.tl/jobs/shield-wall-3-v-20261125-1-jb/promoted/game.shield_wall_3_v@0.1.12`,
+  "Shield wall: charge and slam v0.1.12 (made in Create from juice sentences)". It is a step back from v0.1.11 in
+  braces and charges, so a menu row is optional; v0.1.11 remains the better shield version.

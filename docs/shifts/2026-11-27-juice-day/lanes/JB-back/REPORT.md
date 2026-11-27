@@ -243,7 +243,7 @@ NEW FILES (lane folder)
 - stills:
   - arsenal_g6_goal_f470-650, arsenal_g6_net_crops, arsenal_g6_glass_strip, arsenal_ed0126_s2_f1820;
   - shield_ed0111_braced_f528-616, shield_ed0111_s2_overview.
-- bot_braced_count.gd: a copy of the counting test, for the record; it lives on film copies only.
+- bot_braced_count.gd.txt: a copy of the counting test, for the record (renamed from .gd at 15:48: a .gd under docs/ fails the arch uid-orphans rule); it lives on film copies only.
 - PROOF-JB-back.md sections 7-8, SENTENCES.md round 3, STANDUP.md.
 
 NEXT THREE
@@ -253,3 +253,62 @@ NEXT THREE
    bot_braced_count over six seeds.
 3. A sentence built to exercise T's queued-round join (names the rivals and triggers core's NOT DONE for crew), to
    prove the duplicate gone.
+
+======================================================================================================================
+ROUND 4 (15:19-15:50)
+
+FIRST: a gate slip
+- The round-3 copy of the counting test landed on main as lanes/JB-back/bot_braced_count.gd. A .gd file under docs/
+  fails tl check --tier fast:
+  - arch uid-orphans;
+  - devx.test 228/230.
+- Renamed to bot_braced_count.gd.txt in this tree; the fast tier is PASS 5/5 again.
+- Main needs the same rename (git mv on main; Director-only).
+
+OUTCOME
+1. Arsenal: one sentence (325 chars, 15:19:27) -> v0.1.27, promoted 15:34:06 (14.7 min, 0.88M in). Met.
+   - The glass bows and wobbles over the end boards after the meteor goal, seen from the follow camera
+     (stills/arsenal_g7_glass_strip.jpg).
+   - The cord net bulges; the seed 2 frame 1820 view behind my own net stays clear.
+   - Oddity: the panes exist only during the wobble (they appear for the goal and vanish).
+2. Shield: one sentence (495 chars, 15:19:27) -> v0.1.12, promoted 15:45:30 (26.1 min, 1.56M in).
+   - Counted with bot_braced_count over 6 seeds, a minute:
+     - BRACED!: 1.0 (v0.1.11 1.8, hand 4.8);
+     - BOWLED!: 4.8 (v0.1.11 4.5, hand 7.0);
+     - bots' charges: 5.0 (v0.1.11 9.5).
+   - NOT met: the "two or three rivals in the lane" part halved the charges.
+   - v0.1.11 remains the better shield version.
+3. T's queued-round join: met, and seen.
+   - The same sentence sent the rivals' part to crew (crew queued r13). core r21 then handed crew a NOT DONE while r13
+     was still queued.
+   - The Foreman ran ONE crew round, r14, whose prompt held both requests ("Both parts of the change are in"). r13
+     never ran, and there was no empty second round (rounds 1-2 had r7, r9, r11).
+
+MENU ROWS (new)
+- C:/Users/kazda/kiro/third-life/.claude/worktrees/d25-shield/.tl/jobs/three-against-three-hockey-20261125-1/promoted/game.three_against_three_hockey@0.1.27
+  "Arsenal hockey: meteor slapshot v0.1.27 (made in Create from juice sentences)"
+- C:/Users/kazda/kiro/third-life/.claude/worktrees/d25-shield/.tl/jobs/shield-wall-3-v-20261125-1-jb/promoted/game.shield_wall_3_v@0.1.12
+  "Shield wall: charge and slam v0.1.12 (made in Create from juice sentences)". Optional: it is a step back from v0.1.11.
+
+GATES
+- tl check --tier fast at 15:48, after the rename: PASS 5/5. arch 12/12, assets 4/4, cards 3/3, devx.test 230/230,
+  foreman.typecheck clean.
+- New versions: 3600 headless frames per seed, 0 script errors, seed 1 twice with the same hash. The promoted packs
+  are file for file the ones measured.
+
+NEW FILES (lane folder)
+- clips:
+  - arsenal_v0127_meteor_goal_glass.mp4 (0.4 MB);
+  - shield_v0112_vs_hand.mp4 (640 wide, 4.6 MB).
+- stills:
+  - arsenal_g7_goal_f500-620, arsenal_g7_glass_strip, arsenal_ed0127_s2_f1820;
+  - shield_ed0112_s3_overview.
+- bot_braced_count.gd.txt (renamed).
+- PROOF sections 9-10, SENTENCES round 4, STANDUP.
+
+NEXT THREE
+1. Shield: one sentence that keeps v0.1.11's charge rate ("bots charge any man standing in the lane, as before") with
+   v0.1.12's whole-lane bowling and per-man braces; measured with the counting test.
+2. Arsenal: decide with the owner whether the glass should always stand there (wobbling after a meteor goal) or only
+   appear for it.
+3. Robots and Arsenal: a person's own play of the newest rows, as the owner would meet them in the exe.
