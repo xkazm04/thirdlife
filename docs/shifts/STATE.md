@@ -544,3 +544,4 @@ on the frame and the figure and Fable on surfaces and nature, looping for 10 hou
 - 18:43 day-27 standup: full gate 11/13 on d27-m6 (kernel cap + hockey many_budget timing; A/B next); uncapped suite running.
 - 19:10 day-27 VERDICT: M6 landed + pushed (main cafb68de); uncapped suite 809/812, reds A/B'd equal on main; exe cafb68d check PASS; F1 unlanded; page Y3yj7UtQ65PrTaCUJvp7hA.
 - 19:09: J2b round 2: Arsenal v0.1.29 MEGA (a landed check makes a giant; rival bots use it via a check_landed effect, no C++), built by the editor. Home's M6 landed on main (cafb68de) and its exe passed export check; all menu packs re-run on it.
+- 19:17: S1 round 3 (fairness): B on main's fixes left bots at 0 after sentence 1 on both games; shield reached the bar with 2, court not in 2 (teammates never get it). A reached it in 1 on both. Menu 75.
