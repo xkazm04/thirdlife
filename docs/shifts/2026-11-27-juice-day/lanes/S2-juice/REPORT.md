@@ -158,3 +158,29 @@ ROUND 2 (27 Nov, 15:45-18:20; the Director's brief: both arms on main's editor, 
   - Gates: fast 5/5 in both trees; foreman npm 497 tests, 490 pass, 0 fail, 7 skipped in both.
 - Not done in round 2: B2 was not re-run with A4/B4. That would be the next thing: it shows whether the fixed check
   rescues a thin pass round.
+
+ROUND 3 (27 Nov, 18:30-19:25; the Director: re-run B with the fixed check, for fairness)
+- B with the card picked, J2's exact sentence plus " Make it juicy.", a fresh v0.1.5 copy, B4 (a5c16a83).
+- The fixed check fired (event 958).
+  - core r13 ran out of time and wrote the checklist line in its last answer: exaggeration small, camera small, slow
+    beat no.
+  - core r14, the juice round, made the launch, the slow beat and the camera follow.
+  - show r2 made the lens kick; brain r5 made the bots swing.
+- Promoted v0.1.6 in 35 min, 5.80M tokens in.
+- Measured as in round 2 (seeds 1, 1, 2, 3; 0 script errors; seed 1 hash 37bdbac2880555a0 twice):
+  - flight 4.3-4.6 m and 85-106 frames down, which is the hand version's band;
+  - bots 11-16 swings a minute, nearly all misses.
+- Not rescued:
+  - the impact word: not in the check's list;
+  - the tell, and the hammer itself: core marked the hammer mesh and its poses NOT DONE, and nothing finished them. In
+    the window the robot swings an invisible hammer.
+- Clip: clips/r3-robot-hammer-B3-A2-hand-s1.mp4 (800 x 452, crf 32, 29 s). Stills: stills/r3-robot-hammer-t0.02.jpg and
+  -t0.55.jpg. Raw captures deleted.
+- The hand film's Godot crashed (segmentation fault) at exit after writing its movie. The mp4 is complete, the same size
+  as round 2's.
+- Answer to the Director: A against B is builder variance. Once the pass runs, both arms send the same text. Telling
+  them apart on output would take about 21 runs per arm (a 1 m flight difference, SD 1.2 m over the 5 pass runs) or
+  about 36 per arm (complete builds 50 % against 80 %). That is 60-200M tokens per arm: not worth it. The real
+  difference is the default.
+- Next: add the word and the tell to the check's list, and send a move's NOT DONE about its own visible object back to
+  its builder once.
