@@ -103,9 +103,10 @@ export function juiceGaps(lines: readonly string[]): string[] {
   const said = lines.filter((l) => /^JUICE:/i.test(l) && !/^JUICE:\s*size\b/i.test(l) && /\bnot done\b/i.test(l)).join(" ");
   const gaps: string[] = [];
   const ex = field(/^exaggeration\b/i);
-  if (no(ex) || /^small\b/i.test(ex) || /\bno (body )?launch\b|\bflight time (is )?(still|unchanged)\b|launch\w*: not done/i.test(`${ex} ${said}`)) gaps.push("the launch (a hit body at least two body heights up, 40 frames or more in the air, spinning)");
+  if (no(ex) || /^small\b/i.test(ex) || /\bno (body )?launch\b|\bflight time (is )?(still|unchanged|no)\b|\bno (flight|air ?time|hang)\b|launch\w*: not done/i.test(`${ex} ${said}`)) gaps.push("the launch (a hit body at least two body heights up, 40 frames or more in the air, spinning)");
   if (no(field(/^slow beat\b/i))) gaps.push("the slow beat on the move at its biggest");
-  if (/\bno (camera )?follow|\bfollow\w*:? (no|not done)|\bwithout (a )?follow|\bnot follow|\bcamera follow\w*[^|]*not done|\bcamera unchanged\b/i.test(`${field(/^camera\b/i)} ${said}`)) gaps.push("the camera following a launched player");
+  const cam = field(/^camera\b/i); // round 2 (robots B2): "camera small (shake only)" is no follow either
+  if (no(cam) || /^small\b/i.test(cam) || /\bshake only\b|\bno (camera )?follow|\bfollow\w*:? (no|not done)|\bwithout (a )?follow|\bnot follow|\bcamera follow\w*[^|]*not done|\bcamera unchanged\b/i.test(`${cam} ${said}`)) gaps.push("the camera following a launched player");
   return gaps;
 }
 
@@ -121,8 +122,10 @@ function ownLines(events: readonly JobEvent[], id: string, since: number): strin
  */
 export function juiceMore(events: readonly JobEvent[], id: string, round: number, request: string, since: number, mode: JuiceMode = JUICE_MODE): Record<string, unknown>[] {
   if (!juiceRuns(request, mode)) return [];
-  const gaps = juiceGaps(ownLines(events, id, since));
-  if (gaps.length === 0) return [];
+  const lines = ownLines(events, id, since);
+  const gaps = juiceGaps(lines);
+  // round 2 (robots B2, core r13: its last answer said "Unchanged from my previous answer"): no checklist, no check; say so
+  if (gaps.length === 0) return lines.some((l) => /^JUICE:\s*size\b/i.test(l)) ? [] : [{ type: "note", package: id, round, text: `${FOREMAN_NOTE}juice pass not checked: ${id}'s last answer carries no JUICE: checklist line, so the Foreman could not see what it skipped` }];
   const text = `${FOREMAN_NOTE}${JUICE_MORE}: ${id}'s JUICE: checklist says this big move skipped ${gaps.join("; ")}. Make ${gaps.length === 1 ? "it" : "them"} now in your own files, as the juice pass asks, with the numbers under DEVIATIONS, and keep the rules of the move as they are. The change was: "${request}"`;
   return [
     { type: "note", package: id, round, text: `${FOREMAN_NOTE}${JUICE_MORE}: ${id} skipped ${gaps.join("; ")}; it gets one more round for them` },

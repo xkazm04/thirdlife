@@ -51,13 +51,20 @@ export interface CoreHint {
 
 /** The events a merge appends after it: what the person's yes widened (H1f), and the rest of a half-made change (H1g). */
 export function afterMerge(plan: readonly PackageSpec[], events: readonly JobEvent[], id: string, round: number, files: readonly string[], request: string | undefined, core?: CoreHint): Record<string, unknown>[] {
+  const out = mergeRest(plan, events, id, round, files, request, core);
+  // S2-juice round 2: after the rest of the change, a big move whose JUICE: line skipped the launch, slow beat or camera follow gets one more round
+  const reason = [...events].reverse().find((e) => e.type === "reopened" && e.package === id);
+  if (request !== undefined && request !== "" && reason?.type === "reopened" && /change request|rest of your change/.test(reason.reason)) out.push(...juiceMore(events, id, round, request, reason.seq));
+  return out;
+}
+
+function mergeRest(plan: readonly PackageSpec[], events: readonly JobEvent[], id: string, round: number, files: readonly string[], request: string | undefined, core?: CoreHint): Record<string, unknown>[] {
   const out: Record<string, unknown>[] = [];
   const wide = widenedNote(plan, events, id, files);
   if (wide !== undefined) out.push({ type: "note", package: id, round, text: wide });
   // only a change round: the package's last re-opening was for a change request (the person's, or the rest of one)
   const reason = [...events].reverse().find((e) => e.type === "reopened" && e.package === id);
   if (request === undefined || request === "" || reason?.type !== "reopened" || !/change request|rest of your change/.test(reason.reason)) return out;
-  out.push(...juiceMore(events, id, round, request, reason.seq)); // S2-juice round 2: a big move whose JUICE: line skipped the launch, slow beat or camera follow gets one more round
   // D27 item 2: every round since the re-opening (a NOT DONE line of a round that failed is still not done)
   const rest = [...new Set(noteLines(builderNote(events, id, reason.seq)).filter((l) => NOT_DONE.test(l)))];
   if (rest.length === 0) return out;

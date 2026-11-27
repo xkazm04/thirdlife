@@ -286,6 +286,94 @@ Create:
   screen;
 - arm A's note shows on the done screen of a job the pass ran on.
 
+## After round 2 (27 Nov, 15:45-18:10): main's editor, the Foreman's juice check, the hammer again
+
+**What changed under both arms**
+- Both branches now carry main's editor, with lane T's items 1-22 merged by the Director (A eeecbf42, B d27-sp-juice-b).
+  Among them, a rivals' sentence now reaches the bot package too: `brain` builds the bots' part.
+- **A3 / B3 (57ddcf32 / 06b80f0b), the same in both arms: the Foreman reads the builder's `JUICE:` line.**
+  - After the merge of a change round the pass ran on, a big move whose line says it skipped the launch, the slow
+    beat or the camera follow gets one more round for the same package, with the pass. This happens once per change.
+  - The pass text now says every big move has a biggest moment, so it gets all three.
+  - Code: `juicepass.ts` (juiceGaps, juiceMore) and `halfmade.ts` afterMerge (+2 lines); tests juice 6-7 use round
+    1's real lines.
+  - On round 1's lines it would have sent robots A back for the launch and the camera follow, and both shield runs
+    back for the launch and the slow beat.
+- B's Create split: the card and the follow-up moved into `create_juice.gd`, so `create_build.gd` is at its
+  600-line budget. Behaviour is unchanged (create. 32/0).
+
+**The test.** J2's exact hammer sentence again:
+- each on a fresh copy of the v0.1.5 base (the same rolled-back copy as round 1);
+- A as typed, B with " Make it juicy." (the card);
+- run together at 16:17, on a lighter machine than round 1.
+
+**Results**
+
+| | round 2 A (auto pass + check) | round 2 B (juicy picked + check) | by hand (night) | round 1 B plain (no pass) |
+|---|---|---|---|---|
+| promoted | v0.1.6, 41 min | v0.1.6, 31 min | - | v0.1.6, 74 min (loaded machine) |
+| rounds | core r13, brain r4, show r2 (end card) | core r13, brain r4 | - | core r13 |
+| tokens in / out | 4.26M / 47k | 3.44M / 28k | - | 1.69M / 20k |
+| pack lines vs v0.1.5 | +359 -26 (14 files) | +218 -5 (11 files) | - | +155 -8 |
+| the builder's `JUICE:` line | all yes; world answers small | tell small (pose only); exaggeration "yes (height and spin; flight time no)"; camera small (shake only); word no; slow beat yes | - | - |
+| did the check send a round? | no: nothing big skipped | **no: it could not see the line** (see below) | - | - |
+| tell | head heats, a reach ring, rising whine (ring small and orange in the film) | raised-hammer pose only | big red reach ring, red-to-white head | none |
+| how high a hit robot flies (m, seeds 1/2/3) | **4.7-5.3 / 4.6-4.8 / 4.6** | 1.8-2.3 / 1.9-2.3 / 0.4-2.2 (*) | 3.7-5.4 | 1.9-2.5 |
+| frames down after a hit | 100-110 | (*) about 26 in the air | 103-138 | 84-108 |
+| camera | shake + lens kick + rises with you | shake only | shake + lens kick + follows you | shake |
+| impact word | BONK! / KA-BONK!! (a centre label) | none | BONK! / KA-BONK!! | none |
+| slow beat | full charge on you: half rate for 24 f | the same | none | none |
+| bots' swings a minute (seeds 1/2/3) | 5 / 6 / 3 | 21 / 18 / 27 (*) | 7 / 7 / 5 | 0 / 3 / 4 |
+| Foreman's balance notes | matches 1.2x longer; a newcomer wins 10 of 20 (was 17); timing spread 1 (was 0.69) | warned rival attacks 2 (was 3) | - | tells 2 (was 3); matches 1.1x |
+| headless: seed 1 hash twice, errors in seeds 1, 1, 2, 3 | `bcc03b43ec7d4ccc` twice; 0, 0, 0, 0 | `91ee8d8915159de0` twice; 0, 0, 0, 0 | `ac3f913b63d011cd` | `1ac790b9e31d585c` |
+
+(*) Robots B2 publishes no hammer events. Its `hammer.tick` emits them before `sim.step`, which clears the event list
+at its start. So B2 is measured with `tests/bot_hammer_state.gd`:
+- a swing is counted when a robot enters `hammer_swing`;
+- a flight is the peak of a robot that leaves the ground within 30 frames of a rival's swing and is knocked down;
+- on the hand pack this gives the same peaks as the event measure (4.0, 5.4, 3.7 m);
+- a swing state that lasts several frames may be counted on more than one swing start, so B2's swing counts are high,
+  not exact.
+
+**Why the check missed B2.**
+- B2's builder ended its last answer with "Unchanged from my previous answer". The Foreman's note holds only the last
+  answer, so it had no `JUICE:` line to read.
+- The real line was in an earlier message of the transcript. It says exactly what B2 lacks: no word, shake only,
+  flight time no.
+- I fixed this in both trees (A4 / B4, not committed; tests juice 8):
+  - the pass now asks for the line in the LAST answer, repeated even if it was given before;
+  - "flight time no", "no flight", "camera small" and "shake only" count as skipped;
+  - a pass round with no line in its last answer gets a "[foreman] juice pass not checked" note, so nobody believes it
+    was checked.
+  - the check now runs after the rest of a half-made change is handed on (`afterMerge` wraps `mergeRest`), so the
+    Foreman's hand-off notes still come first (lane T's test D27 2 reads the first note).
+  - On B2's real line the fixed check sends one more round, for the launch and the camera follow.
+- The B2 job was not re-run with the fix.
+
+**By eye** (`clips/r2-robot-hammer-A2-B2-hand-plain-s1.mp4`, 800 x 452, crf 32, 29 s, the same seed and hand in all
+four; stills `stills/r2-robot-hammer-t0.02.jpg` (the wind-up) and `-t0.55.jpg` (the hit), looked at):
+- **Round 2 A** now matches the hand version on the numbers: flights of 4.6-5.3 m and about 100 frames down, and its
+  bots swing 3-6 times a minute.
+  - In the window the hit robot sails up past the goal and "BONK!" shows.
+  - Its wind-up tell is smaller than the hand's: a small orange ring, against the hand's big red reach ring.
+- **Round 2 B** looks like round 1's plain build with a slow beat: the hammer hangs low with no tell, the hit robot
+  goes up about 2 m, and no word shows.
+
+**What round 2 says about the question**
+- The pass is not reliably obeyed: one of two runs did everything, the other about half. The difference is the
+  builder, not the arm.
+- The Foreman's check turns that into a second round only when the builder reports honestly in its last answer. With
+  B4/A4 a missing report is at least visible.
+- None of this depends on WHEN the pass runs (A or B). The A/B question is unchanged; round 2 is about making the pass
+  stick once it runs.
+
+**To play round 2** (menu rows for the Director):
+
+| menu title | pack |
+|---|---|
+| Robot soccer: sledgehammer (S2 round 2 A, auto pass + check) | `C:/Users/kazda/kiro/third-life/.claude/worktrees/d25-robot/.tl/jobs-a2/robot-soccer-3-v-20261125-1/promoted/game.robot_soccer_3_v@0.1.6` |
+| Robot soccer: sledgehammer (S2 round 2 B, juicy picked + check) | `C:/Users/kazda/kiro/third-life/.claude/worktrees/d27-sp-juice-b/.tl/jobs2/robot-soccer-3-v-20261125-1/promoted/game.robot_soccer_3_v@0.1.6` |
+
 ## Lane's recommendation
 
 **A, the automatic pass, with B's buttons turned round.**
@@ -310,3 +398,9 @@ What I would add before landing A:
 What would change my pick:
 - if the owner wants the editor to build exactly the words (a person who writes "plain" juice should get plain juice),
   B is the honest one. Its card and follow-up work and cost nothing until they are used.
+
+**After round 2:** still A. Round 2 A is the first editor-made hammer that matches the hand version's numbers, made
+from one sentence with no person's second sentence. B's card produced a thin build that the check could not catch,
+because the builder did not repeat its report. Land A4/B4 (the report in the last answer, the broader skipped words,
+the "not checked" note) with whichever arm the owner picks.
+

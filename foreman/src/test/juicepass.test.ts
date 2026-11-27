@@ -109,3 +109,16 @@ test("juice 7: after the merge of a pass round, a skipped big part sends ONE mor
   assert.deepEqual(juiceMore(events, "core", 17, SHIELD, 10, "choice"), [], "a plain change (arm B, not picked) is never sent back for juice");
   assert.equal(juiceMore(events, "core", 17, SHIELD, 10, "auto").length, 2, "arm A: the pass ran, so the check runs");
 });
+
+test("juice 8: round 2's lines: robots B2 (flight time no, shake only) goes back; robots A2 (all yes) does not; no line is a note", async () => {
+  const { juiceGaps, juiceMore } = await import("../juicepass.js");
+  const B2 = "JUICE: size big | tell small (wind-up pose only) | exaggeration yes (height and spin; flight time no) | hit-stop yes | camera small (shake only) | word no | particles+sound yes | slow beat yes | world answers yes (tumble, ball dropped and driven)";
+  const A2 = "JUICE: size big | tell yes | exaggeration yes | hit-stop yes | camera yes | word yes | particles+sound yes | slow beat yes | world answers small";
+  assert.deepEqual(juiceGaps([B2]).map((g) => g.split(" ")[1]), ["launch", "camera"]);
+  assert.deepEqual(juiceGaps([A2]), []);
+  const ev = (seq: number, e: Record<string, unknown>): JobEvent => ({ v: 1, seq, ts: "2026-11-27T16:20:00.000Z", job: "j", ...e }) as unknown as JobEvent;
+  const out = juiceMore([ev(10, { type: "note", package: "core", round: 13, text: "- Unchanged from my previous answer." })], "core", 13, `${HAMMER} Make it juicy.`, 5, "choice");
+  assert.equal(out.length, 1);
+  const n = out[0] as { type: string; text: string };
+  assert.ok(n.type === "note" && n.text.startsWith("[foreman] juice pass not checked"));
+});
