@@ -341,3 +341,195 @@ sea, and its answer is the oldest shield move there is: the shield over the head
   (disk under the 12 GB floor). The Foreman's own Godot runs in both jobs went on during that time.
 - My raw film was deleted after each clip was cut (`.tl/j2b/raw` empty; `.tl/j2b` is 25 MB with the five film copies
   and the counting tests). The lane folder holds 5 clips (15 MB, 800 wide, crf 32, 10.5-30 s) and 21 stills I looked at (7.5 MB).
+
+---
+
+# Round 2 (Director, 18:10): a second crazy ability for Arsenal hockey, on the rink core
+
+Job copy (plain recursive copy at 18:10, `diff -rq` empty; original untouched):
+`C:/Users/kazda/kiro/third-life/.claude/worktrees/d25-biplane/.tl/jobs/three-against-three-hockey-20261125-1` (newest
+v0.1.27, from d25-shield; last event seq 1254). Its packages: base (everything), cartridge (`data/harbour.cartridge.json`,
+`data/match.json`), harbour (`scripts/main.gd`, `harbour.gd`, `harbour_toys.gd`, `data/tuning.json`, ...), skin.
+
+## What the core lets a cartridge give the bots (read first: `engine/cores/rink/CARTRIDGE.md`, the core's sources)
+- `game.abilities[]` (shotgun, hip_check, shield, slow_puck on F): **"Bots never hold one."** The first ability (the
+  meteor) is a shotgun mode entry: the hand's half only.
+- `game.effects[]` with a trigger the core fires for every skater: `check_landed` is fired from the sim's `check` event,
+  whoever checked (`JamEffectSystem.cpp:106`), so bots trigger it by playing. Stats an effect may move: speed, accel,
+  turn rate, grip, mass, shot speed and aim, `check_speed_min`, `knockdown_frames`, puck and ice values.
+- `game.pickups[]`: any skater who skates over one takes it, but only all_star bots seek them (`JamAICore.cpp:874`).
+- The frame tells a pack who has what: `EffectEvents` (`effect_start` with the effect id and the skater), `Boosts`
+  (`SNAPSHOT.md` v1.4), so the pack's own GDScript can draw the juice.
+- Measured on v0.1.27 with JB-back's scoring hand (`bot_meteor_blind.gd`) and my event counter (`.tl/j2b/tests/
+  j2b_rink.gd`, film copies only), 3600 frames, seeds 1-3, 0 script errors: the rival bots land **2 checks a minute**,
+  my bot mates almost none; my hand 3-5; knockdowns 4-5 rivals (mostly the meteor), 1-2 me.
+So an ability **earned by a landed check** is one the core's bots use without C++.
+
+## Juice sheet (18:25, before the sentence): MEGA (Mario Kart's Mega Mushroom, earned by a hit as in NHL Hitz)
+First ability: the meteor (a shot, the hand's only). This one is a body state any skater earns, bots included.
+- **Key:** no new key: it is earned by landing a body check (right mouse button for the hand); F stays the meteor.
+- **Wind-up:** the hit itself; the hitter flashes white with a boing and balloons to twice his size over a third of
+  a second; MEGA! over him (mid-screen when it is me).
+- **Exaggeration, in numbers:** twice the size for 5 s (300 frames); twice as heavy, about 1.2 x speed; every bump
+  knocks a man flat (the knockdown speed threshold far down).
+- **Impact:** a thud, FLATTENED! and a small camera shake per man he flattens; the ice trembles under his strides; a pop
+  when he shrinks back.
+- **Bots with it and against it:** every bot who lands a check goes mega (rivals about twice a minute on today's
+  figures), my mates too; against it the core's bots have no new move (no C++): they play on as before.
+- **Counterplay / cost:** he turns wide (turn rate down), so a quick skater slips past; pass the puck away from a giant;
+  it lasts 5 s.
+- **Copies:** Mario Kart Wii (Mega Mushroom: grow, flatten whoever you touch), NHL Hitz (big hits power you up),
+  Smash Bros (the Super Mushroom).
+
+## Arsenal hockey: MEGA
+
+### Change 1 (sent 18:17:02, log `.tl/jobs/_ui_logs/1795799822-j2b-ars2-change.log`, event 1255)
+(A stray command of mine at 18:16:44 ran the Create door on a job folder that does not exist, with an empty sentence:
+`_ui_logs/1795799804-j2b-ars-change.log`, "no job.jsonl", exit 2. No model was called and nothing was created.)
+- **The Planner (5 s) named harbour**, the GDScript package ("a new power-up effect on the ice, so it belongs in the
+  harbour package"), not the cartridge package that owns `data/harbour.cartridge.json`.
+- **harbour r20** (3.3 min, 1.51M in, 12.3k out; merged 18:24:42, `data/tuning.json`, `scripts/harbour.gd`,
+  `scripts/harbour_toys.gd`): "RULE: MEGA is drawing only": any landed check (read from the victim's `ContactOutcome`
+  and `ContactBy`) makes the checker's figure twice the size for 300 frames, with a white flash, YOU ARE MEGA! (me) or
+  MEGA! (others) and FLATTENED!; "NOT DONE: "twice as heavy and a bit faster, every bump knocks a man flat, turns
+  wide" needs `data/harbour.cartridge.json` ... I found no cartridge key for a modifier that starts on a check" (there
+  is one: an effect with trigger `check_landed`). Sounds are stand-ins (no boing or pop preset).
+- **Measured, harbour's merge alone** (`.tl/j2b/film/ars_h20`, seed 1, 3600 frames, 0 script errors): **the core's hash
+  is the same as v0.1.27's (3ffb30ec)**: drawing only, the game plays exactly as before. MEGA came on 5 times in the
+  minute (`harbour.marks.mega_on` 396, 1256, 1782, 3078, 3104), one FLATTENED!.
+- **On film, harbour's merge alone** (window, seed 1, frames 360-1596; stills `stills/arsenal_h20_mega_on_f380-476.jpg`,
+  `stills/arsenal_h20_mega_camera_flatten_f1500-1596.jpg`, looked at): my green #7 lands a check, flashes white and
+  balloons to twice the size, YOU ARE MEGA! big at the top; an orange rival lies flat. **But the camera does not know I
+  am a giant**: for about a second my own huge legs and backside fill the frame (frames 1500-1540), then FLATTENED!
+  appears at the left. So the hand's half reads, the body is visual only.
+- **T's routing (event 1277-1281):** the Foreman sent harbour's NOT DONE on to cartridge as its own request, with a
+  list of "candidate keys" from the catalog (bump_ratio, cross_any_man, turn_rate, check_cooldown_restart,
+  check_reach_m): none of them is the one that does it (`game.effects[]` with `check_landed`).
+- **Then a pre-check asked the person a question nobody asked for (event 1282-1285, job paused, no builder ran):**
+  "Your side already wins 10 of 10 at rookie, 10 of 10 at pro, 10 of 10 at all star ... so weaker bots would hardly
+  show. Did you mean something else ... or should the bots be weaker still?" The request never asked for weaker bots.
+- **My answer as the person** (18:26:37, `answer` then `resume` as Create's door does; log
+  `.tl/jobs/_ui_logs/1795800378-j2b-ars-answer.log`): "No, I did not ask for weaker bots. I asked for MEGA: any skater,
+  a bot or me, who lands a body check becomes a giant for five seconds: twice as heavy, a bit faster, turning wide, and
+  every man he bumps is knocked flat. That is a timed boost on the skater who lands the check; the bots must get it from
+  their own checks too. Keep the bots' level as it is."
+- After the answer the Foreman's quick cartridge diff said "no key says it" and passed it to the builder. **cartridge
+  r14** (2.3 min, 0.41M in, 4.3k out) then wrote exactly the effect: `mega`, trigger `check_landed`, target self, 300
+  frames, mass x2, speed x1.1, turn rate x0.6, `check_speed_min` x0.25, "for the human and bots of both teams"; "Partly
+  built: every bump knocks a man flat is approximated by check_speed_min x0.25 together with mass x2 under the core's
+  momentum law"; "Not measured ... rink.sh check-cartridge is outside the commands I'm allowed to run".
+
+### Change 1 -> v0.1.28 (sent 18:17:02, promoted 18:38:31: 21.5 min, about 1 min of it waiting for my answer)
+- Path: Planner -> harbour r20 (drawing) -> T's hand-off -> pre-check question (paused) -> my answer -> cartridge diff
+  ("no key says it") -> cartridge r14 (the effect) -> data-only change: "the pack tests, the re-verification of
+  harbour, skin and the milestone's re-look are skipped" -> final checks -> promotion 29. **Cost: 4 model calls (the
+  Planner, harbour r20, the cartridge diff, cartridge r14), 1.93M tokens in (1.79M cache reads), 18.1k out.**
+- v0.1.28 = my film copy `.tl/j2b/film/ars_c14` (`diff -rq`: only `pack.json`'s tests list and my two tests).
+- **So the editor did BOTH halves**, but only because T's hand-off routing carried harbour's NOT DONE to the cartridge
+  package, and only after I answered a question about weaker bots that I never asked. The Planner itself put a
+  cartridge-only rule in the GDScript package.
+- **Headless, v0.1.28** (`j2b_rink.gd`: JB-back's scoring meteor hand plus my counter; 3600 frames each, **0 script
+  errors**):
+
+  | seed | hash | MEGA starts (sim `effect_start mega`): me / rivals / my mates | checks landed: me / rivals / mates | knockdowns of rivals (v0.1.27) |
+  |---|---|---|---|---|
+  | 1 | 7df3f5a1 (twice) | 4 / 1 / 1 | 8 / 1 / 1 | 10 (5) |
+  | 2 | 57e41c10 | 3 / 1 / 0 | 3 / 1 / 0 | 4 (4) |
+  | 3 | f0c6699b | 2 / 1 / 0 | 2 / 1 / 0 | 4 (5) |
+
+  The sim effect starts on every landed check, for bots too: **the rival bots go mega once a minute** (each time on
+  the check that knocks me or a mate down), my bot mates 0-1. On seed 1 my mega flattened two more rivals in a row
+  (frames 1396, 1440, 2514, 2555: knockdowns by check 44-96 frames after my mega started).
+- **On film** (`clips/j2b_arsenal_v028_mega.mp4`, 18.5 s, 800 wide, crf 32, window, seed 1, frames 370-1480; 0 script
+  errors in the window run). Stills I looked at: `stills/arsenal_v028_rival_mega_f420-516.jpg`,
+  `stills/arsenal_v028_my_mega_flattens_f1380-1476.jpg`.
+  - My green #7 is a giant when an orange rival checks me (frame 432): I go down, and he balloons into a giant who
+    towers over me lying on the ice: the game answers the ability with the ability.
+  - Later, mega again, I skate through two orange rivals at their net and both go flat; FLATTENED! pops up each time.
+  - How it feels (from film): crazy in the good way, and it reads at once: a giant hockey player is a picture. Wrong:
+    YOU ARE MEGA! stays on screen while I lie on the ice and the rival is the giant; FLATTENED! is a small word that
+    piles onto YOU ARE MEGA!; the camera at times sits inside my giant legs (harbour's merge, frames 1500-1540); the
+    rivals' giants come only about once a minute.
+
+### Follow-up 1 (sent 18:42:31, log `.tl/jobs/_ui_logs/1795801351-j2b-ars3-change.log`), as a person who watched it
+> MEGA works and the giants read at once, but four things are wrong. ... pull the camera back and up while I am mega
+> ... show FLATTENED! big over the man who goes down ... take it away the moment I fall ... I want to face their giants
+> about twice as often, so they should land their body checks on me and my mates more often.
+- The Planner named harbour for all of it, including "the bots' body-check rate in scripts/main.gd" (the bots are the
+  C++ core's). **harbour r21** (2.5 min, 0.83M in, 10.2k out; merged 18:48:53; `data/tuning.json`,
+  `scripts/harbour_toys.gd`, `scripts/main.gd`): MEGA! and FLATTENED! drawn on their own HUD layer at the man's screen
+  point (FLATTENED! 72 pt yellow); the follow view's eye moves back 3.5 m and up 2 m while I am mega ("This goes against
+  the contract line "Camera numbers are the cartridge's", because the player asked for it"); a downed skater's mega is
+  cut short in the drawing ("The core's mega effect may still be running"); "A skater who is already mega does not get
+  a new MEGA start from another check" (drawing; the core's effect refreshes); "NOT DONE: ... raise
+  `game.ai.body_check` from 0.6 to 0.9" (the cartridge already says 1; the builder guessed).
+- T's routing again carried the NOT DONE to cartridge (event 1342). The Foreman's cartridge diff (one quick model
+  call, no builder round) chose a different, valid key: **`game.contact.bot_check_windup_frames` 12 -> 6** ("the red
+  Crane Gulls now wind up their body checks in half the time, so more of their hits land"), with the measured check
+  before and after (knockdowns at pro 32 -> 35; its standing warnings, a goal flood at 17-19 goals a match and trivial
+  at all_star, were there before). cartridge r15 verified it; merged 17:52 (data only).
+
+### Follow-up 1 -> v0.1.29 (sent 18:42:31, promoted 18:58:55: 16.4 min) **<- the Arsenal pick**
+- **Cost: 3 model calls (the Planner, harbour r21, the cartridge diff), 0.85M tokens in (0.77M cache reads), 11.2k
+  out.** v0.1.29 = my film copy `.tl/j2b/film/ars_c15` (`diff -rq`: only `pack.json`'s tests list and my two tests).
+- **Headless, v0.1.29** (3600 frames each, **0 script errors**):
+
+  | seed | hash | MEGA starts: me / rivals / my mates | checks landed: me / rivals / mates |
+  |---|---|---|---|
+  | 1 | 45fa13fd (twice) | 2 / 1 / 1 | 2 / 1 / 2 |
+  | 2 | 468e8acb | 2 / 1 / 1 | 2 / 1 / 1 |
+  | 3 | 9bced1db | 2 / 4 / 2 | 2 / 4 / 2 |
+
+  Rival giants 1-4 a minute (mean 2; v0.1.28: 1, 1, 1); my bot mates 1-2 (v0.1.28: 0-1). About twice as often, as
+  asked, on three seeds only.
+- **On film, v0.1.29** (`clips/j2b_arsenal_v029_mega_camera.mp4`, 16.5 s, seed 3, frames 370-1360, and
+  `clips/j2b_arsenal_v029_rival_mega_on_me.mp4`, 3.8 s, seed 3, frames 3340-3568; both window, 800 wide, crf 32, 0
+  script errors). Stills I looked at: `stills/arsenal_v029_my_mega_cam_f385-473.jpg`,
+  `stills/arsenal_v029_flattened_f826-870.jpg`, `stills/arsenal_v029_rival_mega_f1265-1361.jpg`,
+  `stills/arsenal_v029_rival_mega_on_me_f3370-3466.jpg`.
+  - My check, a white flash, and my giant #7 now stands in a camera that has risen and pulled back: the whole giant, the
+    net and the rivals around him are in the frame, with the meteor's ring of fire as I wind up; no more legs filling
+    the screen. A second mega check drives a rival into the net for a goal; YOU ARE MEGA! sits on top of the GOAL
+    banner (clutter).
+  - Frame 3382: an orange rival checks me, balloons into a giant at the edge of the frame and skates on; I lie flat,
+    with no YOU ARE MEGA! left on screen. The follow camera stays on me, so his giant is on screen for under a second.
+  - At frame 1277 a rival went mega checking my mate far away while the camera followed me along the boards: not seen.
+  - How it feels (from film): the camera fix is the big one; MEGA is now a readable, funny moment both ways. Not seen in
+    these takes: the new big FLATTENED! over a man flattened by a giant (my mega checks here were the ones that START
+    it; FLATTENED! comes for later bumps, as in v0.1.28's film).
+
+## Round 2 verdict
+- **The editor made both halves of the second ability** (the look in GDScript, the rule in the cartridge, so the core's
+  C++ bots use it with no C++), but not by its own plan: the Planner gave a cartridge rule to the GDScript package
+  twice; the cartridge half arrived only through T's NOT DONE routing, and the first time only after the person
+  answered a question about weaker bots that he never asked.
+- The ability: MEGA (Mario Kart's Mega Mushroom earned by a hit, NHL Hitz). Any skater who lands a body check is a
+  giant for 5 s: twice the size, twice the mass, a bit faster, wide turns, and his checks knock men flat. The rival
+  bots go mega 1-4 times a minute (v0.1.29), my mates 1-2, my hand 2.
+- Versions: v0.1.28 (one sentence + one answer, 21.5 min, 4 calls, 1.93M in / 18.1k out), v0.1.29 (one follow-up,
+  16.4 min, 3 calls, 0.85M in / 11.2k out). **Pick: v0.1.29.** 0 script errors; seed 1 45fa13fd twice.
+- Menu row (for the Director):
+  `C:/Users/kazda/kiro/third-life/.claude/worktrees/d25-biplane/.tl/jobs/three-against-three-hockey-20261125-1/promoted/game.three_against_three_hockey@0.1.29`
+  - "Arsenal hockey v0.1.29: MEGA from a big hit (made in Create, juice day)"; keys: the body check (right mouse
+    button) lands a hit and makes you MEGA; F stays the meteor.
+  - v0.1.28 is in the same folder (no row needed). The pack id is the existing row's id; 0.1.28-0.1.29 exist only in my
+    job copy.
+
+## Round 2 editor findings (for the Director and lane T)
+6. **The Planner puts a cartridge rule in the GDScript package.** Twice (the MEGA stats; the bots' check rate, "in
+   scripts/main.gd") it named harbour for something only `data/harbour.cartridge.json` can do; harbour then wrote it as
+   drawing only and a NOT DONE. On the rink core the Planner should know that rules and bots live in the cartridge.
+7. **A pre-check asks the person a question about something he did not ask.** Event 1283: "should the bots be weaker
+   still?", before any builder ran on the cartridge hand-off; the job paused until I answered. The hand-off text was
+   harbour's NOT DONE ("every bump knocks a man flat, turns wide"), which the check seems to have read as a request to
+   make the bots weaker.
+8. **The catalog hint misses the key that does it.** The Foreman's "candidate keys" for harbour's NOT DONE (bump_ratio,
+   cross_any_man, turn_rate, check_cooldown_restart, check_reach_m) left out `game.effects[]` with trigger
+   `check_landed`, the one key that makes a per-skater boost start on a check; and the quick cartridge diff said "no
+   key says it" before the builder (cartridge r14) found it in 2.3 minutes.
+9. **The drawing and the rule can disagree.** harbour draws MEGA from the victim's contact fields, the cartridge starts
+   the `mega` effect from `check_landed`; harbour also says an already-mega skater gets no new MEGA start and a downed
+   human's MEGA is cut short "while the core's mega effect may still be running". They agree on every start I counted
+   (on v0.1.28, seeds 1-3, `harbour.marks.mega_on` 6 / 4 / 3 equals the sim's `effect_start mega` 6 / 4 / 3), but nothing ties them.
+10. **A harbour builder guessed a value it could not read** ("raise `game.ai.body_check` from 0.6 to 0.9"; the cartridge
+   says 1); the cartridge diff then chose a valid key (`bot_check_windup_frames` 12 -> 6) instead. Harmless here.

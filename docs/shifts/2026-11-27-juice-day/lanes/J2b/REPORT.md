@@ -109,3 +109,66 @@ NEXT THREE
 2. Robots: one sentence for a glowing beam and trail instead of stacked blocks, if a kit beam exists, else a kit part.
 3. Shield: let the crew's own volley launch from a ship the play camera can see (or a quick cut to it), so my own
    volleys show the launch too.
+
+======================================================================================================================
+ROUND 2 (Director 18:10): a second crazy ability for Arsenal hockey on the rink core (18:10-19:10)
+
+OUTCOME
+- Job copy: .tl/jobs/three-against-three-hockey-20261125-1 (v0.1.27 from d25-shield, diff -rq empty, original untouched).
+- What the core allows (CARTRIDGE.md + the core's sources): abilities on F are the hand's only ("Bots never hold one":
+  the meteor's limit), but an effect with trigger check_landed fires for every skater's landed check, bots included
+  (JamEffectSystem.cpp:106), and the frame reports effect_start per skater, so the pack can draw it.
+- Ability: MEGA (Mario Kart's Mega Mushroom, earned by a hit as in NHL Hitz): a skater who lands a body check is a giant
+  for 5 s: twice the size (drawn), twice the mass, x1.1 speed, x0.6 turn, check_speed_min x0.25 (his checks floor men).
+  White flash, YOU ARE MEGA! / MEGA!, FLATTENED!, a camera that rises while I am mega. No new key: the check lands it.
+- v0.1.28 (one sentence, 714 chars, + one answer to a Foreman question; 21.5 min; 4 calls, 1.93M in / 18.1k out):
+  harbour r20 drew it (drawing only, the core's hash unchanged); T's routing carried harbour's NOT DONE to cartridge;
+  a pre-check asked "should the bots be weaker still?" (paused); I answered as the person; cartridge r14 wrote the
+  `mega` effect on check_landed. Rival bots go mega once a minute; my giant floors extra men (seed 1: 10 rival
+  knockdowns vs 5 on v0.1.27). Film: a rival checks my giant down and balloons over me; but YOU ARE MEGA! lingers when
+  I fall, FLATTENED! is small, and the camera sat inside my giant legs.
+- v0.1.29 (one follow-up, 696 chars; 16.4 min; 3 calls, 0.85M in / 11.2k out) <- THE PICK: the camera rises and pulls
+  back while I am mega, words on their own layer, the downed human's MEGA cut; the cartridge diff halved the bots'
+  check wind-up (bot_check_windup_frames 12 -> 6): rival giants 1-4 a minute (mean 2; v0.1.28: 1), my mates 1-2.
+  0 script errors on seeds 1-3; seed 1 45fa13fd twice. The promoted pack is file for file my film copy (plus my tests).
+- The editor did BOTH halves (look in GDScript, rule in the cartridge, the C++ bots use it untouched), but only through
+  T's hand-off routing and my answer: the Planner itself put the rule in the GDScript package both times.
+
+MENU ROW (Director-only)
+- C:/Users/kazda/kiro/third-life/.claude/worktrees/d25-biplane/.tl/jobs/three-against-three-hockey-20261125-1/promoted/game.three_against_three_hockey@0.1.29
+    "Arsenal hockey v0.1.29: MEGA from a big hit (made in Create, juice day)"   keys: body check (right mouse button)
+                                                                                 lands a hit = MEGA; F the meteor
+  v0.1.28 is in the same folder (no row). Same pack id as the existing Arsenal rows; 0.1.28-0.1.29 only in my copy.
+
+ACCEPTANCE (same method)
+- Juice sheet before the sentence: MET (PROOF "Round 2", 18:25). Sentence <= 800 naming ability, juice, rivals, sent as
+  a Create change: MET (714 chars, 18:17). Judged as a person per version: clips (3, 800 wide, crf 32: v0.1.28 18.5 s,
+  v0.1.29 16.5 s + 3.8 s; plus harbour's drawing-only merge filmed), stills looked at (8), 3600 headless frames 0
+  script errors, the same hash twice (v0.1.28 7df3f5a1, v0.1.29 45fa13fd), the bots' uses a minute: MET. One follow-up:
+  MET. Not seen on film: the new big FLATTENED! (my takes caught MEGA starts, not later flattenings) and a rival giant
+  for more than a second (the follow camera stays on me).
+- Honesty: counts come from my counter on film copies only (.tl/j2b/tests/j2b_rink.gd, copy here as j2b_rink.gd.txt)
+  over JB-back's scoring meteor hand; nobody played it with real keys.
+- A stray command of mine at 18:16:44 ran the Create door on a non-existent job folder with an empty sentence
+  (_ui_logs/1795799804-j2b-ars-change.log, exit 2): no model call, nothing created.
+
+GATES
+- tl check --tier fast at 19:09: PASS 5/5 (arch 12/12, assets 4/4, cards 3/3, devx.test 230/230, typecheck clean).
+- No code changed by this lane: docs and .tl/ only. Raw film deleted after every cut (.tl/j2b 44 MB with 9 film copies).
+
+EDITOR FINDINGS 6-10 (PROOF "Round 2 editor findings")
+6. The Planner names the GDScript package (harbour) for cartridge rules on the rink core: twice in a row (the MEGA stats;
+   "the bots' body-check rate in scripts/main.gd").
+7. A pre-check asked the person "should the bots be weaker still?" about a hand-off that asked nothing of the kind
+   (event 1283), pausing the job before any builder ran.
+8. The catalog's "candidate keys" for harbour's NOT DONE missed game.effects[] with trigger check_landed, and the quick
+   cartridge diff said "no key says it"; the cartridge builder found it in 2.3 min.
+9. Drawing (harbour, from contact fields) and rule (cartridge effect on check_landed) start MEGA from different signals;
+   they agree on every start I counted, but nothing ties them (harbour also drops refreshes and cuts a downed human's
+   drawn MEGA while the core's effect runs on).
+10. harbour guessed a value it could not read ("body_check 0.6 -> 0.9"; it is 1); the cartridge diff picked a valid key.
+
+NEXT THREE (Arsenal)
+1. A person plays v0.1.29 with real keys (the check on the right mouse button, then the meteor while mega).
+2. A sentence for the rivals' giants to be seen: a short camera glance or an edge arrow when a rival goes mega off screen.
+3. Route findings 6-8 to lane T: on the rink core the Planner should send rules to the cartridge package first.

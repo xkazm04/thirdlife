@@ -543,3 +543,4 @@ on the frame and the figure and Fable on surfaces and nature, looping for 10 hou
 - 18:32: S2 round 2: A's hammer from one plain sentence matched the hand version (flights 4.6-5.3 m vs hand 3.7-5.4); B with the card came out thin, and the check missed it (it read only the last answer): fix A4/B4 committed on both branches. Menu 72.
 - 18:43 day-27 standup: full gate 11/13 on d27-m6 (kernel cap + hockey many_budget timing; A/B next); uncapped suite running.
 - 19:10 day-27 VERDICT: M6 landed + pushed (main cafb68de); uncapped suite 809/812, reds A/B'd equal on main; exe cafb68d check PASS; F1 unlanded; page Y3yj7UtQ65PrTaCUJvp7hA.
+- 19:09: J2b round 2: Arsenal v0.1.29 MEGA (a landed check makes a giant; rival bots use it via a check_landed effect, no C++), built by the editor. Home's M6 landed on main (cafb68de) and its exe passed export check; all menu packs re-run on it.

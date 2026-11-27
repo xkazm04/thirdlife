@@ -1,0 +1,72 @@
+extends "bot_meteor_blind.gd"
+## J2b round 2 (27 Nov, FILM COPY ONLY, not a pack test): JB-back's scoring meteor hand (bot_meteor_blind, METEOR_M 15),
+## unchanged in what it presses, plus counting from the core's own frame (the main node's `snap`): every sim event by
+## name and team (checks, knockdowns), every effect_start / pickup_take by kind and team, and how many skater-frames each
+## boost kind covered (`Boosts`). Team 0 = the human's side ("mine"), 1 = the rivals; the human is counted apart as "me".
+
+var main_node = null
+var seen: Dictionary = {}
+var boost_frames: Dictionary = {}
+var evlog: Array = []
+
+
+func _find_main() -> void:
+	if main_node != null:
+		return
+	for c: Node in ctx.root.get_tree().root.find_children("*", "", true, false):
+		var sc = c.get_script()
+		if sc != null and str(sc.resource_path).ends_with("scripts/main.gd") and c.get("snap") != null:
+			main_node = c
+			return
+
+
+func _who(sn: Dictionary, who: int) -> String:
+	if who == int(sn.get("HumanIndex", 0)):
+		return "me"
+	var sk: Array = sn.get("Skaters", [])
+	if who < 0 or who >= sk.size():
+		return "none"
+	return "mine" if int(sk[who].get("Team", 0)) == int(sk[int(sn.get("HumanIndex", 0))].get("Team", 0)) else "rival"
+
+
+func _bot_tick(frame: int) -> void:
+	super._bot_tick(frame)
+	_find_main()
+	if main_node == null:
+		return
+	var sn: Dictionary = main_node.get("snap")
+	if sn.is_empty() or not sn.has("Skaters"):
+		return
+	for e: Dictionary in sn.get("Events", []):
+		var n: String = str(e.get("Name", ""))
+		if n in ["check", "knockdown", "ability", "pickup_take", "effect_start", "goal", "announce"]:
+			var key := "%s:%s" % [n, _who(sn, int(e.get("Who", -1)))]
+			seen[key] = int(seen.get(key, 0)) + 1
+			if evlog.size() < 400:
+				evlog.append("%d %s who%d kind=%s" % [frame, n, int(e.get("Who", -1)), str(e.get("Kind", ""))])
+	for e: Dictionary in sn.get("EffectEvents", []):
+		var n: String = str(e.get("Name", ""))
+		if n in ["effect_start", "pickup_take"]:
+			var key := "fx:%s:%s:%s" % [n, str(e.get("Kind", "")), _who(sn, int(e.get("Who", -1)))]
+			seen[key] = int(seen.get(key, 0)) + 1
+			if evlog.size() < 400:
+				evlog.append("%d fx %s who%d kind=%s" % [frame, n, int(e.get("Who", -1)), str(e.get("Kind", ""))])
+	var bo: Array = sn.get("Boosts", [])
+	for i in bo.size():
+		if str(bo[i]) != "":
+			var key := "%s:%s" % [str(bo[i]), _who(sn, i)]
+			boost_frames[key] = int(boost_frames.get(key, 0)) + 1
+
+
+func _bot_result() -> Dictionary:
+	var r: Dictionary = super._bot_result()
+	r["summary"] = str(r["summary"]) + "; events %s; boost frames %s; found main %s" % [str(seen), str(boost_frames), main_node != null]
+	r["ok"] = bool(r.get("ok", false)) or ctx.frame >= ctx.max_frames - 2
+	r["j2b_seen"] = seen
+	r["j2b_boost_frames"] = boost_frames
+	r["j2b_log"] = evlog
+	return r
+
+
+func _bot_done() -> bool:
+	return done or ctx.frame >= ctx.max_frames - 2
