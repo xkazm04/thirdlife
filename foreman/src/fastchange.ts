@@ -25,7 +25,7 @@ import { MEASURE_KEPT } from "./handcheck.js";
 import { NOT_DONE, noteLines, notMadeSince } from "./halfmade.js";
 import { BALANCE_MOVED, balanceLines } from "./boundlift.js";
 import { RULE_NONE } from "./rulelines.js"; // D27b item 28: "RULE: none added" is not a rule
-import { lastUnmadeEnd } from "./unmade.js"; // D27b item 42
+import { changeBoundary } from "./changeend.js"; // D27b item 42: the one boundary of the change in flight
 
 /** N27 (lane T): the start of a what-changed line naming a rule the builder added that the person did not ask for. */
 export const UNASKED_RULE = "unasked rule";
@@ -122,8 +122,7 @@ export function whatChangedNote(events: readonly JobEvent[], version: string, fo
   for (const e of events) if (e.type === "promoted") [last, was] = [e.seq, e.version];
   // D27b item 42: a change that ended NOT made since then put pack/ back; this version holds only what came after it
   // (that earlier change gets its own NOT_MADE note at the promotion: unmade.ts earlierUnmade)
-  const cut = lastUnmadeEnd(events.filter((e) => e.seq > last));
-  const since = events.filter((e) => e.seq > Math.max(last, cut));
+  const since = events.filter((e) => e.seq > Math.max(last, changeBoundary(events)));
   const asked = since.flatMap((e) => (e.type === "change_requested" && !e.text.startsWith(FOREMAN_NOTE) ? [`"${e.text}"`] : []));
   const keys = since.flatMap((e) => (e.type === "note" && e.text.startsWith(`${FOREMAN_NOTE}${CARTRIDGE_DIFF}: `) ? [e.text.slice(`${FOREMAN_NOTE}${CARTRIDGE_DIFF}: `.length).split(" (")[0] ?? ""] : [])).filter(Boolean);
   const listed = [...new Set(since.flatMap((e) => (e.type === "merge" ? e.files : [])))].sort();

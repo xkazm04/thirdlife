@@ -9,6 +9,7 @@ import type { JobState } from "./joblog.js";
 import { readTofuMetrics, type TofuMetric } from "./tofu.js";
 import { FOREMAN_NOTE, clip } from "./conduct.js";
 import { ruleLinesSince } from "./rulelines.js";
+import { changeBoundary, lastPromotion } from "./changeend.js";
 
 /** The start of the Foreman's note when a person lifted a plan bound. */
 export const LIFTED = `${FOREMAN_NOTE}plan bound lifted`;
@@ -138,13 +139,12 @@ export function changeKind(text: string): ChangeKind {
 
 /** The person's change in flight: every change request since the last promotion, in their words (undefined before a first version). */
 export function askedChange(events: readonly JobEvent[] | undefined): { seq: number; text: string; kind: ChangeKind } | undefined {
-  let last = -1;
-  for (const e of events ?? []) if (e.type === "promoted") last = e.seq;
-  if (last < 0) return undefined; // the first build: the tofu stage judges as before
+  if (lastPromotion(events) < 0) return undefined; // the first build: the tofu stage judges as before
   // D27 items 33/40 (J2nd's court copy, event 1981: a FAILED "Make it fairer" from before still made the next cue-only
   // change a fairness change, and the newcomer card guarded it): a change that ended without a promotion (the job done,
-  // failed or cancelled after it) no longer colours the next one; only the asks since that end are the change in flight
-  for (const e of events ?? []) if (e.seq > last && e.type === "job_state" && (e.state === "done" || e.state === "failed" || e.state === "cancelled")) last = e.seq;
+  // failed or cancelled after it) no longer colours the next one; only the asks since that end are the change in flight.
+  // The boundary is changeend.ts changeBoundary, the same one the what-changed card and the unmade notes read (D27b).
+  const last = changeBoundary(events);
   const asks = (events ?? []).flatMap((e) => (e.type === "change_requested" && e.seq > last && !e.text.startsWith(FOREMAN_NOTE) ? [{ seq: e.seq, text: e.text }] : []));
   const first = asks[0];
   if (first === undefined) return undefined;
