@@ -111,6 +111,12 @@ static func run(tree: SceneTree, check: Callable, tmp: String) -> bool:
 		(page.find_child(name, true, false) as BaseButton).pressed.emit()
 	var door: RefCounted = page.get("door")
 
+	# D27 item 13: a note of several lines (the balanced job's two) ends above Play and Add to menu, never under them
+	page.call("show_job", balanced)
+	await tree.process_frame
+	var cn: Label = page.find_child("ChangeNote", true, false) as Label
+	var pl: Control = page.find_child("Play", true, false) as Control
+	var note_clear: bool = cn != null and pl != null and cn.get_line_count() >= 2 and cn.position.y + cn.get_line_count() * cn.get_line_height() <= pl.position.y
 	# 2. done: Play, Add to menu, the change box; a change goes out as `foreman change` and the page shows it being made
 	page.call("show_job", made)
 	var title: String = (page.find_child("GameTitle", true, false) as Label).text
@@ -123,7 +129,7 @@ static func run(tree: SceneTree, check: Callable, tmp: String) -> bool:
 	var sent: Array = (door.get("dry_steps") as Array).slice(base)
 	var changing_shown: bool = page.call("shown_screen") == "building" and has.call("Changing") and (page.find_child("Changing", true, false).find_children("*", "Label", true, false)[0] as Label).text.contains(TEXT)
 	check.call("create.iterate.change: done shows Play, Add to menu and the change box (version 2); an empty change sends nothing; Change it sends foreman change <job> \"<words>\" and the page says Changing: <words>",
-		controls and empty_sent and str(sent) == str([[["change", made, TEXT] + fake]]) and changing_shown, "title '%s'; sent %s; screen %s" % [title, str(sent), str(page.call("shown_screen"))])
+		controls and empty_sent and str(sent) == str([[["change", made, TEXT] + fake]]) and changing_shown and note_clear, "title '%s'; sent %s; screen %s; a 2-line note clear of Play: %s" % [title, str(sent), str(page.call("shown_screen")), str(note_clear)])
 
 	# 3. a change in flight whose Foreman is gone: Changing, and Continue resumes it
 	page.call("show_job", flight)

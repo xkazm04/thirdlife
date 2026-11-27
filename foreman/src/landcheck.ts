@@ -31,6 +31,7 @@ const ID = /^[a-z][a-z0-9_]*$/;
 /** The moves a builder's note names as new: `NEW MOVE: a, b` lines, and "New moves `a` (...) and `b`" lines. */
 export function newMovesOf(note: string): string[] {
   const out: string[] = [];
+  const loose: string[] = [];
   for (const raw of note.split(/\r?\n/)) {
     const line = raw.replace(/^\s*[-*]\s*/, "");
     const tag = /^NEW MOVES?:\s*(.+)$/i.exec(line);
@@ -43,18 +44,26 @@ export function newMovesOf(note: string): string[] {
       }
       continue;
     }
-    if (!/\bnew (?:special |big )?(?:moves?|attacks?|abilit(?:y|ies))\b/i.test(line)) continue;
+    // D27 round 3 (J19, core r14: "Fighter: new `cd` dictionary and `ready(m)` method. The 8-frame buffer takes the new
+    // moves ..." gave the moves cd and ready): explicit NEW MOVE lines win; without them, only a line that starts "New moves"
+    if (!/^new (?:special |big )?(?:moves?|attacks?|abilit(?:y|ies))\b/i.test(line)) continue;
     let flat = line;
     for (let i = 0; i < 4; i++) flat = flat.replace(/\([^()]*\)/g, "");
-    for (const m of flat.matchAll(/`([^`]+)`/g)) if (ID.test(m[1] as string)) out.push(m[1] as string);
+    for (const m of flat.matchAll(/`([^`]+)`/g)) if (ID.test(m[1] as string)) loose.push(m[1] as string);
   }
-  return [...new Set(out)];
+  return [...new Set(out.length > 0 ? out : loose)];
 }
 
 export interface MoveCount {
   started: number;
   landed?: number;
+  /** D27 item 12: the frame of the last use in the run, and the run's frames: a count that stops early is no measure. */
+  lastF?: number;
+  frames?: number;
 }
+
+/** D27 item 12: a count is honest when its bot kept using the move into the last third of its run. */
+export const KEEP_SHARE = 2 / 3;
 
 /** `moves` of one bot report: bot.result.metrics.moves, bot.result.moves or bot.result.metrics.raw.moves. */
 export function movesOfReport(report: unknown): Record<string, MoveCount> {
@@ -68,8 +77,10 @@ export function movesOfReport(report: unknown): Record<string, MoveCount> {
     if (v === null || typeof v !== "object") continue;
     const started = (v as Record<string, unknown>)["started"];
     const landed = (v as Record<string, unknown>)["landed"];
+    const lastF = (v as Record<string, unknown>)["last_f"];
+    const frames = (report as { bot?: { frames?: unknown } } | undefined)?.bot?.frames;
     if (typeof started !== "number") continue;
-    out[k] = { started, ...(typeof landed === "number" ? { landed } : {}) };
+    out[k] = { started, ...(typeof landed === "number" ? { landed } : {}), ...(typeof lastF === "number" ? { lastF } : {}), ...(typeof frames === "number" ? { frames } : {}) };
   }
   return out;
 }
@@ -81,6 +92,8 @@ export interface LandVerdict {
   missing: string[];
   unused: string[];
   never: string[];
+  /** D27 item 12: counted, but its bot stopped using the move before the last third of its run (or gave no last_f). */
+  stopped: string[];
   ok: boolean;
 }
 
@@ -91,7 +104,15 @@ export function judgeLanding(moves: readonly string[], reports: readonly { test:
     for (const [k, v] of Object.entries(movesOfReport(report))) {
       const c = (counts[k] ??= { started: 0, tests: [] });
       c.started += v.started;
-      if (v.landed !== undefined) c.landed = (c.landed ?? 0) + v.landed;
+      // a landing is a use that hit somebody: a test that counts victims (J19 round 3: bot_crew "landed 8 of 6") is held to
+      // its uses, so the share never passes 100 %
+      if (v.landed !== undefined) c.landed = (c.landed ?? 0) + Math.min(v.landed, v.started);
+      // the latest use over the runs, against that run's length: how far into its run the bot kept using the move
+      const share = (x: { lastF?: number; frames?: number }): number => (x.lastF !== undefined && x.frames ? x.lastF / x.frames : -1);
+      if (v.lastF !== undefined && (c.lastF === undefined || share(v) > share(c))) {
+        c.lastF = v.lastF;
+        if (v.frames !== undefined) c.frames = v.frames;
+      }
       if (!c.tests.includes(test)) c.tests.push(test);
     }
   }
@@ -99,10 +120,18 @@ export function judgeLanding(moves: readonly string[], reports: readonly { test:
   const unused = moves.filter((m) => counts[m] !== undefined && (counts[m] as MoveCount).started <= 0);
   // a move counted without `landed` is not an attack (a brace, a dash): it is used, not judged on landing
   const never = moves.filter((m) => counts[m] !== undefined && (counts[m] as MoveCount).started > 0 && (counts[m] as MoveCount).landed === 0);
-  return { moves: [...moves], counts, missing, unused, never, ok: missing.length + unused.length + never.length === 0 };
+  // D27 item 12 (J19, round 1: rush "landed 1 of 13" because the builder's test stopped pressing once it landed; a hand
+  // that kept charging saw 0 of 11): a count is judged only when its bot kept using the move into the last third of its run
+  const stopped = moves.filter((m) => {
+    const c = counts[m];
+    if (c === undefined || c.started <= 0 || c.landed === undefined || never.includes(m)) return false;
+    return c.lastF === undefined || (c.frames !== undefined && c.lastF < c.frames * KEEP_SHARE);
+  });
+  return { moves: [...moves], counts, missing, unused, never, stopped, ok: missing.length + unused.length + never.length + stopped.length === 0 };
 }
 
-const figure = (id: string, c: MoveCount | undefined): string => (c === undefined ? `${id} not counted` : c.landed === undefined ? `${id} used ${c.started} times` : `${id} landed ${c.landed} of ${c.started}`);
+const figure = (id: string, c: MoveCount | undefined): string => (c === undefined ? `${id} not counted` : c.landed === undefined ? `${id} used ${c.started} times` : `${id} landed ${c.landed} of ${c.started}${c.started > 0 ? ` (${Math.round((100 * c.landed) / c.started)} %)` : ""}`);
+const lastUse = (id: string, c: MoveCount | undefined): string => `${id}'s last use was ${c?.lastF === undefined ? "not reported (no last_f)" : `at frame ${c.lastF} of ${c.frames ?? "?"}`}`;
 
 /** The new moves the builders of `id` named since the person's change began. */
 function namedSince(events: readonly JobEvent[], id: string, since: number): string[] {
@@ -150,13 +179,14 @@ export function landGate(h: Pick<GateHost, "s" | "pkg" | "dir" | "rel" | "append
   }
   const p = h.pkg(id);
   if (p.round - (p.roundBase ?? 1) >= QUALITY_ROUNDS) {
-    const bad = [...v.missing, ...v.unused, ...v.never];
+    const bad = [...v.missing, ...v.unused, ...v.never, ...v.stopped];
     once(`${FOREMAN_NOTE}${NOT_MADE} by ${id}: the new move`, `${FOREMAN_NOTE}${NOT_MADE} by ${id}: the new move${bad.length === 1 ? "" : "s"} ${bad.join(", ")} ${bad.length === 1 ? "does" : "do"} not land in the Foreman's bot run (${said}) after ${p.round - (p.roundBase ?? 1) + 1} rounds; the rest of the change is kept. Say it again (for example "the ${bad[0]} never hits anyone") to have it made.`);
     return undefined;
   }
   const tofu = tofuOf(h.s.plan)?.test;
   const own = [...new Set((h.s.plan.find((x) => x.id === id)?.acceptance ?? []).flatMap((a) => (a.verb === "bot" ? a.args.flatMap((x) => (x.startsWith("--test=") ? [x.slice(7)] : [])) : [])).filter((t) => t !== tofu))];
   const parts: string[] = [];
+  if (v.stopped.length > 0) parts.push(`${v.stopped.map((m) => lastUse(m, v.counts[m])).join(", ")}: the count must come from a bot that keeps using the move to the end of its run, wherever it can land, and never stops once it has landed; report "last_f" (the frame of its last use) beside started and landed`);
   if (v.never.length > 0) parts.push(`${v.never.map((m) => figure(m, v.counts[m])).join(", ")}: a move that never lands is not made. Find why it misses in the game (its reach against how close the bodies can get, its hit test, its arc, when a bot uses it) and make it land as the person asked`);
   if (v.unused.length > 0) parts.push(`${v.unused.join(", ")} started 0 times: the bot test that counts it must use it where it can land`);
   if (v.missing.length > 0) parts.push(`no bot test of your package reports ${v.missing.map((m) => `moves.${m}`).join(", ")}: add \`"moves": {"${v.missing[0]}": {"started": <n>, "landed": <n>}}\` to the metrics of a bot test your acceptance runs${own.length > 0 ? ` (${own.join(", ")})` : ""}, count a landing only from the game's own contact events, and let that bot use the move where it can land`);
@@ -210,7 +240,7 @@ export function finalLandNotes(h: Pick<GateHost, "s" | "dir" | "events">): { typ
     const round = lastRound ?? 1;
     if (v.ok) out.push({ type: "note", package: id, round, text: `${MOVES_LAND}: ${said} (the final run: ${[...new Set(reports.map((r) => r.test))].join(", ")})` });
     else {
-      const bad = [...v.missing, ...v.unused, ...v.never];
+      const bad = [...v.missing, ...v.unused, ...v.never, ...v.stopped];
       out.push({ type: "note", package: id, round, text: `${FOREMAN_NOTE}${NOT_MADE} by ${id}: the new move${bad.length === 1 ? "" : "s"} ${bad.join(", ")} ${v.never.length > 0 ? "never landed" : "was not seen to land"} in the Foreman's final bot run (${said}). Say it again (for example "the ${bad[0]} never hits anyone") to have it made.` });
     }
   }

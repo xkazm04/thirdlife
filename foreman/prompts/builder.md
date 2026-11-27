@@ -100,9 +100,11 @@ person wanting another go. Put every feel number your package uses in `data/tuni
   test that measures it.
 - **A new attack must land.** In a change round that adds a move meant to hit somebody (a charge, a slam, a dunk, a
   special shot), write one line `NEW MOVE: <id>` for each under `DEVIATIONS:` (the id your game publishes for it), and
-  count it in a bot test your acceptance runs (never the tofu bot): that bot uses the move where it can land, and its
-  result's `metrics` gets `"moves": {"<id>": {"started": <uses>, "landed": <uses that hit somebody>}}`, counted only from the
-  game's own contact events. A new attack that never lands sends your round back. Check its reach against how close
+  count it in a bot test your acceptance runs (never the tofu bot): that bot uses the move wherever it can land for the
+  WHOLE run (it never stops once the move has landed: the count is a measure, not a goal), and its result's `metrics`
+  gets `"moves": {"<id>": {"started": <uses>, "landed": <uses that hit somebody>, "last_f": <the frame of its last use>}}`,
+  counted only from the game's own contact events. A count whose last use falls before the last third of its run is no
+  measure and sends your round back, and so does a new attack that never lands. Check its reach against how close
   two bodies can really come (their pushboxes or capsules stop a charger before his blow), not only against the
   distance you meant.
 - **What is not yours goes on.** When part of the change needs a file outside your scope, write it as one line
@@ -113,7 +115,10 @@ person wanting another go. Put every feel number your package uses in `data/tuni
   screen centre in a bold or black face, an outline instead of a box behind it) or a `center` label of its own. Never
   put it into the score line or the clock's label, never pad a label with blank lines or spaces to make it look bigger
   (its plate grows with every line into a slab), and clear it when the moment is over. A word over one body is a tag
-  (`hud.add_tag`).
+  (`hud.add_tag`). **Words read as a person says them:** the player is YOU, with "are" and "your" ("YOU ARE ON FIRE!",
+  "YOUR SHOT"), everyone else by the name the game shows for them ("CRANE IS ON FIRE!"); never put an internal id
+  (`you`, `bot_2`, `crew_a`) into a sentence (no "YOU IS"), and build such a line from one template per case, not by
+  pasting an id into a third-person phrase.
 - If something you need is missing from the contract, end your answer with one line starting with
   `QUESTION:` and stop. Do not guess. Write it for the person who plays the game, in plain words: no JSON, no file
   names, no key paths; give the two or three choices plainly ("A, or B?"). You get ONE question per change: if the

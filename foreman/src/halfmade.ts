@@ -72,10 +72,14 @@ export function afterMerge(plan: readonly PackageSpec[], events: readonly JobEve
   // D27 (the d27 copy of J1, events 1029-1078): one hop. The skin, asked only for the rest harbour handed it, said the
   // meteor itself needs the cartridge, and the request went back to the cartridge, which had already made its part.
   // A round that was itself handed the rest of a change tells the person what it did not make; it sends nothing on.
+  const lastPromo = events.reduce((n, e) => (e.type === "promoted" ? e.seq : n), -1);
+  const mergedInChange = (evs: readonly JobEvent[], pkg: string): boolean => evs.some((e) => e.type === "merge" && e.package === pkg && e.seq > lastPromo);
   const hop = request.startsWith(`${FOREMAN_NOTE}${REST_OF}`);
   for (const [owner, lines] of groups) {
     const said = lines.map((l) => clip(l, 400)).join(" / ");
-    if (owner !== undefined && hop) {
+    // D27 item 14: a handed-on round may still send a line to a package that has not merged in this change (it has not
+    // made its part yet); never back to one that has
+    if (owner !== undefined && hop && mergedInChange(events, owner)) {
       out.push({ type: "note", package: id, round, text: `${FOREMAN_NOTE}${NOT_MADE}: ${id} made the part handed to it and says: ${said}. It was already handed on once, so the Foreman does not send it to ${owner} again` });
       continue;
     }
@@ -116,4 +120,17 @@ export function coreHintOf(plan: readonly PackageSpec[], core: { core: string } 
   }
   const owner = cartridgeOwner(plan)?.id;
   return { ...(owner !== undefined ? { cartridgeOwner: owner } : {}), rows: catalogRows(md), catalogPath: `ref/cores/${core.core}/CARTRIDGE.md` };
+}
+
+/**
+ * D27 round 3 (JB-back's shield copy, events 869-960: crew was queued for the rivals' part, waiting for core; core's merge
+ * then handed crew its NOT DONE lines (event 888); crew r8 built the rivals' part and merged, and only then did the hand-off
+ * re-open crew for r9, which found "all three were already in place"): the Foreman's own request (a hand-off, the rivals'
+ * part) for a package that is queued and has not built its round yet joins that round now: the package is re-opened before
+ * its builder starts, and its builder reads every change of the package in one prompt.
+ */
+export function foldable(p: { state: string; round: number; id?: string }, text: string | undefined, running: boolean, events: readonly JobEvent[]): boolean {
+  if (running || p.state !== "queued" || text === undefined || !text.startsWith(FOREMAN_NOTE)) return false;
+  const id = p.id;
+  return id !== undefined && !events.some((e) => e.type === "builder_run" && e.package === id && (e.round ?? 0) >= p.round);
 }
