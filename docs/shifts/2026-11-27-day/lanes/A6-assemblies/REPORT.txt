@@ -126,3 +126,79 @@ NEXT THREE
    gap + 1 m and the tower's outside stairs walked by the body.
 3. The Shapes tool: show the walk on the ghost (the stair path in another holo tint) and a wheel for the width/depth
    when no drag is made; a "course" preset that adds a start pad at the stair foot and a flag on top as zones.
+
+====================================================================================================================
+ROUND 2 (Director, after round 1 landed; tree at the integration tip 98988c51). Nothing committed.
+
+1. Q-A1 (a): DONE, and the model now USES assemble.
+   Prompt: `assemble` is the first op under "# Operations" (world_edit.md `{{assemble}}`, filled by world_edit.ts
+   `facts().assemble` only when the ask offers it); the top of it reads "BUILD WALLS, TOWERS, HOUSES, STAIRS, BRIDGES
+   AND PLATFORMS WITH ASSEMBLE (a course too: its zones on them); place or fill single blocks only for details". The
+   worked examples: the stair (an assemble onto a filled platform), the hut (an assemble house + a post as a detail),
+   the bridge (one assemble; the water rule text unchanged); "never place or fill into an assembly's cells in the same
+   answer". The assemble section's example is a run up an assembled tower: its stair cells named, two coins on them, a
+   Top flag (checked headless: every zone a feet cell reached from the pad). Size, measured on round 1's tower ask
+   rendered whole: 26,058 -> 24,429 bytes (-1,629; the Director allowed +-3 KB). ASSEMBLE_TEXT 2,525 B (the test now
+   caps it at 2,600 and checks assemble comes first under "# Operations").
+   ONE real tower call (same sentence, same spot, a window, scripts .tl/a6/tower2-call.sh):
+     used assemble: YES. 11 ops: 1 assemble (tower 7 x 10, stairs outside, crenels) + 5 zones + 5 rules -> 316 blocks.
+     31.6 s, 37,004 in / 3,186 out, 0 refused, space check clean (495 feet cells, 53 ms); one batch kept.
+     replay: finished, 3/3 coins taken, every hop one cell (the 2 m walker reaches all of it).
+     vs round 1 (hand-built): 53.7 s, 18,285 / 5,510, 192 blocks, 1 coin out of reach.
+     vs lane C: 106.2 s, 41.8k / 11.6k and 92.5 s, 41.3k / 10.1k (335-418 blocks, 4 m + 1 m hops).
+     Judgement: the fastest and the fewest output tokens of the four (3.2k against 5.5-11.6k: the model writes 11 ops,
+     not 200-550), with the most blocks and a clean check; tokens in are about twice round 1 (37k vs 18k), which looks
+     like a second attempt (one problem fed back; the Foreman logs no attempt count, Q-C4). It largely copied the
+     worked example (7 x 10, the same opts, coins on the named stair cells): good for this sentence, and the next
+     sentences should show whether it varies sizes. (c) (the one-sentence top rule) was not needed and not sent.
+     Captures: a6-tower-2.jpg (kept), a6-tower-2-ghost.jpg.
+
+2. Q-A4: lane P's body probe (play_llm_probe.gd, the real visitor body, at a walk 4.5 m/s and --run 9 m/s) over
+   assemblies. Homes made by a new dev tool, engine/kernel/world/build/assembly_probe_home.gd (the assemble expanded
+   as an answer is, a start pad, a flag, a run; saved), except the model's tower (its own kept Home).
+     bridge 3 x 14 over the stream (deck x -258..-245, y -1, z -27..-29, rot 1; 114 blocks):
+       onto the deck by the west steps (start on the west bank, flag mid-deck): walk 316 frames, run 646; 0 stuck.
+       off by the east steps (start mid-deck, flag on the east bank): walk 184 frames, run 180; 0 stuck.
+       (a flag on the far bank alone is reached by wading the 1.8 m stream: water has no collider, so the estimate's
+       path went through the bed; the two halves prove the deck is walked on and off.)
+     tower 7 x 10, stairs outside, crenels, on flat ground at (29, 1, 34) (316 blocks), pad by the stair foot, flag on
+       the top floor: walk FINISHED in 441 frames, 0 stuck (up the north face, the east face, onto the top).
+       run (9 m/s): finished, but fell off twice where the stairs turn a corner (waypoints 5 and 12): the outside stairs
+       have no railing and the autopilot at a run overshoots the turn.
+     the model's assembled tower (round 2's call): walk finished in 694 frames, 3 coins, 1 stuck (waypoint 3: the
+       estimate's path reached the stair run from its side, 2 cells across and 1 up, not from its foot; put on, the
+       body climbed the rest in about 13 frames a stair); run: finished, 2 stuck (that one and a fall at the top turn).
+   So by construction the body walks them; what it does not forgive is a run at the corners of a railing-less stair.
+
+GATES (round 2)
+- 794 HOME assembly 6/6; 785 6/6; 786 4/4; 787 3/3 (all inside the home. run).
+- bash engine/tools/selftest.sh home. : "selftest: 194 passed, 0 failed" (the tip's count with P round 2 and T round 3).
+- tl check --tier fast: PASS 5/5 (arch 12/12, assets 4/4, cards 3/3, devx.test 230/230, foreman.typecheck).
+- foreman npm test: 471 tests, 465 pass, 0 fail, 6 skipped; world_edit + world_edit_assemble 23/23.
+- world gate: not re-run this round (no engine file a pack or the world touches changed: prompt, tests, a dev tool).
+- The uncapped suite: not run.
+
+FILES (round 2)
+New: engine/kernel/world/build/assembly_probe_home.gd (+ .uid), lane folder a6-tower-2.jpg, a6-tower-2-ghost.jpg.
+Changed: foreman/prompts/world_edit.md (# Operations: {{assemble}} first; the examples as assembles; the no-overlap
+     line), foreman/src/world_edit.ts (ASSEMBLE_TEXT rewritten: the rule, the tower run example; `facts().assemble`;
+     no longer in more_ops), foreman/src/test/world_edit_assemble.test.ts (the first-under-Operations check, the size
+     cap 2,600, the new words), engine/kernel/world/build/COMMAND.md (round 2 lines). Line endings as in git (all LF).
+
+BEHAVIOUR CHANGES (round 2)
+- The prompt teaches assemble first and its examples build with it; the rendered prompt is 1.6 KB smaller.
+- TEST EXPECTATION MOVED: world_edit_assemble.test.ts reads assemble from `facts().assemble` (was `more_ops`) and caps
+  ASSEMBLE_TEXT at 2,600 B (was 2,048: the Director's 3 KB net budget for the prompt; the whole prompt shrank).
+
+QUESTIONS (round 2)
+Q-A5 Outside stairs have no railing: at a run the body falls at the corners. A fence on the outer edge needs cells one
+     ring further out with nothing under them (they would float) - a railing on the landing's outer half (a slab-high
+     wall) or a 1-cell-wide outer stringer up to the stair's level are the options; which look is wanted?
+Q-A6 The estimate lets a path join a stair run from its side (2 cells, 1 m up); the body sticks there at a walk. Should
+     the estimate treat a stair's sides as walls above its low step (a narrower model of stairs)?
+
+NEXT THREE
+1. A railing (or a parapet step) for outside stairs at the turns (Q-A5), then the probe at a run again.
+2. Three more tower/house/bridge sentences in varied sizes to see whether the model varies the assembly or copies the
+   example; and the Foreman logging attempts (Q-C4) to explain the 37k tokens in.
+3. The Shapes tool's "course" preset (a pad at the stair foot, a flag on top) so the hand gets the same run in one go.

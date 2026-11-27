@@ -289,3 +289,20 @@ alone (steps of 0.55 m, no jump) reaches no coin and no finish: it is a jumping 
   The replay's tour was fixed this round: a coin out of reach no longer fences the finish off (it walked round the
   finish while any coin was left). Captures: `docs/shifts/2026-11-27-day/lanes/A6-assemblies/a6-tower.jpg`,
   `a6-bridge.jpg`, and the Shapes tool `a6-shapes-tool.jpg`, `a6-shapes-built.jpg`.
+- **Round 2 (the Director's Q-A1 (a))**: `assemble` is the FIRST op under "# Operations" (`{{assemble}}`, the rule "BUILD
+  WALLS, TOWERS, HOUSES, STAIRS, BRIDGES AND PLATFORMS WITH ASSEMBLE ... place or fill single blocks only for
+  details"), the stair, hut and bridge worked examples are assembles (plus a detail block), and the assemble section's
+  example is a run up an assembled tower (its stair cells named, coins on them, the flag on top; checked walkable
+  headless). The rendered prompt on the round-1 tower ask: 26,058 -> 24,429 bytes (-1,629). ONE real call, the tower
+  sentence, same spot: **it used assemble** (1 tower + 5 zones + 5 rules = 11 ops, 316 blocks), 31.6 s, 37,004 in /
+  3,186 out (the tokens in suggest two attempts: one problem fed back, not logged), 0 refused, check clean; the replay
+  takes 3/3 coins and finishes, every hop one cell. Against round 1 (53.7 s, 18.3k / 5.5k, 192 hand blocks) and lane
+  C (92-106 s, 41k / 10-12k): fewer output tokens (3.2k against 5.5-11.6k) and the fastest of the four, more input.
+  (c), the one-sentence top rule, was not needed. Capture `a6-tower-2.jpg` (+ ghost).
+- **The body over assemblies** (lane P's `play_llm_probe.gd`; Homes made by `assembly_probe_home.gd`, a dev tool: the
+  assemble expanded as an answer is, a start pad and a flag): a 3 x 14 bridge over the stream at (-258..-245, -1,
+  -27..-29): onto the deck by the west steps at a walk 316 frames, at a run 646; off by the east steps 184 / 180; 0
+  stuck. A 7 x 10 tower with outside stairs on flat ground (29, 1, 34): to the top at a walk in 441 frames, 0 stuck; at
+  a run (9 m/s autopilot) it finished but fell off twice where the stair turns a corner (the outside stairs have no
+  railing). The model's assembled tower: walk 694 frames, finished, 3 coins, 1 stuck (the estimate's path joined the
+  stair run from its side, not its foot).

@@ -44,63 +44,35 @@ cell: (deck y + 1) - (that ground y) steps, each on its own column, the first on
 {{layers}}
 
 # Operations
-- {"op":"place","at":[x,y,z],"shape":s,"mat":m,"rot":r} puts one block into an EMPTY cell (add "flip":true to flip).
+{{assemble}}- {"op":"place","at":[x,y,z],"shape":s,"mat":m,"rot":r} puts one block into an EMPTY cell (add "flip":true to flip).
 - {"op":"remove","at":[x,y,z]} empties a cell that holds a block.
 - {"op":"fill","from":[x,y,z],"to":[x,y,z],"shape":s,"mat":m,"rot":r} fills the box between two corner cells
   (inclusive); a cell holding another block is replaced, one already holding this block is kept. Add "walls":true to
   fill only the box's outer ring on every layer (four walls, no floor or ceiling).
 - {"op":"clear","from":[x,y,z],"to":[x,y,z]} empties every block in the box.
 {{more_ops}}{{rules}}
-Ops apply in order, so a later op may change what an earlier one made (fill walls, then remove the door cells).
+Ops apply in order, so a later op may change what an earlier one made (fill walls, then remove the door cells); never
+place or fill into an assembly's cells in the same answer (you cannot see them: put details beside or on top of it).
 To CHANGE something that is there ("taller", "a slate roof", "wider"), read the blocks above and edit them: clear or
 remove what goes, then place or fill what comes. Never place into a cell that holds a block: fill replaces, place
 does not.
 
 # Small worked examples (cells near [100, 10, 50] on flat ground at y 10 unless they say otherwise)
-A stair of 3 steps going up toward north onto a platform at y 13:
-{"op":"fill","from":[100,10,52],"to":[102,10,52],"shape":3,"mat":1,"rot":0}
-{"op":"fill","from":[100,11,51],"to":[102,11,51],"shape":3,"mat":1,"rot":0}
-{"op":"fill","from":[100,12,50],"to":[102,12,50],"shape":3,"mat":1,"rot":0}
+A stair of 3 steps going up toward north onto a platform at y 13 (the platform filled, the stair one assemble):
 {"op":"fill","from":[100,10,47],"to":[102,12,49],"shape":1,"mat":2,"rot":0}
-A 5 x 5 hut with plank walls, a stone trim, a door at the south, a window each side and a roof overhanging by 1:
-{"op":"fill","from":[100,10,50],"to":[104,10,54],"shape":1,"mat":1,"rot":0,"walls":true}
-{"op":"fill","from":[100,11,50],"to":[104,12,54],"shape":1,"mat":3,"rot":0,"walls":true}
-{"op":"clear","from":[102,10,54],"to":[102,11,54]}
-{"op":"fill","from":[100,11,52],"to":[100,11,52],"shape":6,"mat":4,"rot":1}
-{"op":"fill","from":[104,11,52],"to":[104,11,52],"shape":6,"mat":4,"rot":1}
-{"op":"fill","from":[99,13,55],"to":[105,13,55],"shape":7,"mat":6,"rot":0}
-{"op":"fill","from":[99,14,54],"to":[105,14,54],"shape":7,"mat":6,"rot":0}
-{"op":"fill","from":[99,15,53],"to":[105,15,53],"shape":7,"mat":6,"rot":0}
-{"op":"fill","from":[99,13,49],"to":[105,13,49],"shape":7,"mat":6,"rot":2}
-{"op":"fill","from":[99,14,50],"to":[105,14,50],"shape":7,"mat":6,"rot":2}
-{"op":"fill","from":[99,15,51],"to":[105,15,51],"shape":7,"mat":6,"rot":2}
-{"op":"fill","from":[99,15,52],"to":[105,15,52],"shape":1,"mat":6,"rot":0}
-{"op":"fill","from":[100,13,50],"to":[100,13,54],"shape":1,"mat":3,"rot":0}
-{"op":"fill","from":[100,14,51],"to":[100,14,53],"shape":1,"mat":3,"rot":0}
-{"op":"fill","from":[104,13,50],"to":[104,13,54],"shape":1,"mat":3,"rot":0}
-{"op":"fill","from":[104,14,51],"to":[104,14,53],"shape":1,"mat":3,"rot":0}
-(The roof slopes meet on a ridge row of cubes; the gable ends are filled under the slopes in the wall's material, never
-over a roof block. White (9) is a trim: a large white panel reads as a blank sign. A roof over a bridge or a shelter
-stands on posts (shape 5) and leaves its gable ends open.)
+{"op":"assemble","kind":"stair","at":[102,10,52],"size":[3,3,1],"rot":2,"mat":1}
+A 5 x 5 hut with plank walls, a door at the south, windows and a slate roof (x 100..104, z 50..54, walls y 10..12),
+and a lamp by its door as a detail:
+{"op":"assemble","kind":"house","at":[104,10,54],"size":[5,3,5],"rot":2,"mat":3,"trim":6}
+{"op":"place","at":[100,10,56],"shape":5,"mat":4,"rot":0}
+(White (9) is a trim: a large white panel reads as a blank sign. A roof over a bridge or a shelter stands on posts
+(shape 5) and leaves its gable ends open.)
 A stone bridge with railings over a stream that runs north-south: west bank ground y 10 (x 99..102), water surface y 9
-at x 103..107 (bed y 8), east bank ground y 11 (x 108..110). Deck at y 12 (1 above the higher bank's 11, 3 above the surface 9), x 102..108;
-piers on the bed; steps rise east from the west bank (rot 3) and west from the east bank (rot 1) on filled supports:
-{"op":"fill","from":[102,12,49],"to":[108,12,53],"shape":1,"mat":2,"rot":0}
-{"op":"fill","from":[103,8,49],"to":[103,11,49],"shape":1,"mat":1,"rot":0}
-{"op":"fill","from":[103,8,53],"to":[103,11,53],"shape":1,"mat":1,"rot":0}
-{"op":"fill","from":[107,8,49],"to":[107,11,49],"shape":1,"mat":1,"rot":0}
-{"op":"fill","from":[107,8,53],"to":[107,11,53],"shape":1,"mat":1,"rot":0}
-{"op":"fill","from":[100,10,50],"to":[101,11,52],"shape":1,"mat":1,"rot":0}
-{"op":"fill","from":[99,10,50],"to":[99,10,52],"shape":3,"mat":1,"rot":3}
-{"op":"fill","from":[100,11,50],"to":[100,11,52],"shape":3,"mat":1,"rot":3}
-{"op":"fill","from":[101,12,50],"to":[101,12,52],"shape":3,"mat":1,"rot":3}
-{"op":"fill","from":[109,11,50],"to":[109,11,52],"shape":1,"mat":1,"rot":0}
-{"op":"fill","from":[109,12,50],"to":[109,12,52],"shape":3,"mat":1,"rot":1}
-{"op":"fill","from":[110,11,50],"to":[110,11,52],"shape":3,"mat":1,"rot":1}
-{"op":"fill","from":[102,13,49],"to":[108,13,49],"shape":8,"mat":4,"rot":0}
-{"op":"fill","from":[102,13,53],"to":[108,13,53],"shape":8,"mat":4,"rot":0}
-"Make it one storey taller" for that hut: clear the roof and gables (clear [99,13,49] to [105,15,55]), fill the walls
-from y 13 to 15 (walls:true), then build the same roof 3 higher.
+at x 103..107 (bed y 8), east bank ground y 11 (x 108..110). Deck at y 12 (1 above the higher bank's 11,
+3 above the surface 9), x 102..108, z 49..53, running east (rot 1); the Home adds piers and the steps to each bank:
+{"op":"assemble","kind":"bridge","at":[102,12,53],"size":[5,1,7],"rot":1,"mat":2,"trim":4}
+"Make it one storey taller" for that hut (it is in the region's blocks then): clear the roof and gables (clear
+[100,13,50] to [104,15,54]), fill the walls from y 13 to 15 (walls:true), then build a roof 3 higher.
 {{fix}}
 # Answer
 Answer with one JSON object: "ops" (the list above, in order) and "note" (one line for the player, at most 119

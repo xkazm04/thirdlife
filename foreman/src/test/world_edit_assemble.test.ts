@@ -37,14 +37,17 @@ function worldEdit(input: unknown, replies: unknown[], promptText: string) {
   return { code: run.status, error: run.stderr, result: fs.existsSync(out) ? JSON.parse(fs.readFileSync(out, "utf8")) : undefined };
 }
 
-test("assemble: the prompt teaches it only when the ask offers it, at most 2 KB, with the preference and one example", () => {
+test("assemble: the prompt teaches it first under # Operations only when the ask offers it, with the rule and a run up a tower", () => {
   const f = facts(ask as never);
-  assert.ok((f.more_ops as string).includes(ASSEMBLE_TEXT));
-  assert.ok(Buffer.byteLength(ASSEMBLE_TEXT) <= 2048, `${Buffer.byteLength(ASSEMBLE_TEXT)} bytes`);
-  for (const k of ["PREFER ASSEMBLIES for walls, towers, houses, stairs, bridges and platforms", "single blocks only for",
-    '"kind":"tower"', "wall [length, height, 1]", "bridge [width, 1, length]", "platform [width, 1, depth]", "stair [width, steps, 1]"])
+  assert.equal(f.assemble, ASSEMBLE_TEXT);
+  assert.ok(Buffer.byteLength(ASSEMBLE_TEXT) <= 2600, `${Buffer.byteLength(ASSEMBLE_TEXT)} bytes`);   // round 2: the Director's 3 KB net for the whole prompt
+  const tpl = fs.readFileSync(path.join(PKG_ROOT, "prompts", "world_edit.md"), "utf8");
+  assert.ok(tpl.indexOf("{{assemble}}") > tpl.indexOf("# Operations") && tpl.indexOf("{{assemble}}") < tpl.indexOf('{"op":"place"'), "assemble comes first");
+  for (const k of ['"kind":"house"', '"kind":"bridge"', '"kind":"stair"']) assert.ok(tpl.includes(k), k);
+  for (const k of ["BUILD WALLS, TOWERS,\n  HOUSES, STAIRS, BRIDGES AND PLATFORMS WITH ASSEMBLE", "single blocks\n  only for details",
+    '"kind":"tower"', '"look":"flag","name":"Top"', "wall [length, height, 1]", "bridge [width, 1, length]", "platform [width, 1, depth]", "stair [width, steps, 1]"])
     assert.ok(ASSEMBLE_TEXT.includes(k), k);
-  assert.equal(facts({ ...ask, ops: ["place", "remove"] } as never).more_ops, "", "an ask without assemble teaches none");
+  assert.equal(facts({ ...ask, ops: ["place", "remove"] } as never).assemble, "", "an ask without assemble teaches none");
   assert.match(f.ops as string, /assemble/);
 });
 
@@ -92,11 +95,11 @@ test("assemble: every bad form is refused with the exe's words, and the ask's ta
 test("world-edit: a bad assemble is fed back and the fixed answer is taken on attempt 2; the answer keeps the assemble", () => {
   const bad = { note: "A tower.", ops: [{ ...tower, kind: "keep" }] };
   const good = { note: "A stone tower with stairs round it.", ops: [tower, { op: "place", at: [96, 10, 50], shape: 1, mat: 1, rot: 0 }] };
-  const r = worldEdit(ask, [bad, good], "PREFER ASSEMBLIES");
+  const r = worldEdit(ask, [bad, good], "PLATFORMS WITH ASSEMBLE");
   assert.equal(r.code, 0, r.error);
   assert.deepEqual(r.result.ops, good.ops);
   assert.equal(r.result.tokensIn, 200, "two attempts");
-  const r2 = worldEdit(ask, [bad, bad], "PREFER ASSEMBLIES");
+  const r2 = worldEdit(ask, [bad, bad], "PLATFORMS WITH ASSEMBLE");
   assert.equal(r2.code, 1);
   assert.match(r2.result.error, /unknown kind 'keep'/);
 });
