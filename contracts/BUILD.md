@@ -281,6 +281,11 @@ jump pad, a coin, a hazard, and a **run** (start, checkpoints, finish) that time
   cell and keys, then every fired rule runs in ascending `id`, each checking its `if` when it fires; an effect sees
   the effects before it in the same frame. A rule fires at most once per frame. The same inputs from the same saved
   Home give the same frames: a run is deterministic.
+- **Settled at the seam (27 Nov, Director)**: a taken zone fires no `enter`, `leave` or `use` until it is back; `if`
+  holds at most 8 conditions; `start`, `finish` and `count` triggers caused by an effect fire on the next frame; a
+  run started by a rule with no zone respawns at the floor of the feet cell it started on; E fires `use` (and does not
+  enter a nearby game) when the feet cell is in a zone that a rule triggers `on: use`. Stamps do not carry zones or
+  rules yet.
 - **Runs are recorded** in `user://home/records.json`:
   `{"schema":"tl.records/1", "runs":{"<run name>":{"plays":<int>, "finishes":<int>, "best_frames":<int>}}}`
   (`best_frames` omitted until the first finish). `plays` counts starts, `finishes` counts finishes. A finish shows a
