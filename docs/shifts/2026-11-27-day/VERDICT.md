@@ -41,6 +41,7 @@ and 2 are open (the 2-high doorway and the jump itself; aiming from the walker's
 
 Landed: main cafb68de, pushed to origin at 19:01 (0 ahead, 0 behind). Exe: dist/ThirdLife built from cafb68de
 (tag "cafb68d 2026-11-27 19:02"), `export.sh check` PASS, and the Rules tool opens in the exe (exe-rules.png).
+Update 28 Nov 06:13: the juice session rebuilt dist/ThirdLife from main 6906574 (it contains M6), export.sh check PASS; `dist/PLAY-LATEST.cmd` starts that build.
 
 Gate on the merged tree (23be5789, main merged in): `tl check --tier full` 11 of 13 PASS (arch, assets, cards,
 devx.test 230/230, foreman typecheck + 503/503, kit 122/122, seeds 39/39, item 91/91, ui 219/219, world 9/9 = alone).
