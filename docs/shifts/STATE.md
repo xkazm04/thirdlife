@@ -562,3 +562,10 @@ on the frame and the figure and Fable on surfaces and nature, looping for 10 hou
 - 01:17 standup: all lanes done (N round 2 landed 6906574e); the full tier runs on main 6906574e in d27-gate since ~00:45; VERDICT drafted. Disk 58 GB.
 - 03:17 standup: quiet gates on main 6906574e: kernel uncapped 808 pass / 4 fail (rink.playtester_seat and rink.cartridge pass once rinklab is built: 810/2; base.lines_undeclared and base.lines_own_6001 were already failing on main before the shift); packs: hockey invariants.many_budget p50 1.124 ms (budget 1.0) on main now and 1.348 ms on PRE-SHIFT main 8be26d61 (inherited, not a regression); perf --quiet-only 6/6 PASS; world 9/9, seeds 39/39, kit 122/122, item 91/91, ui 219/219, foreman 531/537 (6 skipped).
 - 05:17 standup: no lanes running; main 6906574e+docs pushed; hockey A/B second run: main 1.422 ms vs pre-shift 1.348 ms (main varies 1.12-1.42 run to run; inherited). Waiting for the 06:13 verdict.
+- 06:40 VERDICT (docs/shifts/2026-11-27-juice-day/VERDICT.md; page https://claude.ai/artifact/GcRPV1K9kDyK84PDLeKBjB):
+  - all five spikes built both ways and kept for the owner (branches d27-sp-bots(-b), d27-sp-juice(-b), d27-sp-core(-b), d27-sp-packs; menu rows "spike ...");
+  - about 45 editor fixes landed (lanes T, T2, T3); JOB.md juice day + juice night sections;
+  - hand juice back as sentences, a second crazy ability for all six games, a newcomer pass for all six;
+  - exe 6906574 export check PASS; 86 menu rows, 86/86 0/0 in it;
+  - gates on main: fast 5/5; full tier green but wall-clock steps; uncapped kernel 810/2 (2 base line-count checks, already failing before the shift); hockey many_budget inherited (pre-shift 1.348 ms); perf 6/6.
+  - Open: the owner's 11 asks.
