@@ -569,3 +569,7 @@ on the frame and the figure and Fable on surfaces and nature, looping for 10 hou
   - exe 6906574 export check PASS; 86 menu rows, 86/86 0/0 in it;
   - gates on main: fast 5/5; full tier green but wall-clock steps; uncapped kernel 810/2 (2 base line-count checks, already failing before the shift); hockey many_budget inherited (pre-shift 1.348 ms); perf 6/6.
   - Open: the owner's 11 asks.
+- 28 Nov morning, the owner: "the pagination does not change the 4 games in the list, all games from this session are not accessible there". Cause, two Director errors:
+  - (1) the exported exe reads %APPDATA%/ThirdLife/dungeons.user.json (project.godot custom user dir), while the Director wrote every row since 26 Nov into the editor's app_userdata/Third Life Engine/ file; the 600-frame checks launched packs with --dungeon and never went through the menu;
+  - (2) 55 titles were over the 80-character limit (dungeons.gd TITLE_MAX), so they would have been refused anyway.
+  - Fixed: all 86 rows written into the exe's file with titles of 80 characters at most; the game's own read_menu gives 78 rows (4 shipped + 74 of the owner's, versions folded), 0 errors. Last night's "26 menu rows" were not visible in the exe either.

@@ -300,3 +300,7 @@ remain). Then plan the day: a `/shift` day or a `/spark`.
   fairness (S1's B on main's fixes changed the read).
 - 2026-11-27: two other sessions' leaks filled the disk twice (94 -> 9 GB). Measure %TEMP% and other projects' trees
   first, message the owning session (ListAgents) rather than touching its files, and delete only your own captures.
+- 2026-11-28 (juice day verdict): the Director wrote two nights of menu rows into the editor's user folder while the
+  exported exe reads `%APPDATA%/ThirdLife` (project.godot `custom_user_dir_name.thirdlife_exe`), and 55 titles broke the
+  80-character limit; "every pack runs with --dungeon" was taken as "the menu lists it". Verify menu rows through the
+  game's own loader (`read_menu` with `TL_USER_DUNGEONS` = the exe's file) and by opening Dungeons in the exe.
