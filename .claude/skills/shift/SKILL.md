@@ -291,3 +291,12 @@ remain). Then plan the day: a `/shift` day or a `/spark`.
   cap of 5. Count running agents before any message that resumes a finished one.
 - 2026-11-27: committing docs while export.sh ran made `export.sh check` fail (the build's tag was not the commit). Export
   after the last commit of the verdict, into the main checkout's dist (`--out`), then check.
+- 2026-11-27 (juice day): a lane hung twice for hours inside one blocking tool call (a monitor / tail -f), and the
+  Director's messages queued unread. Briefs now say "never block a tool call on a monitor, a tail -f or a long job; run
+  detached and poll with short commands", and a lane silent for 2 h is stopped and resumed (SendMessage keeps its
+  context) or its work landed by the Director. The fresh lanes with that line never hung.
+- 2026-11-27: for decision questions the owner leaves open, A/B spikes on separate branches with the same jobs, the same
+  sentences and the same measures worked. Re-run the loser arm on the winner's later fixes before calling it, for
+  fairness (S1's B on main's fixes changed the read).
+- 2026-11-27: two other sessions' leaks filled the disk twice (94 -> 9 GB). Measure %TEMP% and other projects' trees
+  first, message the owning session (ListAgents) rather than touching its files, and delete only your own captures.
