@@ -108,6 +108,15 @@ func load_rows() -> Array:
 				row["pack_id"] = str(m["id"])
 		else:
 			print("[boot] dungeon '%s' (%s) is not in this build" % [str(d["title"]), str(d["pack"])])
+		if d.has("variants"):                      # 28 Nov: the game's newest version first, then its variations (Q / E)
+			var choices: Array = [{"variant": "latest", "dir": row["dir"], "pack_id": row.get("pack_id", ""), "version": d.get("version", "")}]
+			for v: Dictionary in d["variants"]:
+				var vd: String = str(list.call("resolve", str(v["pack"]), str(b.games_dir)))
+				if vd.is_empty():
+					continue
+				var vm: Variant = JSON.parse_string(FileAccess.get_file_as_string(vd + "/pack.json"))
+				choices.append({"variant": str(v["variant"]), "dir": vd, "pack_id": str((vm as Dictionary).get("id", "")) if vm is Dictionary else "", "version": v.get("version", "")})
+			row["choices"] = choices
 		out.append(row)
 	return out
 

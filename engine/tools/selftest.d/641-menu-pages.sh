@@ -2,7 +2,9 @@
 # main menu's Dungeons list in pages, and one row per game (boot/menu_case.gd). Headless; nothing is started.
 #   menu.pages     12 rows show 5 a page; Next / Previous turn and switch off at the ends; a row emits its whole-list index
 #   menu.versions  read_menu keeps one row per game (the highest pack.json version), the person's newest game first
-mp_names="menu.pages menu.versions"
+#   menu.variants  28 Nov: a row with "variant" is a variation inside its game (by title); the name only, v<version>
+#                  beside it; Q / E switch the variation Enter opens
+mp_names="menu.pages menu.versions menu.variants"
 mp_wanted=0
 for mp_n in $mp_names; do if [ -z "$FILTER" ] || [[ "$mp_n" == *"$FILTER"* ]]; then mp_wanted=1; fi; done
 if [ "$mp_wanted" = 1 ]; then

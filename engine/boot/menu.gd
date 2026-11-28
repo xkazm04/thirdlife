@@ -82,7 +82,7 @@ func open(dungeon_rows: Array, tag: String, create_ok: bool) -> void:
 	for b: Node in _main.get_children():
 		if b.name != "Dungeons":
 			(b as Control).focus_entered.connect(func() -> void: _list.visible = false)
-	var keys: Label = UI.label("arrows or W S  choose      A D  pages      Enter  open      Esc  back", 22, false)
+	var keys: Label = UI.label("arrows or W S  choose      A D  pages      Q E  variant      Enter  open      Esc  back", 22, false)
 	keys.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_LEFT)
 	keys.position = Vector2(140, -70)
 	keys.offset_top = -70
@@ -185,8 +185,7 @@ func _fill_page() -> void:
 		var line: HBoxContainer = HBoxContainer.new()
 		line.add_theme_constant_override("separation", 18)
 		line.add_child(_icon(r, i))
-		var b: Button = UI.button("%s
-%s" % [str(r["title"]), "made by you in Create" if r.get("mine", false) == true else "look: " + str(r.get("look", "default"))], 26)   # E4: the person's own
+		var b: Button = UI.button(_row_text(r), 26)   # E4: the person's own; 28 Nov: the name, then version and variant
 		b.name = "Dungeon%d" % i
 		b.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		b.custom_minimum_size = Vector2(0, 96)
@@ -221,6 +220,39 @@ not in this build" % str(r["title"])
 		_pager.add_child(nxt)
 	if _first_list == null:
 		_first_list = _back
+
+
+## 28 Nov (the owner: "keep there only game names, version can be another metadata"; "one version and if
+## modes/variations, then possibility to switch inside"): the first line is the game's name; the second its version, who
+## made it, and, when the game has variations (row "choices", hub.gd), which one Enter opens: Q / E switch it.
+func _row_text(r: Dictionary) -> String:
+	var parts: Array = []
+	var choices: Array = r.get("choices", [])
+	var pick: int = int(r.get("pick", 0))
+	var ver: String = str((choices[pick] as Dictionary).get("version", "")) if not choices.is_empty() else str(r.get("version", ""))
+	if not ver.is_empty():
+		parts.append("v" + ver)
+	parts.append("made by you in Create" if r.get("mine", false) == true else "look: " + str(r.get("look", "default")))
+	if choices.size() > 1:
+		parts.append("%s  (Q E: %d of %d)" % [str((choices[pick] as Dictionary)["variant"]), pick + 1, choices.size()])
+	return "%s\n%s" % [str(r["title"]), "  ·  ".join(parts)]
+
+
+## Switches row i to its next (+1) or previous (-1) variation: Enter then opens that one (hub.gd reads row "dir").
+func cycle_variant(i: int, by: int) -> void:
+	if i < 0 or i >= rows.size():
+		return
+	var r: Dictionary = rows[i]
+	var choices: Array = r.get("choices", [])
+	if choices.size() < 2:
+		return
+	var pick: int = posmod(int(r.get("pick", 0)) + by, choices.size())
+	r["pick"] = pick
+	r["dir"] = str((choices[pick] as Dictionary)["dir"])
+	r["pack_id"] = str((choices[pick] as Dictionary).get("pack_id", ""))
+	var b: Button = _rows_box.find_child("Dungeon%d" % i, true, false) as Button
+	if b != null:
+		b.text = _row_text(r)
 
 
 ## The still the person last saw in that dungeon (user://dungeon_stills), else a letter tile.
@@ -282,4 +314,8 @@ func _unhandled_input(event: InputEvent) -> void:
 		KEY_PAGEDOWN:
 			if f != null and _list.is_ancestor_of(f):
 				turn(1)
+				get_viewport().set_input_as_handled()
+		KEY_Q, KEY_E:                            # 28 Nov: the focused game's variation
+			if f != null and _list.is_ancestor_of(f) and str(f.name).begins_with("Dungeon"):
+				cycle_variant(str(f.name).trim_prefix("Dungeon").to_int(), -1 if k.keycode == KEY_Q else 1)
 				get_viewport().set_input_as_handled()

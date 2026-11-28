@@ -19,7 +19,7 @@ extends RefCounted
 ## E4 (night of 24-25 Nov 2026): the person's own dungeons. A game made in Create is put in the menu by one press and
 ## taken out again; the editor never writes the shipped list. Its list lies beside it, in the person's data folder:
 ##   user://dungeons.user.json   (TL_USER_DUNGEONS names another file: the checks use their own)
-##   {"schema": "tl.dungeons.user/1", "dungeons": [{"pack": <absolute folder with a pack.json>, "title", "job"?, "look"?}]}
+##   {"schema": "tl.dungeons.user/1", "dungeons": [{"pack": <absolute folder with a pack.json>, "title", "job"?, "look"?, "variant"?}]}
 ## `job` is the Create job directory the pack was promoted from (Create finds the row by it and moves `pack` to the
 ## job's newest promotion). read_menu() is the shipped list, then this one (rows marked `mine: true`); hub.gd reads it.
 ##   read_menu()                       -> {ok, dungeons, errors}: both lists
@@ -27,7 +27,11 @@ extends RefCounted
 const LIST_RES: String = "res://boot/dungeons.json"
 const USER_RES: String = "user://dungeons.user.json"
 const USER_SCHEMA: String = "tl.dungeons.user/1"
-const USER_KEYS: Array = ["pack", "title", "job", "look"]
+const USER_KEYS: Array = ["pack", "title", "job", "look", "variant"]
+## 28 Nov (the owner: "keep there only game names, version can be another metadata"; "one version and if modes/variations,
+## then possibility to switch inside"): a row with "variant" (a short label, at most VARIANT_MAX) is a variation of the game
+## whose row has the same title. read_menu lists it inside that game ("variants"), never as a game of its own.
+const VARIANT_MAX: int = 40
 const SCHEMA: String = "tl.dungeons/1"
 const TOP_KEYS: Array = ["schema", "dungeons"]
 const ENTRY_KEYS: Array = ["pack", "title", "look"]
@@ -186,7 +190,7 @@ static func read_user(path: String = "") -> Dictionary:
 			errors.append("%s dungeons[%d]: %s" % [file.get_file(), i, why])
 			continue
 		var row: Dictionary = {"pack": str(e["pack"]).replace("\\", "/").trim_suffix("/"), "title": str(e["title"]).strip_edges()}
-		for k: String in ["job", "look"]:
+		for k: String in ["job", "look", "variant"]:
 			if (e as Dictionary).has(k):
 				row[k] = str(e[k])
 		out.append(row)
@@ -208,6 +212,8 @@ static func _user_row_problem(e: Variant) -> String:
 		return "the title is longer than %d characters" % TITLE_MAX
 	if (e as Dictionary).has("job") and (typeof(e["job"]) != TYPE_STRING or str(e["job"]).is_empty()):
 		return "'job' is a non-empty text"
+	if (e as Dictionary).has("variant") and (typeof(e["variant"]) != TYPE_STRING or str(e["variant"]).strip_edges().is_empty() or str(e["variant"]).length() > VARIANT_MAX):
+		return "'variant' is a non-empty text of at most %d characters" % VARIANT_MAX
 	if (e as Dictionary).has("look") and (typeof(e["look"]) != TYPE_STRING or not look_known(str(e["look"]))):
 		return "look '%s' is not a style name" % str(e["look"])
 	return ""
@@ -274,18 +280,40 @@ static func read_menu(path: String = LIST_RES) -> Dictionary:
 	var rows: Array = (r["dungeons"] as Array).duplicate()
 	var best: Dictionary = {}                  # pack id (or the folder when unreadable) -> [version parts, row]
 	var order: Array = []
+	var later: Array = []                      # 28 Nov: variants, placed inside their game once every game is known
 	for row: Dictionary in u["dungeons"]:
 		var m: Dictionary = row.duplicate()
 		m.erase("job")
 		m["mine"] = true
 		var meta: Variant = JSON.parse_string(FileAccess.get_file_as_string(str(m["pack"]) + "/pack.json")) if FileAccess.file_exists(str(m["pack"]) + "/pack.json") else null
+		var vs: String = str((meta as Dictionary).get("version", "")) if meta is Dictionary else ""
+		if not vs.is_empty():
+			m["version"] = vs                      # 28 Nov: the version is metadata the menu shows beside the name
+		if m.has("variant"):
+			later.append(m)
+			continue
 		var id: String = str((meta as Dictionary).get("id", m["pack"])) if meta is Dictionary else str(m["pack"])
-		var v: Array = Array(str((meta as Dictionary).get("version", "0")).split(".")).map(func(x: String) -> int: return x.to_int()) if meta is Dictionary else [0]
+		var v: Array = Array((vs if not vs.is_empty() else "0").split(".")).map(func(x: String) -> int: return x.to_int())
 		if not best.has(id):
 			order.append(id)
 		elif _older(v, best[id][0]):
 			continue
 		best[id] = [v, m]
+	for m: Dictionary in later:                # the newest row of a label wins; a variant whose game is not listed stands alone
+		var home: Dictionary = {}
+		for id: String in order:
+			if str((best[id][1] as Dictionary)["title"]) == str(m["title"]):
+				home = best[id][1]
+		if home.is_empty():
+			order.append(str(m["pack"]))
+			best[str(m["pack"])] = [[0], m]
+			continue
+		var vars: Array = (home.get("variants", []) as Array).filter(func(x: Dictionary) -> bool: return str(x["variant"]) != str(m["variant"]))
+		var one: Dictionary = {"variant": str(m["variant"]), "pack": str(m["pack"])}
+		if m.has("version"):
+			one["version"] = m["version"]
+		vars.append(one)
+		home["variants"] = vars
 	order.reverse()                            # the person's newest game first
 	for id: String in order:
 		rows.append(best[id][1])
